@@ -1,0 +1,204 @@
+{
+    "landuse": {
+      "description": "OpenStreetMap land use data for India stored in GeoParquet format",
+      "data_location": "data/raw/landuse/india_landuse.parquet",
+      "python_functions": {
+        "query_landuse_at_point": {
+          "description": "Find land use exactly at a specific geographic point",
+          "code": {
+            "function": "def query_landuse_at_point(lat: float, lon: float) -> gpd.GeoDataFrame:\n    try:\n        conn = duckdb.connect()\n        conn.sql('INSTALL spatial;')\n        conn.sql('LOAD spatial;')\n        \n        file_path = os.path.join(os.getenv('PROJECT_ROOT', '.'), 'data', 'raw', 'landuse', 'india_landuse.parquet')\n        conn.sql(f\"CREATE TABLE india_landuse AS SELECT * FROM read_parquet('{file_path}');\")\n        \n        query = f\"\"\"\n            SELECT *\n            FROM india_landuse\n            WHERE ST_Contains(\n                geometry,\n                ST_Point({lon}, {lat})\n            );\n        \"\"\"\n        \n        result = conn.sql(query).df()\n        return gpd.GeoDataFrame(result, geometry='geometry')\n    except Exception as e:\n        return gpd.GeoDataFrame()",
+            "example_input": {
+              "lat": 12.9716,
+              "lon": 77.5946
+            },
+            "example_output": {
+              "type": "GeoDataFrame",
+              "sample": {
+                "id": "way/123456",
+                "landuse": "residential",
+                "geometry": "POLYGON ((77.5941 12.9711, 77.5951 12.9711, ...))"
+              }
+            }
+          }
+        },
+        "query_landuse_near": {
+          "description": "Find land use within a certain distance of a point",
+          "code": {
+            "function": "def query_landuse_near(lat: float, lon: float, distance_meters: float = 1000) -> gpd.GeoDataFrame:\n    try:\n        conn = duckdb.connect()\n        conn.sql('INSTALL spatial;')\n        conn.sql('LOAD spatial;')\n        \n        file_path = os.path.join(os.getenv('PROJECT_ROOT', '.'), 'data', 'raw', 'landuse', 'india_landuse.parquet')\n        conn.sql(f\"CREATE TABLE india_landuse AS SELECT * FROM read_parquet('{file_path}');\")\n        \n        query = f\"\"\"\n            SELECT *,\n                ST_Distance(geometry, ST_Point({lon}, {lat})) as distance_meters\n            FROM india_landuse\n            WHERE ST_DWithin(geometry, ST_Point({lon}, {lat}), {distance_meters})\n            ORDER BY distance_meters;\n        \"\"\"\n        \n        result = conn.sql(query).df()\n        return gpd.GeoDataFrame(result, geometry='geometry')\n    except Exception as e:\n        return gpd.GeoDataFrame()",
+            "example_input": {
+              "lat": 12.9716,
+              "lon": 77.5946,
+              "distance_meters": 1000
+            },
+            "example_output": {
+              "type": "GeoDataFrame",
+              "sample": [
+                {
+                  "id": "way/123456",
+                  "landuse": "park",
+                  "distance_meters": 234.5,
+                  "geometry": "POLYGON ((...))"
+                }
+              ]
+            }
+          }
+        },
+        "query_landuse_by_type": {
+          "description": "Find specific types of land use, optionally within a certain distance of a point",
+          "code": {
+            "function": "def query_landuse_by_type(landuse_type: str, lat: float = None, lon: float = None, distance_meters: float = 1000) -> gpd.GeoDataFrame:\n    try:\n        conn = duckdb.connect()\n        conn.sql('INSTALL spatial;')\n        conn.sql('LOAD spatial;')\n        \n        file_path = os.path.join(os.getenv('PROJECT_ROOT', '.'), 'data', 'raw', 'landuse', 'india_landuse.parquet')\n        conn.sql(f\"CREATE TABLE india_landuse AS SELECT * FROM read_parquet('{file_path}');\")\n        \n        query = f\"\"\"\n            SELECT *\n            FROM india_landuse\n            WHERE landuse = '{landuse_type}'\n        \"\"\"\n        \n        if lat is not None and lon is not None:\n            query += f\"\"\"\n                AND ST_DWithin(\n                    geometry,\n                    ST_Point({lon}, {lat}),\n                    {distance_meters}\n                )\n            \"\"\"\n        \n        result = conn.sql(query).df()\n        return gpd.GeoDataFrame(result, geometry='geometry')\n    except Exception as e:\n        return gpd.GeoDataFrame()",
+            "example_input": {
+              "landuse_type": "park",
+              "lat": 12.9716,
+              "lon": 77.5946,
+              "distance_meters": 1000
+            },
+            "example_output": {
+              "type": "GeoDataFrame",
+              "sample": [
+                {
+                  "id": "way/123456",
+                  "landuse": "park",
+                  "name": "Central Park",
+                  "geometry": "POLYGON ((...))"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "required_imports": [
+        "import os",
+        "import duckdb",
+        "import pandas as pd",
+        "import geopandas as gpd",
+        "from typing import List",
+        "from dotenv import load_dotenv"
+      ],
+      "schema": {
+        "core_fields": ["id", "landuse", "geometry"],
+        "all_fields": {
+          "spatial": ["geometry"],
+          "primary": ["landuse", "name", "created_by"],
+          "address": [
+            "addr:city",
+            "addr:postcode",
+            "addr:street",
+            "addr:housename",
+            "addr:housenumber",
+            "addr:district",
+            "addr:full",
+            "addr:hamlet",
+            "addr:suburb",
+            "addr:country",
+            "addr:state",
+            "addr:plot",
+            "addr:place",
+            "addr:unit",
+            "addr:neighborhood"
+          ],
+          "names": [
+            "name",
+            "name:kn",
+            "name:en",
+            "name:ml",
+            "name:te",
+            "name:ta",
+            "name:hi",
+            "alt_name",
+            "official_name",
+            "old_name",
+            "int_name",
+            "short_name",
+            "full_name"
+          ],
+          "contact": [
+            "phone",
+            "fax",
+            "website",
+            "email",
+            "contact:email",
+            "contact:phone",
+            "contact:website",
+            "contact:facebook",
+            "contact:instagram",
+            "contact:twitter",
+            "contact:linkedin"
+          ],
+          "amenities": [
+            "amenity",
+            "leisure",
+            "shop",
+            "tourism",
+            "office",
+            "industrial",
+            "residential",
+            "building",
+            "highway"
+          ],
+          "metadata": [
+            "created_by",
+            "source",
+            "start_date",
+            "opening_date",
+            "check_date",
+            "wikidata",
+            "wikipedia"
+          ],
+          "attributes": [
+            "air_conditioning",
+            "smoking",
+            "wheelchair",
+            "access",
+            "barrier",
+            "opening_hours",
+            "toilets",
+            "capacity",
+            "height",
+            "level",
+            "surface"
+          ]
+        }
+      },
+      "query_patterns": {
+        "location_based": [
+          "at {coordinates}",
+          "near {coordinates}",
+          "within {distance} meters of {coordinates}",
+          "in the area of {place_name}",
+          "between {coordinate1} and {coordinate2}"
+        ],
+        "type_based": [
+          "find all {landuse_type}",
+          "show {landuse_type} areas",
+          "locate {landuse_type} zones",
+          "search for {landuse_type}"
+        ],
+        "combined": [
+          "find {landuse_type} near {coordinates}",
+          "show {landuse_type} within {distance} meters of {coordinates}",
+          "locate {landuse_type} in {area_name}"
+        ]
+      },
+      "common_landuse_types": [
+        "residential",
+        "commercial",
+        "industrial",
+        "retail",
+        "park",
+        "recreation_ground",
+        "forest",
+        "farmland",
+        "education",
+        "hospital",
+        "military",
+        "religious"
+      ],
+      "spatial_operations": {
+        "at": "Exact point location query using ST_Contains",
+        "near": "Proximity search using ST_DWithin",
+        "within": "Bounding box search using ST_Intersects",
+        "distance": "Distance calculation using ST_Distance"
+      }
+    }
+  }
