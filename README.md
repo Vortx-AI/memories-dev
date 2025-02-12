@@ -2,7 +2,7 @@
 <div align="center">
 
 
-**Version: 2025.1** | **LIVE Demo : https://app.vortx.ai ** | **Build: 2025.1.0-stable**
+**Version: 2025.1** | **LIVE Demo : https://app.vortx.ai ** | **Build: 2025.1.1-stable**
 
 [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://docs.synthetic-satellite.ai)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
