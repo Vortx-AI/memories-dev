@@ -37,6 +37,56 @@ memories.dev is a high-performance infrastructure for providing real-world conte
 
 ## System Architecture
 
+## Quick Start
+
+```python
+from memories-dev.vortx import memories-dev
+from memories-dev.memories.earth_memory import EarthMemoryStore
+from memories-dev.agents.agent import Agent
+
+
+# Initialize with advanced models
+vx = Vortx(
+    models={
+        "reasoning": deepseek-coder-small,
+        "vision": deepseek-vision-small
+    },
+    use_gpu=True
+)
+
+# Create Earth memories
+memory_store = EarthMemoryStore()
+memories = memory_store.create_memories(
+    location=(37.7749, -122.4194),
+    time_range=("2020-01-01", "2024-01-01"),
+    modalities=["satellite", "climate", "social"]
+)
+
+# Generate synthetic data
+synthetic_data = vx.generate_synthetic(
+    base_location=(37.7749, -122.4194),
+    scenario="urban_development",
+    time_steps=10,
+    climate_factors=True
+)
+
+# AGI reasoning with memories
+insights = Agent(
+    query="Analyze urban development patterns and environmental impact",
+    context_memories=memories,
+    synthetic_scenarios=synthetic_data
+)
+```
+
+## Installation
+
+```bash
+# Basic installation (Coming Soon)
+pip install memories-dev
+
+# With GPU support (Coming Soon)
+pip install memories-dev[gpu]
+```'
 ### Core Components
 
 ## 🔄 Workflows
@@ -240,56 +290,6 @@ graph TD
 ```
 
 
-## Quick Start
-
-```python
-from memories-dev.vortx import memories-dev
-from memories-dev.memories.earth_memory import EarthMemoryStore
-from memories-dev.agents.agent import Agent
-
-
-# Initialize with advanced models
-vx = Vortx(
-    models={
-        "reasoning": deepseek-coder-small,
-        "vision": deepseek-vision-small
-    },
-    use_gpu=True
-)
-
-# Create Earth memories
-memory_store = EarthMemoryStore()
-memories = memory_store.create_memories(
-    location=(37.7749, -122.4194),
-    time_range=("2020-01-01", "2024-01-01"),
-    modalities=["satellite", "climate", "social"]
-)
-
-# Generate synthetic data
-synthetic_data = vx.generate_synthetic(
-    base_location=(37.7749, -122.4194),
-    scenario="urban_development",
-    time_steps=10,
-    climate_factors=True
-)
-
-# AGI reasoning with memories
-insights = Agent(
-    query="Analyze urban development patterns and environmental impact",
-    context_memories=memories,
-    synthetic_scenarios=synthetic_data
-)
-```
-
-## Installation
-
-```bash
-# Basic installation (Coming Soon)
-pip install memories-dev
-
-# With GPU support (Coming Soon)
-pip install memories-dev[gpu]
-```
 
 ## System Requirements
 
