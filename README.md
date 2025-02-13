@@ -48,7 +48,7 @@ Autonomous Reasoning: Self-directed learning and analysis
 
 ## Overview
 
-Vortx is a cutting-edge Earth Memory System designed for AGI and advanced geospatial analysis. It combines state-of-the-art ML models (including DeepSeek-R1/V3 and other SOTA models) with synthetic data generation to create rich, contextual memories of Earth observations. Key capabilities include:
+Vortx is a Earth Memory System designed for AGI and advanced geospatial analysis. It combines state-of-the-art ML models (including DeepSeek-R1/V3 and other SOTA models) with synthetic data generation to create rich, contextual memories of Earth observations. Key capabilities include:
 
 - 🧠 **AGI Memory Formation**: Create and retrieve complex Earth memories for AGI systems
 - 🌍 **Earth Memory Retractor**: Link Earth data at scale 
