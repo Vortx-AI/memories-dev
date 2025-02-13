@@ -46,39 +46,54 @@ response = agent.analyze(
 
 ```mermaid
 graph TD
-    classDef sourceNode fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef memoryNode fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
-    classDef agentNode fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    classDef outputNode fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
+    %% Style definitions
+    classDef source fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef memory fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef agent fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef output fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
 
-    subgraph "Data Sources"
-        S1["🛰️ Satellite"] :::sourceNode
-        S2["🌡️ Climate"] :::sourceNode
-        S3["🏢 Urban"] :::sourceNode
+    %% Data Sources
+    subgraph Sources
+        S1(Satellite Networks)
+        S2(Climate Sensors)
+        S3(Urban Systems)
     end
 
-    subgraph "Memory System"
-        M1["📥 Ingestion"] :::memoryNode
-        M2["🔄 Processing"] :::memoryNode
-        M3["💾 Storage"] :::memoryNode
-        M4["🔍 Retrieval"] :::memoryNode
+    %% Memory System
+    subgraph Memory
+        M1(Ingestion)
+        M2(Processing)
+        M3(Storage)
+        M4(Retrieval)
     end
 
-    subgraph "Agent System"
-        A1["🧠 Reasoning"] :::agentNode
-        A2["🔄 Synthesis"] :::agentNode
-        A3["📊 Analysis"] :::agentNode
+    %% Agent System
+    subgraph Agents
+        A1(Reasoning)
+        A2(Synthesis)
+        A3(Analysis)
     end
 
-    subgraph "Output Layer"
-        O1["📄 Reports"] :::outputNode
-        O2["📈 Analytics"] :::outputNode
-        O3["🤖 API"] :::outputNode
+    %% Output System
+    subgraph Output
+        O1(Reports)
+        O2(Analytics)
+        O3(API)
     end
 
-    S1 & S2 & S3 --> M1 --> M2 --> M3 --> M4
+    %% Connections
+    S1 & S2 & S3 --> M1
+    M1 --> M2 --> M3 --> M4
     M4 --> A1 --> A2 --> A3
     A3 --> O1 & O2 & O3
+
+    %% Style assignments
+    style S1 fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style S2 fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style S3 fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style M1,M2,M3,M4 fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    style A1,A2,A3 fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style O1,O2,O3 fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
 ```
 
 ### Directory Structure
