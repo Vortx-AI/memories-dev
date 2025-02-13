@@ -28,7 +28,7 @@ memories.dev is a high-performance infrastructure for providing real-world conte
   - Custom data source integration
 
 ### Key Capabilities
-- Real-time memory retrieval during model inference
+- Real-time memory synthesis during model inference
 - Context-aware AI reasoning
 - Multi-modal memory fusion
 - Temporal pattern analysis
