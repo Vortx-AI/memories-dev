@@ -97,41 +97,51 @@ graph TD
 ## Quick Start
 
 ```python
-from memories_dev import MemoriesClient
-from memories_dev.store import MemoryStore
-from memories_dev.inference import ModelContext
+from memories-dev.vortx import memories-dev
+from memories-dev.memories.earth_memory import EarthMemoryStore
+from memories-dev.agents.agent import Agent
 
-# Initialize client
-client = MemoriesClient(api_key="your_key")
 
-# Create memory store
-store = MemoryStore()
-
-# Query contextual memories
-memories = store.query(
-    location=(37.7749, -122.4194),
-    radius="10km",
-    time_range=("2023-01-01", "2024-01-01"),
-    memory_types=["satellite", "poi", "climate"]
+# Initialize with advanced models
+vx = Vortx(
+    models={
+        "reasoning": deepseek-coder-small,
+        "vision": deepseek-vision-small
+    },
+    use_gpu=True
 )
 
-# Enhance model inference with memories
-context = ModelContext(memories=memories)
-response = client.inference(
-    query="Analyze urban development impact on local climate",
-    context=context,
-    model="gpt-4",  # or any supported model
-    response_format="report"
+# Create Earth memories
+memory_store = EarthMemoryStore()
+memories = memory_store.create_memories(
+    location=(37.7749, -122.4194),
+    time_range=("2020-01-01", "2024-01-01"),
+    modalities=["satellite", "climate", "social"]
+)
+
+# Generate synthetic data
+synthetic_data = vx.generate_synthetic(
+    base_location=(37.7749, -122.4194),
+    scenario="urban_development",
+    time_steps=10,
+    climate_factors=True
+)
+
+# AGI reasoning with memories
+insights = Agent(
+    query="Analyze urban development patterns and environmental impact",
+    context_memories=memories,
+    synthetic_scenarios=synthetic_data
 )
 ```
 
 ## Installation
 
 ```bash
-# Basic installation
+# Basic installation (Coming Soon)
 pip install memories-dev
 
-# With GPU support
+# With GPU support (Coming Soon)
 pip install memories-dev[gpu]
 ```
 
