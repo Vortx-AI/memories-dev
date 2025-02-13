@@ -257,19 +257,10 @@ graph LR
 
 ## 📚 Module Dependencies
 
-<<<<<<< HEAD
 ```python
 from memories_dev.vortx import memories_dev
 from memories_dev.memories.earth_memory import EarthMemoryStore
 from memories_dev.agents.agent import Agent
-=======
-```mermaid
-graph TD
-    %% Node Styles
-    classDef core fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    classDef dep fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef util fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
->>>>>>> 220381201f9e4eaff627eeaabe2ce67dcba4fd87
 
     %% Core Modules
     C1["🧠 Memory Core"]:::core
@@ -297,7 +288,6 @@ graph TD
 ```
 
 
-<<<<<<< HEAD
 ```bash
 # Basic installation (Coming Soon)
 pip install memories_dev
@@ -305,8 +295,6 @@ pip install memories_dev
 # With GPU support (Coming Soon)
 pip install memories_dev[gpu]
 ```
-=======
->>>>>>> 220381201f9e4eaff627eeaabe2ce67dcba4fd87
 
 ## System Requirements
 
