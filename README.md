@@ -2,7 +2,7 @@
 
 # memories.dev
 
-**Contextual Memory Infrastructure for AI Systems**
+**Collective Memory for AGI Models**
 
 [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://docs.memories.dev)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
