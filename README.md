@@ -86,7 +86,7 @@ pip install memories-dev
 
 # With GPU support (Coming Soon)
 pip install memories-dev[gpu]
-```'
+```
 ### Core Components
 
 ## 🔄 Workflows
