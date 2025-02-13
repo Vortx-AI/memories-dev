@@ -37,61 +37,125 @@ memories.dev is a high-performance infrastructure for providing real-world conte
 
 ## System Architecture
 
+### Core Components
+
 ```mermaid
 graph TD
-    classDef sourceNode fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef processNode fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
-    classDef aiNode fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    classDef storeNode fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
-    classDef outputNode fill:#fce4ec,stroke:#880e4f,stroke-width:2px;
+    %% Style definitions
+    classDef sourceNode fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef memoryNode fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef agentNode fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef outputNode fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
 
-    subgraph "🌍 Memory Sources"
-        S1["🛰️ Satellite Networks"]
-        S2["📡 Ground Stations"]
-        S3["🌡️ Climate Sensors"]
-        S4["📊 Census Data"]
-        S5["🏢 Urban Metrics"]
+    %% Data Sources
+    subgraph DataSources["Data Sources"]
+        S1[("Satellite")]
+        S2[("Climate")]
+        S3[("Urban")]
     end
 
-    subgraph "🧠 Memory Processing"
-        M1["🔄 Memory Formation"]
-        M2["🔍 Feature Extraction"]
-        M3["🏷️ Semantic Tagging"]
-        M4["📍 Geo-Indexing"]
+    %% Memory System
+    subgraph MemorySystem["Memory System"]
+        M1["Data Ingestion"]
+        M2["Processing"]
+        M3["Storage"]
+        M4["Retrieval"]
     end
 
-    subgraph "💾 Memory Store"
-        DB1["🗄️ Vector Store"]
-        DB2["📅 Time Series DB"]
-        DB3["🌐 Spatial Index"]
+    %% Agent System
+    subgraph AgentSystem["Agent System"]
+        A1["Reasoning"]
+        A2["Synthesis"]
+        A3["Analysis"]
     end
 
-    subgraph "🤖 AI Integration"
-        AI1["📥 Memory Retrieval"]
-        AI2["🔄 Context Injection"]
-        AI3["💡 Enhanced Inference"]
-        AI4["🎯 Response Generation"]
+    %% Output Layer
+    subgraph OutputLayer["Output Layer"]
+        O1["Reports"]
+        O2["Analytics"]
+        O3["API"]
     end
 
-    subgraph "📊 Output Layer"
-        O1["📑 Reports"]
-        O2["📈 Analytics"]
-        O3["🤖 API Responses"]
-        O4["🔄 Real-time Feeds"]
+    %% Connections
+    S1 & S2 & S3 --> M1
+    M1 --> M2
+    M2 --> M3
+    M3 --> M4
+    M4 --> A1
+    A1 --> A2
+    A2 --> A3
+    A3 --> O1 & O2 & O3
+
+    %% Apply styles
+    class S1,S2,S3 sourceNode
+    class M1,M2,M3,M4 memoryNode
+    class A1,A2,A3 agentNode
+    class O1,O2,O3 outputNode
+```
+
+### Memory Architecture
+
+```mermaid
+graph TD
+    %% Style definitions
+    classDef storeNode fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef cacheNode fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef indexNode fill:#fff3e0,stroke:#e65100,stroke-width:2px
+
+    %% Memory Store
+    subgraph MemoryStore["Memory Store"]
+        V1[("Vector Store")]
+        T1[("Time Series DB")]
+        S1[("Spatial Index")]
     end
 
-    S1 & S2 & S3 & S4 & S5 --> M1
-    M1 --> M2 --> M3 --> M4
-    M4 --> DB1 & DB2 & DB3
-    DB1 & DB2 & DB3 --> AI1
-    AI1 --> AI2 --> AI3 --> AI4
-    AI4 --> O1 & O2 & O3 & O4
+    %% Cache Layers
+    subgraph CacheLayers["Cache Layers"]
+        L1["L1: In-Memory"]
+        L2["L2: SSD Cache"]
+        L3["L3: Distributed"]
+    end
 
-    class S1,S2,S3,S4,S5 sourceNode;
-    class M1,M2,M3,M4 processNode;
-    class DB1,DB2,DB3 storeNode;
-    class AI1,AI2,AI3,AI4 aiNode;
-    class O1,O2,O3,O4 outputNode;
+    %% Index Types
+    subgraph Indexes["Index Types"]
+        I1["Spatial"]
+        I2["Temporal"]
+        I3["Semantic"]
+    end
+
+    %% Connections
+    V1 & T1 & S1 --> L1
+    L1 --> L2
+    L2 --> L3
+    L3 --> I1 & I2 & I3
+
+    %% Apply styles
+    class V1,T1,S1 storeNode
+    class L1,L2,L3 cacheNode
+    class I1,I2,I3 indexNode
+```
+
+### Data Flow
+
+```mermaid
+graph LR
+    %% Style definitions
+    classDef inputNode fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef processNode fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef outputNode fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+
+    %% Nodes
+    I["Input Data"] --> P1["Preprocessing"]
+    P1 --> P2["Feature Extraction"]
+    P2 --> P3["Memory Formation"]
+    P3 --> P4["Memory Storage"]
+    P4 --> P5["Memory Retrieval"]
+    P5 --> O["AI Integration"]
+
+    %% Apply styles
+    class I inputNode
+    class P1,P2,P3,P4,P5 processNode
+    class O outputNode
 ```
 
 ## Quick Start
