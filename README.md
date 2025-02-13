@@ -290,14 +290,6 @@ graph TD
 ```
 
 
-```bash
-# Basic installation (Coming Soon)
-pip install memories_dev
-
-# With GPU support (Coming Soon)
-pip install memories_dev[gpu]
-```
-
 ## System Requirements
 
 ### Minimum
