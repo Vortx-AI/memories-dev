@@ -41,52 +41,54 @@ memories.dev is a high-performance infrastructure for providing real-world conte
 
 ```mermaid
 graph TD
-    %% Styles
-    classDef source fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef memory fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
-    classDef agent fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    classDef output fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
+    %% Style definitions
+    classDef source fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef memory fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef agent fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef output fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
 
     %% Data Sources
     subgraph Sources
-        S1[Satellite Networks]
-        S2[Climate Sensors]
-        S3[Urban Systems]
+        S1(Satellite Networks)
+        S2(Climate Sensors)
+        S3(Urban Systems)
     end
 
     %% Memory System
     subgraph Memory
-        M1[Ingestion]
-        M2[Processing]
-        M3[Storage]
-        M4[Retrieval]
+        M1(Ingestion)
+        M2(Processing)
+        M3(Storage)
+        M4(Retrieval)
     end
 
     %% Agent System
     subgraph Agents
-        A1[Reasoning]
-        A2[Synthesis]
-        A3[Analysis]
+        A1(Reasoning)
+        A2(Synthesis)
+        A3(Analysis)
     end
 
     %% Output System
     subgraph Output
-        O1[Reports]
-        O2[Analytics]
-        O3[API]
+        O1(Reports)
+        O2(Analytics)
+        O3(API)
     end
 
-    %% Flow
+    %% Connections
     S1 & S2 & S3 --> M1
     M1 --> M2 --> M3 --> M4
     M4 --> A1 --> A2 --> A3
     A3 --> O1 & O2 & O3
 
-    %% Apply styles
-    class S1,S2,S3 source;
-    class M1,M2,M3,M4 memory;
-    class A1,A2,A3 agent;
-    class O1,O2,O3 output;
+    %% Style assignments
+    style S1 fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style S2 fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style S3 fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style M1,M2,M3,M4 fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    style A1,A2,A3 fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style O1,O2,O3 fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
 ```
 
 ### Memory Architecture
