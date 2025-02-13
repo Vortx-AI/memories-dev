@@ -41,54 +41,52 @@ memories.dev is a high-performance infrastructure for providing real-world conte
 
 ```mermaid
 graph TD
-    %% Style definitions
-    classDef source fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef memory fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef agent fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef output fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    %% Styles
+    classDef source fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef memory fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef agent fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    classDef output fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
 
     %% Data Sources
-    subgraph Sources
-        S1(Satellite Networks)
-        S2(Climate Sensors)
-        S3(Urban Systems)
+    subgraph Sources[Data Sources]
+        S1[Satellite Data]
+        S2[Climate Data]
+        S3[Urban Data]
     end
 
     %% Memory System
-    subgraph Memory
-        M1(Ingestion)
-        M2(Processing)
-        M3(Storage)
-        M4(Retrieval)
+    subgraph Memory[Memory System]
+        M1[Data Ingestion]
+        M2[Processing]
+        M3[Storage]
+        M4[Retrieval]
     end
 
     %% Agent System
-    subgraph Agents
-        A1(Reasoning)
-        A2(Synthesis)
-        A3(Analysis)
+    subgraph Agents[Agent System]
+        A1[Reasoning Engine]
+        A2[Memory Synthesis]
+        A3[Analysis Engine]
     end
 
     %% Output System
-    subgraph Output
-        O1(Reports)
-        O2(Analytics)
-        O3(API)
+    subgraph Output[Output Layer]
+        O1[Reports]
+        O2[Analytics]
+        O3[API]
     end
 
-    %% Connections
+    %% Flow
     S1 & S2 & S3 --> M1
     M1 --> M2 --> M3 --> M4
     M4 --> A1 --> A2 --> A3
     A3 --> O1 & O2 & O3
 
-    %% Style assignments
-    style S1 fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style S2 fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style S3 fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style M1,M2,M3,M4 fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    style A1,A2,A3 fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style O1,O2,O3 fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    %% Styles
+    class S1,S2,S3 source;
+    class M1,M2,M3,M4 memory;
+    class A1,A2,A3 agent;
+    class O1,O2,O3 output;
 ```
 
 ### Memory Architecture
