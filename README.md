@@ -2,7 +2,7 @@
 
 # memories.dev
 
-**Contextual Memory Infrastructure for AI Systems**
+**Collective Memory for AGI Models**
 
 [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://docs.memories.dev)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
@@ -15,25 +15,7 @@
 
 memories.dev is a high-performance infrastructure for providing real-world context to AI models during inference. It processes, indexes, and serves location-tagged intelligence ("memories") from multiple data sources including satellite imagery, climate sensors, and urban development metrics. These memories enhance AI models' understanding and reasoning capabilities with real-world context.
 
-## Core Features
 
-### Memory Sources
-- Global Points of Interest Database
-- Global Places Database
-- Cadastral Data & Digital Elevation Models
-- Census & Demographics
-- Satellite Data:
-  - ESA Sentinel-1 & 2
-  - NASA Landsat 7/8
-  - Custom data source integration
-
-### Key Capabilities
-- Real-time memory synthesis during model inference
-- Context-aware AI reasoning
-- Multi-modal memory fusion
-- Temporal pattern analysis
-- Location-aware intelligence
-- Privacy-preserving memory access
 
 ## System Architecture
 
@@ -288,7 +270,25 @@ graph TD
     U2 --> C1 & C2 & C3
     U3 --> C1 & C2 & C3
 ```
+## Core Features
 
+### Memory Sources
+- Global Points of Interest Database
+- Global Places Database
+- Cadastral Data & Digital Elevation Models
+- Census & Demographics
+- Satellite Data:
+  - ESA Sentinel-1 & 2
+  - NASA Landsat 7/8
+  - Custom data source integration
+
+### Key Capabilities
+- Real-time memory synthesis during model inference
+- Context-aware AI reasoning
+- Multi-modal memory fusion
+- Temporal pattern analysis
+- Location-aware intelligence
+- Privacy-preserving memory access
 
 ## System Requirements
 
