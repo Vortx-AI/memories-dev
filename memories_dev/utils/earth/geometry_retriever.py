@@ -129,3 +129,19 @@ class GeometryExtractor:
                 "error": str(e),
                 "location": location
             }
+
+if __name__ == "__main__":
+    # Test code for a specific point: -12.911935, 77.611699
+    logging.basicConfig(level=logging.INFO)
+    
+    extractor = GeometryExtractor()
+    # Create a location dictionary with the test coordinates
+    test_location = {
+        "location_type": "point",
+        "coordinates": [-12.911935, 77.611699]
+    }
+    
+    # Call the extract_by_point method and print the result
+    result = extractor.extract_by_point(test_location, radius_meters=1000)
+    print("Result for test point (-12.911935, 77.611699):")
+    print(result)
