@@ -1,8 +1,0 @@
-README.md
-setup.py
-memories_dev.egg-info/PKG-INFO
-memories_dev.egg-info/SOURCES.txt
-memories_dev.egg-info/dependency_links.txt
-memories_dev.egg-info/entry_points.txt
-memories_dev.egg-info/requires.txt
-memories_dev.egg-info/top_level.txt

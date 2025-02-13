@@ -19,4 +19,5 @@ __pycache__
 jupyter.log
 schema_index.faiss
 schema_metadata.json
+memories_dev.egg-info/
 .env
