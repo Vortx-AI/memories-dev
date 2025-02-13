@@ -50,4 +50,12 @@ if __name__ == "__main__":
         for row in data:
             print(row)
     except Exception as e:
+<<<<<<< HEAD
         print(f"An error occurred: {e}") 
+=======
+<<<<<<< HEAD
+        print(f"An error occurred: {e}") 
+=======
+        print(f"An error occurred: {e}") 
+>>>>>>> f598dc900e917e3499d38e1520b9f1b5758f57f2
+>>>>>>> e08062b46fb1b92462ddb8f555351e5ab3027ebe
