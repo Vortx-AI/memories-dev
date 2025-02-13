@@ -39,6 +39,107 @@ memories.dev is a high-performance infrastructure for providing real-world conte
 
 ### Core Components
 
+## 🔄 Workflows
+
+### Memory Formation Pipeline
+
+```mermaid
+graph LR
+    %% Node Styles
+    classDef input fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef process fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef storage fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    
+    %% Input Nodes
+    I1(("📡 Raw Data")):::input
+    I2(("🛰️ Satellite")):::input
+    I3(("🌡️ Sensors")):::input
+    
+    %% Processing Nodes
+    P1["🔄 Preprocessing"]:::process
+    P2["⚡ Feature Extraction"]:::process
+    P3["🧠 Memory Formation"]:::process
+    
+    %% Storage Nodes
+    S1[("💾 Vector Store")]:::storage
+    S2[("📊 Time Series DB")]:::storage
+    S3[("🗺️ Spatial Index")]:::storage
+    
+    %% Flow
+    I1 & I2 & I3 --> P1
+    P1 --> P2
+    P2 --> P3
+    P3 --> S1 & S2 & S3
+```
+
+### Query Pipeline
+
+```mermaid
+graph TD
+    %% Node Styles
+    classDef query fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef memory fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef output fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+
+    %% Query Flow
+    Q1["🔍 Query Request"]:::query
+    Q2["📍 Location Filter"]:::query
+    Q3["⏱️ Time Filter"]:::query
+    
+    %% Memory Operations
+    M1["🧠 Memory Lookup"]:::memory
+    M2["🔄 Context Assembly"]:::memory
+    M3["⚡ Real-time Update"]:::memory
+    
+    %% Output Generation
+    O1["📊 Results"]:::output
+    O2["📝 Analysis"]:::output
+    O3["🔄 Synthesis"]:::output
+
+    %% Connections
+    Q1 --> Q2 & Q3
+    Q2 & Q3 --> M1
+    M1 --> M2 --> M3
+    M3 --> O1 & O2 & O3
+```
+
+### Agent System
+
+```mermaid
+graph TD
+    %% Node Styles
+    classDef agent fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef memory fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef task fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+
+    %% Agent Components
+    subgraph "🤖 Agent System"
+        A1["🧠 Reasoning Engine"]:::agent
+        A2["🔄 Memory Integration"]:::agent
+        A3["📊 Analysis Engine"]:::agent
+    end
+
+    %% Memory Access
+    subgraph "💾 Memory Access"
+        M1["📥 Retrieval"]:::memory
+        M2["🔄 Update"]:::memory
+        M3["🔍 Query"]:::memory
+    end
+
+    %% Task Processing
+    subgraph "📋 Tasks"
+        T1["📊 Analysis"]:::task
+        T2["🔄 Synthesis"]:::task
+        T3["📝 Reporting"]:::task
+    end
+
+    %% Connections
+    A1 --> M1 & M2 & M3
+    M1 & M2 & M3 --> A2
+    A2 --> A3
+    A3 --> T1 & T2 & T3
+```
+
 ```mermaid
 graph TD
     %% Styles
