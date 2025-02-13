@@ -858,4 +858,137 @@ class ColdStorage:
             self.logger.error(f"Error updating columns in FAISS: {str(e)}")
             return False
 
+    def query_by_point(
+        self, 
+        lat: float, 
+        lon: float,
+        geometry_types: List[str] = None,
+        columns: List[str] = None,
+        limit: int = None
+    ) -> pd.DataFrame:
+        """
+        Query all geometries that either match or contain the given point.
+        
+        Args:
+            lat (float): Latitude of the point
+            lon (float): Longitude of the point
+            geometry_types (List[str], optional): List of geometry types to filter by (e.g., ['Point', 'Polygon'])
+            columns (List[str], optional): List of columns to return. If None, returns all columns.
+            limit (int, optional): Maximum number of results to return
+            
+        Returns:
+            pd.DataFrame: DataFrame containing all matching geometries
+        """
+        try:
+            # Get the GEO_MEMORIES path from environment variables
+            geo_memories_path = os.getenv('GEO_MEMORIES')
+            if not geo_memories_path:
+                raise ValueError("GEO_MEMORIES path is not set in the .env file.")
+
+            # Prepare column selection
+            select_cols = '*' if not columns else ', '.join(columns)
+            
+            # Create or replace the view combining all Parquet files
+            self.conn.execute(f"""
+                CREATE OR REPLACE VIEW combined_data AS
+                SELECT *
+                FROM read_parquet('{geo_memories_path}/*.parquet', union_by_name=True)
+            """)
+            
+            # Build the spatial query
+            point_query = f"""
+            WITH point_geom AS (
+                SELECT ST_Point({lon}, {lat}) as point
+            )
+            SELECT {select_cols}
+            FROM combined_data
+            WHERE (
+                -- Check if the geometry contains the point
+                ST_Contains(ST_GeomFromWKB(geom), (SELECT point FROM point_geom))
+                OR
+                -- Check if the geometry is the point itself
+                ST_Equals(ST_GeomFromWKB(geom), (SELECT point FROM point_geom))
+            )
+            """
+            
+            # Add geometry type filter if specified
+            if geometry_types:
+                geometry_types_str = "', '".join(geometry_types)
+                point_query += f"""
+                AND ST_GeometryType(ST_GeomFromWKB(geom)) IN ('ST_{geometry_types_str}')
+                """
+                
+            # Add limit if specified
+            if limit:
+                point_query += f"\nLIMIT {limit}"
+                
+            point_query += ";"
+            
+            result = self.conn.execute(point_query).df()
+            
+            if len(result) > 0:
+                self.logger.info(f"Found {len(result)} geometries at/containing point ({lat}, {lon})")
+            else:
+                self.logger.info(f"No geometries found at/containing point ({lat}, {lon})")
+                
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error querying geometries by point: {str(e)}")
+            return pd.DataFrame()
+
+# Add this at the bottom of the file
+if __name__ == "__main__":
+    try:
+        # Initialize ColdStorage
+        print("Initializing ColdStorage...")
+        cold_storage = ColdStorage()
+
+        # Test coordinates (Bangalore, India)
+        test_lat, test_lon = 12.9716, 77.5946
+        print(f"\nQuerying point: Latitude {test_lat}, Longitude {test_lon}")
+
+        # Test different query scenarios
+        print("\n1. Basic query (first 5 results):")
+        results = cold_storage.query_by_point(
+            lat=test_lat,
+            lon=test_lon,
+            limit=5
+        )
+        print(f"Found {len(results)} results")
+        if not results.empty:
+            print("\nSample results:")
+            print(results[['osm_id', 'name', 'type']].head() if 'name' in results.columns else results.head())
+
+        print("\n2. Query only Polygons (first 3 results):")
+        polygon_results = cold_storage.query_by_point(
+            lat=test_lat,
+            lon=test_lon,
+            geometry_types=['Polygon'],
+            limit=3
+        )
+        print(f"Found {len(polygon_results)} polygon results")
+        if not polygon_results.empty:
+            print("\nSample polygon results:")
+            print(polygon_results[['osm_id', 'name', 'type']].head() if 'name' in polygon_results.columns else polygon_results.head())
+
+        print("\n3. Query with specific columns:")
+        column_results = cold_storage.query_by_point(
+            lat=test_lat,
+            lon=test_lon,
+            columns=['osm_id', 'name', 'type', 'geom'],
+            limit=2
+        )
+        print(f"Found {len(column_results)} results with specific columns")
+        if not column_results.empty:
+            print("\nSample results with specific columns:")
+            print(column_results[['osm_id', 'name', 'type']].head() if 'name' in column_results.columns else column_results.head())
+
+    except Exception as e:
+        print(f"An error occurred during testing: {str(e)}")
+    finally:
+        # Close the connection
+        if 'cold_storage' in locals():
+            cold_storage.conn.close()
+            print("\nClosed DuckDB connection.")
     
