@@ -15,7 +15,7 @@
 
 
 
-## 🌍 What are Earth Memories?
+## 🌍 What are Memories?
 
 Earth memories are comprehensive, living records of our planet's patterns, behaviors, and changes. Think of them as the planet's own diary, constantly being written and updated in real-time. These memories capture everything from weather patterns and urban development to market trends and human activities.
 
