@@ -1,19 +1,95 @@
 # memories.dev Technical Documentation
 
-## Architecture Overview
+[![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://docs.memories.dev)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-memories.dev is built on a sophisticated memory architecture that enables AI systems to access and utilize real-world contextual data efficiently. The system implements a multi-tier memory hierarchy with real-time processing capabilities for AI inference.
+## Overview
 
-## Directory Structure
+memories.dev is a high-performance infrastructure for providing real-world context to AI models during inference. It processes, indexes, and serves location-tagged intelligence ("memories") from multiple data sources including satellite imagery, climate sensors, and urban development metrics.
+
+## Quick Start
+
+```python
+from memories_dev import Memory, Agent
+from memories_dev.types import Location, TimeRange
+
+# Initialize memory system
+memory = Memory(config="default")
+
+# Create an agent with memory capabilities
+agent = Agent(
+    model="gpt-4",
+    memory_enabled=True,
+    context_window=8192
+)
+
+# Query location-specific memories
+context = memory.query(
+    location=Location(lat=37.7749, lon=-122.4194),
+    time_range=TimeRange(start="2024-01-01", end="2024-02-01"),
+    types=["satellite", "climate", "urban"]
+)
+
+# Run analysis with memory-augmented reasoning
+response = agent.analyze(
+    query="Analyze urban development impact on local climate",
+    context=context,
+    output_format="report"
+)
+```
+
+## System Architecture
+
+### Core Components
+
+```mermaid
+graph TD
+    classDef sourceNode fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef memoryNode fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef agentNode fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    classDef outputNode fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
+
+    subgraph "Data Sources"
+        S1["🛰️ Satellite"] :::sourceNode
+        S2["🌡️ Climate"] :::sourceNode
+        S3["🏢 Urban"] :::sourceNode
+    end
+
+    subgraph "Memory System"
+        M1["📥 Ingestion"] :::memoryNode
+        M2["🔄 Processing"] :::memoryNode
+        M3["💾 Storage"] :::memoryNode
+        M4["🔍 Retrieval"] :::memoryNode
+    end
+
+    subgraph "Agent System"
+        A1["🧠 Reasoning"] :::agentNode
+        A2["🔄 Synthesis"] :::agentNode
+        A3["📊 Analysis"] :::agentNode
+    end
+
+    subgraph "Output Layer"
+        O1["📄 Reports"] :::outputNode
+        O2["📈 Analytics"] :::outputNode
+        O3["🤖 API"] :::outputNode
+    end
+
+    S1 & S2 & S3 --> M1 --> M2 --> M3 --> M4
+    M4 --> A1 --> A2 --> A3
+    A3 --> O1 & O2 & O3
+```
+
+### Directory Structure
 
 ```
 memories-dev/
-├── __init__.py
 ├── agents/                # AI Agents & Reasoning
-│   ├── reasoning/        # Reasoning engines
-│   │   ├── llm.py       # Language model integration
+│   ├── reasoning/        # Core reasoning engines
+│   │   ├── llm.py       # LLM integration
 │   │   └── chain.py     # Reasoning chains
-│   ├── memory/          # Memory-augmented agents
+│   ├── memory/          # Memory augmentation
 │   │   ├── retrieval.py # Memory retrieval
 │   │   └── context.py   # Context management
 │   └── tasks/           # Task-specific agents
@@ -21,8 +97,8 @@ memories-dev/
 │       └── report.py    # Report generation
 ├── data_acquisition/     # Data Collection
 │   ├── satellite/       # Satellite data
-│   │   ├── sentinel/   # Sentinel data handlers
-│   │   └── landsat/    # Landsat data handlers
+│   │   ├── sentinel/   # Sentinel handlers
+│   │   └── landsat/    # Landsat handlers
 │   ├── sensors/        # Sensor networks
 │   │   ├── climate/    # Climate sensors
 │   │   └── urban/      # Urban sensors
@@ -61,246 +137,161 @@ memories-dev/
     └── validation/  # Data validation
 ```
 
-## Core Components
+## Core Features
 
-### 1. Memory System Architecture
+### Memory System
+- **Formation**: Dynamic memory creation and management
+- **Storage**: Multi-tier caching with vector store
+- **Retrieval**: Context-aware memory access
+- **Synthesis**: Pattern recognition and fusion
 
-```mermaid
-graph TD
-    classDef memoryTier fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef processingTier fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
-    classDef storageTier fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
-    classDef aiTier fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+### Agent System
+- **Reasoning**: Memory-augmented LLM reasoning
+- **Analysis**: Pattern detection and trend analysis
+- **Reporting**: Automated insight generation
 
-    subgraph "Memory Sources"
-        S1["🛰️ Satellite Data"] :::memoryTier
-        S2["📡 Sensor Networks"] :::memoryTier
-        S3["🌍 Earth Observations"] :::memoryTier
-    end
+### Data Sources
+- **Satellite**: Sentinel-1/2, Landsat
+- **Climate**: Temperature, precipitation, air quality
+- **Urban**: Infrastructure, development, population
 
-    subgraph "Memory Formation"
-        MF1["🔄 Data Ingestion"] :::processingTier
-        MF2["🧮 Feature Extraction"] :::processingTier
-        MF3["🏷️ Semantic Tagging"] :::processingTier
-    end
-
-    subgraph "Memory Store"
-        MS1["💾 L1: In-Memory Cache"] :::storageTier
-        MS2["💿 L2: SSD Cache"] :::storageTier
-        MS3["🗄️ L3: Distributed Store"] :::storageTier
-    end
-
-    subgraph "AI Integration"
-        AI1["🤖 Memory Retrieval"] :::aiTier
-        AI2["🧠 Context Injection"] :::aiTier
-        AI3["💡 Enhanced Inference"] :::aiTier
-    end
-
-    S1 & S2 & S3 --> MF1 --> MF2 --> MF3
-    MF3 --> MS1 --> MS2 --> MS3
-    MS1 & MS2 & MS3 --> AI1 --> AI2 --> AI3
-```
-
-### 2. Memory Processing Pipeline
-
-```mermaid
-graph LR
-    classDef inputNode fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef processNode fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
-    classDef outputNode fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
-    classDef aiNode fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-
-    I1["🌍 Earth Data"] :::inputNode
-    P1["📥 Ingestion"] :::processNode
-    P2["🔍 Processing"] :::processNode
-    P3["🧬 Feature Extraction"] :::processNode
-    P4["🏷️ Semantic Tagging"] :::processNode
-    P5["📍 Geo-Indexing"] :::processNode
-    M1["💾 Memory Store"] :::outputNode
-    A1["🤖 AI Integration"] :::aiNode
-
-    I1 --> P1 --> P2 --> P3 --> P4 --> P5 --> M1 --> A1
-```
-
-## Key Features
-
-### Memory Formation
-- Dynamic memory allocation and management
-- Multi-tier caching system
-  * L1: In-memory for frequent access
-  * L2: SSD-based for medium-term
-  * L3: Distributed for long-term
-- Adaptive memory scaling
-- Real-time memory compression
-
-### Memory Synthesis
-- Pattern recognition and correlation
-- Temporal sequence analysis
-- Spatial relationship mapping
-- Multi-modal data fusion
-- Hierarchical memory organization
-  * Raw data layer
-  * Feature extraction layer
-  * Pattern recognition layer
-  * Knowledge synthesis layer
-
-### AI Integration
-- Real-time memory retrieval
-- Context injection for inference
-- Memory-augmented reasoning
-- Multi-modal fusion capabilities
-- Adaptive memory selection
-
-### Privacy & Security
-- End-to-end encryption
-- Differential privacy
-- Access control and audit
-- Secure multi-party computation
-- Privacy-preserving ML
-
-## API Reference
+## API Examples
 
 ### Memory Operations
 
 ```python
-from memories_dev import MemoryStore, MemorySynthesis
-from memories_dev.types import Location, TimeRange
+from memories_dev import Memory
+from memories_dev.types import DataSource, MemoryConfig
 
-# Initialize Memory Store
-store = MemoryStore(
-    cache_config={
-        "l1_size": "8GB",
-        "l2_size": "100GB",
-        "l3_distributed": True
-    }
-)
-
-# Create Memory
-memory = store.create(
-    source="satellite",
-    location=Location(lat=37.7749, lon=-122.4194),
-    time_range=TimeRange(start="2024-01-01", end="2024-02-01"),
-    modalities=["visual", "infrared", "radar"]
-)
-
-# Query Memories
-context = store.query(
-    location=Location(lat=37.7749, lon=-122.4194, radius="10km"),
-    time_range=TimeRange(start="2024-01-01", end="2024-02-01"),
-    memory_types=["satellite", "climate", "urban"]
-)
-
-# Synthesize Insights
-synthesis = MemorySynthesis()
-insights = synthesis.analyze(
-    memories=context,
-    analysis_type="urban_development",
-    temporal_resolution="daily"
-)
-```
-
-### AI Integration
-
-```python
-from memories_dev import Model, ModelContext
-from memories_dev.types import Memory
-
-# Initialize Model
-model = Model(
-    type="reasoning",
-    context_window=8192,
-    memory_augmented=True
-)
-
-# Inference with Memory Context
-response = model.inference(
-    query="Analyze urban growth patterns",
-    context=ModelContext(
-        memories=context,
-        location_focus=Location(lat=37.7749, lon=-122.4194),
-        time_focus=TimeRange(start="2024-01-01", end="2024-02-01")
+# Initialize with custom configuration
+memory = Memory(
+    config=MemoryConfig(
+        vector_store="milvus",
+        cache_size="32GB",
+        index_type="hnsw"
     )
 )
 
-# Memory-Augmented Processing
-analysis = model.process_with_memory(
-    input_data=current_data,
-    memory_context=context,
-    processing_type="pattern_recognition",
-    output_format="report"
+# Create memory from data source
+source = DataSource(
+    type="satellite",
+    provider="sentinel-2",
+    bands=["B02", "B03", "B04", "B08"]
+)
+
+# Ingest and process data
+memory_id = memory.create(
+    source=source,
+    location=Location(lat=37.7749, lon=-122.4194),
+    time_range=TimeRange(start="2024-01-01", end="2024-02-01")
+)
+
+# Query with spatial-temporal constraints
+results = memory.query(
+    memory_id=memory_id,
+    radius="10km",
+    time_window="1M",
+    resolution="10m"
+)
+```
+
+### Agent Operations
+
+```python
+from memories_dev import Agent
+from memories_dev.types import AgentConfig, Task
+
+# Initialize analysis agent
+agent = Agent(
+    config=AgentConfig(
+        model="gpt-4",
+        memory_enabled=True,
+        context_window=8192
+    )
+)
+
+# Define analysis task
+task = Task(
+    type="urban_analysis",
+    parameters={
+        "focus": "development",
+        "metrics": ["building_density", "green_space"],
+        "temporal_resolution": "monthly"
+    }
+)
+
+# Run analysis with memory context
+report = agent.execute(
+    task=task,
+    context=memory_context,
+    format="markdown"
 )
 ```
 
 ## Development
 
 ### Environment Setup
+
 ```bash
+# Clone repository
+git clone https://github.com/memories-dev/memories.dev.git
+cd memories.dev
+
 # Create virtual environment
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
 venv\Scripts\activate     # Windows
 
-# Install development dependencies
+# Install dependencies
 pip install -e ".[dev,test,docs]"
+
+# Setup pre-commit hooks
+pre-commit install
 ```
 
 ### Testing
+
 ```bash
-# Run all tests
+# Run test suite
 pytest
 
-# Run specific test categories
-pytest tests/unit/
-pytest tests/integration/
-pytest tests/memory/
-pytest tests/ai/
+# Test specific components
+pytest tests/memories/
+pytest tests/agents/
+pytest tests/synthesis/
 
 # Run with coverage
 pytest --cov=memories_dev --cov-report=html
 ```
 
-## Performance Optimization
-
-### Memory Management
-- Intelligent caching with LRU/LFU policies
-- Memory compression using various algorithms
-- Distributed memory management
-- Lazy loading for large datasets
-
-### GPU Acceleration
-- CUDA support for memory operations
-- Batch processing optimization
-- Memory-efficient tensor operations
-- Multi-GPU scaling
-
 ## Deployment
 
-### Development
-```bash
-# Local development server
-memories-dev serve --dev --port 8000
+### Development Server
 
-# With hot reload
-memories-dev serve --dev --reload
+```bash
+# Start development server
+memories-dev serve --dev --port 8000 --reload
 ```
 
-### Production
+### Production Deployment
+
 ```bash
-# Production deployment
+# Deploy with production settings
 memories-dev serve \
     --port 8000 \
     --workers 4 \
     --memory-limit 32GB \
+    --vector-store milvus \
     --cache-strategy distributed
 ```
 
 ## Security
 
-### Data Privacy
-- End-to-end encryption for data at rest and in transit
+### Data Protection
+- End-to-end encryption
 - Granular access control
+- Audit logging
 - Privacy-preserving computation
-- Audit logging and compliance
 
 ### API Security
 - JWT authentication
@@ -312,10 +303,19 @@ memories-dev serve \
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+3. Make changes and add tests
+4. Run tests (`pytest`)
+5. Commit changes (`git commit -m 'Add amazing feature'`)
+6. Push to branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
 ## License
 
 Apache License 2.0 - See [LICENSE](LICENSE)
+
+## Support
+
+- Documentation: [docs.memories.dev](https://docs.memories.dev)
+- Issues: [GitHub Issues](https://github.com/memories-dev/memories.dev/issues)
+- Discord: [Join Community](https://discord.gg/memories-dev)
+- Email: support@memories.dev
