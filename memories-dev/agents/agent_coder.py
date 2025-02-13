@@ -156,7 +156,7 @@ class CodeGenerator:
         self.logger = logging.getLogger(__name__)
         
         # Load API knowledge base (using the provided APIs instead of a database)
-        knowledge_path = os.path.join(os.getenv('PROJECT_ROOT', '.'), 'memories-dev', 'agents', 'knowledge-base.json')
+        knowledge_path = os.path.join(os.getenv('PROJECT_ROOT', '.'), 'memories_dev', 'agents', 'knowledge-base.json')
         try:
             with open(knowledge_path, 'r') as f:
                 self.knowledge_base = json.load(f)

@@ -6,9 +6,9 @@ from typing import Dict, Any, List, Optional, Tuple, Union
 from dotenv import load_dotenv
 import logging
 
-from memories-dev.models.base_model import BaseModel
-from memories-dev.agents.agent_query_context import LocationExtractor
-from memories-dev.agents.agent_coder import CodeGenerator
+from memories_dev.models.base_model import BaseModel
+from memories_dev.agents.agent_query_context import LocationExtractor
+from memories_dev.agents.agent_coder import CodeGenerator
 
 class MemoriesDev:
     def __init__(self, use_gpu: bool = True, model: str = None):

@@ -3,13 +3,13 @@ from dotenv import load_dotenv
 import importlib
 
 
-from memories-dev.agents.agent_query_context import LocationExtractor, QueryContext
-from memories-dev.agents.location_filter_agent import LocationFilterAgent
-from memories-dev.memories.memories_index import FAISSStorage
-from memories-dev.agents.agent_coder import CodeGenerator
-from memories-dev.agents.agent_code_executor import AgentCodeExecutor
-from memories-dev.agents.response_agent import ResponseAgent
-from memories-dev.agents.agent_geometry import AgentGeometry
+from memories_dev.agents.agent_query_context import LocationExtractor, QueryContext
+from memories_dev.agents.location_filter_agent import LocationFilterAgent
+from memories_dev.memories.memories_index import FAISSStorage
+from memories_dev.agents.agent_coder import CodeGenerator
+from memories_dev.agents.agent_code_executor import AgentCodeExecutor
+from memories_dev.agents.response_agent import ResponseAgent
+from memories_dev.agents.agent_geometry import AgentGeometry
 
 import os
 import logging
