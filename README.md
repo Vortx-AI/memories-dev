@@ -167,15 +167,6 @@ pip install memories-dev[gpu]
 - **Impact Assessment**: Evaluate environmental and urban development impacts
 - **Decision Support**: Aid decision-making with contextual intelligence
 
-## Documentation
-
-Visit [docs.memories.dev](https://docs.memories.dev) for:
-- API Reference
-- Integration Guides
-- Memory System Architecture
-- Model Integration Examples
-- Performance Tuning
-- Best Practices
 
 ## Contributing
 
@@ -188,9 +179,8 @@ We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) for:
 ## Support
 
 - [GitHub Issues](https://github.com/memories-dev/memories.dev/issues)
-- [Discord Community](https://discord.gg/memories-dev)
-- [Documentation](https://docs.memories.dev)
-- Email: support@memories.dev
+- [Discord Community](https://discord.gg/7qAFEekp)
+- Email: hello@memories.dev
 
 ## License
 
