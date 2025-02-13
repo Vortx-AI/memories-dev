@@ -69,7 +69,7 @@ setup(
     name='memories_dev',
     version='0.1.0',
     author='Kumari Jaya',
-    author_email='jaya@vortx.ai',
+    author_email='hello@memories-dev.com',
     description='High-performance geospatial processing engine with ML capabilities',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
