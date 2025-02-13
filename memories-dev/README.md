@@ -1,455 +1,231 @@
-# Source Code Documentation
+# memories.dev Technical Documentation
 
-This document provides technical details about the source code organization, architecture, and workflows of the synthetic-satellite project.
+## Architecture Overview
 
+The memories.dev system is built around a sophisticated memory architecture that enables AI systems to access and utilize real-world contextual data efficiently.
 
-## Folder Structure
+## Directory Structure
 
 ```
 memories-dev/
-├── __init__.py           # Package initialization
-├── api/                  # REST API implementation
-├── cli/                  # Command-line interface
-├── core/                 # Core functionality
-├── data_acquisition/     # Data ingestion and collection
-├── models/              # ML models and predictions
+├── __init__.py
+├── api/                  # REST API and GraphQL endpoints
+├── cli/                  # Command-line interface tools
+├── core/                 # Core memory system
+│   ├── memory.py        # Memory formation and management
+│   ├── synthesis.py     # Memory synthesis and fusion
+│   └── processor.py     # Data processing pipelines
+├── data_acquisition/     # Data ingestion systems
+├── models/              # AI models and inference
 ├── privacy/             # Privacy-preserving features
 ├── processors/          # Data processing pipelines
 ├── scripts/             # Utility scripts
 ├── synthetic/           # Synthetic data generation
-└── vortx/               # Vortex-specific implementations
+└── vortx/               # Core Vortx implementation
 ```
 
-## Code Organization
+## Core Components
 
-### Core Components
+### 1. Memory System (`core/memory.py`)
 
-1. **Knowledge Synthesis (`core/synthesis.py`)**
-   - Handles data fusion and analysis
-   - Implements feature extraction for different data types
-   - Provides pattern analysis and insight generation
+The memory system implements a multi-tier architecture:
 
-2. **Memory System Architecture**
-   ```
-   [Data Sources] → [Memory Formation] → [Memory Storage] → [Memory Synthesis] → [Knowledge Graph]
-                                                                    ↓
-                                                          [Pattern Recognition]
-                                                                    ↓
-                                                        [Predictive Analytics]
-   ```
+```mermaid
+graph TD
+    classDef memoryTier fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef processingTier fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef storageTier fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
 
-   a. **Memory Formation (`core/memory.py`)**
-      - Dynamic memory allocation and management
-      - Multi-tier caching system
-        * L1: In-memory cache for frequent access
-        * L2: SSD-based cache for medium-term storage
-        * L3: Distributed storage for long-term persistence
-      - Memory compression algorithms
-      - Adaptive memory scaling
-   
-   b. **Memory Synthesis Engine**
-      - Pattern recognition and correlation
-      - Temporal sequence analysis
-      - Spatial relationship mapping
-      - Multi-modal data fusion
-      - Hierarchical memory organization
-        * Raw data layer
-        * Feature extraction layer
-        * Pattern recognition layer
-        * Knowledge synthesis layer
-   
-   c. **Knowledge Graph Integration**
-      - Entity relationship mapping
-      - Temporal evolution tracking
-      - Spatial context integration
-      - Causal relationship inference
-      - Dynamic graph updates
+    subgraph "Memory Tiers"
+        L1[("L1: Fast Cache<br/>In-Memory")] :::memoryTier
+        L2[("L2: SSD Cache<br/>Medium-term")] :::memoryTier
+        L3[("L3: Distributed<br/>Long-term")] :::memoryTier
+    end
 
-3. **Data Processing (`core/processor.py`)**
-   - Implements data processing pipelines
-   - Manages batch processing operations
+    subgraph "Memory Processing"
+        MF["Memory Formation"] :::processingTier
+        MS["Memory Synthesis"] :::processingTier
+        MI["Memory Indexing"] :::processingTier
+    end
 
-### Command Line Interface
+    subgraph "Storage Systems"
+        VS["Vector Store"] :::storageTier
+        TS["Time Series DB"] :::storageTier
+        SI["Spatial Index"] :::storageTier
+    end
 
-The CLI (`cli/main.py`) provides several key commands:
+    MF --> L1
+    L1 --> L2
+    L2 --> L3
+    L1 & L2 & L3 --> MS
+    MS --> MI
+    MI --> VS & TS & SI
+```
 
-- `serve`: Launch the API server
-- `process`: Process satellite data
-- `analyze`: Analyze satellite imagery
-- `setup`: Configure the environment
-- `version`: Display version information
+### 2. Memory Formation Pipeline
 
-### Key Workflows
+```mermaid
+graph LR
+    classDef inputNode fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef processNode fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef outputNode fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
 
-1. **Data Processing Pipeline**
-   ```
-   Raw Data → Data Acquisition → Processing → Synthesis → Analysis → Output
-   ```
-   - Raw Data: Satellite imagery, sensor data, metadata
-   - Data Acquisition: Automated ingestion and validation
-   - Processing: Calibration, normalization, and feature extraction
-   - Synthesis: Data fusion and pattern analysis
-   - Analysis: ML model inference and insight generation
-   - Output: Processed data, reports, and visualizations
+    I1["🛰️ Raw Data"] :::inputNode
+    P1["🔄 Preprocessing"] :::processNode
+    P2["🧮 Feature Extraction"] :::processNode
+    P3["🏷️ Semantic Tagging"] :::processNode
+    P4["📍 Geo-Indexing"] :::processNode
+    O1["💾 Memory Store"] :::outputNode
 
-2. **API Workflow**
-   ```
-   Request → Validation → Processing → Response
-   ```
-   - Request: REST API calls with data/parameters
-   - Validation: Input validation and authentication
-   - Processing: Task-specific processing pipeline
-   - Response: Structured output with results/errors
+    I1 --> P1 --> P2 --> P3 --> P4 --> O1
+```
 
-3. **Synthetic Data Generation**
-   ```
-   Configuration → Feature Generation → Data Synthesis → Validation → Export
-   ```
-   - Configuration: Set terrain, atmospheric, and spectral parameters
-   - Feature Generation: Create synthetic terrain and atmospheric effects
-   - Data Synthesis: Generate multi-spectral bands and apply effects
-   - Validation: Quality checks and metadata generation
-   - Export: Save as GeoTIFF with metadata
+### 3. AI Integration System
 
-4. **GPU Processing Workflow**
-   ```
-   Data Preparation → GPU Transfer → Parallel Processing → Result Collection
-   ```
-   - Data Preparation: Batching and formatting
-   - GPU Transfer: Memory management and data transfer
-   - Parallel Processing: CUDA-accelerated computations
-   - Result Collection: Aggregation and post-processing
+The AI integration system provides:
+- Real-time memory retrieval during inference
+- Context injection into AI models
+- Memory-augmented reasoning
+- Multi-modal fusion capabilities
 
-5. **Privacy-Preserving Analysis**
-   ```
-   Data Encryption → Secure Processing → Differential Privacy → Secure Output
-   ```
-   - Data Encryption: Secure data handling
-   - Secure Processing: Privacy-preserving computations
-   - Differential Privacy: Add noise to protect individual data points
-   - Secure Output: Encrypted or anonymized results
+## Key Features
 
-## Technical Details
+### Memory Formation
+- Dynamic memory allocation
+- Multi-tier caching system
+- Memory compression
+- Adaptive scaling
 
-### Dependencies
-- Python 3.x
-- NumPy/Pandas for data manipulation
-- scikit-learn for machine learning
-- xarray for multi-dimensional arrays
-- Click for CLI implementation
+### Memory Synthesis
+- Pattern recognition
+- Temporal analysis
+- Spatial relationships
+- Multi-modal fusion
+- Hierarchical organization
 
-### Configuration
-- YAML-based configuration system
-- Default config location: `config/config.yaml`
-- Supports environment-specific overrides
+### Privacy Features
+- End-to-end encryption
+- Differential privacy
+- Access control
+- Audit logging
 
-### Development Guidelines
+## API Reference
 
-1. **Code Style**
-   - Follow PEP 8 guidelines
-   - Use type hints
-   - Document functions and classes
+### Memory Operations
 
-2. **Testing**
-   - Unit tests in `tests/` directory
-   - Integration tests for key workflows
-   - Use pytest framework
+```python
+# Memory Creation
+memory = MemoryStore.create(
+    data_source="satellite",
+    location=(lat, lon),
+    time_range=(start, end)
+)
 
-3. **Logging**
-   - Structured logging using Python's logging module
-   - Different log levels for development and production
+# Memory Retrieval
+context = MemoryStore.query(
+    location_radius=(lat, lon, radius),
+    time_range=(start, end),
+    memory_types=["satellite", "climate"]
+)
 
-### Performance Considerations
+# Memory Synthesis
+insights = MemorySynthesis.analyze(
+    memories=context,
+    analysis_type="urban_development"
+)
+```
 
-1. **Memory Management**
-   - Batch processing for large datasets
-   - Memory-efficient data structures
-   - Caching system for frequent operations
+### AI Integration
 
-2. **Scalability**
-   - Parallel processing support
-   - GPU acceleration where available
-   - Configurable batch sizes
+```python
+# Context Injection
+response = model.inference(
+    query="Analyze urban growth",
+    context=memories,
+    model_type="reasoning"
+)
 
-## API Documentation
+# Memory-Augmented Processing
+analysis = model.process_with_memory(
+    input_data=data,
+    memory_context=context,
+    processing_type="pattern_recognition"
+)
+```
 
-The REST API provides endpoints for:
-- Data processing
-- Model inference
-- System status
-- Configuration management
+## Development Guidelines
 
-Detailed API documentation is available when running the server at `/docs`.
+### Code Style
+- Follow PEP 8
+- Use type hints
+- Document all functions
+- Write unit tests
 
-## Error Handling
+### Testing
+```bash
+# Run unit tests
+pytest tests/
 
-The system implements comprehensive error handling:
-- Input validation
-- Processing errors
-- System state errors
-- Resource management
+# Run integration tests
+pytest tests/integration/
 
-## Security Features
+# Run with coverage
+pytest --cov=memories_dev tests/
+```
 
-1. **Data Privacy**
-   - Encryption for sensitive data
-   - Access control mechanisms
-   - Privacy-preserving computations
+## Performance Optimization
 
-2. **API Security**
-   - Authentication required for sensitive operations
-   - Rate limiting
-   - Input sanitization
+### Memory Management
+- Batch processing for large datasets
+- Efficient data structures
+- Smart caching strategies
+- Memory compression
+
+### GPU Acceleration
+- CUDA support for processing
+- Batch inference optimization
+- Memory-efficient GPU operations
 
 ## Deployment
 
-The system can be deployed in multiple ways:
-1. As a standalone CLI tool
-2. As a REST API service
-3. As a library in other Python applications
+### Local Development
+```bash
+# Setup development environment
+python -m venv venv
+source venv/bin/activate
+pip install -e ".[dev]"
+```
+
+### Production Deployment
+```bash
+# Install production dependencies
+pip install ".[prod]"
+
+# Run API server
+memories-dev serve --port 8000
+```
+
+## Security Considerations
+
+1. Data Privacy
+   - Encryption at rest
+   - Secure transmission
+   - Access control
+   - Privacy-preserving computation
+
+2. API Security
+   - Authentication
+   - Rate limiting
+   - Input validation
+   - Audit logging
 
 ## Contributing
 
-When contributing to the codebase:
-1. Follow the established code style
-2. Add tests for new features
-3. Update documentation
-4. Use meaningful commit messages
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new features
+4. Submit a pull request
 
-## Troubleshooting
+## License
 
-Common issues and their solutions:
-1. Memory errors: Adjust batch size
-2. GPU issues: Check CUDA configuration
-3. API timeouts: Review request limits
-
-## Project Charter
-
-### Currently Implemented Features
-
-1. **Core Processing**
-   - ✅ Multi-spectral data processing
-   - ✅ Batch processing pipeline
-   - ✅ Memory-efficient data handling
-   - ✅ Basic error handling and logging
-
-2. **Synthetic Data Generation**
-   - ✅ Terrain generation with customizable parameters
-   - ✅ Atmospheric effects simulation
-   - ✅ Multi-spectral band synthesis
-   - ✅ GeoTIFF export with metadata
-
-3. **API and CLI**
-   - ✅ Basic REST API endpoints
-   - ✅ Command-line interface
-   - ✅ Configuration management
-   - ✅ Status monitoring
-
-4. **Data Management**
-   - ✅ File-based data storage
-   - ✅ Caching system
-   - ✅ Basic data validation
-
-### Coming Soon (In Development)
-
-1. **Advanced Processing**
-   - 🔄 GPU acceleration for large datasets
-   - 🔄 Real-time processing capabilities
-   - 🔄 Advanced error recovery
-   - 🔄 Distributed processing support
-
-2. **Enhanced Security**
-   - 🔄 End-to-end encryption
-   - 🔄 Advanced access control
-   - 🔄 Audit logging
-   - 🔄 Compliance features
-
-3. **Advanced Analytics**
-   - 🔄 Deep learning models
-   - 🔄 Time series analysis
-   - 🔄 Anomaly detection
-   - 🔄 Predictive analytics
-
-4. **Integration Features**
-   - 🔄 Cloud provider integrations
-   - 🔄 External API connectors
-   - 🔄 Real-time data streams
-   - 🔄 Third-party export formats
-
-5. **Privacy Features**
-   - 🔄 Differential privacy implementation
-   - 🔄 Data anonymization
-   - 🔄 Privacy-preserving ML
-   - 🔄 Secure multi-party computation
-
-6. **Sustainability Features**
-   - 🔄 Energy Monitoring & Optimization
-     - Power usage tracking
-     - Dynamic resource allocation
-     - Cooling system optimization
-     - Smart workload scheduling
-   
-   - 🔄 Carbon Footprint Management
-     - Real-time carbon tracking
-     - Emission reduction strategies
-     - Carbon-aware computing
-     - Green energy integration
-   
-   - 🔄 Resource Efficiency
-     - Smart algorithms for resource optimization
-     - Efficient data storage solutions
-     - Memory usage optimization
-     - Network efficiency improvements
-   
-   - 🔄 Environmental Compliance
-     - ISO 14001:2015 compliance
-     - Energy Star certification
-     - ASHRAE thermal guidelines
-     - Environmental impact reporting
-   
-   - 🔄 Green Infrastructure
-     - Solar-powered processing support
-     - Natural cooling system integration
-     - Sustainable hardware management
-     - Circular economy practices
-
-7. **Monitoring & Analytics**
-   - 🔄 Sustainability Dashboard
-     - Real-time energy metrics
-     - Resource utilization tracking
-     - Carbon footprint visualization
-     - Performance vs. sustainability analysis
-   
-   - 🔄 Automated Reporting
-     - Environmental impact reports
-     - Compliance documentation
-     - Efficiency metrics
-     - Cost-benefit analysis
-
-8. **Advanced Memory Architecture**
-   - 🔄 Neural Memory Networks
-     - Attention-based memory access
-     - Memory-augmented neural networks
-     - Hierarchical memory structures
-     - Dynamic memory allocation
-   
-   - 🔄 Physical AI Integration
-     - Neuromorphic computing support
-     - Quantum memory interfaces
-     - Molecular storage systems
-     - Bio-inspired memory architectures
-   
-   - 🔄 Distributed Memory Systems
-     - Edge-cloud memory synchronization
-     - Federated memory sharing
-     - P2P memory networks
-     - Global-local memory hierarchy
-
-9. **Future Integration Technologies**
-   - 🔄 Physical AI Components
-     - Quantum sensing integration
-     - Molecular computing interfaces
-     - DNA storage systems
-     - Neuromorphic processors
-   
-   - 🔄 Advanced Synthesis Methods
-     - Quantum-classical hybrid processing
-     - Bio-inspired pattern recognition
-     - Molecular data encoding
-     - Topological data analysis
-
-### Future Roadmap
-
-1. **Scalability**
-   - 📅 Kubernetes deployment support
-   - 📅 Auto-scaling capabilities
-   - 📅 Multi-region support
-   - 📅 Load balancing
-
-2. **Advanced Features**
-   - 📅 Interactive visualization
-   - 📅 Advanced reporting
-   - 📅 Custom model training
-   - 📅 Automated optimization
-
-3. **Next-Generation Memory Systems (2024-2025)**
-   - 📅 Quantum Memory Integration
-     * Quantum state preservation
-     * Quantum-classical interfaces
-     * Error correction systems
-     * Quantum memory networks
-   
-   - 📅 Molecular Storage Systems
-     * DNA-based data storage
-     * Molecular computing interfaces
-     * Chemical state memory
-     * Atomic-scale storage
-   
-   - 📅 Neuromorphic Architecture
-     * Spike-based processing
-     * Adaptive synaptic networks
-     * Bio-inspired learning systems
-     * Real-time pattern recognition
-
-4. **Physical AI Evolution (2025-2026)**
-   - 📅 Quantum-Enhanced Processing
-     * Quantum advantage demonstration
-     * Hybrid quantum-classical systems
-     * Quantum error mitigation
-     * Quantum memory management
-   
-   - 📅 Molecular Computing
-     * Chemical computing systems
-     * Molecular data encoding
-     * Reaction-based processing
-     * Bio-molecular interfaces
-   
-   - 📅 Advanced Neuromorphic Systems
-     * Cognitive architecture integration
-     * Adaptive learning systems
-     * Real-time optimization
-     * Energy-efficient computing
-
-5. **Integration Milestones (2026-2027)**
-   - 📅 Hybrid Computing Architecture
-     * Quantum-classical-molecular integration
-     * Unified memory management
-     * Cross-platform optimization
-     * Seamless data flow
-   
-   - 📅 Advanced AI Systems
-     * Physical-digital AI fusion
-     * Autonomous optimization
-     * Self-evolving architectures
-     * Cognitive computing systems
-
-Memory Architecture Diagram:
-```
-┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│   Data Sources   │     │  Memory Formation │     │  Memory Storage  │
-│  - Satellite     │ →   │  - Compression   │ →   │  - Distributed   │
-│  - Sensors       │     │  - Encoding      │     │  - Hierarchical  │
-│  - External APIs │     │  - Validation    │     │  - Multi-tier    │
-└──────────────────┘     └──────────────────┘     └──────────────────┘
-                                                           ↓
-┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│    Knowledge     │     │     Memory       │     │    Pattern       │
-│     Graph        │ ←   │    Synthesis     │ ←   │   Recognition    │
-│  - Relationships │     │  - Integration   │     │  - Analysis      │
-│  - Context       │     │  - Fusion        │     │  - Learning      │
-└──────────────────┘     └──────────────────┘     └──────────────────┘
-         ↓                                                  ↓
-┌──────────────────┐                         ┌──────────────────┐
-│    Physical AI   │                         │   Predictive     │
-│   Integration    │ ← − − − − − − − − − − → │   Analytics      │
-│  - Quantum       │                         │  - Forecasting   │
-│  - Molecular     │                         │  - Optimization  │
-└──────────────────┘                         └──────────────────┘
-```
-
-Legend:
-- ✅ Implemented
-- 🔄 In Development
-- 📅 Planned
-- → Direct data flow
-- − Bidirectional interaction
+Apache License 2.0 - See [LICENSE](LICENSE)
