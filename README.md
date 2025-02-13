@@ -39,26 +39,59 @@ memories.dev is a high-performance infrastructure for providing real-world conte
 
 ```mermaid
 graph TD
-    subgraph "Memory Sources"
-        L1["Satellite Networks"]
-        L2["Ground Stations"]
-        L3["Surface Sensors"]
+    classDef sourceNode fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef processNode fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef aiNode fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    classDef storeNode fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
+    classDef outputNode fill:#fce4ec,stroke:#880e4f,stroke-width:2px;
+
+    subgraph "🌍 Memory Sources"
+        S1["🛰️ Satellite Networks"]
+        S2["📡 Ground Stations"]
+        S3["🌡️ Climate Sensors"]
+        S4["📊 Census Data"]
+        S5["🏢 Urban Metrics"]
     end
 
-    subgraph "Memory Processing"
-        P1["Memory Formation"]
-        P2["Context Building"]
-        P3["Memory Indexing"]
+    subgraph "🧠 Memory Processing"
+        M1["🔄 Memory Formation"]
+        M2["🔍 Feature Extraction"]
+        M3["🏷️ Semantic Tagging"]
+        M4["📍 Geo-Indexing"]
     end
 
-    subgraph "AI Integration"
-        A1["Memory Retrieval"]
-        A2["Context Injection"]
-        A3["Enhanced Inference"]
+    subgraph "💾 Memory Store"
+        DB1["🗄️ Vector Store"]
+        DB2["📅 Time Series DB"]
+        DB3["🌐 Spatial Index"]
     end
 
-    L1 & L2 & L3 --> P1 --> P2 --> P3
-    P3 --> A1 --> A2 --> A3
+    subgraph "🤖 AI Integration"
+        AI1["📥 Memory Retrieval"]
+        AI2["🔄 Context Injection"]
+        AI3["💡 Enhanced Inference"]
+        AI4["🎯 Response Generation"]
+    end
+
+    subgraph "📊 Output Layer"
+        O1["📑 Reports"]
+        O2["📈 Analytics"]
+        O3["🤖 API Responses"]
+        O4["🔄 Real-time Feeds"]
+    end
+
+    S1 & S2 & S3 & S4 & S5 --> M1
+    M1 --> M2 --> M3 --> M4
+    M4 --> DB1 & DB2 & DB3
+    DB1 & DB2 & DB3 --> AI1
+    AI1 --> AI2 --> AI3 --> AI4
+    AI4 --> O1 & O2 & O3 & O4
+
+    class S1,S2,S3,S4,S5 sourceNode;
+    class M1,M2,M3,M4 processNode;
+    class DB1,DB2,DB3 storeNode;
+    class AI1,AI2,AI3,AI4 aiNode;
+    class O1,O2,O3,O4 outputNode;
 ```
 
 ## Quick Start
