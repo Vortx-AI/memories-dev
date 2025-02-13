@@ -28,7 +28,7 @@ memories.dev is a high-performance infrastructure for providing real-world conte
   - Custom data source integration
 
 ### Key Capabilities
-- Real-time memory retrieval during model inference
+- Real-time memory synthesis during model inference
 - Context-aware AI reasoning
 - Multi-modal memory fusion
 - Temporal pattern analysis
@@ -37,57 +37,159 @@ memories.dev is a high-performance infrastructure for providing real-world conte
 
 ## System Architecture
 
+## Quick Start
+
+```python
+from memories-dev.vortx import memories-dev
+from memories-dev.memories.earth_memory import EarthMemoryStore
+from memories-dev.agents.agent import Agent
+
+
+# Initialize with advanced models
+vx = Vortx(
+    models={
+        "reasoning": deepseek-coder-small,
+        "vision": deepseek-vision-small
+    },
+    use_gpu=True
+)
+
+# Create Earth memories
+memory_store = EarthMemoryStore()
+memories = memory_store.create_memories(
+    location=(37.7749, -122.4194),
+    time_range=("2020-01-01", "2024-01-01"),
+    modalities=["satellite", "climate", "social"]
+)
+
+# Generate synthetic data
+synthetic_data = vx.generate_synthetic(
+    base_location=(37.7749, -122.4194),
+    scenario="urban_development",
+    time_steps=10,
+    climate_factors=True
+)
+
+# AGI reasoning with memories
+insights = Agent(
+    query="Analyze urban development patterns and environmental impact",
+    context_memories=memories,
+    synthetic_scenarios=synthetic_data
+)
+```
+
+## Installation
+
+```bash
+# Basic installation (Coming Soon)
+pip install memories-dev
+
+# With GPU support (Coming Soon)
+pip install memories-dev[gpu]
+```
 ### Core Components
+
+## 🔄 Workflows
+
+### Memory Formation Pipeline
+
+```mermaid
+graph LR
+    %% Node Styles
+    classDef input fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef process fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef storage fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    
+    %% Input Nodes
+    I1(("📡 Raw Data")):::input
+    I2(("🛰️ Satellite")):::input
+    I3(("🌡️ Sensors")):::input
+    
+    %% Processing Nodes
+    P1["🔄 Preprocessing"]:::process
+    P2["⚡ Feature Extraction"]:::process
+    P3["🧠 Memory Formation"]:::process
+    
+    %% Storage Nodes
+    S1[("💾 Vector Store")]:::storage
+    S2[("📊 Time Series DB")]:::storage
+    S3[("🗺️ Spatial Index")]:::storage
+    
+    %% Flow
+    I1 & I2 & I3 --> P1
+    P1 --> P2
+    P2 --> P3
+    P3 --> S1 & S2 & S3
+```
+
+### Query Pipeline
 
 ```mermaid
 graph TD
-    %% Styles
-    classDef source fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef memory fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
-    classDef agent fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    classDef output fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
+    %% Node Styles
+    classDef query fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef memory fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef output fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
 
-    %% Data Sources
-    subgraph Sources[Data Sources]
-        S1[Satellite Data]
-        S2[Climate Data]
-        S3[Urban Data]
-    end
+    %% Query Flow
+    Q1["🔍 Query Request"]:::query
+    Q2["📍 Location Filter"]:::query
+    Q3["⏱️ Time Filter"]:::query
+    
+    %% Memory Operations
+    M1["🧠 Memory Lookup"]:::memory
+    M2["🔄 Context Assembly"]:::memory
+    M3["⚡ Real-time Update"]:::memory
+    
+    %% Output Generation
+    O1["📊 Results"]:::output
+    O2["📝 Analysis"]:::output
+    O3["🔄 Synthesis"]:::output
 
-    %% Memory System
-    subgraph Memory[Memory System]
-        M1[Data Ingestion]
-        M2[Processing]
-        M3[Storage]
-        M4[Retrieval]
-    end
-
-    %% Agent System
-    subgraph Agents[Agent System]
-        A1[Reasoning Engine]
-        A2[Memory Synthesis]
-        A3[Analysis Engine]
-    end
-
-    %% Output System
-    subgraph Output[Output Layer]
-        O1[Reports]
-        O2[Analytics]
-        O3[API]
-    end
-
-    %% Flow
-    S1 & S2 & S3 --> M1
-    M1 --> M2 --> M3 --> M4
-    M4 --> A1 --> A2 --> A3
-    A3 --> O1 & O2 & O3
-
-    %% Styles
-    class S1,S2,S3 source;
-    class M1,M2,M3,M4 memory;
-    class A1,A2,A3 agent;
-    class O1,O2,O3 output;
+    %% Connections
+    Q1 --> Q2 & Q3
+    Q2 & Q3 --> M1
+    M1 --> M2 --> M3
+    M3 --> O1 & O2 & O3
 ```
+
+### Agent System
+
+```mermaid
+graph TD
+    %% Node Styles
+    classDef agent fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef memory fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef task fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+
+    %% Agent Components
+    subgraph "🤖 Agent System"
+        A1["🧠 Reasoning Engine"]:::agent
+        A2["🔄 Memory Integration"]:::agent
+        A3["📊 Analysis Engine"]:::agent
+    end
+
+    %% Memory Access
+    subgraph "💾 Memory Access"
+        M1["📥 Retrieval"]:::memory
+        M2["🔄 Update"]:::memory
+        M3["🔍 Query"]:::memory
+    end
+
+    %% Task Processing
+    subgraph "📋 Tasks"
+        T1["📊 Analysis"]:::task
+        T2["🔄 Synthesis"]:::task
+        T3["📝 Reporting"]:::task
+    end
+
+    %% Connections
+    A1 --> M1 & M2 & M3
+    M1 & M2 & M3 --> A2
+    A2 --> A3
+    A3 --> T1 & T2 & T3
+```
+
 
 ### Memory Architecture
 
@@ -153,49 +255,49 @@ graph LR
     class O output;
 ```
 
-## Quick Start
+## 📚 Module Dependencies
 
+<<<<<<< HEAD
 ```python
 from memories_dev.vortx import memories_dev
 from memories_dev.memories.earth_memory import EarthMemoryStore
 from memories_dev.agents.agent import Agent
+=======
+```mermaid
+graph TD
+    %% Node Styles
+    classDef core fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef dep fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef util fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+>>>>>>> 220381201f9e4eaff627eeaabe2ce67dcba4fd87
 
+    %% Core Modules
+    C1["🧠 Memory Core"]:::core
+    C2["🤖 Agent Core"]:::core
+    C3["📡 Data Core"]:::core
 
-# Initialize with advanced models
-vx = Vortx(
-    models={
-        "reasoning": deepseek-coder-small,
-        "vision": deepseek-vision-small
-    },
-    use_gpu=True
-)
+    %% Dependencies
+    D1["📊 NumPy/Pandas"]:::dep
+    D2["🔥 PyTorch"]:::dep
+    D3["🗄️ Vector Store"]:::dep
+    D4["🌐 Network Utils"]:::dep
 
-# Create Earth memories
-memory_store = EarthMemoryStore()
-memories = memory_store.create_memories(
-    location=(37.7749, -122.4194),
-    time_range=("2020-01-01", "2024-01-01"),
-    modalities=["satellite", "climate", "social"]
-)
+    %% Utilities
+    U1["⚙️ Config"]:::util
+    U2["📝 Logging"]:::util
+    U3["✅ Validation"]:::util
 
-# Generate synthetic data
-synthetic_data = vx.generate_synthetic(
-    base_location=(37.7749, -122.4194),
-    scenario="urban_development",
-    time_steps=10,
-    climate_factors=True
-)
-
-# AGI reasoning with memories
-insights = Agent(
-    query="Analyze urban development patterns and environmental impact",
-    context_memories=memories,
-    synthetic_scenarios=synthetic_data
-)
+    %% Connections
+    D1 & D2 --> C1
+    D3 --> C1 & C2
+    D4 --> C3
+    U1 --> C1 & C2 & C3
+    U2 --> C1 & C2 & C3
+    U3 --> C1 & C2 & C3
 ```
 
-## Installation
 
+<<<<<<< HEAD
 ```bash
 # Basic installation (Coming Soon)
 pip install memories_dev
@@ -203,6 +305,8 @@ pip install memories_dev
 # With GPU support (Coming Soon)
 pip install memories_dev[gpu]
 ```
+=======
+>>>>>>> 220381201f9e4eaff627eeaabe2ce67dcba4fd87
 
 ## System Requirements
 
