@@ -140,55 +140,6 @@ graph TD
     A3 --> T1 & T2 & T3
 ```
 
-```mermaid
-graph TD
-    %% Styles
-    classDef source fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef memory fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
-    classDef agent fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    classDef output fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
-
-    %% Data Sources
-    subgraph Sources[Data Sources]
-        S1[Satellite Data]
-        S2[Climate Data]
-        S3[Urban Data]
-    end
-
-    %% Memory System
-    subgraph Memory[Memory System]
-        M1[Data Ingestion]
-        M2[Processing]
-        M3[Storage]
-        M4[Retrieval]
-    end
-
-    %% Agent System
-    subgraph Agents[Agent System]
-        A1[Reasoning Engine]
-        A2[Memory Synthesis]
-        A3[Analysis Engine]
-    end
-
-    %% Output System
-    subgraph Output[Output Layer]
-        O1[Reports]
-        O2[Analytics]
-        O3[API]
-    end
-
-    %% Flow
-    S1 & S2 & S3 --> M1
-    M1 --> M2 --> M3 --> M4
-    M4 --> A1 --> A2 --> A3
-    A3 --> O1 & O2 & O3
-
-    %% Styles
-    class S1,S2,S3 source;
-    class M1,M2,M3,M4 memory;
-    class A1,A2,A3 agent;
-    class O1,O2,O3 output;
-```
 
 ### Memory Architecture
 
