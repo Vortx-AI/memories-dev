@@ -40,9 +40,9 @@ memories.dev is a high-performance infrastructure for providing real-world conte
 ## Quick Start
 
 ```python
-from memories-dev.vortx import memories-dev
-from memories-dev.memories.earth_memory import EarthMemoryStore
-from memories-dev.agents.agent import Agent
+from memories_dev.memories_dev import memories_dev
+from memories_dev.memories.earth_memory import EarthMemoryStore
+from memories_dev.agents.agent import Agent
 
 
 # Initialize with advanced models

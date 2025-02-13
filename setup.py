@@ -5,8 +5,8 @@ setup(
     version="0.1.0",
     packages=find_packages(),
     
-    author="vortx.ai",
-    author_email="jaya@vortx.ai",
+    author="Memories-dev",
+    author_email="hello@memories-dev.com",
     description="An awesome package for daily synthesis of Earth Memories, helping agents answer about location-first queries. ",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -67,7 +67,7 @@ setup(
     },
     
     package_data={
-        "vortx": [
+        "memories_dev": [
             "config/*.yaml",
             "data/*.json"
         ]
