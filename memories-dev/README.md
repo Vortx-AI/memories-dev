@@ -6,7 +6,7 @@ This document provides technical details about the source code organization, arc
 ## Folder Structure
 
 ```
-src/
+memories-dev/
 ├── __init__.py           # Package initialization
 ├── api/                  # REST API implementation
 ├── cli/                  # Command-line interface
