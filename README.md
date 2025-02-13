@@ -41,121 +41,116 @@ memories.dev is a high-performance infrastructure for providing real-world conte
 
 ```mermaid
 graph TD
-    %% Style definitions
-    classDef sourceNode fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef memoryNode fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef agentNode fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef outputNode fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    %% Styles
+    classDef source fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef memory fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef agent fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    classDef output fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
 
     %% Data Sources
-    subgraph DataSources["Data Sources"]
-        S1[("Satellite")]
-        S2[("Climate")]
-        S3[("Urban")]
+    subgraph Sources[Data Sources]
+        S1[Satellite Data]
+        S2[Climate Data]
+        S3[Urban Data]
     end
 
     %% Memory System
-    subgraph MemorySystem["Memory System"]
-        M1["Data Ingestion"]
-        M2["Processing"]
-        M3["Storage"]
-        M4["Retrieval"]
+    subgraph Memory[Memory System]
+        M1[Data Ingestion]
+        M2[Processing]
+        M3[Storage]
+        M4[Retrieval]
     end
 
     %% Agent System
-    subgraph AgentSystem["Agent System"]
-        A1["Reasoning"]
-        A2["Synthesis"]
-        A3["Analysis"]
+    subgraph Agents[Agent System]
+        A1[Reasoning Engine]
+        A2[Memory Synthesis]
+        A3[Analysis Engine]
     end
 
-    %% Output Layer
-    subgraph OutputLayer["Output Layer"]
-        O1["Reports"]
-        O2["Analytics"]
-        O3["API"]
+    %% Output System
+    subgraph Output[Output Layer]
+        O1[Reports]
+        O2[Analytics]
+        O3[API]
     end
 
-    %% Connections
+    %% Flow
     S1 & S2 & S3 --> M1
-    M1 --> M2
-    M2 --> M3
-    M3 --> M4
-    M4 --> A1
-    A1 --> A2
-    A2 --> A3
+    M1 --> M2 --> M3 --> M4
+    M4 --> A1 --> A2 --> A3
     A3 --> O1 & O2 & O3
 
-    %% Apply styles
-    class S1,S2,S3 sourceNode
-    class M1,M2,M3,M4 memoryNode
-    class A1,A2,A3 agentNode
-    class O1,O2,O3 outputNode
+    %% Styles
+    class S1,S2,S3 source;
+    class M1,M2,M3,M4 memory;
+    class A1,A2,A3 agent;
+    class O1,O2,O3 output;
 ```
 
 ### Memory Architecture
 
 ```mermaid
 graph TD
-    %% Style definitions
-    classDef storeNode fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef cacheNode fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef indexNode fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    %% Styles
+    classDef store fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef cache fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef index fill:#fff3e0,stroke:#e65100,stroke-width:2px;
 
     %% Memory Store
-    subgraph MemoryStore["Memory Store"]
-        V1[("Vector Store")]
-        T1[("Time Series DB")]
-        S1[("Spatial Index")]
+    subgraph Store[Memory Store]
+        V[Vector Store]
+        T[Time Series DB]
+        S[Spatial Index]
     end
 
-    %% Cache Layers
-    subgraph CacheLayers["Cache Layers"]
-        L1["L1: In-Memory"]
-        L2["L2: SSD Cache"]
-        L3["L3: Distributed"]
+    %% Cache System
+    subgraph Cache[Cache Layers]
+        L1[L1 Cache - Memory]
+        L2[L2 Cache - SSD]
+        L3[L3 Cache - Distributed]
     end
 
-    %% Index Types
-    subgraph Indexes["Index Types"]
-        I1["Spatial"]
-        I2["Temporal"]
-        I3["Semantic"]
+    %% Index System
+    subgraph Index[Index Types]
+        I1[Spatial Index]
+        I2[Temporal Index]
+        I3[Semantic Index]
     end
 
-    %% Connections
-    V1 & T1 & S1 --> L1
-    L1 --> L2
-    L2 --> L3
+    %% Flow
+    V & T & S --> L1
+    L1 --> L2 --> L3
     L3 --> I1 & I2 & I3
 
-    %% Apply styles
-    class V1,T1,S1 storeNode
-    class L1,L2,L3 cacheNode
-    class I1,I2,I3 indexNode
+    %% Styles
+    class V,T,S store;
+    class L1,L2,L3 cache;
+    class I1,I2,I3 index;
 ```
 
 ### Data Flow
 
 ```mermaid
 graph LR
-    %% Style definitions
-    classDef inputNode fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef processNode fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef outputNode fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    %% Styles
+    classDef input fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef process fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef output fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
 
-    %% Nodes
-    I["Input Data"] --> P1["Preprocessing"]
-    P1 --> P2["Feature Extraction"]
-    P2 --> P3["Memory Formation"]
-    P3 --> P4["Memory Storage"]
-    P4 --> P5["Memory Retrieval"]
-    P5 --> O["AI Integration"]
+    %% Pipeline
+    I[Raw Data] --> P1[Preprocessing]
+    P1 --> P2[Feature Extraction]
+    P2 --> P3[Memory Formation]
+    P3 --> P4[Memory Storage]
+    P4 --> P5[Memory Retrieval]
+    P5 --> O[AI Integration]
 
-    %% Apply styles
-    class I inputNode
-    class P1,P2,P3,P4,P5 processNode
-    class O outputNode
+    %% Styles
+    class I input;
+    class P1,P2,P3,P4,P5 process;
+    class O output;
 ```
 
 ## Quick Start
