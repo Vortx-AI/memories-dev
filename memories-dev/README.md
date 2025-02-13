@@ -93,39 +93,6 @@ src/
 - **Logging**: Comprehensive logging system
 - **Validation**: Data validation utilities
 
-## 📚 Module Dependencies
-
-```mermaid
-graph TD
-    %% Node Styles
-    classDef core fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    classDef dep fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef util fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
-
-    %% Core Modules
-    C1["🧠 Memory Core"]:::core
-    C2["🤖 Agent Core"]:::core
-    C3["📡 Data Core"]:::core
-
-    %% Dependencies
-    D1["📊 NumPy/Pandas"]:::dep
-    D2["🔥 PyTorch"]:::dep
-    D3["🗄️ Vector Store"]:::dep
-    D4["🌐 Network Utils"]:::dep
-
-    %% Utilities
-    U1["⚙️ Config"]:::util
-    U2["📝 Logging"]:::util
-    U3["✅ Validation"]:::util
-
-    %% Connections
-    D1 & D2 --> C1
-    D3 --> C1 & C2
-    D4 --> C3
-    U1 --> C1 & C2 & C3
-    U2 --> C1 & C2 & C3
-    U3 --> C1 & C2 & C3
-```
 
 ## 🚀 Getting Started
 
