@@ -156,9 +156,9 @@ graph LR
 ## Quick Start
 
 ```python
-from memories-dev.vortx import memories-dev
-from memories-dev.memories.earth_memory import EarthMemoryStore
-from memories-dev.agents.agent import Agent
+from memories_dev.vortx import memories_dev
+from memories_dev.memories.earth_memory import EarthMemoryStore
+from memories_dev.agents.agent import Agent
 
 
 # Initialize with advanced models
@@ -198,10 +198,10 @@ insights = Agent(
 
 ```bash
 # Basic installation (Coming Soon)
-pip install memories-dev
+pip install memories_dev
 
 # With GPU support (Coming Soon)
-pip install memories-dev[gpu]
+pip install memories_dev[gpu]
 ```
 
 ## System Requirements
@@ -237,7 +237,7 @@ We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) for:
 
 ## Support
 
-- [GitHub Issues](https://github.com/memories-dev/memories.dev/issues)
+- [GitHub Issues](https://github.com/memories_dev/memories.dev/issues)
 - [Discord Community](https://discord.gg/7qAFEekp)
 - Email: hello@memories.dev
 

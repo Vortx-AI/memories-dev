@@ -66,7 +66,7 @@ extras_require = {
 extras_require['all'] = [pkg for group in extras_require.values() for pkg in group]
 
 setup(
-    name='memories-dev',
+    name='memories_dev',
     version='0.1.0',
     author='Kumari Jaya',
     author_email='jaya@vortx.ai',

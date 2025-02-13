@@ -1,6 +1,6 @@
 from typing import Dict, Any
 import logging
-from memories-dev.utils.query.location_extractor import LocationExtractor
+from memories_dev.utils.query.location_extractor import LocationExtractor
 
 class QueryContext:
     def __init__(self):
