@@ -2,7 +2,11 @@
 
 # memories.dev
 
+<<<<<<< HEAD
 **Collective Memory for AGI Models**
+=======
+**Collective Memory for AGI**
+>>>>>>> e08062b46fb1b92462ddb8f555351e5ab3027ebe
 
 [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://docs.memories.dev)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
