@@ -96,4 +96,4 @@ src/
 
 ## 🚀 Getting Started
 
-For development setup and usage examples, please refer to the main [README.md](../README.md) in the project root.
+For setup and usage examples, please refer to the main [README.md](../README.md) in the project root.
