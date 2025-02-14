@@ -10,6 +10,8 @@
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
+<a href="https://www.producthunt.com/posts/memories-dev?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-memories&#0045;dev" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=879661&theme=light&t=1739522328686" alt="memories&#0046;dev - Collective&#0032;AGI&#0032;Memory | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+
 </div>
 
 ## Overview
@@ -311,7 +313,6 @@ graph TD
 - **Report Generation**: Create detailed reports with location-specific insights
 - **Trend Analysis**: Analyze temporal patterns with historical context
 - **Impact Assessment**: Evaluate environmental and urban development impacts
-- **Decision Support**: Aid decision-making with contextual intelligence
 
 
 ## Contributing
