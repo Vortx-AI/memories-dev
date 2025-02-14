@@ -91,8 +91,6 @@ src/
 ### 🛠️ Utilities
 - **Configuration**: System configuration management
 - **Logging**: Comprehensive logging system
-- **Validation**: Data validation utilities
-
 
 ## 🚀 Getting Started
 
