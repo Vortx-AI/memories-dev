@@ -1,0 +1,151 @@
+{
+    "apis": [
+        {
+            "api_id": "1",
+            "name": "Nominatim Reverse Geocoding",
+            "endpoint": "https://nominatim.openstreetmap.org/reverse",
+            "method": "GET",
+            "usage_policy": {
+                "rate_limit": "1 request per second maximum",
+                "requirements": [
+                    "Valid HTTP User-Agent identifying the application",
+                    "Display attribution (© OpenStreetMap contributors)",
+                    "Data under ODbL licaense",
+                    "No auto-complete search implementation",
+                    "No systematic or bulk queries",
+                    "Results must be cached",
+                    "Single thread only"
+                ],
+                "attribution": "© OpenStreetMap contributors",
+                "license": "ODbL"
+            },
+            "parameters": {
+                "required": {
+                    "lat": "float",
+                    "lon": "float",
+                    "format": "json"
+                },
+                "optional": {
+                    "zoom": "integer (0-18)",
+                    "addressdetails": "0|1",
+                    "namedetails": "0|1",
+                    "language": "string (ISO 639-1)",
+                    "extratags": "0|1"
+                }
+            },
+            "fields": ["address", "display_name", "lat", "lon", "osm_type", "osm_id"],
+            "description": "Reverse geocoding API specializing in detailed address information",
+            "capabilities": [
+                "Convert coordinates to detailed address information",
+                "Provide hierarchical address data",
+                "Return formatted display names for locations"
+            ],
+            "examples": [
+                {
+                    "query": "Get address at coordinates",
+                    "sample_request": {
+                        "lat": 51.5074,
+                        "lon": -0.1278,
+                        "format": "json",
+                        "addressdetails": 1
+                    }
+                }
+            ]
+        },
+        {
+            "api_id": "2",
+            "name": "Nominatim Forward Geocoding",
+            "endpoint": "https://nominatim.openstreetmap.org/search",
+            "method": "GET",
+            "usage_policy": {
+                "rate_limit": "1 request per second maximum",
+                "requirements": [
+                    "Valid HTTP User-Agent identifying the application",
+                    "Display attribution (© OpenStreetMap contributors)",
+                    "Data under ODbL license",
+                    "No auto-complete search implementation",
+                    "No systematic or bulk queries",
+                    "Results must be cached",
+                    "Single thread only"
+                ],
+                "attribution": "© OpenStreetMap contributors",
+                "license": "ODbL"
+            },
+            "parameters": {
+                "required": {
+                    "q": "string (search query)",
+                    "format": "json"
+                },
+                "optional": {
+                    "limit": "integer (default: 10)",
+                    "addressdetails": "0|1",
+                    "accept-language": "string (ISO 639-1)"
+                }
+            },
+            "fields": ["display_name", "lat", "lon", "address", "type", "class"],
+            "description": "Forward geocoding API for searching places and POIs",
+            "capabilities": [
+                "Search for places by name or type",
+                "Find points of interest",
+                "Return place categories and importance rankings"
+            ],
+            "examples": [
+                {
+                    "query": "Search for a location",
+                    "sample_request": {
+                        "q": "London Bridge",
+                        "format": "json",
+                        "addressdetails": 1
+                    }
+                }
+            ]
+        },
+        {
+            "api_id": "3",
+            "name": "Overpass API",
+            "endpoint": "https://overpass-api.de/api/interpreter",
+            "method": "POST",
+            "usage_policy": {
+                "rate_limit": "10,000 requests per day",
+                "requirements": [
+                    "Fair usage",
+                    "No heavy load during peak hours",
+                    "Cache results when possible",
+                    "Maximum of 1 request every 2 seconds"
+                ],
+                "attribution": "© OpenStreetMap contributors",
+                "license": "ODbL"
+            },
+            "parameters": {
+                "required": {
+                    "data": "string (Overpass QL query)"
+                }
+            },
+            "fields": ["amenity", "leisure", "building", "shop", "name", "opening_hours"],
+            "description": "OpenStreetMap data API for detailed geographic features",
+            "capabilities": [
+                "Query specific OpenStreetMap tags and features",
+                "Find nearby amenities and facilities",
+                "Get detailed information about geographic features"
+            ],
+            "examples": [
+                {
+                    "query": "Find nearby amenities",
+                    "sample_request": {
+                        "data": "[out:json];(node(around:500,51.5074,-0.1278)[amenity];);out body;>;out skel qt;"
+                    }
+                }
+            ]
+        }
+    ],
+    "metadata": {
+        "version": "1.0",
+        "last_updated": "2024-03-19",
+        "description": "Knowledge base for GIS API capabilities and field mappings",
+        "usage_notes": "Respect rate limits and include appropriate attribution when using these APIs",
+        "attribution": {
+            "nominatim": "Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright",
+            "overpass": "Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright"
+        }
+    }
+} 

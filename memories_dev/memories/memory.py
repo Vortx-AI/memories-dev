@@ -1,7 +1,7 @@
 """Memory system for storing and retrieving processed data"""
 
 import logging
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional, Union, Tuple
 from pathlib import Path
 import json
 import uuid
@@ -12,6 +12,24 @@ import pickle
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import sys
+import json
+import os
+from typing import List, Dict, Any, Optional, Tuple
+import torch
+import rasterio
+import numpy as np
+import uuid
+import sys
+from dotenv import load_dotenv
+import logging
+import geopandas as gpd
+from shapely.geometry import Polygon, MultiPolygon
+import pystac
+
+
+from .cold import ColdStorage  # Ensure correct import path
+#from .earth_memory_encoder import MemoryEncoder  # Ensure you have this module
+
 
 class NumpyEncoder(json.JSONEncoder):
     """Custom JSON encoder for NumPy types"""
@@ -223,3 +241,272 @@ class MemorySystem:
         except Exception as e:
             self.logger.error(f"Error getting memory stats: {e}")
             raise 
+
+
+
+class MemoryEncoder:
+    """
+    Encoder class to convert data records into embeddings.
+    Implement the encoding logic as per your requirements.
+    """
+    def __init__(self, embedding_dim: int = 128):
+        self.embedding_dim = embedding_dim
+        # Initialize your model here (e.g., a neural network)
+
+    def encode(self, data: Dict[str, Any]) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
+        """
+        Encode the data into an embedding.
+        
+        Args:
+            data (Dict[str, Any]): Data record to encode
+        
+        Returns:
+            Tuple[torch.Tensor, Dict[str, torch.Tensor]]: Embedding tensor and attention maps
+        """
+        # Implement your encoding logic here
+        # For demonstration, create a random embedding
+        embedding = torch.randn(self.embedding_dim)
+        attention_maps = {}  # Populate as needed
+        return embedding, attention_maps
+
+    def encode_query(self, coordinates: Tuple[float, float]) -> torch.Tensor:
+        """
+        Encode query coordinates into an embedding.
+        Replace this with actual query encoding logic.
+        
+        Args:
+            coordinates (Tuple[float, float]): (latitude, longitude)
+        
+        Returns:
+            torch.Tensor: Embedding tensor
+        """
+        # Dummy implementation: create a random embedding based on coordinates
+        np.random.seed(int(coordinates[0] * 1000 + coordinates[1]))
+        embedding = torch.randn(self.embedding_dim)
+        return embedding
+
+class MemoryStore:
+    """Storage and retrieval system for earth observation memories with DuckDB."""
+    
+    def __init__(
+        self,
+        config_path: str = None
+    ):
+        """Initialize MemoryStore with DuckDB."""
+        # Get the project root directory
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        print(f"[MemoryStore] Project root: {project_root}")
+
+        # Initialize DuckDB
+        try:
+            import duckdb
+            self.db_path = os.path.join(project_root, 'data', 'memory.db')
+            os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+            
+            self.conn = duckdb.connect(self.db_path)
+            print(f"[MemoryStore] Connected to DuckDB at {self.db_path}")
+            
+            # Create single memories table with all required columns
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS memories (
+                    instance_id VARCHAR PRIMARY KEY,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    data_connectors JSON,
+                    artifacts JSON,
+                    geometry JSON,
+                    input_location JSON,
+                    start_date TIMESTAMP,
+                    end_date TIMESTAMP
+                )
+            """)
+            print("[MemoryStore] Memories table initialized")
+        except Exception as e:
+            print(f"[MemoryStore] Error initializing DuckDB: {str(e)}")
+            self.conn = None
+
+    def create_memories(
+        self,
+        location: Union[Tuple[float, float], List[Tuple[float, float]], 
+                       str, gpd.GeoDataFrame, Polygon, MultiPolygon, 
+                       pystac.Item, Dict[str, Any]],
+        time_range: Tuple[str, str],
+        artifacts: List[str],
+        data_connectors: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Dict[str, List[str]]]:
+        """Create memories by inserting into the existing table."""
+        try:
+            instance_id = str(uuid.uuid4())
+            
+            # Convert location to JSON-serializable format
+            if isinstance(location, (Polygon, MultiPolygon)):
+                geometry = json.loads(gpd.GeoSeries([location]).__geo_interface__)
+            elif isinstance(location, gpd.GeoDataFrame):
+                geometry = json.loads(location.geometry.__geo_interface__)
+            else:
+                geometry = {"type": "Point", "coordinates": location} if isinstance(location, tuple) else location
+
+            # Insert into the existing memories table
+            self.conn.execute("""
+                INSERT INTO memories (
+                    instance_id,
+                    data_connectors,
+                    artifacts,
+                    geometry,
+                    input_location,
+                    start_date,
+                    end_date
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                instance_id,
+                json.dumps(data_connectors if data_connectors else {}),
+                json.dumps(artifacts),
+                json.dumps(geometry),
+                json.dumps(location if isinstance(location, dict) else str(location)),
+                time_range[0],
+                time_range[1]
+            ))
+            
+            print(f"[MemoryStore] Created memory with ID: {instance_id}")
+            return instance_id
+
+        except Exception as e:
+            print(f"[MemoryStore] Error creating memory: {str(e)}")
+            raise
+
+    def close(self):
+        """Close DuckDB connection."""
+        if hasattr(self, 'conn') and self.conn:
+            self.conn.close()
+            print("[MemoryStore] DuckDB connection closed")
+
+    def _process_connector(self, 
+                         config: Dict[str, Any],
+                         location: Union[Tuple[float, float], Dict[str, Any]],
+                         time_range: Tuple[str, str]) -> Optional[Dict[str, Any]]:
+        """Process data from a connector"""
+        try:
+            connector_type = config.get("type")
+            if connector_type == "stac":
+                return self._process_stac_data(config, location, time_range)
+            elif connector_type == "file":
+                return self._process_file_data(config, location, time_range)
+            else:
+                print(f"[MemoryStore] Unknown connector type: {connector_type}")
+                return None
+        except Exception as e:
+            print(f"[MemoryStore] Error processing connector: {str(e)}")
+            return None
+
+    def _process_stac_data(self, 
+                          config: Dict[str, Any],
+                          location: Union[Tuple[float, float], Dict[str, Any]],
+                          time_range: Tuple[str, str]) -> Dict[str, Any]:
+        """Process STAC data"""
+        # Implementation depends on your STAC processing needs
+        pass
+
+    def _process_file_data(self,
+                          config: Dict[str, Any],
+                          location: Union[Tuple[float, float], Dict[str, Any]],
+                          time_range: Tuple[str, str]) -> Dict[str, Any]:
+        """Process local file data"""
+        # Implementation depends on your file processing needs
+        pass
+
+    def _create_bbox(self, location: Tuple[float, float], buffer: float = 0.1) -> Optional[List[float]]:
+        """
+        Create a bounding box around the location with the given buffer.
+        
+        Args:
+            location (Tuple[float, float]): (latitude, longitude)
+            buffer (float): Buffer in degrees
+        
+        Returns:
+            Optional[List[float]]: Bounding box [minx, miny, maxx, maxy] or None
+        """
+        if not location:
+            return None
+        lat, lon = location
+        minx = lon - buffer
+        miny = lat - buffer
+        maxx = lon + buffer
+        maxy = lat + buffer
+        return [minx, miny, maxx, maxy]
+
+    def _persist_memories(self, memory: Dict[str, Any]):
+        """
+        Persist a single memory embedding to the FAISS index.
+        
+        Args:
+            memory (Dict[str, Any]): Memory record with embedding
+        """
+        if self.index_type == "faiss" and self.faiss_index is not None:
+            embedding = memory["embedding"].reshape(1, -1).astype('float32')
+            self.faiss_index.add(embedding)
+            self.id_to_key.append(str(uuid.uuid4()))  # Assign a unique ID
+            self.memory_index[self.id_to_key[-1]] = memory
+            print(f"Persisted memory with ID: {self.id_to_key[-1]} to FAISS index.")
+        else:
+            # Implement other indexing methods if necessary
+            pass
+
+    def query_memories(
+        self,
+        coordinates: Tuple[float, float],
+        k: int = 10,
+        time_range: Optional[Tuple[str, str]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Query memories based on coordinates and optional time range.
+        
+        Args:
+            coordinates (Tuple[float, float]): (latitude, longitude)
+            k (int): Number of nearest memories to retrieve
+            time_range (Optional[Tuple[str, str]]): (start_date, end_date) in 'YYYY-MM-DD' format
+        
+        Returns:
+            List[Dict[str, Any]]: List of matching memory records
+        """
+        if self.index_type == "faiss" and self.faiss_index is not None:
+            # Encode query point
+            query_embedding = self.encoder.encode_query(coordinates).reshape(1, -1).detach().numpy().astype('float32')
+            
+            # Search in FAISS index
+            distances, indices = self.faiss_index.search(query_embedding, k)
+            
+            # Retrieve memories based on indices
+            retrieved_memories = []
+            for idx in indices[0]:
+                if idx < len(self.id_to_key):
+                    memory_id = self.id_to_key[idx]
+                    memory = self.memory_index.get(memory_id)
+                    if memory:
+                        # Apply time range filter if specified
+                        if time_range:
+                            start_time, end_time = time_range
+                            if not (start_time <= memory["timestamp"].strftime('%Y-%m-%d') <= end_time):
+                                continue
+                        retrieved_memories.append(memory)
+            print(f"Retrieved {len(retrieved_memories)} memories using FAISS.")
+            return retrieved_memories
+        else:
+            # Implement alternative querying methods if FAISS not used
+            print("FAISS index not initialized. Cannot perform query.")
+            return []
+
+def encode_geospatial_data(data: Dict[str, Any], encoder: MemoryEncoder) -> torch.Tensor:
+    """
+    Example function to encode geospatial data.
+    Replace with actual encoding logic.
+    
+    Args:
+        data (Dict[str, Any]): Data record to encode
+        encoder (MemoryEncoder): Encoder instance
+    
+    Returns:
+        torch.Tensor: Embedding tensor
+    """
+    return encoder.encode(data)
+
+
+

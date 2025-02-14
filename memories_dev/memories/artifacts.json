@@ -1,0 +1,11 @@
+{
+  "satellite": [
+    "sentinel-1",
+    "sentinel-2",
+    "landsat8"
+  ],
+  "landuse": [
+    "osm",
+    "overture"
+  ]
+}
