@@ -8,14 +8,81 @@ class BaseModel:
     _instance = None
     _initialized = False
     
-    # Add model mappings
+    # Comprehensive model mappings (only HuggingFace compatible models)
     MODEL_MAPPINGS = {
-        "default": "deepseek-ai/deepseek-coder-1.3b-base",
+        # DeepSeek Models (HF compatible)
         "deepseek-coder-small": "deepseek-ai/deepseek-coder-1.3b-base",
         "deepseek-coder-medium": "deepseek-ai/deepseek-coder-6.7b",
         "deepseek-coder-large": "deepseek-ai/deepseek-coder-33b",
+        "deepseek-math": "deepseek-ai/deepseek-math-7b-base",
+        "deepseek-llm-small": "deepseek-ai/deepseek-llm-7b-base",
+        "deepseek-llm-large": "deepseek-ai/deepseek-llm-67b-base",
+
+        # Meta/Llama Models (HF compatible)
+        "llama-2-7b": "meta-llama/Llama-2-7b",
+        "llama-2-13b": "meta-llama/Llama-2-13b",
+        "llama-2-70b": "meta-llama/Llama-2-70b",
+        "llama-2-7b-chat": "meta-llama/Llama-2-7b-chat",
+        "llama-2-13b-chat": "meta-llama/Llama-2-13b-chat",
+        "llama-2-70b-chat": "meta-llama/Llama-2-70b-chat",
+        "code-llama-7b": "codellama/CodeLlama-7b-hf",
+        "code-llama-13b": "codellama/CodeLlama-13b-hf",
+        "code-llama-34b": "codellama/CodeLlama-34b-hf",
+
+        # Mistral Models (HF compatible)
+        "mistral-7b": "mistralai/Mistral-7B-v0.1",
+        "mistral-8x7b": "mistralai/Mixtral-8x7B-v0.1",
+
+        # HuggingFace Open Models
+        "falcon-7b": "tiiuae/falcon-7b",
+        "falcon-40b": "tiiuae/falcon-40b",
+        "falcon-180b": "tiiuae/falcon-180B",
+        "mpt-7b": "mosaicml/mpt-7b",
+        "mpt-30b": "mosaicml/mpt-30b",
+        "stable-diffusion-2": "stabilityai/stable-diffusion-2",
+        "stable-diffusion-xl": "stabilityai/stable-diffusion-xl-base-1.0",
+        
+        # Default fallback
+        "default": "deepseek-ai/deepseek-coder-1.3b-base"
     }
     
+    # Add provider-specific mappings for easy lookup
+    PROVIDER_GROUPS = {
+        "deepseek": ["deepseek-coder-small", "deepseek-coder-medium", "deepseek-coder-large", 
+                    "deepseek-math", "deepseek-llm-small", "deepseek-llm-large"],
+        "llama": ["llama-2-7b", "llama-2-13b", "llama-2-70b", "llama-2-7b-chat",
+                 "llama-2-13b-chat", "llama-2-70b-chat", "code-llama-7b",
+                 "code-llama-13b", "code-llama-34b"],
+        "mistral": ["mistral-7b", "mistral-8x7b"],
+        "huggingface": ["falcon-7b", "falcon-40b", "falcon-180b", "mpt-7b", 
+                       "mpt-30b", "stable-diffusion-2", "stable-diffusion-xl"]
+    }
+
+    @classmethod
+    def get_model_path(cls, provider: str, model_key: str) -> str:
+        """Get the full model path/identifier for a given provider and model key"""
+        if model_key not in cls.MODEL_MAPPINGS:
+            raise ValueError(f"Unknown model key: {model_key}")
+        if provider not in cls.PROVIDER_GROUPS:
+            raise ValueError(f"Unknown provider: {provider}")
+        if model_key not in cls.PROVIDER_GROUPS[provider]:
+            raise ValueError(f"Model {model_key} not available for provider {provider}")
+        return cls.MODEL_MAPPINGS[model_key]
+
+    @classmethod
+    def list_providers(cls) -> list:
+        """List all available providers"""
+        return list(cls.PROVIDER_GROUPS.keys())
+
+    @classmethod
+    def list_models(cls, provider: str = None) -> list:
+        """List all available models, optionally filtered by provider"""
+        if provider:
+            if provider not in cls.PROVIDER_GROUPS:
+                raise ValueError(f"Unknown provider: {provider}")
+            return cls.PROVIDER_GROUPS[provider]
+        return list(cls.MODEL_MAPPINGS.keys())
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(BaseModel, cls).__new__(cls)
