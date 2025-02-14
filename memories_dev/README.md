@@ -90,7 +90,6 @@ src/
 
 ### 🛠️ Utilities
 - **Configuration**: System configuration management
-- **Logging**: Comprehensive logging system
 
 ## 🚀 Getting Started
 
