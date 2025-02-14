@@ -311,7 +311,6 @@ graph TD
 - **Report Generation**: Create detailed reports with location-specific insights
 - **Trend Analysis**: Analyze temporal patterns with historical context
 - **Impact Assessment**: Evaluate environmental and urban development impacts
-- **Decision Support**: Aid decision-making with contextual intelligence
 
 
 ## Contributing
