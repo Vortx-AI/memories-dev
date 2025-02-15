@@ -2,8 +2,8 @@ import pytest
 import mercantile
 import geopandas as gpd
 from shapely.geometry import box
-from memories_dev.utils.earth.vector_processor import VectorTileProcessor
-from memories_dev.utils.types import Bounds
+from memories.utils.earth.vector_processor import VectorTileProcessor
+from memories.utils.types import Bounds
 
 @pytest.fixture
 def sample_bounds():

@@ -1,0 +1,2 @@
+[console_scripts]
+vortx = vortx.cli:main

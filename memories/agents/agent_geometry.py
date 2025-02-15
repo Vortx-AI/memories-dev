@@ -1,6 +1,6 @@
 from typing import Dict, Any
 import logging
-from memories_dev.utils.earth.geometry_retriever import GeometryExtractor
+from memories.utils.earth.geometry_retriever import GeometryExtractor
 
 class AgentGeometry:
     def __init__(self):

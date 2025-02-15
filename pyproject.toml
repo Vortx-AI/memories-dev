@@ -60,13 +60,14 @@ dev = ["pytest>=6.0"]
 docs = ["sphinx>=4.0.0"]
 
 [project.urls]
-Homepage = "https://github.com/Vortx-AI/memories_dev"
-Documentation = "https://docs.memories.dev"
-Repository = "https://github.com/Vortx-AI/memories_dev.git"
-Issues = "https://github.com/Vortx-AI/memories_dev/issues"
+Homepage = "https://github.com/Vortx-AI/memories-dev"
+Documentation = "https://docs.memories-dev.dev"
+Repository = "https://github.com/Vortx-AI/memories-dev.git"
+Issues = "https://github.com/Vortx-AI/memories-dev/issues"
 
 [tool.setuptools]
-packages = ["memories_dev"]
+packages = ["memories"]
+package-dir = {"memories" = "memories"}
 
 [tool.setuptools.package-data]
-memories_dev = ["config/*.yaml", "data/*.json"] 
+memories = ["config/*.yaml", "data/*.json"] 

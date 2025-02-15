@@ -142,7 +142,7 @@ class LocationExtractor:
                 "coordinates": None
             }
 
-from memories_dev.utils.query.location_extractor import LocationExtractor
+from memories.utils.query.location_extractor import LocationExtractor
 
 def test_location_extractor():
     # Initialize the extractor

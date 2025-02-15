@@ -4,8 +4,8 @@ import rasterio
 from rasterio.io import MemoryFile
 import mercantile
 from shapely.geometry import box
-from memories_dev.utils.earth.raster_processor import RasterTileProcessor
-from memories_dev.utils.types import Bounds
+from memories.utils.earth.raster_processor import RasterTileProcessor
+from memories.utils.types import Bounds
 
 @pytest.fixture
 def sample_raster_data():
