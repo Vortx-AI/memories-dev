@@ -3,6 +3,7 @@
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timedelta
 from memories.models.load_model import LoadModel
+from memories.data_acquisition.data_connectors import parquet_connector
 
 def get_model_config(
     use_gpu: Optional[bool] = True,
