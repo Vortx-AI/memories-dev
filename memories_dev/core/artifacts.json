@@ -1,0 +1,31 @@
+{
+  "satellite": {
+    "sentinel-1": {
+      "acquisition_file": "sentinel1_acquisition.py",
+      "inputs_required": ["start_date", "end_date", "aoi_geometry"],
+      "output_fields": ["backscatter_vv", "backscatter_vh", "incidence_angle"]
+    },
+    "sentinel-2": {
+      "acquisition_file": "sentinel2_acquisition.py",
+      "inputs_required": ["start_date", "end_date", "aoi_geometry"],
+      "output_fields": ["b2", "b3", "b4", "b8", "ndvi", "cloud_mask"]
+    },
+    "landsat8": {
+      "acquisition_file": "landsat8_acquisition.py",
+      "inputs_required": ["start_date", "end_date", "aoi_geometry"],
+      "output_fields": ["red", "green", "blue", "nir", "ndvi", "qa_pixel"]
+    }
+  },
+  "landuse": {
+    "osm": {
+      "acquisition_file": "osm_acquisition.py",
+      "inputs_required": ["aoi_geometry"],
+      "output_fields": ["landuse_class", "building_footprints", "road_network"]
+    },
+    "overture": {
+      "acquisition_file": "overture_acquisition.py",
+      "inputs_required": ["aoi_geometry"],
+      "output_fields": ["landuse_class", "building_footprints", "places"]
+    }
+  }
+}
