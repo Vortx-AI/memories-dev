@@ -346,15 +346,32 @@ class MemoryStore:
 
     def create_memories(
         self,
-        model: 'LoadModel',  # Pass the LoadModel instance
+        model: 'LoadModel',
         location: Union[Tuple[float, float], List[Tuple[float, float]], 
                        str, gpd.GeoDataFrame, Polygon, MultiPolygon, 
                        pystac.Item, Dict[str, Any]],
         time_range: Tuple[str, str],
         artifacts: Dict[str, List[str]],
-        data_connectors: Optional[Dict[str, Any]] = None
+        data_connectors: Optional[List[Dict[str, str]]] = None
     ) -> Dict[str, Dict[str, List[str]]]:
-        """Create memories by inserting into the existing table."""
+        """
+        Create memories by inserting into the existing table and FAISS storage.
+        
+        Args:
+            model: LoadModel instance
+            location: Location specification
+            time_range: Start and end dates
+            artifacts: Dictionary of artifacts to process
+            data_connectors: List of dictionaries containing data connector information
+                Example:
+                [
+                    {
+                        "name": "buildings",
+                        "type": "parquet",
+                        "file_path": "/path/to/buildings.parquet"
+                    }
+                ]
+        """
         try:
             # Use the instance_id from the loaded model
             instance_id = model.instance_id
@@ -370,6 +387,51 @@ class MemoryStore:
             else:
                 geometry = {"type": "Point", "coordinates": location} if isinstance(location, tuple) else location
 
+            # Process data connectors and add to FAISS storage
+            connector_metadata = {}
+            if data_connectors:
+                from memories_dev.data_acquisition.data_connectors import parquet_connector
+                
+                for connector in data_connectors:
+                    if connector["type"] == "parquet":
+                        # Generate output filename based on connector name
+                        output_file_name = f"{connector['name']}_{instance_id}"
+                        
+                        # Process the parquet file and get index
+                        connector_index = parquet_connector(
+                            file_path=connector["file_path"],
+                            output_file_name=output_file_name
+                        )
+                        
+                        # Add to connector metadata
+                        connector_metadata[connector["name"]] = connector_index
+                        
+                        # If file was processed successfully, add to FAISS storage
+                        if connector_index.get("file_info"):
+                            file_info = connector_index["file_info"]
+                            
+                            # Create vector data for FAISS
+                            vector_data = {
+                                "file_name": file_info["file_name"],
+                                "file_path": file_info["file_path"],
+                                "columns": file_info["columns"],
+                                "row_count": file_info["row_count"],
+                                "size_bytes": file_info["size_bytes"],
+                                "connector_name": connector["name"],
+                                "connector_type": connector["type"],
+                                "instance_id": instance_id
+                            }
+                            
+                            # Add sample data if available
+                            if "sample_data" in file_info:
+                                vector_data.update({"sample_data": file_info["sample_data"]})
+                            
+                            # Add to FAISS storage
+                            storage.add(vector_data)
+                            print(f"[MemoryStore] Added {connector['name']} data to FAISS storage")
+                    else:
+                        print(f"[MemoryStore] Unsupported connector type: {connector['type']}")
+
             # Insert into the existing memories table with model details
             self.conn.execute("""
                 INSERT INTO memories (
@@ -379,30 +441,23 @@ class MemoryStore:
                     geometry,
                     input_location,
                     start_date,
-                    end_date,
-                    storage_metadata,
-                    model_provider,
-                    model_name,
-                    deployment_type
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    end_date
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
                 instance_id,
-                json.dumps(data_connectors if data_connectors else {}),
+                json.dumps(connector_metadata if connector_metadata else {}),
                 json.dumps(artifacts),
                 json.dumps(geometry),
                 json.dumps(location if isinstance(location, dict) else str(location)),
                 time_range[0],
-                time_range[1],
-                json.dumps(storage.metadata),
-                model.model_provider,
-                model.model_name,
-                model.deployment_type
+                time_range[1]
             ))
             
             print(f"[MemoryStore] Created memory with ID: {instance_id}")
             return {
                 "instance_id": instance_id,
-                "storage": storage
+                "storage": storage,
+                "data_connectors": connector_metadata
             }
 
         except Exception as e:
