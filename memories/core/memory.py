@@ -38,7 +38,7 @@ import memories.core.memory
 
 importlib.reload(memories.models.load_model)
 importlib.reload(memories.models.base_model)
-importlib.reload(memories.memories.memory)
+importlib.reload(memories.core.memory)
 
 # Import required classes after reload
 from memories.models.load_model import LoadModel

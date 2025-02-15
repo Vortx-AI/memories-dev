@@ -27,7 +27,7 @@ memories.dev is a memory infrastructure for providing real-world context to AI m
 
 ```python
 from memories.models.load_model import LoadModel
-from memories.memories.memory import MemoryStore
+from memories.core.memory import MemoryStore
 from memories.agents.agent import Agent
 
 
