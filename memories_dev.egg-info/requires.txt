@@ -30,8 +30,8 @@ pystac>=1.8.0
 xarray>=2023.0.0
 dask>=2024.1.0
 dask[array]>=2024.1.0
-spacy==3.7.4
-thinc<8.3.0,>=8.2.2
+spacy<3.8.0,>=3.7.0
+thinc<8.2.0,>=8.1.10
 blis==0.7.11
 redis>=5.0.0
 pytest>=8.3.4

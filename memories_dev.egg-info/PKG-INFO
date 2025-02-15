@@ -1,6 +1,6 @@
 Metadata-Version: 2.2
 Name: memories-dev
-Version: 1.0.9
+Version: 1.1.1
 Summary: A package for daily synthesis of Earth Memories, helping agents answer about location-first queries.
 Home-page: https://github.com/Vortx-AI/memories-dev
 Author: Memories-dev
@@ -261,8 +261,8 @@ Requires-Dist: pystac>=1.8.0
 Requires-Dist: xarray>=2023.0.0
 Requires-Dist: dask>=2024.1.0
 Requires-Dist: dask[array]>=2024.1.0
-Requires-Dist: spacy==3.7.4
-Requires-Dist: thinc<8.3.0,>=8.2.2
+Requires-Dist: spacy<3.8.0,>=3.7.0
+Requires-Dist: thinc<8.2.0,>=8.1.10
 Requires-Dist: blis==0.7.11
 Requires-Dist: redis>=5.0.0
 Requires-Dist: pytest>=8.3.4
@@ -321,7 +321,7 @@ Dynamic: requires-python
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Version](https://img.shields.io/badge/version-1.0.4-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v1.0.4)
+[![Version](https://img.shields.io/badge/version-1.0.9-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v1.0.9)
 
 <a href="https://www.producthunt.com/posts/memories-dev?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-memories&#0045;dev" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=879661&theme=light&t=1739530783374" alt="memories&#0046;dev - Collective&#0032;AGI&#0032;Memory | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
@@ -386,10 +386,10 @@ insights = Agent(
 
 ```bash
 # Install from PyPI (package name on PyPI is memories-dev)
-pip install memories-dev==1.0.4
+pip install memories-dev
 
 # With GPU support
-pip install "memories-dev[gpu]"==1.0.4
+pip install "memories-dev[gpu]"
 ```
 
 **Note**: While the package is distributed as `memories-dev` on PyPI, you import it as `memories` in your Python code:

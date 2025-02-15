@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2025-02-16
+
+### Changed
+- Updated numpy to 1.24.3 for better binary compatibility
+- Updated thinc to 8.1.10 and spacy to >=3.7.0,<3.8.0 for improved stability
+- Fixed dependency conflicts with Python 3.12
+
+### Fixed
+- Binary incompatibility issues between numpy and other dependencies
+- Package version conflicts causing installation failures
+
 ## [1.1.0] - 2025-02-16
 
 ### Added
@@ -15,17 +26,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Updated Python version requirement to exclude 3.13 temporarily
 - Added build requirements for better compatibility
-- Fixed blis version to 0.7.11 (removed incorrect 0.7.12 reference)
-- Updated thinc dependency to match spacy requirements (>=8.2.2,<8.3.0)
-- Updated numpy to >=1.26.0 for Python 3.12 compatibility
-- Updated spacy dependencies
+- Fixed blis version to 0.7.11
+- Updated thinc dependency to 8.1.10 for better compatibility
+- Pinned numpy to 1.24.3 for binary compatibility
+- Updated spacy to >=3.7.0,<3.8.0
 - Made Redis optional with in-memory fallback
 
 ### Fixed
+- Binary incompatibility between numpy and Python dependencies
 - Compilation issues with Python 3.13's C API
 - Build system configuration for better cross-version support
 - Package dependency resolution issues with blis and thinc
-- Binary incompatibility between numpy and Python 3.12
 - Redis connection handling in hot memory storage
 - Improved error handling for Redis operations
 - Added graceful degradation for Redis functionality
