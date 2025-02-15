@@ -164,16 +164,91 @@ def check_instance_storage(instance_id: str):
     else:
         print("\nNo data found for this instance ID")
 
+def list_available_instances():
+    """List all available instance IDs in the database."""
+    from memories.core.memory import MemoryStore
+    
+    print("\nListing Available Instances")
+    print("=" * 50)
+    
+    # Initialize memory store
+    memory_store = MemoryStore()
+    
+    try:
+        # Query all instance IDs
+        instances = memory_store.conn.execute("""
+            SELECT 
+                instance_id,
+                created_at,
+                start_date,
+                end_date
+            FROM memories
+            ORDER BY created_at DESC
+        """).fetchall()
+        
+        if instances:
+            print(f"\nFound {len(instances)} instances:")
+            for instance in instances:
+                print(f"\nInstance ID: {instance[0]}")
+                print(f"Created At: {instance[1]}")
+                print(f"Time Range: {instance[2]} to {instance[3]}")
+        else:
+            print("\nNo instances found in the database")
+            
+    except Exception as e:
+        print(f"Error listing instances: {str(e)}")
+
+def check_faiss_storage(instance_id: str):
+    """
+    Check FAISS storage details for a specific instance ID.
+    
+    Args:
+        instance_id (str): The instance ID to check
+    """
+    from memories.core.memory import MemoryStore
+    import os
+    
+    print("\nChecking FAISS Storage")
+    print("=" * 50)
+    print(f"Instance ID: {instance_id}")
+    
+    # Initialize memory store
+    memory_store = MemoryStore()
+    
+    # Check if FAISS index exists
+    faiss_dir = os.path.join(memory_store.project_root, "data", "faiss")
+    index_path = os.path.join(faiss_dir, f"index_{instance_id}.faiss")
+    data_path = os.path.join(faiss_dir, f"data_{instance_id}.pkl")
+    
+    if os.path.exists(index_path):
+        # Load the FAISS index
+        if memory_store.load_faiss_index(instance_id):
+            print("\nFAISS Storage Details:")
+            print(f"Index Size: {memory_store.index.ntotal} vectors")
+            print(f"Vector Dimension: {memory_store.index.d}")
+            print(f"Index Type: {memory_store.index.__class__.__name__}")
+            print(f"\nIndex File: {index_path}")
+            print(f"Data File: {data_path if os.path.exists(data_path) else 'Not found'}")
+    else:
+        print(f"\nNo FAISS index found for instance ID: {instance_id}")
+        print(f"Looked in: {faiss_dir}")
+
 def main():
     """Print current model instance ID when run directly."""
     import argparse
     
     parser = argparse.ArgumentParser(description='Check model configuration and storage')
     parser.add_argument('--instance-id', type=str, help='Check storage for specific instance ID')
+    parser.add_argument('--list-instances', action='store_true', help='List all available instances')
+    parser.add_argument('--check-faiss', type=str, help='Check FAISS storage for specific instance ID')
     
     args = parser.parse_args()
     
-    if args.instance_id:
+    if args.check_faiss:
+        check_faiss_storage(args.check_faiss)
+    elif args.list_instances:
+        list_available_instances()
+    elif args.instance_id:
         check_instance_storage(args.instance_id)
     else:
         # Original main function code...
