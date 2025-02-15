@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memories-dev"
+version = "1.0.2"
+description = "A package for daily synthesis of Earth Memories, helping agents answer about location-first queries."
+readme = "README.md"
+authors = [{ name = "Memories-dev", email = "hello@memories-dev.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+keywords = ["earth", "memory", "ai", "geo", "satellite"]
+dependencies = [
+    "torch>=2.0.0",
+    "transformers>=4.30.0",
+    "accelerate>=1.3.0",
+    "pillow>=10.0.0",
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
+    "duckdb>=0.9.0",
+    "matplotlib>=3.7.0",
+    "ipywidgets>=8.0.0",
+    "pyarrow>=14.0.1",
+    "tqdm>=4.65.0",
+    "requests>=2.31.0",
+    "pyyaml>=6.0.1",
+    "scikit-learn>=1.3.0",
+    "rasterio>=1.3.8",
+    "geopandas>=0.14.0",
+    "shapely>=2.0.0",
+    "opencv-python>=4.8.0",
+    "albumentations>=1.3.1",
+    "python-dotenv>=1.0.0",
+    "langchain>=0.1.0",
+    "langchain-community>=0.0.1",
+    "geopy>=2.3.0",
+    "faiss-cpu>=1.7.4",
+    "sentence-transformers>=2.2.0",
+    "mercantile>=1.2.1",
+    "mapbox-vector-tile>=2.0.1",
+    "pyproj>=3.6.1",
+    "pystac>=1.8.0",
+    "xarray>=2023.0.0",
+    "dask>=2024.1.0",
+    "dask[array]>=2024.1.0",
+]
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+gpu = ["faiss-gpu>=1.7.4"]
+dev = ["pytest>=6.0"]
+docs = ["sphinx>=4.0.0"]
+
+[project.urls]
+Homepage = "https://github.com/Vortx-AI/memories_dev"
+Documentation = "https://docs.memories.dev"
+Repository = "https://github.com/Vortx-AI/memories_dev.git"
+Issues = "https://github.com/Vortx-AI/memories_dev/issues"
+
+[tool.setuptools]
+packages = ["memories_dev"]
+
+[tool.setuptools.package-data]
+memories_dev = ["config/*.yaml", "data/*.json"] 
