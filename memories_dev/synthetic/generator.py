@@ -30,6 +30,18 @@ from ..utils.validation import validate_parameters
 
 logger = logging.getLogger(__name__)
 
+# Initialize StableDiffusion pipeline
+pipe = None
+
+def initialize_stable_diffusion():
+    """Initialize the Stable Diffusion pipeline"""
+    global pipe
+    if pipe is None:
+        pipe = StableDiffusionPipeline.from_pretrained(
+            "stabilityai/stable-diffusion-2-1",
+            torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
+        ).to("cuda" if torch.cuda.is_available() else "cpu")
+
 @dataclass
 class TerrainParams:
     """Parameters for terrain generation"""
@@ -374,43 +386,26 @@ class SyntheticDataGenerator:
             "crs": "EPSG:4326"
         } 
     
-
-    def synthetic_image(prompt: str, seed: int = None) -> Image.Image:
-        """
-        Generates an image from the given text prompt using the preloaded Stable Diffusion pipeline.
-
+    def synthetic_image(self, prompt: str, seed: int = None) -> Image.Image:
+        """Generate synthetic image using Stable Diffusion
+        
         Args:
-            prompt (str): The text prompt to generate the image.
-            seed (int, optional): Seed for reproducibility. If None, a random seed is used.
-
+            prompt: Text prompt for image generation
+            seed: Optional random seed
+            
         Returns:
-            PIL.Image.Image: The generated image.
+            Generated PIL Image
         """
+        global pipe
         if pipe is None:
-            raise RuntimeError("Stable Diffusion pipeline is not loaded. Call load_stable_diffusion_model() first.")
-
-        try:
-            #load_stable_diffusion_model()
-            if not prompt:
-                raise ValueError("Prompt cannot be empty for image generation.")
-
-            if seed is not None:
-                generator = torch.Generator(device=pipe.device).manual_seed(seed)
-                logger.info(f"Using provided seed: {seed}")
-            else:
-                seed = random.randint(0, 2**32 - 1)
-                generator = torch.Generator(device=pipe.device).manual_seed(seed)
-                logger.info(f"No seed provided. Using random seed: {seed}")
-
-            logger.info(f"Generating image with prompt: '{prompt}'")
-            image = pipe(prompt, generator=generator).images[0]
-            image1 = add_watermark(image,'vortxai_logo.jpeg')
-            return image1
-
-        except Exception as e:
-            logger.error(f"Error during image generation: {e}")
-            raise RuntimeError("Failed to generate image from prompt.") from e
-
+            initialize_stable_diffusion()
+        
+        if seed is not None:
+            torch.manual_seed(seed)
+        
+        # Generate image
+        image = pipe(prompt).images[0]
+        return image
 
 def add_watermark(image: Image.Image, logo_path: str) -> Image.Image:
     """
