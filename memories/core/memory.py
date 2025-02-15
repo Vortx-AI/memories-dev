@@ -26,13 +26,23 @@ import geopandas as gpd
 from shapely.geometry import Polygon, MultiPolygon
 import pystac
 import duckdb
+import importlib
 
-# Remove the self-reload
-# import importlib
-# importlib.reload(memories.core.memory)
+from .cold import ColdStorage  # Ensure correct import path
+#from .earth_memory_encoder import MemoryEncoder  # Ensure you have this module
 
-# Import required classes
+# Reload the modules to ensure latest changes
+import memories.models.load_model
+import memories.models.base_model
+import memories.core.memory
+
+importlib.reload(memories.models.load_model)
+importlib.reload(memories.models.base_model)
+importlib.reload(memories.core.memory)
+
+# Import required classes after reload
 from memories.models.load_model import LoadModel
+from memories.core.memory import MemoryStore
 from shapely.geometry import Point, Polygon
 from datetime import datetime, timedelta
 import torch
@@ -363,8 +373,8 @@ class MemoryStore:
                 ]
         """
         try:
-            # Use the instance_id from the loaded model
-            instance_id = model.instance_id
+            # Use the model's id as instance_id
+            instance_id = str(id(model))
             
             # Create FAISS storage based on selected artifacts and instance_id
             storage = create_faiss_storage(artifacts, instance_id)
