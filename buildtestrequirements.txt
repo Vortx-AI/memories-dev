@@ -28,6 +28,7 @@ mercantile>=1.2.1
 mapbox-vector-tile>=2.0.1
 pyproj>=3.6.1
 diffusers>=0.25.0
+xarray>=2023.0.0
 
 # Optional CUDA dependencies (install manually if CUDA is available)
 # cupy-cuda12x>=12.0.0  # For CUDA 12.x systems
