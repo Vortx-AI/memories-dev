@@ -2,6 +2,9 @@ import logging
 import numpy as np
 import cupy as cp
 import rasterio
+import torch
+import torch.nn.functional as F
+from memories_dev.models.segment_anything.modeling.sam import Sam as segmentation_model
 
 def calculate_ndvi(image: np.ndarray) -> np.ndarray:
     """

@@ -1,5 +1,6 @@
 import subprocess
 import torch
+from memories_dev.models.llama.llama import llama_vision_extraction
 
 def check_gpu_memory():
     """
