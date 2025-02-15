@@ -25,27 +25,32 @@ memories.dev is a high-performance infrastructure for providing real-world conte
 ## Quick Start
 
 ```python
-from memories_dev.memories_dev import memories_dev
-from memories_dev.memories.earth_memory import EarthMemoryStore
+from memories_dev.models.load_model import LoadModel
+from memories_dev.memories.memory import MemoryStore
 from memories_dev.agents.agent import Agent
 
 
 # Initialize with advanced models
-vx = Vortx(
-    models={
-        "reasoning": deepseek-coder-small,
-        "vision": deepseek-vision-small
-    },
-    use_gpu=True
+load_model = LoadModel(
+    use_gpu= True 
+    model_provider= "deepseek-ai" #"deepseek" or "openai"
+    deployment_type= "local" #"local" or "api"
+    model_name= "deepseek-r1-zero" #"deepseek-r1-zero" or "gpt-4o" or "deepseek-coder-3.1b-base" or "gpt-4o-mini"
+    #api_key= #"your-api-key" optional for api deployment
 )
 
 # Create Earth memories
-memory_store = EarthMemoryStore()
+memory_store = MemoryStore()
+
 memories = memory_store.create_memories(
-    location=(37.7749, -122.4194),
-    time_range=("2020-01-01", "2024-01-01"),
-    modalities=["satellite", "climate", "social"]
+    location=(37.7749, -122.4194),  # San Francisco coordinates
+    time_range=("2024-01-01", "2024-02-01"),
+    artifacts={
+        "satellite": ["sentinel-2", "landsat8"],
+        "landuse": ["osm","overture"]
+    }
 )
+
 
 # Generate synthetic data
 synthetic_data = vx.generate_synthetic(

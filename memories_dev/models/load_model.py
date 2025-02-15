@@ -9,7 +9,7 @@ import tempfile
 import gc
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
-from memories_dev.models.base_model import BaseModel
+
 from memories_dev.agents.agent_query_context import LocationExtractor
 from memories_dev.agents.agent_coder import CodeGenerator
 
@@ -46,12 +46,21 @@ class LoadModel:
         if use_gpu and not torch.cuda.is_available():
             self.logger.warning("GPU requested but not available. Falling back to CPU.")
         
-        # Get the base model instance
+        # Initialize base_model
+        from memories_dev.models.base_model import BaseModel
         self.base_model = BaseModel.get_instance()
+        
+        # Clean up any existing model resources first
+        if hasattr(self, 'base_model'):
+            self.cleanup()
+        
+        
         
         # Get the full model path from base model mappings
         try:
-            self.model_path = BaseModel.get_model_path(model_provider, model_name)
+            self.model_path = model_name
+            if self.deployment_type == "deployment":
+                self.model_path = f"{model_provider}/{model_name}"
             self.logger.info(f"Resolved model path: {self.model_path}")
         except ValueError as e:
             self.logger.error(f"Error resolving model path: {str(e)}")
@@ -67,40 +76,18 @@ class LoadModel:
                 raise RuntimeError("Failed to initialize model")
             self.logger.info("Model initialized successfully")
         
-    def generate_text(self, prompt: str, max_length: int = 1000) -> str:
-        """Generate text using the initialized model"""
-        if self.deployment_type == "deployment":
-            return self.base_model.generate(prompt, max_length)
-        else:
-            raise NotImplementedError("API-based text generation not implemented")
     
     def cleanup(self):
         """Clean up model resources"""
         if hasattr(self.base_model, 'model'):
             del self.base_model.model
+            self.base_model.model = None
         if hasattr(self.base_model, 'tokenizer'):
             del self.base_model.tokenizer
+            self.base_model.tokenizer = None
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             torch.cuda.ipc_collect()
+        gc.collect()  # Force Python garbage collection
         self.logger.info("Model resources cleaned up")
 
-# Example usage
-if __name__ == "__main__":
-    # For deployment type (local model)
-    model = LoadModel(
-        use_gpu=True,
-        model_provider="deepseek",
-        deployment_type="deployment",
-        model_name="deepseek-coder-small"
-    )
-    
-    try:
-        # Generate text
-        result = model.generate_text("Write a Python function to calculate fibonacci numbers")
-        print("Generated text:", result)
-    finally:
-        # Clean up
-        model.cleanup()
-
-    
