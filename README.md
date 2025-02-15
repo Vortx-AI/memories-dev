@@ -43,6 +43,7 @@ load_model = LoadModel(
 memory_store = MemoryStore()
 
 memories = memory_store.create_memories(
+    model = load_model,
     location=(37.7749, -122.4194),  # San Francisco coordinates
     time_range=("2024-01-01", "2024-02-01"),
     artifacts={
