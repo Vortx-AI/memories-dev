@@ -128,3 +128,28 @@ MEMORY_STORE_SETTINGS = {
     "batch_size": 10000,  # Number of records to process at once
     "top_k": 5,          # Number of results to return in similarity search
 }
+
+def main():
+    """Print current model instance ID when run directly."""
+    print("\nTesting Model Configuration")
+    print("=" * 50)
+    
+    # Get model and instance ID with default configuration
+    model, instance_id = get_model_config()
+    
+    print(f"\nModel Configuration:")
+    print(f"Provider: {model.model_provider}")
+    print(f"Model: {model.model_name}")
+    print(f"Deployment: {model.deployment_type}")
+    print(f"GPU Enabled: {model.use_gpu}")
+    print(f"\nInstance ID: {instance_id}")
+    
+    # Print memory configuration
+    memory_config = get_memory_config()
+    print(f"\nMemory Configuration:")
+    print(f"Time Range: {memory_config['time_range'][0]} to {memory_config['time_range'][1]}")
+    print(f"Location: India Bounding Box")
+    print(f"Artifacts: {memory_config['artifacts']}")
+
+if __name__ == "__main__":
+    main()
