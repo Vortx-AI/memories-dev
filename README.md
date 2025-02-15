@@ -9,6 +9,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v1.0.2)
 
 <a href="https://www.producthunt.com/posts/memories-dev?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-memories&#0045;dev" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=879661&theme=light&t=1739530783374" alt="memories&#0046;dev - Collective&#0032;AGI&#0032;Memory | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
@@ -72,11 +73,11 @@ insights = Agent(
 ## Installation
 
 ```bash
-# Basic installation (Coming Soon)
-pip install memories-dev
+# Basic installation
+pip install memories-dev==1.0.2
 
-# With GPU support (Coming Soon)
-pip install memories-dev[gpu]
+# With GPU support
+pip install memories-dev[gpu]==1.0.2
 ```
 ### Core Components
 
@@ -344,3 +345,11 @@ Apache License 2.0 - See [LICENSE](LICENSE) for details.
 <div align="center">
 <p>Empowering AI with Real-World Context</p>
 </div>
+
+## Changelog
+
+### Version 1.0.2
+- Added xarray dependency for advanced array operations
+- Added dask and dask[array] for parallel computing capabilities
+- Fixed test dependencies and GitHub Actions workflow
+- Improved test coverage and stability
