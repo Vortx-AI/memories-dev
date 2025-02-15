@@ -1,0 +1,28 @@
+{
+    "models": {
+        "deepseek-r1-zero": {
+            "name": "deepseek-r1-zero",
+            "provider": "deepseek-ai",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95,
+                "top_k": 50,
+                "repetition_penalty": 1.1
+            }
+        }
+    },
+    "default_model": "deepseek-r1-zero",
+    "supported_providers": [
+        "deepseek-ai",
+        "anthropic",
+        "openai",
+        "google"
+    ],
+    "deployment_types": [
+        "local",
+        "api",
+        "cloud"
+    ]
+} 

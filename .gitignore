@@ -1,24 +1,89 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
 .env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+venv_*/
+.python-version
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.project
+.pydevproject
+.settings/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
 gunicorn_config.py
 synthetic_satellite.nginx
-peak-sorter-432307-p8-c68a06a6da43.json
-peak-sorter-432307-p8-8f4c70f48ab9.json
+*.json
+!package.json
+!memories/*/config/*.json
+!memories/*/data/*.json
+!memories/utils/styles/*.json
 
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-__pycache__
-
-.DS_Store
-
-**/__init__.py
-
-**/__pycache__/
-
+# Logs and databases
+*.log
+*.sqlite
+*.db
 jupyter.log
 schema_index.faiss
 schema_metadata.json
+
+# Distribution
 memories-dev.egg-info/
-.env
-venv_py311/
+dist/
+build/
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Documentation
+docs/_build/
+docs/api/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/

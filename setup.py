@@ -45,13 +45,50 @@ setup(
         "pystac>=1.8.0",
         "xarray>=2023.0.0",
         "dask>=2024.1.0",
-        "dask[array]>=2024.1.0"
+        "dask[array]>=2024.1.0",
+        "spacy>=3.8.0",
+        "pytest>=8.3.4",
+        "pytest-asyncio>=0.23.5",
+        "pytest-cov>=4.1.0",
+        "pytest-mock>=3.12.0",
+        "pytest-xdist>=3.5.0",
+        "pytest-benchmark>=4.0.0",
+        "pytest-timeout>=2.2.0",
+        "black>=24.1.0",
+        "flake8>=7.0.0",
+        "mypy>=1.8.0",
+        "isort>=5.13.0",
+        "pre-commit>=3.6.0",
+        "sphinx>=7.2.0",
+        "sphinx-rtd-theme>=2.0.0",
+        "sphinx-autodoc-typehints>=2.0.0",
+        "nbsphinx>=0.9.0",
+        "pandoc>=2.3"
     ],
     
     extras_require={
-        "gpu": ["faiss-gpu>=1.7.4"],
-        "dev": ["pytest>=6.0"],
-        "docs": ["sphinx>=4.0.0"]
+        "gpu": ["faiss-gpu>=1.7.4", "cupy-cuda12x>=12.0.0"],
+        "dev": [
+            "pytest>=8.3.4",
+            "pytest-asyncio>=0.23.5",
+            "pytest-cov>=4.1.0",
+            "pytest-mock>=3.12.0",
+            "pytest-xdist>=3.5.0",
+            "pytest-benchmark>=4.0.0",
+            "pytest-timeout>=2.2.0",
+            "black>=24.1.0",
+            "flake8>=7.0.0",
+            "mypy>=1.8.0",
+            "isort>=5.13.0",
+            "pre-commit>=3.6.0"
+        ],
+        "docs": [
+            "sphinx>=7.2.0",
+            "sphinx-rtd-theme>=2.0.0",
+            "sphinx-autodoc-typehints>=2.0.0",
+            "nbsphinx>=0.9.0",
+            "pandoc>=2.3"
+        ]
     },
     
     python_requires=">=3.9",
@@ -64,21 +101,36 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
-        "Topic :: Scientific/Engineering :: GIS"
+        "Topic :: Scientific/Engineering :: GIS",
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Science/Research",
+        "Intended Audience :: Developers",
+        "Natural Language :: English"
     ],
     
     entry_points={
         "console_scripts": [
-            "vortx=vortx.cli:main"
+            "memories=memories.cli:main"
         ]
     },
     
     package_data={
         "memories": [
             "config/*.yaml",
-            "data/*.json"
+            "data/*.json",
+            "models/config/*.json",
+            "utils/styles/*.json"
         ]
     },
     
-    include_package_data=True
+    include_package_data=True,
+    zip_safe=False,
+    
+    project_urls={
+        "Homepage": "https://github.com/Vortx-AI/memories-dev",
+        "Documentation": "https://docs.memories-dev.dev",
+        "Repository": "https://github.com/Vortx-AI/memories-dev.git",
+        "Issues": "https://github.com/Vortx-AI/memories-dev/issues",
+        "Changelog": "https://github.com/Vortx-AI/memories-dev/blob/main/CHANGELOG.md"
+    }
 ) 

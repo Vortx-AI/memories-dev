@@ -16,6 +16,12 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Natural Language :: English"
 ]
 keywords = ["earth", "memory", "ai", "geo", "satellite"]
 dependencies = [
@@ -51,23 +57,92 @@ dependencies = [
     "xarray>=2023.0.0",
     "dask>=2024.1.0",
     "dask[array]>=2024.1.0",
+    "spacy>=3.8.0",
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.23.5",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "pytest-xdist>=3.5.0",
+    "pytest-benchmark>=4.0.0",
+    "pytest-timeout>=2.2.0",
+    "black>=24.1.0",
+    "flake8>=7.0.0",
+    "mypy>=1.8.0",
+    "isort>=5.13.0",
+    "pre-commit>=3.6.0",
+    "sphinx>=7.2.0",
+    "sphinx-rtd-theme>=2.0.0",
+    "sphinx-autodoc-typehints>=2.0.0",
+    "nbsphinx>=0.9.0",
+    "pandoc>=2.3"
 ]
 requires-python = ">=3.9"
 
 [project.optional-dependencies]
-gpu = ["faiss-gpu>=1.7.4"]
-dev = ["pytest>=6.0"]
-docs = ["sphinx>=4.0.0"]
+gpu = ["faiss-gpu>=1.7.4", "cupy-cuda12x>=12.0.0"]
+dev = [
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.23.5",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "pytest-xdist>=3.5.0",
+    "pytest-benchmark>=4.0.0",
+    "pytest-timeout>=2.2.0",
+    "black>=24.1.0",
+    "flake8>=7.0.0",
+    "mypy>=1.8.0",
+    "isort>=5.13.0",
+    "pre-commit>=3.6.0"
+]
+docs = [
+    "sphinx>=7.2.0",
+    "sphinx-rtd-theme>=2.0.0",
+    "sphinx-autodoc-typehints>=2.0.0",
+    "nbsphinx>=0.9.0",
+    "pandoc>=2.3"
+]
 
 [project.urls]
 Homepage = "https://github.com/Vortx-AI/memories-dev"
 Documentation = "https://docs.memories-dev.dev"
 Repository = "https://github.com/Vortx-AI/memories-dev.git"
 Issues = "https://github.com/Vortx-AI/memories-dev/issues"
+Changelog = "https://github.com/Vortx-AI/memories-dev/blob/main/CHANGELOG.md"
 
 [tool.setuptools]
 packages = ["memories"]
 package-dir = {"memories" = "memories"}
 
 [tool.setuptools.package-data]
-memories = ["config/*.yaml", "data/*.json"] 
+memories = [
+    "config/*.yaml",
+    "data/*.json",
+    "models/config/*.json",
+    "utils/styles/*.json"
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py39']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 100
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+minversion = "8.3"
+addopts = "-ra -q --cov=memories"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = ["asyncio: mark test as async"] 

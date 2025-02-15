@@ -1,0 +1,35 @@
+include LICENSE
+include README.md
+include CHANGELOG.md
+include pyproject.toml
+include setup.py
+include requirements-test.txt
+include buildtestrequirements.txt
+include pytest.ini
+
+# Include all package configuration files
+recursive-include memories/config *.yaml
+recursive-include memories/data *.json
+recursive-include memories/models/config *.json
+recursive-include memories/utils/styles *.json
+recursive-include memories/core *.json
+
+# Include Python source files
+recursive-include memories *.py
+recursive-include tests *.py
+
+# Include documentation
+recursive-include docs *.rst
+recursive-include docs *.py
+recursive-include docs *.bat
+recursive-include docs Makefile
+recursive-include examples *.py
+recursive-include examples *.ipynb
+
+# Exclude unnecessary files
+global-exclude *.py[cod]
+global-exclude __pycache__
+global-exclude *.so
+global-exclude .DS_Store
+global-exclude .env
+global-exclude venv* 

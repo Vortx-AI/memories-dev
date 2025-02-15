@@ -1,0 +1,59 @@
+{
+    "map_styles": {
+        "default": {
+            "background_color": "#f0f0f0",
+            "water_color": "#b3d1ff",
+            "land_color": "#ffffff",
+            "urban_color": "#e6e6e6",
+            "forest_color": "#c6ecc6",
+            "line_color": "#666666",
+            "text_color": "#333333",
+            "highlight_color": "#ff6b6b"
+        },
+        "satellite": {
+            "brightness": 1.0,
+            "contrast": 1.0,
+            "saturation": 1.0,
+            "gamma": 1.0,
+            "overlay_opacity": 0.3
+        }
+    },
+    "plot_styles": {
+        "default": {
+            "figure_size": [10, 6],
+            "dpi": 100,
+            "font_family": "sans-serif",
+            "font_size": 12,
+            "title_size": 14,
+            "axis_label_size": 10,
+            "grid": true,
+            "grid_style": "--",
+            "grid_alpha": 0.3
+        }
+    },
+    "color_palettes": {
+        "categorical": [
+            "#1f77b4",
+            "#ff7f0e",
+            "#2ca02c",
+            "#d62728",
+            "#9467bd",
+            "#8c564b",
+            "#e377c2",
+            "#7f7f7f",
+            "#bcbd22",
+            "#17becf"
+        ],
+        "sequential": [
+            "#f7fbff",
+            "#deebf7",
+            "#c6dbef",
+            "#9ecae1",
+            "#6baed6",
+            "#4292c6",
+            "#2171b5",
+            "#08519c",
+            "#08306b"
+        ]
+    }
+} 

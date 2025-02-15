@@ -1,0 +1,44 @@
+# Default configuration for memories-dev
+
+# Model settings
+model:
+  provider: "deepseek-ai"
+  deployment_type: "local"
+  model_name: "deepseek-r1-zero"
+  use_gpu: false
+
+# Memory settings
+memory:
+  hot:
+    max_size: 1000
+    ttl: 3600  # 1 hour
+  warm:
+    max_size: 10000
+    ttl: 86400  # 24 hours
+  cold:
+    max_size: 100000
+    ttl: 604800  # 7 days
+  glacier:
+    max_size: 1000000
+    ttl: 2592000  # 30 days
+
+# Data acquisition settings
+data_acquisition:
+  satellite:
+    providers: ["sentinel-2"]
+    max_cloud_cover: 20
+  landuse:
+    providers: ["osm"]
+    update_frequency: 86400  # 24 hours
+
+# Database settings
+database:
+  type: "duckdb"
+  path: "memories.db"
+  max_connections: 5
+
+# Logging settings
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "memories.log" 
