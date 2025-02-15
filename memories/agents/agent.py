@@ -4,18 +4,20 @@ import logging
 import os
 from memories.agents.agent_query_classification import AgentQueryClassification
 from memories.agents.agent_context import AgentContext
+from memories.store.memory_store import MemoryStore
 
 # Load environment variables
 load_dotenv()
 
 class Agent:
-    def __init__(self, query: str, load_model: Any):
+    def __init__(self, query: str, load_model: Any, memory_store: Any = None):
         """
         Initialize the Agent system.
         
         Args:
             query (str): The user's query.
             load_model (Any): The initialized model instance.
+            memory_store (Any): The initialized memory store with FAISS index.
         """
         logging.basicConfig(
             level=logging.INFO,
@@ -25,11 +27,48 @@ class Agent:
         
         self.query = query
         self.load_model = load_model
+        self.memory_store = memory_store
         
         # Retrieve PROJECT_ROOT from environment variables
         project_root = os.getenv("PROJECT_ROOT")
         if project_root is None:
             raise ValueError("PROJECT_ROOT environment variable is not set")
+
+    def search_similar_locations(self, data_type: str, location_info: Dict[str, Any], top_k: int = 5) -> list:
+        """
+        Search for similar locations in the FAISS index.
+        
+        Args:
+            data_type (str): Type of data being searched (e.g., 'cafes', 'restaurants')
+            location_info (Dict): Location information including coordinates
+            top_k (int): Number of results to return
+            
+        Returns:
+            list: List of similar locations with scores
+        """
+        try:
+            if not self.memory_store:
+                return []
+                
+            # Get normalized coordinates if available
+            coordinates = None
+            if location_info and 'normalized' in location_info:
+                norm = location_info['normalized']
+                if norm.get('coordinates'):
+                    coordinates = norm['coordinates']
+            
+            # Perform similarity search
+            search_results = self.memory_store.search_memories(
+                query=data_type,
+                coordinates=coordinates,
+                top_k=top_k
+            )
+            
+            return search_results
+            
+        except Exception as e:
+            self.logger.error(f"Error in similarity search: {str(e)}")
+            return []
 
     def process_query(self, query: str) -> Dict[str, Any]:
         """
@@ -62,6 +101,15 @@ class Agent:
                     'data_type': context_result.get('data_type'),
                     'location_details': context_result.get('location_info')
                 })
+                
+                # Perform similarity search if we have a memory store
+                if self.memory_store and result.get('data_type') and result.get('location_details'):
+                    similar_locations = self.search_similar_locations(
+                        data_type=result['data_type'],
+                        location_info=result['location_details']
+                    )
+                    result['similar_locations'] = similar_locations
+                    
             # For N and L0, just return the classification result directly
             elif result.get('classification') in ['N', 'L0']:
                 # The response should already be in the result
@@ -118,6 +166,34 @@ def main():
         model_name="deepseek-coder-1.3b-base"
     )
     
+    # Initialize memory store with OSM data connectors
+    memory_store = MemoryStore()
+    
+    # Get the project root path
+    project_root = os.getenv("PROJECT_ROOT")
+    osm_data_path = os.path.join(project_root, "location_data", "osm_data")
+    
+    memories = memory_store.create_memories(
+        model=load_model,
+        data_connectors=[
+            {
+                "name": "india_points",
+                "type": "parquet",
+                "file_path": os.path.join(osm_data_path, "india_points.parquet")
+            },
+            {
+                "name": "india_lines",
+                "type": "parquet",
+                "file_path": os.path.join(osm_data_path, "india_lines.parquet")
+            },
+            {
+                "name": "india_multipolygons",
+                "type": "parquet",
+                "file_path": os.path.join(osm_data_path, "india_multipolygons.parquet")
+            }
+        ]
+    )
+    
     # Test different types of queries
     test_queries = [
         "How do I write a Python function?",
@@ -131,7 +207,7 @@ def main():
         print("\n" + "="*50)
         print(f"Testing query: {query}")
         
-        agent = Agent(query=query, load_model=load_model)
+        agent = Agent(query=query, load_model=load_model, memory_store=memory_store)
         result = agent.process_query(query)
         
         print("\nResults:")
@@ -157,7 +233,18 @@ def main():
                     if norm.get('coordinates'):
                         coords = norm['coordinates']
                         print(f"Coordinates: {coords.get('lat')}, {coords.get('lon')}")
-            print(f"Explanation: {result.get('explanation', '')}")
+            
+            # Show similar locations if available
+            if 'similar_locations' in result and result['similar_locations']:
+                print("\nSimilar Locations:")
+                for idx, location in enumerate(result['similar_locations'], 1):
+                    print(f"\n{idx}. Score: {location.get('score', 'N/A')}")
+                    print(f"   Name: {location.get('name', 'N/A')}")
+                    print(f"   Type: {location.get('type', 'N/A')}")
+                    if 'coordinates' in location:
+                        print(f"   Coordinates: {location['coordinates']}")
+            
+            print(f"\nExplanation: {result.get('explanation', '')}")
         # For errors or unexpected cases
         else:
             print(f"Explanation: {result.get('explanation', '')}")
