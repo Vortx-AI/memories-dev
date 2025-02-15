@@ -351,9 +351,6 @@ class MemoryStore:
             # Use the model's id as instance_id
             instance_id = str(id(model))
             
-            # Create FAISS storage based on selected artifacts and instance_id
-            storage = create_faiss_storage(artifacts, instance_id)
-            
             # Convert location to JSON-serializable format
             if isinstance(location, (Polygon, MultiPolygon)):
                 geometry = json.loads(gpd.GeoSeries([location]).__geo_interface__)
@@ -365,7 +362,7 @@ class MemoryStore:
             # Process data connectors and add to FAISS storage
             connector_metadata = {}
             if data_connectors:
-                from memories_dev.data_acquisition.data_connectors import parquet_connector
+                from memories.data_acquisition.data_connectors import parquet_connector
                 
                 for connector in data_connectors:
                     if connector["type"] == "parquet":
@@ -381,33 +378,11 @@ class MemoryStore:
                         # Add to connector metadata
                         connector_metadata[connector["name"]] = connector_index
                         
-                        # If file was processed successfully, add to FAISS storage
-                        if connector_index.get("file_info"):
-                            file_info = connector_index["file_info"]
-                            
-                            # Create vector data for FAISS
-                            vector_data = {
-                                "file_name": file_info["file_name"],
-                                "file_path": file_info["file_path"],
-                                "columns": file_info["columns"],
-                                "row_count": file_info["row_count"],
-                                "size_bytes": file_info["size_bytes"],
-                                "connector_name": connector["name"],
-                                "connector_type": connector["type"],
-                                "instance_id": instance_id
-                            }
-                            
-                            # Add sample data if available
-                            if "sample_data" in file_info:
-                                vector_data.update({"sample_data": file_info["sample_data"]})
-                            
-                            # Add to FAISS storage
-                            storage.add(vector_data)
-                            print(f"[MemoryStore] Added {connector['name']} data to FAISS storage")
+                        print(f"[MemoryStore] Processed {connector['name']} data")
                     else:
                         print(f"[MemoryStore] Unsupported connector type: {connector['type']}")
 
-            # Insert into the existing memories table with model details
+            # Insert into the memories table
             self.conn.execute("""
                 INSERT INTO memories (
                     instance_id,
@@ -431,7 +406,6 @@ class MemoryStore:
             print(f"[MemoryStore] Created memory with ID: {instance_id}")
             return {
                 "instance_id": instance_id,
-                "storage": storage,
                 "data_connectors": connector_metadata
             }
 
