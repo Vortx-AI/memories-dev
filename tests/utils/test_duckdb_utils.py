@@ -3,7 +3,7 @@ import os
 import tempfile
 import pandas as pd
 import duckdb
-from memories_dev.utils.duckdb_utils import query_multiple_parquet
+from memories.utils.duckdb_utils import query_multiple_parquet
 
 @pytest.fixture
 def sample_parquet_files(tmp_path):

@@ -1,7 +1,7 @@
 import pytest
 import torch
-from memories_dev.utils.processors.gpu_stat import check_gpu_memory
-from memories_dev.models.llama.llama import llama_vision_extraction
+from memories.utils.processors.gpu_stat import check_gpu_memory
+from memories.models.llama.llama import llama_vision_extraction
 
 HAS_CUDA = torch.cuda.is_available()
 

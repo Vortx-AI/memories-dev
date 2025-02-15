@@ -1,5 +1,5 @@
 """
-Common type definitions for the memories_dev package.
+Common type definitions for the memories package.
 """
 
 from typing import Union, Tuple, TypeVar, Any
