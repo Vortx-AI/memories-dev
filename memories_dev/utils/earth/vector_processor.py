@@ -80,7 +80,8 @@ class VectorTileProcessor:
         """
         
         if layers:
-            query += f" AND layer IN ({','.join([f"'{l}'" for l in layers])})"
+            layer_list = ','.join(f"'{l}'" for l in layers)
+            query += f" AND layer IN ({layer_list})"
             
         if time:
             query += f" AND time_column <= '{time}'"
