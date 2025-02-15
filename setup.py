@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="memories-dev",
-    version="1.0.7",
+    version="1.0.8",
     packages=find_packages(include=['memories', 'memories.*']),
     
     author="Memories-dev",
@@ -48,7 +48,7 @@ setup(
         "dask[array]>=2024.1.0",
         "spacy==3.7.4",
         "thinc==8.2.2",
-        "blis==0.7.11",
+        "blis==0.7.12",
         "redis>=5.0.0",
         "pytest>=8.3.4",
         "pytest-asyncio>=0.23.5",
@@ -99,7 +99,7 @@ setup(
         ]
     },
     
-    python_requires=">=3.9",
+    python_requires=">=3.9,<3.13",
     
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
@@ -108,6 +108,7 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Scientific/Engineering :: GIS",
         "Development Status :: 5 - Production/Stable",

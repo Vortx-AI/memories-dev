@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "memories-dev"
-version = "1.0.7"
+version = "1.0.8"
 description = "A package for daily synthesis of Earth Memories, helping agents answer about location-first queries."
 readme = "README.md"
 authors = [{ name = "Memories-dev", email = "hello@memories-dev.com" }]
@@ -16,6 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: GIS",
     "Development Status :: 5 - Production/Stable",
@@ -59,7 +60,7 @@ dependencies = [
     "dask[array]>=2024.1.0",
     "spacy==3.7.4",
     "thinc==8.2.2",
-    "blis==0.7.11",
+    "blis==0.7.12",
     "redis>=5.0.0",
     "pytest>=8.3.4",
     "pytest-asyncio>=0.23.5",
@@ -79,7 +80,7 @@ dependencies = [
     "nbsphinx>=0.9.0",
     "pandoc>=2.3"
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.9,<3.13"
 
 [project.optional-dependencies]
 gpu = [
