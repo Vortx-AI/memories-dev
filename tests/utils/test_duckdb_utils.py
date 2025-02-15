@@ -83,7 +83,7 @@ def test_query_multiple_parquet_invalid_query(sample_parquet_files):
     """Test handling of invalid SQL query"""
     with pytest.raises(Exception) as excinfo:
         query_multiple_parquet("INVALID SQL QUERY")
-    assert "SQL" in str(excinfo.value)
+    assert "Parser Error" in str(excinfo.value)
 
 def test_query_multiple_parquet_schema_handling(sample_parquet_files):
     """Test handling of different schemas across files"""
