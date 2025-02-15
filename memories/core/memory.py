@@ -562,6 +562,85 @@ class MemoryStore:
             print("FAISS index not initialized. Cannot perform query.")
             return []
 
+    def search_memories(self, query: str, coordinates: Optional[Dict[str, float]] = None, top_k: int = 5) -> List[Dict[str, Any]]:
+        """
+        Search for similar memories using FAISS index.
+        
+        Args:
+            query (str): The search query
+            coordinates (Dict[str, float], optional): Location coordinates {lat, lon}
+            top_k (int): Number of results to return
+            
+        Returns:
+            List[Dict[str, Any]]: List of similar items with scores
+        """
+        try:
+            if self.index is None:
+                print("[MemoryStore] No index available for search")
+                return []
+            
+            # Create query embedding (placeholder - implement based on your model)
+            query_embedding = np.random.rand(1, 128).astype('float32')  # Using same dim as in _create_embeddings
+            
+            # Perform similarity search
+            distances, indices = self.index.search(query_embedding, top_k)
+            
+            # Format results
+            results = []
+            for i, (distance, idx) in enumerate(zip(distances[0], indices[0])):
+                if idx < len(self.data):
+                    item = self.data[idx].copy()
+                    item['score'] = float(1.0 / (1.0 + distance))  # Convert distance to score
+                    
+                    # Add coordinates if available
+                    if coordinates and 'geometry' in item:
+                        item['distance'] = self._calculate_distance(
+                            coordinates,
+                            item.get('geometry', {}).get('coordinates', [])
+                        )
+                    
+                    results.append(item)
+            
+            # Sort by score and distance if available
+            results.sort(key=lambda x: (-x['score'], x.get('distance', float('inf'))))
+            
+            return results
+            
+        except Exception as e:
+            print(f"[MemoryStore] Error in similarity search: {str(e)}")
+            return []
+
+    def _calculate_distance(self, point1: Dict[str, float], point2: List[float]) -> float:
+        """
+        Calculate the distance between two points using Haversine formula.
+        
+        Args:
+            point1 (Dict[str, float]): First point with lat/lon
+            point2 (List[float]): Second point as [lon, lat]
+            
+        Returns:
+            float: Distance in kilometers
+        """
+        try:
+            from math import radians, sin, cos, sqrt, atan2
+            
+            # Extract coordinates
+            lat1, lon1 = radians(point1['lat']), radians(point1['lon'])
+            lat2, lon2 = radians(point2[1]), radians(point2[0])  # Note the order swap for GeoJSON format
+            
+            # Haversine formula
+            dlat = lat2 - lat1
+            dlon = lon2 - lon1
+            a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+            c = 2 * atan2(sqrt(a), sqrt(1-a))
+            r = 6371  # Earth's radius in kilometers
+            
+            return r * c
+            
+        except Exception as e:
+            print(f"[MemoryStore] Error calculating distance: {str(e)}")
+            return float('inf')
+
 def encode_geospatial_data(data: Dict[str, Any], encoder: MemoryEncoder) -> torch.Tensor:
     """
     Example function to encode geospatial data.
