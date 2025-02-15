@@ -346,10 +346,3 @@ Apache License 2.0 - See [LICENSE](LICENSE) for details.
 <p>Empowering AI with Real-World Context</p>
 </div>
 
-## Changelog
-
-### Version 1.0.2
-- Added xarray dependency for advanced array operations
-- Added dask and dask[array] for parallel computing capabilities
-- Fixed test dependencies and GitHub Actions workflow
-- Improved test coverage and stability
