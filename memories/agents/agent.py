@@ -87,7 +87,7 @@ def main():
     Main function to run the agent directly.
     Example usage: python3 agent.py
     """
-    from memories_dev.models.load_model import LoadModel
+    from memories.models.load_model import LoadModel
     
     # Load environment variables
     load_dotenv()
