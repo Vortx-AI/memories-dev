@@ -1,12 +1,7 @@
 # 🧠 memories.dev
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Tests](https://github.com/Vortx-AI/memories-dev/actions/workflows/tests.yml/badge.svg)](https://github.com/Vortx-AI/memories-dev/actions/workflows/tests.yml)
-[![Documentation Status](https://readthedocs.org/projects/memoriesdev/badge/?version=latest)](https://memoriesdev.readthedocs.io/en/latest/?badge=latest)
 
-> Building the future of collective AGI memory - v1.0.0
+> Collective AGI memory - v1.0.0
 
 ## 🌟 Overview
 
