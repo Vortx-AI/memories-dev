@@ -10,6 +10,8 @@ import gc
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import uuid
 import duckdb
+from openai import OpenAI
+import requests
 
 
 from memories.agents.agent_query_context import LocationExtractor
@@ -19,7 +21,7 @@ class LoadModel:
     def __init__(self, 
                  use_gpu: bool = True,
                  model_provider: str = None,
-                 deployment_type: str = None,  # "deployment" or "api"
+                 deployment_type: str = None,
                  model_name: str = None,
                  api_key: str = None):
         """
@@ -27,140 +29,66 @@ class LoadModel:
         
         Args:
             use_gpu (bool): Whether to use GPU if available
-            model_provider (str): The model provider (e.g., "deepseek", "llama", "mistral")
+            model_provider (str): The model provider (e.g., "openai", "deepseek", "anthropic")
             deployment_type (str): Either "deployment" or "api"
             model_name (str): Name of the model to use
-            api_key (str): API key for the model provider (required for API deployment type)
+            api_key (str): API key for the model provider (if not in env vars)
         """
-        if not all([model_provider, deployment_type, model_name]):
-            raise ValueError("model_provider, deployment_type, and model_name are required")
-            
-        if deployment_type not in ["deployment", "api"]:
-            raise ValueError("deployment_type must be either 'deployment' or 'api'")
-            
-        if deployment_type == "api" and not api_key:
-            raise ValueError("api_key is required for API deployment type")
-            
-        self.instance_id = str(uuid.uuid4())
         self.logger = logging.getLogger(__name__)
         self.use_gpu = use_gpu and torch.cuda.is_available()
         self.model_provider = model_provider
         self.deployment_type = deployment_type
         self.model_name = model_name
-        self.api_key = api_key
         
-        # Initialize DuckDB connection
-        self.db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'memories.db')
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-        self.conn = duckdb.connect(self.db_path)
+        # Load API keys from environment or use provided
+        self.api_keys = {
+            'openai': api_key or os.getenv('OPENAI_API_KEY'),
+            'deepseek': api_key or os.getenv('DEEPSEEK_API_KEY'),
+            'anthropic': api_key or os.getenv('ANTHROPIC_API_KEY')
+        }
         
-        # Create models table if it doesn't exist
-        self.conn.execute("""
-            CREATE TABLE IF NOT EXISTS models (
-                instance_id VARCHAR PRIMARY KEY,
-                model_provider VARCHAR,
-                model_name VARCHAR,
-                deployment_type VARCHAR,
-                use_gpu BOOLEAN,
-                api_key VARCHAR,
-                model_path VARCHAR,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        if use_gpu and not torch.cuda.is_available():
-            self.logger.warning("GPU requested but not available. Falling back to CPU.")
-        
-        # Initialize base_model
-        from memories.models.base_model import BaseModel
-        self.base_model = BaseModel.get_instance()
-        
-        # Clean up any existing model resources first
-        if hasattr(self, 'base_model'):
-            self.cleanup()
-        
-        try:
-            self.model_path = model_name
-            if deployment_type == "deployment":
-                self.model_path = f"{model_provider}/{model_name}"
-            self.logger.info(f"Resolved model path: {self.model_path}")
+        # Initialize based on deployment type
+        if self.deployment_type == "api":
+            self._initialize_api_clients()
+        elif self.deployment_type == "deployment":
+            self._initialize_local_model()
+        else:
+            self.client = MockModel()
             
-            # Store model details in DuckDB
-            self.conn.execute("""
-                INSERT INTO models (
-                    instance_id,
-                    model_provider,
-                    model_name,
-                    deployment_type,
-                    use_gpu,
-                    api_key,
-                    model_path
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                self.instance_id,
-                model_provider,
-                model_name,
-                deployment_type,
-                use_gpu,
-                api_key,
-                self.model_path
-            ))
-            
-        except Exception as e:
-            self.logger.error(f"Error initializing model: {str(e)}")
-            raise
-        
-        # Initialize the model if using deployment type
-        if deployment_type == "deployment":
-            success = self.base_model.initialize_model(
-                model=self.model_path,
-                use_gpu=self.use_gpu
-            )
-            if not success:
-                raise RuntimeError("Failed to initialize model")
-                
-        self.logger.info(f"Model loaded successfully with instance ID: {self.instance_id}")
-        
-        # Initialize model attribute
-        self.model = self._initialize_model()
-    
-    def _initialize_model(self):
-        """
-        Initialize the appropriate model based on provider and deployment type.
-        """
+        self.logger.info(f"Model loaded successfully with instance ID: {id(self)}")
+
+    def _initialize_api_clients(self):
+        """Initialize API clients based on provider"""
         try:
-            if self.model_provider == "deepseek-ai":
-                # Mock model for testing - replace with actual model initialization
-                return MockModel()
+            if self.model_provider == "openai":
+                self.client = OpenAI(api_key=self.api_keys['openai'])
+            elif self.model_provider == "deepseek":
+                self.client = None  # Will use direct API calls
+            elif self.model_provider == "anthropic":
+                self.client = None  # Will implement Anthropic client
             else:
-                raise ValueError(f"Unsupported model provider: {self.model_provider}")
+                raise ValueError(f"Unsupported API provider: {self.model_provider}")
                 
         except Exception as e:
-            self.logger.error(f"Error initializing model: {str(e)}")
+            self.logger.error(f"Error initializing API client: {str(e)}")
             raise
-    
-    def cleanup(self):
-        """Clean up model resources"""
-        if hasattr(self.base_model, 'model'):
-            del self.base_model.model
-            self.base_model.model = None
-        if hasattr(self.base_model, 'tokenizer'):
-            del self.base_model.tokenizer
-            self.base_model.tokenizer = None
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            torch.cuda.ipc_collect()
-        gc.collect()
-        self.logger.info("Model resources cleaned up")
-    
-    def __del__(self):
-        """Destructor to ensure connection is closed"""
-        if hasattr(self, 'conn'):
-            self.conn.close()
+
+    def _initialize_local_model(self):
+        """Initialize local deployment model"""
+        try:
+            if self.model_provider == "deepseek":
+                # Initialize local DeepSeek model
+                self.client = MockModel()  # Replace with actual local model initialization
+            else:
+                raise ValueError(f"Unsupported local deployment for provider: {self.model_provider}")
+                
+        except Exception as e:
+            self.logger.error(f"Error initializing local model: {str(e)}")
+            raise
 
     def get_response(self, prompt: str) -> str:
         """
-        Get a response from the initialized model for a given prompt.
+        Get a response based on deployment type and provider.
         
         Args:
             prompt (str): The input prompt
@@ -169,22 +97,80 @@ class LoadModel:
             str: The model's response
         """
         try:
-            if not hasattr(self, 'model') or self.model is None:
-                raise ValueError("Model not properly initialized")
+            if self.deployment_type == "api":
+                if self.model_provider == "openai":
+                    return self._get_openai_response(prompt)
+                elif self.model_provider == "deepseek":
+                    return self._get_deepseek_api_response(prompt)
+                elif self.model_provider == "anthropic":
+                    return self._get_anthropic_response(prompt)
+                    
+            elif self.deployment_type == "deployment":
+                if self.model_provider == "deepseek":
+                    return self._get_local_deepseek_response(prompt)
+                    
+            # Default to mock response
+            return self.client(prompt)
                 
-            response = self.model(prompt)
-            return response.strip()
-            
         except Exception as e:
             raise Exception(f"Error generating response: {str(e)}")
+
+    def _get_openai_response(self, prompt: str) -> str:
+        """Get response from OpenAI API"""
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model_name or "gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            raise Exception(f"OpenAI API error: {str(e)}")
+
+    def _get_deepseek_api_response(self, prompt: str) -> str:
+        """Get response from DeepSeek API"""
+        try:
+            headers = {
+                "Authorization": f"Bearer {self.api_keys['deepseek']}",
+                "Content-Type": "application/json"
+            }
+            
+            data = {
+                "model": self.model_name or "deepseek-coder-1.3b-base",
+                "messages": [{"role": "user", "content": prompt}]
+            }
+            
+            response = requests.post(
+                "https://api.deepseek.com/v1/chat/completions",
+                headers=headers,
+                json=data
+            )
+            
+            response.raise_for_status()
+            return response.json()['choices'][0]['message']['content'].strip()
+        except Exception as e:
+            raise Exception(f"DeepSeek API error: {str(e)}")
+
+    def _get_local_deepseek_response(self, prompt: str) -> str:
+        """Get response from local DeepSeek model"""
+        try:
+            # Use the locally deployed model
+            # This should be implemented based on your local deployment setup
+            return self.client(prompt)
+        except Exception as e:
+            raise Exception(f"Local DeepSeek error: {str(e)}")
+
+    def _get_anthropic_response(self, prompt: str) -> str:
+        """Get response from Anthropic API"""
+        try:
+            # Implement Anthropic API call
+            raise NotImplementedError("Anthropic API not yet implemented")
+        except Exception as e:
+            raise Exception(f"Anthropic API error: {str(e)}")
 
 # Mock model class for testing
 class MockModel:
     def __call__(self, prompt: str) -> str:
-        """
-        Mock response generation.
-        """
-        # Return different responses based on prompt content
+        """Mock response generation."""
         if "location" in prompt.lower() or "near" in prompt.lower():
             return "L1_2"
         elif "capital" in prompt.lower() or "country" in prompt.lower():
