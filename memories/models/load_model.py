@@ -81,11 +81,16 @@ class LoadModel:
     def _initialize_local_model(self):
         """Initialize local deployment model"""
         try:
-            if self.model_provider == "deepseek":
+            if self.model_provider in ["deepseek", "deepseek-ai"]:  # Accept both forms
                 # Initialize local DeepSeek model
                 self.client = MockModel()  # Replace with actual local model initialization
+                self.logger.info(f"Initialized local {self.model_provider} model")
             else:
-                raise ValueError(f"Unsupported local deployment for provider: {self.model_provider}")
+                supported_providers = ["deepseek", "deepseek-ai"]
+                raise ValueError(
+                    f"Unsupported local deployment for provider: {self.model_provider}. "
+                    f"Supported providers are: {', '.join(supported_providers)}"
+                )
                 
         except Exception as e:
             self.logger.error(f"Error initializing local model: {str(e)}")
@@ -105,13 +110,13 @@ class LoadModel:
             if self.deployment_type == "api":
                 if self.model_provider == "openai":
                     return self._get_openai_response(prompt)
-                elif self.model_provider == "deepseek":
+                elif self.model_provider in ["deepseek", "deepseek-ai"]:
                     return self._get_deepseek_api_response(prompt)
                 elif self.model_provider == "anthropic":
                     return self._get_anthropic_response(prompt)
                     
             elif self.deployment_type == "deployment":
-                if self.model_provider == "deepseek":
+                if self.model_provider in ["deepseek", "deepseek-ai"]:
                     return self._get_local_deepseek_response(prompt)
                     
             # Default to mock response
