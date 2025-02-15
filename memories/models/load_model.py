@@ -10,12 +10,13 @@ import gc
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import uuid
 import duckdb
-from openai import OpenAI
 import requests
 
 
 from memories.agents.agent_query_context import LocationExtractor
 from memories.agents.agent_coder import CodeGenerator
+
+load_dotenv()
 
 class LoadModel:
     def __init__(self, 
@@ -61,7 +62,11 @@ class LoadModel:
         """Initialize API clients based on provider"""
         try:
             if self.model_provider == "openai":
-                self.client = OpenAI(api_key=self.api_keys['openai'])
+                try:
+                    from openai import OpenAI
+                    self.client = OpenAI(api_key=self.api_keys['openai'])
+                except ImportError:
+                    raise ImportError("OpenAI package not installed. Please install it using: pip install openai")
             elif self.model_provider == "deepseek":
                 self.client = None  # Will use direct API calls
             elif self.model_provider == "anthropic":
