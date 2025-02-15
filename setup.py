@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="memories",
+    name="memories_dev",
     version="0.1.0",
     packages=find_packages(),
     
@@ -41,7 +41,8 @@ setup(
         "sentence-transformers>=2.2.0",
         "mercantile>=1.2.1",
         "mapbox-vector-tile>=2.0.1",
-        "pyproj>=3.6.1"
+        "pyproj>=3.6.1",
+        "pystac>=1.8.0"
     ],
     
     extras_require={
@@ -70,7 +71,7 @@ setup(
     },
     
     package_data={
-        "memories": [
+        "memories_dev": [
             "config/*.yaml",
             "data/*.json"
         ]

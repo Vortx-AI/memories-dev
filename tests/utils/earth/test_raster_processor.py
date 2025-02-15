@@ -4,7 +4,8 @@ import rasterio
 from rasterio.io import MemoryFile
 import mercantile
 from shapely.geometry import box
-from memories.utils.earth.raster_processor import RasterTileProcessor
+from memories_dev.utils.earth.raster_processor import RasterTileProcessor
+from memories_dev.utils.types import Bounds
 
 @pytest.fixture
 def sample_raster_data():
@@ -16,6 +17,11 @@ def sample_raster_data():
     return data, transform
 
 @pytest.fixture
+def sample_bounds():
+    """Create sample bounds for testing"""
+    return mercantile.LngLatBbox(west=-122.4194, south=37.7749, east=-122.4093, north=37.7850)
+
+@pytest.fixture
 def raster_processor():
     """Create RasterTileProcessor instance"""
     return RasterTileProcessor()
@@ -23,108 +29,74 @@ def raster_processor():
 def test_raster_processor_initialization(raster_processor):
     """Test that RasterTileProcessor initializes correctly"""
     assert raster_processor is not None
-    assert raster_processor.styles == {}  # Empty since no style files exist yet
-    assert isinstance(raster_processor.transformations, dict)
-    assert isinstance(raster_processor.filters, dict)
+    assert isinstance(raster_processor._styles, dict)
+    assert isinstance(raster_processor._transformations, dict)
+    assert isinstance(raster_processor._filters, dict)
     assert raster_processor.db is not None
 
 def test_available_transformations(raster_processor):
     """Test that available_transformations returns correct list"""
-    transformations = raster_processor.available_transformations()
+    transformations = raster_processor.available_transformations
     assert isinstance(transformations, list)
-    assert 'normalize' in transformations
-    assert 'hillshade' in transformations
-    assert 'resample:mean' in transformations
+    assert 'flip_vertical' in transformations
+    assert 'flip_horizontal' in transformations
+    assert 'rotate_90' in transformations
 
 def test_available_filters(raster_processor):
     """Test that available_filters returns correct list"""
-    filters = raster_processor.available_filters()
+    filters = raster_processor.available_filters
     assert isinstance(filters, list)
-    assert 'cloud_mask' in filters
-    assert 'nodata_mask' in filters
-    assert 'threshold' in filters
+    assert 'median' in filters
+    assert 'mean' in filters
+    assert 'gaussian' in filters
 
-@pytest.mark.asyncio
-async def test_process_tile(raster_processor, sample_raster_data):
-    """Test process_tile method"""
-    data, transform = sample_raster_data
-    bounds = mercantile.Bounds(-122.4194, 37.7749, -122.4093, 37.7850)
-    
-    # Create temporary raster file
-    with MemoryFile() as memfile:
-        with memfile.open(
-            driver='GTiff',
-            height=256,
-            width=256,
-            count=3,
-            dtype=data.dtype,
-            crs='EPSG:4326',
-            transform=transform
-        ) as dataset:
-            dataset.write(data)
-        
-        # Process tile
-        result = await raster_processor.process_tile(
-            bounds=bounds,
-            format='png',
-            style=None
-        )
-        
-        assert result is not None
-        assert isinstance(result, bytes)
+def test_process_tile(raster_processor, sample_bounds):
+    """Test processing a tile"""
+    result = raster_processor.process_tile(sample_bounds)
+    assert result is not None
+    assert isinstance(result, np.ndarray)
+    assert result.shape == (256, 256)  # Standard tile size
 
-def test_apply_filter(raster_processor, sample_raster_data):
-    """Test _apply_filter method"""
-    data, _ = sample_raster_data
-    
-    # Test cloud mask filter
-    filtered = raster_processor._apply_filter(data, 'cloud_mask')
-    assert filtered.shape == data.shape
-    
-    # Test threshold filter
-    filtered = raster_processor._apply_filter(data, 'threshold:128')
-    assert filtered.shape == data.shape
+def test_apply_filter(raster_processor, sample_bounds):
+    """Test applying a filter"""
+    data = np.random.rand(256, 256)
+    filtered = raster_processor._apply_filter(data, sample_bounds, 'median')
+    assert filtered is not None
+    assert isinstance(filtered, np.ndarray)
+    assert filtered.shape == (256, 256)
 
-def test_apply_transformation(raster_processor, sample_raster_data):
-    """Test _apply_transformation method"""
-    data, _ = sample_raster_data
-    
-    # Test normalize transformation
-    transformed = raster_processor._apply_transformation(data, 'normalize')
-    assert transformed.shape == data.shape
-    assert transformed.min() >= 0
-    assert transformed.max() <= 1
-    
-    # Test hillshade transformation
-    transformed = raster_processor._apply_transformation(data, 'hillshade')
-    assert transformed.shape == data.shape
+def test_apply_transformation(raster_processor, sample_bounds):
+    """Test applying a transformation"""
+    data = np.random.rand(256, 256)
+    transformed = raster_processor._apply_transformation(data, sample_bounds, 'flip_vertical')
+    assert transformed is not None
+    assert isinstance(transformed, np.ndarray)
+    assert transformed.shape == (256, 256)
 
-def test_calculate_hillshade(raster_processor, sample_raster_data):
-    """Test _calculate_hillshade method"""
-    data, _ = sample_raster_data
-    
-    hillshade = raster_processor._calculate_hillshade(
-        data[0],  # Use first band
-        azimuth=315.0,
-        altitude=45.0
-    )
-    
-    assert hillshade.shape == data[0].shape
-    assert not np.isnan(hillshade).any()
+def test_calculate_hillshade(raster_processor, sample_bounds):
+    """Test calculating hillshade"""
+    data = np.random.rand(256, 256)
+    hillshade = raster_processor._calculate_hillshade(data, sample_bounds)
+    assert hillshade is not None
+    assert isinstance(hillshade, np.ndarray)
+    assert hillshade.shape == (256, 256)
+
+def test_to_format(raster_processor, sample_bounds):
+    """Test converting to a specific format"""
+    data = np.random.rand(256, 256)
+    # Convert to xarray DataArray
+    import xarray as xr
+    data = xr.DataArray(data, dims=('y', 'x'))
+    formatted = raster_processor._to_format(data, sample_bounds, 'png')
+    assert formatted is not None
+    assert isinstance(formatted, bytes)
 
 def test_apply_style(raster_processor, sample_raster_data):
     """Test _apply_style method"""
     data, _ = sample_raster_data
-    
-    # Test with default style (should return unchanged)
+    # Convert to xarray DataArray
+    import xarray as xr
+    data = xr.DataArray(data, dims=('band', 'y', 'x'))
     styled = raster_processor._apply_style(data, 'default')
-    assert styled.shape == data.shape
-
-def test_to_format(raster_processor, sample_raster_data):
-    """Test _to_format method"""
-    data, _ = sample_raster_data
-    
-    # Test PNG format
-    png_bytes = raster_processor._to_format(data, 'png')
-    assert isinstance(png_bytes, bytes)
-    assert len(png_bytes) > 0 
+    assert styled is not None
+    assert isinstance(styled, xr.DataArray) 

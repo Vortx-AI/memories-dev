@@ -1,8 +1,0 @@
-LICENSE
-README.md
-setup.py
-memories.egg-info/PKG-INFO
-memories.egg-info/SOURCES.txt
-memories.egg-info/dependency_links.txt
-memories.egg-info/requires.txt
-memories.egg-info/top_level.txt
