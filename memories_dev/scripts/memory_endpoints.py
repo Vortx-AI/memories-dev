@@ -1,133 +1,151 @@
-from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
+"""
+FastAPI endpoints for Earth memory operations.
+"""
+
+from fastapi import FastAPI, HTTPException, File, UploadFile
+from typing import Dict, List, Optional
+from pydantic import BaseModel
+import mercantile
 from datetime import datetime
-from pathlib import Path
+from ..utils.types import Bounds
+from ..utils.privacy.secure_encoding import SecureImageEncoder, SecureAPILayer
+from ..synthetic.generator import SyntheticDataGenerator
 
-from ..core.memory import EarthMemoryStore
-from ..core.synthesis import SynthesisPipeline, SatelliteDataSource
+app = FastAPI(title="Earth Memories API")
 
-router = APIRouter(prefix="/memory", tags=["memory"])
+# Initialize components
+secure_layer = SecureAPILayer(master_key="your-secure-key-here")  # Replace with secure key
+synthetic_generator = SyntheticDataGenerator()
 
-# Initialize services
-memory_store = EarthMemoryStore(Path("/app/data/memories"))
-
-# Configure data sources
-satellite_source = SatelliteDataSource(
-    name="sentinel2",
-    resolution=10.0,
-    bands=["B02", "B03", "B04", "B08"],  # RGB + NIR
-    data_path=Path("/app/data/satellite")
-)
-
-pipeline = SynthesisPipeline(
-    data_sources=[satellite_source],
-    memory_store=memory_store
-)
-
-class MemoryQuery(BaseModel):
-    """Query parameters for memory retrieval."""
-    latitude: float = Field(..., ge=-90, le=90)
-    longitude: float = Field(..., ge=-180, le=180)
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
-    limit: int = Field(default=5, ge=1, le=100)
+class MemoryRequest(BaseModel):
+    """Memory request model"""
+    bounds: Dict[str, float]
+    timestamp: Optional[str] = None
+    protection_level: Optional[str] = 'high'
+    metadata: Optional[Dict] = {}
 
 class MemoryResponse(BaseModel):
-    """Response model for memory queries."""
-    coordinates: tuple
-    timestamp: datetime
-    metadata: Dict[str, Any]
-    embedding: List[float]
+    """Memory response model"""
+    memory_id: str
+    bounds: Dict[str, float]
+    timestamp: str
+    access_token: str
+    metadata: Dict
 
-@router.post("/query", response_model=List[MemoryResponse])
-async def query_memories(query: MemoryQuery):
-    """Query memories by location and time range."""
+@app.post("/memories/store")
+async def store_memory(
+    request: MemoryRequest,
+    image: UploadFile = File(...)
+):
+    """Store a new Earth memory"""
     try:
-        time_range = None
-        if query.start_time and query.end_time:
-            time_range = (query.start_time, query.end_time)
+        # Convert bounds
+        bounds = mercantile.LngLatBbox(
+            west=request.bounds['west'],
+            south=request.bounds['south'],
+            east=request.bounds['east'],
+            north=request.bounds['north']
+        )
+        
+        # Read image data
+        image_data = await image.read()
+        
+        # Encode and store
+        encrypted_data, secure_metadata = secure_layer.encode_tile(
+            image_data,
+            request.metadata,
+            request.protection_level
+        )
+        
+        # Generate response
+        response = MemoryResponse(
+            memory_id=secure_metadata['id'],
+            bounds=request.bounds,
+            timestamp=datetime.utcnow().isoformat(),
+            access_token=secure_metadata['access_token'],
+            metadata=secure_metadata
+        )
+        
+        return response
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/memories/{memory_id}")
+async def get_memory(
+    memory_id: str,
+    access_token: str
+):
+    """Retrieve an Earth memory"""
+    try:
+        # Retrieve and decode
+        encrypted_data = None  # TODO: Implement retrieval from storage
+        secure_metadata = None  # TODO: Implement metadata retrieval
+        
+        decoded_data = secure_layer.decode_tile(
+            encrypted_data,
+            secure_metadata,
+            access_token
+        )
+        
+        if decoded_data is None:
+            raise HTTPException(status_code=403, detail="Access denied")
             
-        memories = memory_store.query_memories(
-            coordinates=(query.latitude, query.longitude),
-            time_range=time_range,
-            k=query.limit
-        )
+        return decoded_data
         
-        return [
-            MemoryResponse(
-                coordinates=mem["coordinates"],
-                timestamp=mem["timestamp"],
-                metadata=mem["metadata"],
-                embedding=mem["embedding"].tolist()
-            )
-            for mem in memories
-        ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-class ProcessRequest(BaseModel):
-    """Request model for processing new locations."""
-    latitude: float = Field(..., ge=-90, le=90)
-    longitude: float = Field(..., ge=-180, le=180)
-    timestamp: datetime
-    metadata: Optional[Dict[str, Any]] = None
-
-@router.post("/process")
-async def process_location(request: ProcessRequest):
-    """Process a new location and store it in memory."""
+@app.post("/memories/synthetic")
+async def generate_synthetic(request: MemoryRequest):
+    """Generate synthetic Earth memory"""
     try:
-        result = pipeline.process_location(
-            coordinates=(request.latitude, request.longitude),
-            timestamp=request.timestamp,
-            metadata=request.metadata
+        # Convert bounds
+        bounds = mercantile.LngLatBbox(
+            west=request.bounds['west'],
+            south=request.bounds['south'],
+            east=request.bounds['east'],
+            north=request.bounds['north']
         )
         
-        return {
-            "status": "success",
-            "embedding": result["embedding"].tolist(),
-            "metadata": result["metadata"]
-        }
+        # Generate synthetic data
+        synthetic_data = synthetic_generator.generate_multispectral(bounds)
+        
+        # Encode and secure
+        encrypted_data, secure_metadata = secure_layer.encode_tile(
+            synthetic_data,
+            request.metadata,
+            request.protection_level
+        )
+        
+        # Generate response
+        response = MemoryResponse(
+            memory_id=secure_metadata['id'],
+            bounds=request.bounds,
+            timestamp=datetime.utcnow().isoformat(),
+            access_token=secure_metadata['access_token'],
+            metadata=secure_metadata
+        )
+        
+        return response
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-class TimeSeriesRequest(BaseModel):
-    """Request model for processing time series data."""
-    latitude: float = Field(..., ge=-90, le=90)
-    longitude: float = Field(..., ge=-180, le=180)
-    start_time: datetime
-    end_time: datetime
-    interval_days: int = Field(default=1, ge=1)
-
-@router.post("/process_time_series")
-async def process_time_series(request: TimeSeriesRequest):
-    """Process a location across a time range."""
+@app.delete("/memories/{memory_id}")
+async def delete_memory(
+    memory_id: str,
+    access_token: str
+):
+    """Delete an Earth memory"""
     try:
-        results = pipeline.process_time_series(
-            coordinates=(request.latitude, request.longitude),
-            time_range=(request.start_time, request.end_time),
-            interval_days=request.interval_days
-        )
+        # Verify access
+        if not secure_layer.validate_api_key(access_token, 'delete'):
+            raise HTTPException(status_code=403, detail="Access denied")
+            
+        # TODO: Implement secure deletion
         
-        return {
-            "status": "success",
-            "count": len(results),
-            "results": [
-                {
-                    "timestamp": result["metadata"]["timestamp"],
-                    "embedding": result["embedding"].tolist(),
-                    "metadata": result["metadata"]
-                }
-                for result in results
-            ]
-        }
+        return {"status": "success", "message": "Memory deleted"}
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/health")
-async def health_check():
-    """Check the health of the memory service."""
-    return {
-        "status": "healthy",
-        "memory_count": len(memory_store.memory_index)
-    } 
+        raise HTTPException(status_code=500, detail=str(e)) 

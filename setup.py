@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="memories_dev",
-    version="0.1.0",
+    version="1.0.2",
     packages=find_packages(),
     
     author="Memories-dev",
@@ -38,7 +38,14 @@ setup(
         "langchain-community>=0.0.1",
         "geopy>=2.3.0",
         "faiss-cpu>=1.7.4",
-        "sentence-transformers>=2.2.0"
+        "sentence-transformers>=2.2.0",
+        "mercantile>=1.2.1",
+        "mapbox-vector-tile>=2.0.1",
+        "pyproj>=3.6.1",
+        "pystac>=1.8.0",
+        "xarray>=2023.0.0",
+        "dask>=2024.1.0",
+        "dask[array]>=2024.1.0"
     ],
     
     extras_require={

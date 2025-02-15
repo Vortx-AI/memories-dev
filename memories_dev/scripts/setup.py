@@ -1,106 +1,119 @@
-from setuptools import setup, find_packages
+"""
+Setup script for initializing components.
+"""
 
-# Read requirements from file
-with open('requirements.txt') as f:
-    requirements = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+import os
+import logging
+from pathlib import Path
+from typing import Optional
+import yaml
+from dotenv import load_dotenv
+import torch
+from ..models.base_model import BaseModel
+from ..utils.processors.gpu_stat import check_gpu_memory
+from ..synthetic.generator import initialize_stable_diffusion
 
-# Define optional dependencies
-extras_require = {
-    'gpu': [
-        'cupy-cuda11x>=12.0.0',
-        'onnxruntime-gpu>=1.15.0',
-        'tensorrt>=8.6.0',
-        'triton>=2.0.0'
-    ],
-    'ml': [
-        'torchvision>=0.15.0',
-        'transformers>=4.30.0',
-        'timm>=0.9.0',
-        'segmentation-models-pytorch>=0.3.0',
-        'accelerate>=0.24.0',
-        'safetensors>=0.4.0'
-    ],
-    'synthetic': [
-        'noise>=1.2.2',
-        'opensimplex>=0.4',
-        'perlin-noise>=1.12',
-        'trimesh>=4.0.0',
-        'pyrender>=0.1.45',
-        'open3d>=0.17.0',
-        'py6s>=1.9.0',
-        'libradtran>=2.0.4'
-    ],
-    'viz': [
-        'matplotlib>=3.7.0',
-        'seaborn>=0.12.0',
-        'plotly>=5.13.0',
-        'folium>=0.14.0',
-        'ipyleaflet>=0.17.0',
-        'pyvista>=0.42.0',
-        'meshio>=5.3.0'
-    ],
-    'monitoring': [
-        'prometheus-client>=0.16.0',
-        'grafana-api>=2.0.0',
-        'wandb>=0.15.0',
-        'mlflow>=2.7.0'
-    ],
-    'dev': [
-        'pytest>=7.3.0',
-        'pytest-cov>=4.0.0',
-        'black>=23.3.0',
-        'isort>=5.12.0',
-        'flake8>=6.0.0',
-        'mypy>=1.2.0',
-        'pre-commit>=3.2.0'
-    ],
-    'docs': [
-        'mkdocs>=1.4.0',
-        'mkdocs-material>=9.1.0',
-        'mkdocstrings>=0.20.0',
-        'mkdocs-jupyter>=0.24.0'
-    ]
-}
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Add 'all' that includes all optional dependencies
-extras_require['all'] = [pkg for group in extras_require.values() for pkg in group]
+def setup_environment(config_path: Optional[str] = None):
+    """
+    Set up the environment and initialize components.
+    
+    Args:
+        config_path: Optional path to config file
+    """
+    try:
+        # Load environment variables
+        load_dotenv()
+        
+        # Load configuration
+        config = load_config(config_path)
+        
+        # Check GPU availability
+        if torch.cuda.is_available():
+            logger.info("GPU available, checking memory...")
+            check_gpu_memory()
+        else:
+            logger.warning("No GPU available, using CPU")
+            
+        # Initialize models
+        initialize_models(config.get('models', {}))
+        
+        # Initialize Stable Diffusion
+        if config.get('use_stable_diffusion', False):
+            initialize_stable_diffusion()
+            
+        # Set up data directories
+        setup_directories(config.get('directories', {}))
+        
+        logger.info("Setup completed successfully")
+        
+    except Exception as e:
+        logger.error(f"Error during setup: {str(e)}")
+        raise
 
-setup(
-    name='memories_dev',
-    version='0.1.0',
-    author='Kumari Jaya',
-    author_email='hello@memories-dev.com',
-    description='High-performance geospatial processing engine with ML capabilities',
-    long_description=open('README.md').read(),
-    long_description_content_type='text/markdown',
-    url='https://github.com/vortx-ai/vortx',
-    project_urls={
-        'Documentation': 'https://vortx.ai/docs',
-        'Bug Reports': 'https://github.com/vortx-ai/vortx/issues',
-        'Source Code': 'https://github.com/vortx-ai/vortx',
-    },
-    packages=find_packages(exclude=['tests', 'tests.*', 'examples', 'docs']),
-    install_requires=requirements,
-    extras_require=extras_require,
-    python_requires='>=3.9',
-    classifiers=[
-        'Development Status :: 4 - Beta',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: Apache Software License',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11',
-        'Topic :: Scientific/Engineering :: GIS',
-        'Topic :: Scientific/Engineering :: Image Processing',
-        'Topic :: Scientific/Engineering :: Artificial Intelligence',
-    ],
-    entry_points={
-        'console_scripts': [
-            'vo=vortx.cli:main',
-        ],
-    },
-    include_package_data=True,
-    zip_safe=False,
-) 
+def load_config(config_path: Optional[str] = None) -> dict:
+    """
+    Load configuration from file.
+    
+    Args:
+        config_path: Path to config file
+        
+    Returns:
+        Configuration dictionary
+    """
+    if config_path is None:
+        config_path = os.getenv('CONFIG_PATH', 'config/default.yaml')
+        
+    try:
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+        return config
+        
+    except Exception as e:
+        logger.error(f"Error loading config: {str(e)}")
+        return {}
+
+def initialize_models(model_config: dict):
+    """
+    Initialize ML models.
+    
+    Args:
+        model_config: Model configuration
+    """
+    try:
+        base_model = BaseModel.get_instance()
+        
+        # Initialize each configured model
+        for model_name, config in model_config.items():
+            logger.info(f"Initializing model: {model_name}")
+            success = base_model.initialize_model(
+                model=config.get('name', 'default'),
+                use_gpu=config.get('use_gpu', True)
+            )
+            if not success:
+                logger.warning(f"Failed to initialize {model_name}")
+                
+    except Exception as e:
+        logger.error(f"Error initializing models: {str(e)}")
+
+def setup_directories(directory_config: dict):
+    """
+    Set up required directories.
+    
+    Args:
+        directory_config: Directory configuration
+    """
+    try:
+        for name, path in directory_config.items():
+            # Create directory if it doesn't exist
+            Path(path).mkdir(parents=True, exist_ok=True)
+            logger.info(f"Created directory: {path}")
+            
+    except Exception as e:
+        logger.error(f"Error setting up directories: {str(e)}")
+
+if __name__ == "__main__":
+    setup_environment() 

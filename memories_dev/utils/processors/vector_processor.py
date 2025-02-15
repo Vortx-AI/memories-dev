@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import geopandas as gpd
 from shapely.geometry import box, Polygon
 import numpy as np
+import pandas as pd
 
 class VectorProcessor:
     """Processor for vector data."""

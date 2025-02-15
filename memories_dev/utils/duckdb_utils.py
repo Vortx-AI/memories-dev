@@ -11,7 +11,7 @@ def query_multiple_parquet(output_query="SELECT * FROM combined_data"):
         output_query (str): The SQL query to execute on the combined data.
 
     Returns:
-        duckdb.DuckDBPyRelation: The result of the executed query.
+        list: The result of the executed query.
     """
     # Load environment variables from the .env file
     load_dotenv()
@@ -22,24 +22,25 @@ def query_multiple_parquet(output_query="SELECT * FROM combined_data"):
     if not geo_memories_path:
         raise ValueError("GEO_MEMORIES path is not set in the .env file.")
 
-    # Establish a connection to DuckDB using a persistent on-disk database
-    conn = duckdb.connect(database='memory_duckdb.db', read_only=False)
+    # Establish a connection to DuckDB
+    conn = duckdb.connect(database=':memory:', read_only=False)
 
     try:
         # Register all Parquet files in the directory as a single table
+        # Use union_by_name to handle schema differences
         conn.execute(f"""
             CREATE OR REPLACE VIEW combined_data AS
             SELECT *
-            FROM read_parquet('{geo_memories_path}/*.parquet', union_by_name=True)
+            FROM read_parquet('{geo_memories_path}/*.parquet', union_by_name=true, filename=true)
         """)
 
         # Execute the user's query
         result = conn.execute(output_query).fetchall()
+        return result
+
     finally:
         # Ensure the connection is closed even if an error occurs
         conn.close()
-
-    return result
 
 # Usage example
 if __name__ == "__main__":
@@ -50,4 +51,4 @@ if __name__ == "__main__":
         for row in data:
             print(row)
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"An error occurred: {e}") 

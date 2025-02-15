@@ -12,17 +12,14 @@ from datetime import datetime, timedelta
 import jwt
 from PIL import Image
 import io
-<<<<<<< HEAD
-from shapely.geometry import shape, mapping
-=======
-<<<<<<< HEAD
 from shapely.geometry import shape, mapping
 import sys
+
 # Add the project root to Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
 src_path = os.path.join(project_root, 'src')
 sys.path.append(src_path)
->>>>>>> 1a68fa6248d82e9a62c193e5dc65b19d4832749d
+
 from privacy.geo_privacy import GeoPrivacyEncoder
 
 class SecureImageEncoder:
@@ -311,7 +308,6 @@ class SecureAPILayer:
             encrypted_data,
             secure_metadata,
             access_token
-<<<<<<< HEAD
         )
 
     def encode_tile_with_geo_privacy(
@@ -344,9 +340,4 @@ class SecureAPILayer:
             encrypted_data,
             secure_metadata,
             access_token
-        ) 
-=======
-
         )
-
->>>>>>> 1a68fa6248d82e9a62c193e5dc65b19d4832749d
