@@ -41,7 +41,7 @@ class GeometryExtractor:
                     amenity,
                     ST_AsText(geom) as geometry,
                     ST_Distance(ST_Transform(geom, 3857), ST_Transform({point}, 3857)) as distance
-                FROM '/home/jaya/osm_data/india_multipolygons.parquet'
+                FROM 'osm_data/india_multipolygons.parquet'
                 WHERE ST_Intersects(
                     ST_Transform(geom, 3857),
                     {search_area}
@@ -55,7 +55,7 @@ class GeometryExtractor:
                     amenity,
                     ST_AsText(geom) as geometry,
                     ST_Distance(ST_Transform(geom, 3857), ST_Transform({point}, 3857)) as distance
-                FROM '/home/jaya/osm_data/india_points.parquet'
+                FROM 'osm_data/india_points.parquet'
                 WHERE ST_Intersects(
                     ST_Transform(geom, 3857),
                     {search_area}
