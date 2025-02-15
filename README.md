@@ -74,10 +74,10 @@ insights = Agent(
 
 ```bash
 # Install from PyPI (package name on PyPI is memories-dev)
-pip install memories-dev==1.0.4
+pip install memories-dev
 
 # With GPU support
-pip install "memories-dev[gpu]"==1.0.4
+pip install "memories-dev[gpu]"
 ```
 
 **Note**: While the package is distributed as `memories-dev` on PyPI, you import it as `memories` in your Python code:
