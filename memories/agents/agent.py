@@ -2,7 +2,7 @@ from typing import Dict, Any
 from dotenv import load_dotenv
 import logging
 import os
-from memories_dev.agents.agent_query_classification import AgentQueryClassification
+from memories.agents.agent_query_classification import AgentQueryClassification
 
 # Load environment variables
 load_dotenv()
