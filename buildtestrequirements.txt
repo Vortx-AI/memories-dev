@@ -32,6 +32,9 @@ xarray>=2023.0.0
 dask>=2024.1.0
 dask[array]>=2024.1.0
 redis>=5.0.0
+thinc==8.2.2
+spacy==3.7.4
+blis==0.7.11
 
 # Optional CUDA dependencies (install manually if CUDA is available)
 # cupy-cuda12x>=12.0.0  # For CUDA 12.x systems
