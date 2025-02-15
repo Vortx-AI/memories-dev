@@ -1,16 +1,137 @@
 # 🧠 memories.dev
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Tests](https://github.com/yourusername/memories.dev/actions/workflows/tests.yml/badge.svg)](https://github.com/yourusername/memories.dev/actions/workflows/tests.yml)
+[![Tests](https://github.com/Vortx-AI/memories-dev/actions/workflows/tests.yml/badge.svg)](https://github.com/Vortx-AI/memories-dev/actions/workflows/tests.yml)
 [![Documentation Status](https://readthedocs.org/projects/memoriesdev/badge/?version=latest)](https://memoriesdev.readthedocs.io/en/latest/?badge=latest)
 
 > Building the future of collective AGI memory - v1.0.0
 
 ## 🌟 Overview
 
-memories.dev is a groundbreaking framework for building and managing collective AGI memory systems. It provides a robust architecture for memory formation, retrieval, and synthesis across multiple modalities.
+memories.dev is a groundbreaking framework for building and managing collective AGI memory systems. It provides a robust architecture for memory formation, retrieval, and synthesis across multiple modalities, enabling AI models to maintain and utilize contextual understanding across interactions.
+
+### 🎯 Key Goals
+- Enable persistent memory for AI systems
+- Provide context-aware intelligence
+- Support multi-modal memory integration
+- Ensure scalable and efficient memory operations
+- Maintain privacy and security in memory access
+
+## 🚀 Quick Start
+
+```python
+from memories_dev import MemorySystem
+from memories_dev.agents import Agent
+from memories_dev.models import ModelRegistry
+
+# Initialize the memory system
+memory_system = MemorySystem(
+    store_type="vector",  # Options: "vector", "graph", "hybrid"
+    vector_store="milvus",  # Coming in v1.1: Support for multiple vector stores
+    embedding_model="text-embedding-3-small"
+)
+
+# Create an agent with memory access
+agent = Agent(
+    memory_system=memory_system,
+    model_name="gpt-4",  # Default model for reasoning
+    capabilities=["analysis", "synthesis"]
+)
+
+# Store a memory
+memory_id = memory_system.store(
+    content="The city's air quality improved by 15% after implementing new policies.",
+    metadata={
+        "location": {"lat": 37.7749, "lon": -122.4194},
+        "timestamp": "2024-03-15T10:30:00Z",
+        "source": "environmental_sensor"
+    }
+)
+
+# Query memories with context
+relevant_memories = memory_system.query(
+    query="What were the environmental changes in San Francisco?",
+    location_radius_km=10,
+    time_range=("2024-01-01", "2024-03-15")
+)
+
+# Agent reasoning with memory context
+analysis = agent.analyze(
+    query="Evaluate the impact of environmental policies",
+    context_memories=relevant_memories
+)
+```
+
+## 🏗️ Installation
+
+### Current Release (v1.0.0)
+```bash
+# Basic installation
+pip install git+https://github.com/Vortx-AI/memories-dev.git
+
+# Development installation
+git clone https://github.com/Vortx-AI/memories-dev.git
+cd memories-dev
+pip install -e ".[dev]"
+```
+
+### Coming in v1.1.0
+```bash
+# Installation with all features
+pip install memories-dev[all]
+
+# GPU-optimized installation
+pip install memories-dev[gpu]
+```
+
+## 🔧 System Requirements
+
+### Minimum (Development)
+- Python 3.9+
+- 16GB RAM
+- 4+ CPU cores
+- 20GB storage
+- Docker & Docker Compose (for local development)
+
+### Production (Recommended)
+- 32GB+ RAM
+- 8+ CPU cores
+- NVIDIA GPU with 8GB+ VRAM
+- 100GB+ SSD storage
+- Kubernetes cluster for distributed deployment
+
+## 📊 Monitoring & Observability
+
+### Available Now (v1.0.0)
+- Basic logging system with structured output
+- Memory operation metrics
+- Performance tracking for core operations
+- Health check endpoints
+
+### Coming in v1.1.0
+- 📈 Grafana dashboards for memory metrics
+- 🔍 Prometheus integration
+- 🔄 Real-time memory operation monitoring
+- 📊 Advanced performance analytics
+- 🚨 Automated alerting system
+
+## 🧪 Development Features
+
+### Available Now
+- Memory store implementations
+- Basic agent system
+- Core memory operations
+- Unit test framework
+- Development environment setup
+
+### Coming Soon (v1.1.0)
+- Enhanced memory compression
+- Advanced caching system
+- Distributed memory operations
+- Memory garbage collection
+- Advanced security features
 
 ## 🏗️ Architecture
 
@@ -275,6 +396,51 @@ Find example notebooks in `notebooks/`:
 - 🧠 Memory Operations
 - 🤖 Agent Integration
 - 📊 Data Visualization
+
+## 🎓 Developer Resources
+
+### Tutorials & Guides
+- [Getting Started Guide](docs/getting_started.md)
+- [Memory System Architecture](docs/architecture.md)
+- [Agent Development Guide](docs/agents.md)
+- [Custom Memory Store Integration](docs/custom_stores.md)
+
+### Example Use Cases
+1. **Persistent Context in Conversations**
+   ```python
+   # Example of maintaining context across conversations
+   conversation = memory_system.create_conversation()
+   conversation.add_memory("User preference: Dark mode")
+   conversation.add_memory("Language: Python")
+   
+   # Later in the conversation
+   context = conversation.get_relevant_context("IDE settings")
+   ```
+
+2. **Spatial Memory Analysis**
+   ```python
+   # Analyzing patterns in spatial memories
+   spatial_analysis = memory_system.analyze_spatial(
+       location=(37.7749, -122.4194),
+       radius_km=5,
+       time_range=("2024-01-01", "2024-03-15"),
+       analysis_type="pattern_recognition"
+   )
+   ```
+
+### Best Practices
+- Always use context managers for memory operations
+- Implement proper error handling
+- Use batch operations for multiple memories
+- Regularly clean up unused memories
+- Monitor memory usage and performance
+
+## 🤝 Community & Support
+
+- [Discord Community](https://discord.gg/memoriesdev)
+- [GitHub Discussions](https://github.com/Vortx-AI/memories-dev/discussions)
+- [Documentation](https://memoriesdev.readthedocs.io/)
+- [Blog](https://memoriesdev.medium.com)
 
 ## 🤝 Contributing
 
