@@ -326,11 +326,12 @@ class MemoryStore:
 
     def create_memories(
         self,
+        model: 'LoadModel',  # Pass the LoadModel instance
         location: Union[Tuple[float, float], List[Tuple[float, float]], 
                        str, gpd.GeoDataFrame, Polygon, MultiPolygon, 
                        pystac.Item, Dict[str, Any]],
         time_range: Tuple[str, str],
-        artifacts: Dict[str, List[str]],  # Changed to match artifacts_selection format
+        artifacts: Dict[str, List[str]],
         data_connectors: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Dict[str, List[str]]]:
         """Create memories by inserting into the existing table."""
@@ -338,7 +339,8 @@ class MemoryStore:
             # Create FAISS storage based on selected artifacts
             storage = create_faiss_storage(artifacts)
             
-            instance_id = str(uuid.uuid4())
+            # Use the instance_id from the loaded model
+            instance_id = model.instance_id
             
             # Convert location to JSON-serializable format
             if isinstance(location, (Polygon, MultiPolygon)):
@@ -348,7 +350,7 @@ class MemoryStore:
             else:
                 geometry = {"type": "Point", "coordinates": location} if isinstance(location, tuple) else location
 
-            # Insert into the existing memories table with storage metadata
+            # Insert into the existing memories table with model details
             self.conn.execute("""
                 INSERT INTO memories (
                     instance_id,
@@ -358,8 +360,11 @@ class MemoryStore:
                     input_location,
                     start_date,
                     end_date,
-                    storage_metadata
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    storage_metadata,
+                    model_provider,
+                    model_name,
+                    deployment_type
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 instance_id,
                 json.dumps(data_connectors if data_connectors else {}),
@@ -368,13 +373,16 @@ class MemoryStore:
                 json.dumps(location if isinstance(location, dict) else str(location)),
                 time_range[0],
                 time_range[1],
-                json.dumps(storage.metadata)  # Store FAISS metadata
+                json.dumps(storage.metadata),
+                model.model_provider,
+                model.model_name,
+                model.deployment_type
             ))
             
             print(f"[MemoryStore] Created memory with ID: {instance_id}")
             return {
                 "instance_id": instance_id,
-                "storage": storage  # Return the FAISS storage instance
+                "storage": storage
             }
 
         except Exception as e:

@@ -8,6 +8,8 @@ import logging
 import tempfile
 import gc
 from transformers import AutoTokenizer, AutoModelForCausalLM
+import uuid
+import duckdb
 
 
 from memories_dev.agents.agent_query_context import LocationExtractor
@@ -39,9 +41,30 @@ class LoadModel:
         if deployment_type == "api" and not api_key:
             raise ValueError("api_key is required for API deployment type")
             
+        self.instance_id = str(uuid.uuid4())
         self.logger = logging.getLogger(__name__)
         self.use_gpu = use_gpu and torch.cuda.is_available()
+        self.model_provider = model_provider
         self.deployment_type = deployment_type
+        self.model_name = model_name
+        self.api_key = api_key
+        
+        # Initialize DuckDB connection
+        self.conn = duckdb.connect('memories.db')
+        
+        # Create models table if it doesn't exist
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS models (
+                instance_id VARCHAR PRIMARY KEY,
+                model_provider VARCHAR,
+                model_name VARCHAR,
+                deployment_type VARCHAR,
+                use_gpu BOOLEAN,
+                api_key VARCHAR,
+                model_path VARCHAR,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         
         if use_gpu and not torch.cuda.is_available():
             self.logger.warning("GPU requested but not available. Falling back to CPU.")
@@ -54,14 +77,33 @@ class LoadModel:
         if hasattr(self, 'base_model'):
             self.cleanup()
         
-        
-        
-        # Get the full model path from base model mappings
         try:
             self.model_path = model_name
-            if self.deployment_type == "deployment":
+            if deployment_type == "deployment":
                 self.model_path = f"{model_provider}/{model_name}"
             self.logger.info(f"Resolved model path: {self.model_path}")
+            
+            # Store model details in DuckDB
+            self.conn.execute("""
+                INSERT INTO models (
+                    instance_id,
+                    model_provider,
+                    model_name,
+                    deployment_type,
+                    use_gpu,
+                    api_key,
+                    model_path
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                self.instance_id,
+                model_provider,
+                model_name,
+                deployment_type,
+                use_gpu,
+                api_key,
+                self.model_path
+            ))
+            
         except ValueError as e:
             self.logger.error(f"Error resolving model path: {str(e)}")
             raise
@@ -74,11 +116,11 @@ class LoadModel:
             )
             if not success:
                 raise RuntimeError("Failed to initialize model")
-            self.logger.info("Model initialized successfully")
-        
+                
+        self.logger.info(f"Model loaded successfully with instance ID: {self.instance_id}")
     
     def cleanup(self):
-        """Clean up model resources"""
+        """Clean up model resources and close DB connection"""
         if hasattr(self.base_model, 'model'):
             del self.base_model.model
             self.base_model.model = None
@@ -88,6 +130,8 @@ class LoadModel:
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             torch.cuda.ipc_collect()
-        gc.collect()  # Force Python garbage collection
+        if hasattr(self, 'conn'):
+            self.conn.close()
+        gc.collect()
         self.logger.info("Model resources cleaned up")
 
