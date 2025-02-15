@@ -7,26 +7,26 @@ from typing import Dict, List, Any
 from datetime import datetime
 import uuid
 
-def parquet_connector(file_path: str) -> List[Dict[str, Any]]:
+def parquet_connector(file_path: str, batch_size: int = 10000) -> List[Dict[str, Any]]:
     """
-    Read a parquet file and return its data.
+    Read a parquet file in batches and yield the data.
     
     Args:
         file_path (str): Path to the parquet file
+        batch_size (int): Number of rows to process at a time
         
-    Returns:
-        List[Dict[str, Any]]: Data from the parquet file
+    Yields:
+        List[Dict[str, Any]]: Batch of data from the parquet file
     """
     try:
-        # Read the parquet file
-        df = pd.read_parquet(file_path)
-        
-        # Convert to list of dictionaries
-        return df.to_dict('records')
-        
+        # Read the parquet file in batches
+        for batch_df in pd.read_parquet(file_path, chunksize=batch_size):
+            # Convert batch to list of dictionaries
+            yield batch_df.to_dict('records')
+            
     except Exception as e:
         print(f"Error processing parquet file: {str(e)}")
-        return []
+        yield []
 
 def multiple_parquet_connector(folder_path: str, output_file_name: str = None) -> Dict[str, Any]:
     """

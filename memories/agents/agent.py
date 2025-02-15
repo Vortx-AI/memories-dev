@@ -235,7 +235,7 @@ def main():
         "How do I write a Python function?",
         "What is the capital of France?",
         "Find restaurants near Central Park",
-        "What cafes are within 2km of my current location?"
+        "What cafes are within 2km of 12.9096437,77.6088268?"
     ]
     
     # Initialize and run the agent for each query

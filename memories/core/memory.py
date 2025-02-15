@@ -330,13 +330,14 @@ class MemoryStore:
                        pystac.Item, Dict[str, Any]],
         time_range: Tuple[str, str],
         artifacts: Dict[str, List[str]],
-        data_connectors: Optional[List[Dict[str, str]]] = None
+        data_connectors: Optional[List[Dict[str, str]]] = None,
+        batch_size: int = 10000  # Added batch size parameter
     ) -> Dict[str, Dict[str, List[str]]]:
         """
         Create memories by inserting into the existing table and FAISS storage.
+        Process data in batches to manage memory usage.
         """
         try:
-            # Use the model's id as instance_id
             instance_id = str(id(model))
             
             # Convert location to JSON-serializable format
@@ -354,29 +355,34 @@ class MemoryStore:
                 
                 for connector in data_connectors:
                     if connector["type"] == "parquet":
-                        # Process the parquet file and get data
-                        data = parquet_connector(
-                            file_path=connector["file_path"]
-                        )
+                        total_vectors = 0
                         
-                        if data and len(data) > 0:
-                            # Create embeddings for the data
-                            embeddings = self._create_embeddings(data, model)
-                            
-                            if embeddings is not None and len(embeddings) > 0:
-                                if self.index is None:
-                                    # Initialize FAISS index with first batch
-                                    dimension = embeddings.shape[1]
-                                    self.index = faiss.IndexFlatL2(dimension)
+                        # Process the parquet file in batches
+                        for batch_data in parquet_connector(
+                            file_path=connector["file_path"],
+                            batch_size=batch_size
+                        ):
+                            if batch_data and len(batch_data) > 0:
+                                # Create embeddings for the batch
+                                embeddings = self._create_embeddings(batch_data, model)
                                 
-                                self.index.add(embeddings)
-                                print(f"[MemoryStore] Added {len(embeddings)} vectors to FAISS index from {connector['name']}")
-                                
-                                # Store metadata
-                                connector_metadata[connector["name"]] = {
-                                    "vector_count": len(embeddings),
-                                    "file_path": connector["file_path"]
-                                }
+                                # Add batch to FAISS index
+                                if embeddings is not None and len(embeddings) > 0:
+                                    if self.index is None:
+                                        # Initialize FAISS index with first batch
+                                        dimension = embeddings.shape[1]
+                                        self.index = faiss.IndexFlatL2(dimension)
+                                    
+                                    self.index.add(embeddings)
+                                    total_vectors += len(embeddings)
+                                    print(f"[MemoryStore] Added batch of {len(embeddings)} vectors to FAISS index from {connector['name']}")
+                        
+                        if total_vectors > 0:
+                            print(f"[MemoryStore] Total vectors added from {connector['name']}: {total_vectors}")
+                            connector_metadata[connector["name"]] = {
+                                "vector_count": total_vectors,
+                                "file_path": connector["file_path"]
+                            }
                         else:
                             print(f"[MemoryStore] No data found in {connector['name']}")
                     else:
