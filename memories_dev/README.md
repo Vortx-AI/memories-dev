@@ -90,6 +90,6 @@ src/
 ### 🛠️ Utilities
 - **Configuration**: System configuration management
 
-## 🚀 Getting Started
+## 🚀 More... 
 
 For setup and usage examples, please refer to the main [README.md](../README.md) in the project root.
