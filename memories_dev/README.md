@@ -133,72 +133,202 @@ pip install memories-dev[gpu]
 - Memory garbage collection
 - Advanced security features
 
-## 🏗️ Architecture
-
-Our system is built with modularity and scalability in mind, organized into key components that work together seamlessly:
+## 📁 Project Structure
 
 ```
-src/
-├── 🤖 agents/               # Intelligent Agent System
-├── 📡 data_acquisition/    # Multi-source Data Collection
-├── 🧠 memories/           # Core Memory System
-├── 🔮 models/             # AI & ML Models
-├── 🔄 synthesis/          # Memory Synthesis
-└── 🛠️ utils/              # Utilities & Tools
+memories-dev/
+├── 🚀 src/                    # Source code
+│   ├── agents/               # Agent System
+│   │   ├── core/            # Core agent functionality
+│   │   │   ├── base.py      # Base agent classes
+│   │   │   ├── registry.py  # Agent registry
+│   │   │   └── config.py    # Agent configurations
+│   │   ├── memory/          # Memory integration
+│   │   │   ├── context.py   # Context management
+│   │   │   ├── retrieval.py # Memory retrieval
+│   │   │   └── cache.py     # Memory caching
+│   │   └── specialized/     # Specialized agents
+│   │       ├── analysis.py  # Analysis agents
+│   │       ├── synthesis.py # Synthesis agents
+│   │       └── learning.py  # Learning agents
+│   │
+│   ├── data_acquisition/    # Data Collection
+│   │   ├── satellite/       # Satellite data
+│   │   │   ├── sentinel/   # Sentinel-1/2 handlers
+│   │   │   ├── landsat/    # Landsat handlers
+│   │   │   └── modis/      # MODIS data handlers
+│   │   ├── sensors/        # Sensor networks
+│   │   │   ├── climate/    # Climate sensors
+│   │   │   ├── urban/      # Urban sensors
+│   │   │   └── iot/        # IoT device handlers
+│   │   └── streams/        # Real-time streams
+│   │       ├── ingest.py   # Stream ingestion
+│   │       ├── process.py  # Stream processing
+│   │       └── buffer.py   # Stream buffering
+│   │
+│   ├── memories/           # Memory System
+│   │   ├── store/         # Storage backend
+│   │   │   ├── vector.py  # Vector store
+│   │   │   ├── graph.py   # Graph store
+│   │   │   └── hybrid.py  # Hybrid storage
+│   │   ├── formation/     # Memory creation
+│   │   │   ├── create.py  # Memory formation
+│   │   │   ├── update.py  # Memory updates
+│   │   │   └── merge.py   # Memory merging
+│   │   ├── query/         # Query system
+│   │   │   ├── spatial.py # Spatial queries
+│   │   │   ├── temporal.py# Temporal queries
+│   │   │   └── semantic.py# Semantic queries
+│   │   └── optimization/  # Memory optimization
+│   │       ├── compress.py# Compression
+│   │       └── prune.py   # Memory pruning
+│   │
+│   ├── models/            # AI Models
+│   │   ├── embedding/     # Embedding models
+│   │   │   ├── text.py   # Text embeddings
+│   │   │   ├── vision.py # Vision embeddings
+│   │   │   └── audio.py  # Audio embeddings
+│   │   ├── reasoning/    # Reasoning models
+│   │   │   ├── llm.py   # Language models
+│   │   │   └── chain.py # Reasoning chains
+│   │   └── fusion/      # Multi-modal fusion
+│   │       ├── early.py # Early fusion
+│   │       └── late.py  # Late fusion
+│   │
+│   ├── synthesis/        # Memory Synthesis
+│   │   ├── fusion/      # Data fusion
+│   │   │   ├── spatial.py # Spatial fusion
+│   │   │   └── temporal.py# Temporal fusion
+│   │   └── generation/  # Synthetic data
+│   │       ├── augment.py # Data augmentation
+│   │       └── create.py  # Synthetic creation
+│   │
+│   └── utils/           # Utilities
+│       ├── config/      # Configuration
+│       │   ├── settings.py # Global settings
+│       │   └── env.py     # Environment vars
+│       ├── logging/     # Logging system
+│       │   ├── logger.py  # Logger setup
+│       │   └── metrics.py # Metrics logging
+│       └── validation/  # Data validation
+│           ├── schema.py  # Schema validation
+│           └── types.py   # Type checking
+│
+├── 📊 monitoring/        # Monitoring & Metrics
+│   ├── grafana/         # Grafana dashboards
+│   ├── prometheus/      # Prometheus configs
+│   └── alerts/          # Alert configurations
+│
+├── 🧪 tests/            # Test Suite
+│   ├── unit/           # Unit tests
+│   ├── integration/    # Integration tests
+│   └── performance/    # Performance tests
+│
+├── 📚 docs/             # Documentation
+│   ├── api/            # API documentation
+│   ├── guides/         # User guides
+│   └── examples/       # Example notebooks
+│
+├── 🛠️ scripts/          # Development scripts
+│   ├── setup/          # Setup scripts
+│   ├── deploy/         # Deployment scripts
+│   └── maintenance/    # Maintenance tools
+│
+└── 📦 docker/           # Docker configurations
+    ├── dev/            # Development setup
+    ├── prod/           # Production setup
+    └── compose/        # Docker Compose files
 ```
 
-### Core Components
+## 🧩 Core Components Explained
 
-#### 🤖 Agents
-The brain of our system, handling intelligent operations:
-```
-agents/
-├── core/              # Foundation of agent operations
-│   ├── base.py       # Base agent architecture
-│   └── registry.py   # Agent management system
-├── memory/           # Memory interaction layer
-│   ├── context.py    # Context handling
-│   └── retrieval.py  # Memory access patterns
-└── specialized/      # Purpose-built agents
-    ├── analysis.py   # Analytical capabilities
-    └── synthesis.py  # Memory synthesis
-```
+### 1. 🤖 Agent System
+The agent system is the intelligence layer that orchestrates memory operations:
 
-#### 📡 Data Acquisition
-Multi-modal data ingestion system:
-```
-data_acquisition/
-├── satellite/        # Earth observation data
-├── sensors/         # IoT & sensor networks
-└── streams/         # Real-time data handling
-```
+```python
+from memories_dev.agents import SpecializedAgent
 
-#### 🧠 Memories
-The heart of our memory system:
-```
-memories/
-├── store/           # Memory storage systems
-│   ├── vector.py    # Vector embeddings store
-│   └── index.py     # Advanced indexing
-├── formation/       # Memory creation engine
-└── query/           # Memory retrieval system
+# Create an analysis agent with specific capabilities
+agent = SpecializedAgent(
+    type="analysis",
+    capabilities={
+        "spatial_analysis": True,
+        "temporal_analysis": True,
+        "pattern_recognition": True
+    },
+    memory_access_level="read_write"
+)
+
+# Execute complex analysis
+results = agent.analyze(
+    data_sources=["satellite", "sensors"],
+    time_range=("2024-01", "2024-03"),
+    analysis_type="trend_detection"
+)
 ```
 
-#### 🔮 Models
-AI/ML powerhouse:
-```
-models/
-├── embedding/       # Multi-modal embeddings
-├── reasoning/       # Logic & inference
-└── fusion/         # Cross-modal integration
+### 2. 📡 Data Acquisition
+Handles multi-modal data ingestion with built-in preprocessing:
+
+```python
+from memories_dev.data_acquisition import DataCollector
+
+# Initialize a multi-source collector
+collector = DataCollector(
+    sources={
+        "satellite": {
+            "type": "sentinel-2",
+            "bands": ["B02", "B03", "B04", "B08"]
+        },
+        "climate": {
+            "type": "weather_station",
+            "metrics": ["temperature", "humidity", "air_quality"]
+        }
+    },
+    preprocessing_pipeline=[
+        "normalize",
+        "filter_outliers",
+        "align_timestamps"
+    ]
+)
+
+# Collect and preprocess data
+data = collector.collect(
+    location=(37.7749, -122.4194),
+    timeframe="1d",
+    resolution="10m"
+)
 ```
 
-#### 🔄 Synthesis
-Memory enhancement and generation:
-```
-synthesis/
-├── fusion/         # Advanced data fusion
-└── generation/     # Synthetic memory creation
+### 3. 🧠 Memory Formation
+Advanced memory creation and optimization:
+
+```python
+from memories_dev.memories import MemoryFormation
+
+# Initialize memory formation with optimization
+memory_former = MemoryFormation(
+    optimization={
+        "compression": "lossless",
+        "deduplication": True,
+        "priority_ranking": True
+    },
+    storage_strategy="hybrid"
+)
+
+# Form optimized memory
+memory = memory_former.create(
+    content=data,
+    metadata={
+        "source": "environmental_monitoring",
+        "confidence": 0.95,
+        "importance": "high"
+    },
+    relationships=[
+        {"type": "spatial", "ref": "nearby_memories"},
+        {"type": "temporal", "ref": "previous_state"}
+    ]
+)
 ```
 
 ## 🎯 Features (v1.0.0)
@@ -492,3 +622,62 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 <a href="https://twitter.com/memoriesdev">Twitter</a> •
 <a href="https://memoriesdev.medium.com">Blog</a>
 </p>
+
+## 🔌 Integration Examples
+
+### 1. Real-time Environmental Monitoring
+```python
+from memories_dev import MemorySystem
+from memories_dev.data_acquisition import StreamCollector
+from memories_dev.synthesis import RealTimeSynthesis
+
+# Setup real-time monitoring
+stream = StreamCollector(
+    sources=["air_quality", "traffic", "noise"],
+    buffer_size="1h",
+    sampling_rate="1m"
+)
+
+# Process and store real-time data
+@stream.on_data
+async def process_environmental_data(data):
+    # Form memory from real-time data
+    memory = await memory_system.store_streaming(
+        data,
+        retention_policy="24h",
+        importance_threshold=0.7
+    )
+    
+    # Trigger real-time synthesis
+    insights = await RealTimeSynthesis.analyze(
+        memory,
+        context_window="6h"
+    )
+```
+
+### 2. Multi-modal Memory Fusion
+```python
+from memories_dev.fusion import ModalityFusion
+from memories_dev.models import MultiModalEncoder
+
+# Initialize fusion system
+fusion = ModalityFusion(
+    modalities=["text", "vision", "sensor"],
+    fusion_strategy="hierarchical",
+    alignment="temporal"
+)
+
+# Fuse different memory types
+fused_memory = fusion.combine(
+    memories={
+        "text": text_memory,
+        "vision": image_memory,
+        "sensor": sensor_data
+    },
+    weights={
+        "text": 0.4,
+        "vision": 0.4,
+        "sensor": 0.2
+    }
+)
+```
