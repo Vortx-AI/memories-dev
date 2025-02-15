@@ -25,6 +25,7 @@ import pyproj
 from pyproj import Transformer
 import duckdb
 from concurrent.futures import ThreadPoolExecutor
+from scipy.ndimage import gaussian_filter
 from ..types import Bounds, ImageType, RasterType
 
 class RasterTileProcessor:
