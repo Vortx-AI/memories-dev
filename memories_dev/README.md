@@ -467,23 +467,10 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 - Performance optimizations
 - API stabilization
 
-## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- OpenAI for GPT models
-- Hugging Face for transformers
-- FastAPI team for the web framework
-- Our amazing contributors
-
----
 
 <p align="center">Built with 💜 by the memories.dev team</p>
 
 <p align="center">
-<a href="https://discord.gg/memoriesdev">Discord</a> •
-<a href="https://twitter.com/memoriesdev">Twitter</a> •
-<a href="https://memoriesdev.medium.com">Blog</a>
+<a href="https://discord.com/invite/7qAFEekp">Discord</a> •
 </p>
