@@ -34,7 +34,7 @@ from .cold import ColdStorage  # Ensure correct import path
 # Reload the modules to ensure latest changes
 import memories.models.load_model
 import memories.models.base_model
-import memories.memories.memory
+import memories.core.memory
 
 importlib.reload(memories.models.load_model)
 importlib.reload(memories.models.base_model)
@@ -42,7 +42,7 @@ importlib.reload(memories.memories.memory)
 
 # Import required classes after reload
 from memories.models.load_model import LoadModel
-from memories.memories.memory import MemoryStore
+from memories.core.memory import MemoryStore
 from shapely.geometry import Point, Polygon
 from datetime import datetime, timedelta
 import torch
