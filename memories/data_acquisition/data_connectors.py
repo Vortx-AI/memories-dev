@@ -23,18 +23,22 @@ def parquet_connector(file_path: str, batch_size: int = 10000) -> Generator[List
         # Read parquet file using dask
         ddf = dd.read_parquet(file_path)
         
-        # Get total number of rows
-        total_rows = len(ddf)
+        # Get total number of partitions
+        n_partitions = ddf.npartitions
         
-        # Process in batches
-        for start_idx in range(0, total_rows, batch_size):
-            end_idx = min(start_idx + batch_size, total_rows)
+        # Process partition by partition
+        for i in range(n_partitions):
+            # Get partition as pandas DataFrame
+            partition = ddf.get_partition(i).compute()
             
-            # Convert batch to pandas and then to records
-            batch_df = ddf.iloc[start_idx:end_idx].compute()
-            yield batch_df.to_dict('records')
-            
-            print(f"[ParquetConnector] Processed {end_idx}/{total_rows} rows from {file_path}")
+            # Process the partition in batches
+            for start_idx in range(0, len(partition), batch_size):
+                end_idx = min(start_idx + batch_size, len(partition))
+                batch = partition.iloc[start_idx:end_idx]
+                
+                yield batch.to_dict('records')
+                
+            print(f"[ParquetConnector] Processed partition {i+1}/{n_partitions} from {file_path}")
             
     except Exception as e:
         print(f"Error processing parquet file: {str(e)}")
