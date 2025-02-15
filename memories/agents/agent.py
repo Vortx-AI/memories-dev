@@ -4,7 +4,7 @@ import logging
 import os
 from memories.agents.agent_query_classification import AgentQueryClassification
 from memories.agents.agent_context import AgentContext
-from memories.store.memory_store import MemoryStore
+from memories.core.memory import MemoryStore
 
 # Load environment variables
 load_dotenv()
