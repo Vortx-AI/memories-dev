@@ -22,7 +22,10 @@ class AgentQueryClassification:
         """
         try:
             # Get the classification
-            classification = classify_query(self.query, self.load_model)
+            result = classify_query(self.query, self.load_model)
+            
+            # Extract classification from result
+            classification = result.get('classification', 'N')  # Default to 'N' if not found
             
             # Prepare explanation based on classification
             explanations = {
@@ -31,11 +34,19 @@ class AgentQueryClassification:
                 "L1_2": "This query has location components and requires additional geographic data to provide an accurate response."
             }
             
-            return {
+            response = {
                 "query": self.query,
                 "classification": classification,
-                "explanation": explanations[classification]
+                "explanation": explanations.get(classification, "Unknown classification type")
             }
+            
+            # Add response or location_info based on what's in the result
+            if 'response' in result:
+                response['response'] = result['response']
+            elif 'location_info' in result:
+                response['location_info'] = result['location_info']
+                
+            return response
             
         except Exception as e:
             return {
