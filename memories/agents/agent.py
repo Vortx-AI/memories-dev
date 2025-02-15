@@ -4,22 +4,21 @@ import logging
 import os
 from memories.agents.agent_query_classification import AgentQueryClassification
 from memories.agents.agent_context import AgentContext
-from memories.core.memory import MemoryStore
-from datetime import datetime, timedelta
-from memories.agents.agent_config import get_model_config
+from memories.store.memory_store import MemoryStore
 
 # Load environment variables
 load_dotenv()
 
 class Agent:
-    def __init__(self, query: str, load_model: Any, memory_store: Any = None):
+    def __init__(self, query: str, load_model: Any, memory_store: MemoryStore, instance_id: str = None):
         """
         Initialize the Agent system.
         
         Args:
             query (str): The user's query.
             load_model (Any): The initialized model instance.
-            memory_store (Any): The initialized memory store with FAISS index.
+            memory_store (MemoryStore): The memory store instance.
+            instance_id (str, optional): The instance ID for FAISS search.
         """
         logging.basicConfig(
             level=logging.INFO,
@@ -30,51 +29,16 @@ class Agent:
         self.query = query
         self.load_model = load_model
         self.memory_store = memory_store
+        self.instance_id = instance_id
         
         # Retrieve PROJECT_ROOT from environment variables
         project_root = os.getenv("PROJECT_ROOT")
         if project_root is None:
             raise ValueError("PROJECT_ROOT environment variable is not set")
 
-    def search_similar_locations(self, data_type: str, location_info: Dict[str, Any], top_k: int = 5) -> list:
-        """
-        Search for similar locations in the FAISS index.
-        
-        Args:
-            data_type (str): Type of data being searched (e.g., 'cafes', 'restaurants')
-            location_info (Dict): Location information including coordinates
-            top_k (int): Number of results to return
-            
-        Returns:
-            list: List of similar locations with scores
-        """
-        try:
-            if not self.memory_store:
-                return []
-                
-            # Get normalized coordinates if available
-            coordinates = None
-            if location_info and 'normalized' in location_info:
-                norm = location_info['normalized']
-                if norm.get('coordinates'):
-                    coordinates = norm['coordinates']
-            
-            # Perform similarity search
-            search_results = self.memory_store.search_memories(
-                query=data_type,
-                coordinates=coordinates,
-                top_k=top_k
-            )
-            
-            return search_results
-            
-        except Exception as e:
-            self.logger.error(f"Error in similarity search: {str(e)}")
-            return []
-
     def process_query(self, query: str) -> Dict[str, Any]:
         """
-        Process a query using the query classification agent.
+        Process a query using the query classification agent and search FAISS if needed.
         
         Args:
             query (str): The user's query.
@@ -91,31 +55,84 @@ class Agent:
             classification_agent = AgentQueryClassification(query, self.load_model)
             result = classification_agent.process_query()
             
-            # Only process with context agent if classification is L1_2
+            # Get data type from classification result
+            data_type = result.get('data_type', '')
+            
+            # Load FAISS index and metadata if instance_id is provided
+            if hasattr(self, 'instance_id') and data_type:
+                try:
+                    import faiss
+                    import pickle
+                    import os
+                    import numpy as np
+                    
+                    print(f"\nPerforming similarity search for data type: {data_type}")
+                    
+                    project_root = os.getenv("PROJECT_ROOT")
+                    faiss_dir = os.path.join(project_root, "data", "faiss")
+                    
+                    # Load FAISS index
+                    index_path = os.path.join(faiss_dir, f"index_{self.instance_id}.faiss")
+                    metadata_path = os.path.join(faiss_dir, f"metadata_{self.instance_id}.pkl")
+                    
+                    if os.path.exists(index_path) and os.path.exists(metadata_path):
+                        self.faiss_index = faiss.read_index(index_path)
+                        with open(metadata_path, 'rb') as f:
+                            self.faiss_metadata = pickle.load(f)
+                        print(f"Loaded FAISS index with {self.faiss_index.ntotal} vectors")
+                        
+                        # Create a random query vector (replace with proper embedding in production)
+                        query_vector = np.random.rand(1, self.faiss_index.d).astype('float32')
+                        
+                        # Search similar vectors
+                        k = 5  # number of nearest neighbors
+                        distances, indices = self.faiss_index.search(query_vector, k)
+                        
+                        # Get metadata for similar columns
+                        similar_columns = []
+                        for idx, (distance, index) in enumerate(zip(distances[0], indices[0])):
+                            if index < len(self.faiss_metadata):
+                                metadata = self.faiss_metadata[index]
+                                similarity_score = float(1.0 / (1.0 + distance))
+                                similar_columns.append({
+                                    'column_name': metadata['column_name'],
+                                    'file_path': metadata['file_path'],
+                                    'file_name': metadata['file_name'],
+                                    'similarity_score': similarity_score,
+                                    'data_type': data_type,
+                                    'vector_id': metadata.get('vector_id', index)
+                                })
+                        
+                        print("\nSimilar columns found for data type:")
+                        for col in similar_columns:
+                            print(f"\nColumn: {col['column_name']}")
+                            print(f"File: {col['file_name']}")
+                            print(f"Score: {col['similarity_score']:.3f}")
+                            print(f"Vector ID: {col['vector_id']}")
+                            print(f"Data Type: {col['data_type']}")
+                        
+                        # Add similarity results to the response
+                        result['similar_columns'] = similar_columns
+                        result['vector_search'] = {
+                            'query_type': data_type,
+                            'total_vectors': self.faiss_index.ntotal,
+                            'dimension': self.faiss_index.d,
+                            'top_k': k
+                        }
+                
+                except Exception as e:
+                    print(f"Error in FAISS search: {str(e)}")
+                    result['faiss_error'] = str(e)
+            
+            # Process with context agent if classification is L1_2
             if result.get('classification') == 'L1_2':
-                # Create context agent with the query
                 context_agent = AgentContext(query, self.load_model)
-                # Get context information
                 context_result = context_agent.process_query()
                 
-                # Merge the context information with the classification result
                 result.update({
                     'data_type': context_result.get('data_type'),
                     'location_details': context_result.get('location_info')
                 })
-                
-                # Perform similarity search if we have a memory store
-                if self.memory_store and result.get('data_type') and result.get('location_details'):
-                    similar_locations = self.search_similar_locations(
-                        data_type=result['data_type'],
-                        location_info=result['location_details']
-                    )
-                    result['similar_locations'] = similar_locations
-                    
-            # For N and L0, just return the classification result directly
-            elif result.get('classification') in ['N', 'L0']:
-                # The response should already be in the result
-                pass
             
             return result
             
@@ -155,172 +172,59 @@ def main():
     Main function to run the agent directly.
     Example usage: python3 agent.py
     """
-    # Get model configuration and instance ID
-    model, instance_id = get_model_config(
+    from memories.models.load_model import LoadModel
+    from memories.core.memory import MemoryStore
+    from memories.agents.agent_config import get_model_config
+    
+    # Get input from user
+    query = input("Enter your query: ")
+    instance_id = input("Enter FAISS instance ID (or press Enter to skip): ")
+    
+    # Initialize model
+    model, _ = get_model_config(
         use_gpu=True,
         model_provider="deepseek-ai",
         deployment_type="deployment",
         model_name="deepseek-coder-1.3b-base"
     )
     
-    print(f"[Agent] Model initialized with instance ID: {instance_id}")
+    print(f"[Agent] Model initialized")
     
     # Initialize memory store
     memory_store = MemoryStore()
     
-    # Get the project root path
-    project_root = os.getenv("PROJECT_ROOT")
-    osm_data_path = os.path.join(project_root, "data", "osm_data")
-    
-    # Define time range (last 30 days)
-    end_time = datetime.now()
-    start_time = end_time - timedelta(days=30)
-    time_range = (start_time.isoformat(), end_time.isoformat())
-    
-    print(f"[Agent] Time range: {time_range[0]} to {time_range[1]}")
-    
-    # Define location (India bounding box)
-    location = {
-        "type": "Polygon",
-        "coordinates": [[[68.1766451354, 7.96553477623], 
-                        [97.4025614766, 7.96553477623],
-                        [97.4025614766, 35.4940095078],
-                        [68.1766451354, 35.4940095078],
-                        [68.1766451354, 7.96553477623]]]
-    }
-    
-    # Define artifacts (using lists instead of sets)
-    artifacts = {
-        "osm_data": ["points", "lines", "multipolygons"]
-    }
-    
-    # Create the OSM data directory if it doesn't exist
-    os.makedirs(osm_data_path, exist_ok=True)
-    
-    # Print the paths that will be used
-    print(f"[Agent] Looking for OSM data in: {osm_data_path}")
-    
-    memories = memory_store.create_memories(
-        model=model,
-        location=location,
-        time_range=time_range,
-        artifacts=artifacts,
-        data_connectors=[
-            {
-                "name": "india_points",
-                "type": "parquet",
-                "file_path": os.path.join(osm_data_path, "india_points.parquet")
-            },
-            {
-                "name": "india_lines",
-                "type": "parquet",
-                "file_path": os.path.join(osm_data_path, "india_lines.parquet")
-            },
-            {
-                "name": "india_multipolygons",
-                "type": "parquet",
-                "file_path": os.path.join(osm_data_path, "india_multipolygons.parquet")
-            }
-        ]
+    # Initialize and run agent
+    agent = Agent(
+        query=query, 
+        load_model=model, 
+        memory_store=memory_store,
+        instance_id=instance_id if instance_id else None
     )
-
-    # After creating memories, test similarity search
-    print("\n" + "="*50)
-    print("Testing Similarity Search")
-    print("="*50)
     
-    # Test different types of queries
-    test_queries = [
-        {
-            "query": "Find restaurants near Bangalore",
-            "coordinates": {"lat": 12.9716, "lon": 77.5946}  # Bangalore coordinates
-        },
-        {
-            "query": "Find cafes near Delhi",
-            "coordinates": {"lat": 28.6139, "lon": 77.2090}  # Delhi coordinates
-        },
-        {
-            "query": "Find hospitals near Mumbai",
-            "coordinates": {"lat": 19.0760, "lon": 72.8777}  # Mumbai coordinates
-        }
-    ]
+    result = agent.process_query(query)
     
-    for test in test_queries:
-        print(f"\nSearching: {test['query']}")
-        results = memory_store.search_memories(
-            query=test['query'],
-            coordinates=test['coordinates'],
-            top_k=5
-        )
-        
-        if results:
-            print("\nResults found:")
-            for idx, result in enumerate(results, 1):
-                print(f"\n{idx}. Score: {result.get('score', 'N/A'):.3f}")
-                print(f"   Name: {result.get('name', 'N/A')}")
-                print(f"   Type: {result.get('amenity', result.get('type', 'N/A'))}")
-                if 'distance' in result:
-                    print(f"   Distance: {result['distance']:.2f} km")
-                if 'geometry' in result and 'coordinates' in result['geometry']:
-                    coords = result['geometry']['coordinates']
-                    print(f"   Location: {coords[1]:.4f}, {coords[0]:.4f}")
-        else:
-            print("No results found")
+    # Print results
+    print("\nResults:")
+    if 'similar_columns' in result:
+        print("\nSimilar columns found:")
+        for col in result['similar_columns']:
+            print(f"\nColumn: {col['column_name']}")
+            print(f"File: {col['file_name']}")
+            print(f"Score: {col['similarity_score']:.3f}")
+            print(f"Vector ID: {col['vector_id']}")
+            print(f"Data Type: {col['data_type']}")
             
-    # Original test queries for agent processing
-    agent_test_queries = [
-        "How do I write a Python function?",
-        "What is the capital of France?",
-        "Find restaurants near Central Park",
-        "What cafes are within 2km of 12.9096437,77.6088268?"
-    ]
-    
-    # Initialize and run the agent for each query
-    for query in agent_test_queries:
-        print("\n" + "="*50)
-        print(f"Testing query: {query}")
+        if 'vector_search' in result:
+            print(f"\nVector Search Details:")
+            print(f"Query Type: {result['vector_search']['query_type']}")
+            print(f"Total Vectors: {result['vector_search']['total_vectors']}")
+            print(f"Vector Dimension: {result['vector_search']['dimension']}")
+            print(f"Top K: {result['vector_search']['top_k']}")
+    else:
+        print("No similar columns found")
         
-        agent = Agent(query=query, load_model=model, memory_store=memory_store)
-        result = agent.process_query(query)
-        
-        print("\nResults:")
-        print(f"Classification: {result.get('classification', '')}")
-        
-        # For N and L0 classifications, show the direct model response
-        if result.get('classification') in ['N', 'L0'] and 'response' in result:
-            print(f"Answer: {result['response']}")
-            print(f"Explanation: {result.get('explanation', '')}")
-        # For L1_2 classification, show detailed information
-        elif result.get('classification') == 'L1_2':
-            print("\nDetailed Information:")
-            print(f"Data Type: {result.get('data_type', '')}")
-            if 'location_details' in result:
-                loc_info = result['location_details']
-                print("\nLocation Information:")
-                print(f"Location: {loc_info.get('location', '')}")
-                print(f"Location Type: {loc_info.get('location_type', '')}")
-                if 'normalized' in loc_info:
-                    norm = loc_info['normalized']
-                    print("\nNormalized Location:")
-                    print(f"Type: {norm.get('type', '')}")
-                    if norm.get('coordinates'):
-                        coords = norm['coordinates']
-                        print(f"Coordinates: {coords.get('lat')}, {coords.get('lon')}")
-            
-            # Show similar locations if available
-            if 'similar_locations' in result and result['similar_locations']:
-                print("\nSimilar Locations:")
-                for idx, location in enumerate(result['similar_locations'], 1):
-                    print(f"\n{idx}. Score: {location.get('score', 'N/A')}")
-                    print(f"   Name: {location.get('name', 'N/A')}")
-                    print(f"   Type: {location.get('type', 'N/A')}")
-                    if 'coordinates' in location:
-                        print(f"   Coordinates: {location['coordinates']}")
-            
-            print(f"\nExplanation: {result.get('explanation', '')}")
-        # For errors or unexpected cases
-        else:
-            print(f"Explanation: {result.get('explanation', '')}")
+    print(f"\nClassification: {result.get('classification', '')}")
+    print(f"Explanation: {result.get('explanation', '')}")
 
 if __name__ == "__main__":
     main()
