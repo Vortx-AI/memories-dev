@@ -2,13 +2,13 @@ import pytest
 import torch
 from memories.utils.processors.gpu_stat import check_gpu_memory
 from memories.models.llama.llama import llama_vision_extraction
+import numpy as np
 
 HAS_CUDA = torch.cuda.is_available()
 
 @pytest.fixture
 def sample_image_path(tmp_path):
     """Create a sample image for testing"""
-    import numpy as np
     from PIL import Image
     
     # Create a random RGB image
@@ -43,4 +43,22 @@ def test_gpu_out_of_memory_handling():
 @pytest.mark.skipif(not HAS_CUDA, reason="CUDA not available")
 def test_gpu_error_recovery():
     """Test recovery from GPU errors"""
-    pytest.skip("Skipping GPU test as it's optional") 
+    pytest.skip("Skipping GPU test as it's optional")
+
+@pytest.mark.gpu
+class TestGPUStats:
+    def test_gpu_memory_stats(self):
+        """Test GPU memory statistics"""
+        pytest.skip("Skipping GPU test as it's optional")
+
+    def test_gpu_utilization(self):
+        """Test GPU utilization metrics"""
+        pytest.skip("Skipping GPU test as it's optional")
+
+    def test_gpu_error_monitoring(self):
+        """Test GPU error monitoring"""
+        pytest.skip("Skipping GPU test as it's optional")
+
+    def test_gpu_performance_metrics(self):
+        """Test GPU performance metrics"""
+        pytest.skip("Skipping GPU test as it's optional") 

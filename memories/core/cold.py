@@ -2,7 +2,7 @@ import duckdb
 import geopandas as gpd
 from pathlib import Path
 import logging
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Tuple, Union
 import pyarrow as pa
 import pyarrow.parquet as pq
 from shapely.geometry import shape
@@ -10,17 +10,35 @@ import json
 import uuid
 import yaml
 import os
-import os
 import sys
 from dotenv import load_dotenv
 import logging
 import pkg_resources
-import cudf
-import cuspatial
 import numpy as np
 import pandas as pd
 from datetime import datetime
 import subprocess
+
+# Initialize GPU support flags
+HAS_GPU_SUPPORT = False
+HAS_CUDF = False
+HAS_CUSPATIAL = False
+
+try:
+    import cudf
+    HAS_CUDF = True
+except ImportError:
+    logging.warning("cudf not available. GPU acceleration for dataframes will be disabled.")
+
+try:
+    import cuspatial
+    HAS_CUSPATIAL = True
+except ImportError:
+    logging.warning("cuspatial not available. GPU acceleration for spatial operations will be disabled.")
+
+if HAS_CUDF and HAS_CUSPATIAL:
+    HAS_GPU_SUPPORT = True
+    logging.info("GPU support enabled with cudf and cuspatial.")
 
 # Load environment variables
 load_dotenv()
@@ -124,89 +142,133 @@ class Config:
         """Get path for a specific modality"""
         return self.raw_data_path / modality
 
-class ColdStorage:
-    def __init__(self):
-        """Initialize Cold Storage with DuckDB and GeoParquet support."""
-        load_dotenv()
-        
-        # Setup logging
+logger = logging.getLogger(__name__)
+
+class ColdMemory:
+    """Cold memory implementation using DuckDB and optional GPU acceleration."""
+    
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        """Initialize cold memory with configuration."""
+        self.config = config or {}
         self.logger = logging.getLogger(__name__)
+        self.instance_id = str(uuid.uuid4())
         
-        # Initialize DuckDB connection with spatial extension
-        self.conn = duckdb.connect()
-        self.conn.execute("INSTALL spatial;")
-        self.conn.execute("LOAD spatial;")
+        # Initialize storage
+        self.db = self._init_database()
+        
+    def _init_database(self) -> duckdb.DuckDBPyConnection:
+        """Initialize DuckDB database."""
+        db_path = self.config.get('db_path', ':memory:')
+        return duckdb.connect(db_path)
+    
+    def store(self, data: Union[pd.DataFrame, 'cudf.DataFrame'], table_name: str) -> None:
+        """Store data in cold memory."""
+        if HAS_CUDF and isinstance(data, cudf.DataFrame):
+            # Convert cudf DataFrame to pandas for storage
+            self.logger.debug("Converting cudf DataFrame to pandas for storage")
+            data = data.to_pandas()
+        elif not isinstance(data, pd.DataFrame):
+            raise TypeError("Data must be a pandas DataFrame or cudf DataFrame")
 
-    def query_by_point(
-        self, 
-        lat: float, 
-        lon: float,
-        geometry_types: List[str] = None,
-        columns: List[str] = None,
-        limit: int = None
-    ) -> pd.DataFrame:
-        """
-        Query all geometries that either match or contain the given point.
-        """
-        try:
-            # Get the GEO_MEMORIES path from environment variables
-            geo_memories_path = os.getenv('GEO_MEMORIES')
-            if not geo_memories_path:
-                raise ValueError("GEO_MEMORIES path is not set in the .env file.")
-
-            # Prepare column selection
-            select_cols = '*' if not columns else ', '.join(columns)
+        # Store the data using DuckDB
+        self.db.register("temp_data", data)
+        self.db.execute(f"CREATE TABLE IF NOT EXISTS {table_name} AS SELECT * FROM temp_data")
+        self.db.unregister("temp_data")
+        self.logger.debug(f"Successfully stored data in table {table_name}")
+    
+    def retrieve(self, table_name: str, use_gpu: bool = False) -> Union[pd.DataFrame, 'cudf.DataFrame']:
+        """Retrieve data from cold memory.
+        
+        Args:
+            table_name: Name of the table to retrieve data from
+            use_gpu: Whether to return data as a GPU DataFrame (if GPU support is available)
             
-            # Create or replace the view combining all Parquet files
-            self.conn.execute(f"""
-                CREATE OR REPLACE VIEW combined_data AS
-                SELECT *
-                FROM read_parquet('{geo_memories_path}/*.parquet', union_by_name=True)
+        Returns:
+            DataFrame either as pandas DataFrame or cudf DataFrame based on use_gpu flag
+        """
+        query = f"SELECT * FROM {table_name}"
+        result = self.db.execute(query).fetchdf()
+        
+        if use_gpu:
+            if not HAS_CUDF:
+                self.logger.warning("GPU acceleration requested but cudf is not available")
+                return result
+            try:
+                self.logger.debug("Converting pandas DataFrame to cudf")
+                return cudf.from_pandas(result)
+            except Exception as e:
+                self.logger.warning(f"Failed to convert to GPU DataFrame: {e}")
+                return result
+        return result
+    
+    def _store_metadata(self, storage_id: str, metadata: Dict[str, Any]):
+        """Store metadata for the given storage ID."""
+        try:
+            self.db.execute("""
+                CREATE TABLE IF NOT EXISTS metadata (
+                    storage_id VARCHAR PRIMARY KEY,
+                    metadata JSON,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
             """)
             
-            # Build the spatial query
-            point_query = f"""
-            WITH point_geom AS (
-                SELECT ST_Point({lon}, {lat}) as point
-            )
-            SELECT {select_cols}
-            FROM combined_data
-            WHERE (
-                ST_Contains(geom, (SELECT point FROM point_geom))
-                OR
-                ST_Equals(geom, (SELECT point FROM point_geom))
-            )
-            """
-            
-            if geometry_types:
-                geometry_types_str = "', '".join(geometry_types)
-                point_query += f"""
-                AND ST_GeometryType(geom) IN ('ST_{geometry_types_str}')
-                """
-                
-            if limit:
-                point_query += f"\nLIMIT {limit}"
-                
-            point_query += ";"
-            
-            result = self.conn.execute(point_query).df()
-            
-            if len(result) > 0:
-                self.logger.info(f"Found {len(result)} geometries at/containing point ({lat}, {lon})")
-            else:
-                self.logger.info(f"No geometries found at/containing point ({lat}, {lon})")
-                
-            return result
+            self.db.execute("""
+                INSERT INTO metadata (storage_id, metadata)
+                VALUES (?, ?)
+                ON CONFLICT (storage_id) DO UPDATE SET
+                    metadata = excluded.metadata
+            """, (storage_id, json.dumps(metadata)))
             
         except Exception as e:
-            self.logger.error(f"Error querying geometries by point: {str(e)}")
-            return pd.DataFrame()
+            self.logger.error(f"Error storing metadata: {str(e)}")
+            raise
+    
+    def _retrieve_metadata(self, storage_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve metadata for the given storage ID."""
+        try:
+            result = self.db.execute("""
+                SELECT metadata FROM metadata WHERE storage_id = ?
+            """, (storage_id,)).fetchone()
+            
+            if result:
+                return json.loads(result[0])
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"Error retrieving metadata: {str(e)}")
+            return None
+    
+    def delete(self, storage_id: str) -> bool:
+        """Delete data from cold memory."""
+        try:
+            # Drop table if exists
+            self.db.execute(f"DROP TABLE IF EXISTS {storage_id}")
+            
+            # Delete metadata
+            self.db.execute("""
+                DELETE FROM metadata WHERE storage_id = ?
+            """, (storage_id,))
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error deleting data: {str(e)}")
+            return False
+    
+    def cleanup(self):
+        """Clean up resources."""
+        if hasattr(self, 'db'):
+            self.db.close()
+
+    def __del__(self):
+        """Destructor to ensure cleanup is performed."""
+        self.cleanup()
 
 # Test code with more verbose output
 if __name__ == "__main__":
     try:
-        print("Initializing ColdStorage...")
-        cold_storage = ColdStorage()
+        print("Initializing ColdMemory...")
+        cold_memory = ColdMemory()
         
         # Test coordinates (Bangalore, India)
         test_lat, test_lon = 12.9095706, 77.6085865
@@ -214,7 +276,7 @@ if __name__ == "__main__":
         
         # Basic query with debug info
         print("\n1. Executing basic query...")
-        results = cold_storage.query_by_point(
+        results = cold_memory.query_by_point(
             lat=test_lat,
             lon=test_lon,
             limit=5
@@ -243,7 +305,7 @@ if __name__ == "__main__":
                 LIMIT 1;
             """
             print(f"Executing sample query: {sample_query}")
-            sample_df = cold_storage.conn.execute(sample_query).df()
+            sample_df = cold_memory.conn.execute(sample_query).df()
             print("\nAvailable columns:", list(sample_df.columns))
             print("\nComplete sample row:")
             pd.set_option('display.max_columns', None)
@@ -255,7 +317,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"An error occurred during testing: {str(e)}")
     finally:
-        if 'cold_storage' in locals():
-            cold_storage.conn.close()
+        if 'cold_memory' in locals():
+            cold_memory.conn.close()
             print("\nClosed DuckDB connection.")
     

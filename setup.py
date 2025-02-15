@@ -67,7 +67,12 @@ setup(
     ],
     
     extras_require={
-        "gpu": ["faiss-gpu>=1.7.4", "cupy-cuda12x>=12.0.0"],
+        "gpu": [
+            "faiss-gpu>=1.7.4",
+            "cupy-cuda12x>=12.0.0",
+            "cudf>=24.2.0",
+            "cuspatial>=24.2.0"
+        ],
         "dev": [
             "pytest>=8.3.4",
             "pytest-asyncio>=0.23.5",

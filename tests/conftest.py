@@ -12,4 +12,30 @@ def pytest_configure(config):
     # Register markers
     config.addinivalue_line(
         "markers", "asyncio: mark test as async"
-    ) 
+    )
+    config.addinivalue_line(
+        "markers",
+        "gpu: mark test as requiring GPU support"
+    )
+    config.addinivalue_line(
+        "markers",
+        "earth: mark test as using earth-related functionality"
+    )
+    config.addinivalue_line(
+        "markers",
+        "async_test: mark test as using async/await"
+    )
+
+def has_gpu_support():
+    try:
+        import cudf
+        return True
+    except ImportError:
+        return False
+
+def pytest_collection_modifyitems(config, items):
+    skip_gpu = pytest.mark.skip(reason="GPU support not available")
+    
+    for item in items:
+        if "gpu" in item.keywords and not has_gpu_support():
+            item.add_marker(skip_gpu) 

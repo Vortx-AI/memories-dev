@@ -25,226 +25,81 @@ import pyproj
 from pyproj import Transformer
 import duckdb
 from concurrent.futures import ThreadPoolExecutor
-from scipy.ndimage import gaussian_filter
-from ..types import Bounds, ImageType, RasterType
+import pandas as pd
+from rasterio.transform import from_bounds
+import logging
+
+# Initialize GPU support flags
+HAS_CUDF = False
+cudf = None
+
+try:
+    import cudf
+    HAS_CUDF = True
+except ImportError:
+    pass
+
+logger = logging.getLogger(__name__)
 
 class RasterTileProcessor:
     """Advanced raster tile processor with real-time capabilities"""
     
     def __init__(self):
-        """Initialize the processor"""
-        self._styles = {
-            'default': lambda x: x,
-            'grayscale': lambda x: np.mean(x, axis=2) if len(x.shape) > 2 else x,
-            'normalized': lambda x: (x - np.min(x)) / (np.max(x) - np.min(x)) if np.max(x) > np.min(x) else x
-        }
-        self._transformations = {
-            'flip_vertical': lambda x: np.flipud(x),
-            'flip_horizontal': lambda x: np.fliplr(x),
-            'rotate_90': lambda x: np.rot90(x),
-            'rotate_180': lambda x: np.rot90(x, 2),
-            'rotate_270': lambda x: np.rot90(x, 3)
-        }
-        self._filters = {
-            'median': lambda x, size=3: np.median(x),
-            'mean': lambda x, size=3: np.mean(x),
-            'gaussian': lambda x, sigma=1: gaussian_filter(x, sigma) if len(x.shape) == 2 else np.dstack([gaussian_filter(x[:,:,i], sigma) for i in range(x.shape[2])])
-        }
+        """Initialize the raster tile processor."""
+        self._styles = self._load_styles()
+        self._transformations = self._load_transformations()
+        self._filters = self._load_filters()
         self.db = self._init_database()
-
-    @property
-    def available_styles(self) -> List[str]:
-        """Get list of available styles."""
-        return list(self._styles.keys())
-
-    @property
-    def available_transformations(self) -> List[str]:
-        """Get list of available transformations."""
-        return list(self._transformations.keys())
-
-    @property
-    def available_filters(self) -> List[str]:
-        """Get list of available filters."""
-        return list(self._filters.keys())
-
-    def process_tile(
+        
+    async def process_tile(
         self,
-        bounds: Bounds,
+        bounds: mercantile.bounds,
         format: str = 'png',
         style: Optional[str] = None,
-        transformations: Optional[List[str]] = None,
-        filters: Optional[List[str]] = None,
-        **kwargs: Any
-    ) -> ImageType:
-        """
-        Process a tile given bounds and optional style/transformation parameters.
-        
-        Args:
-            bounds: Tile bounds (west, south, east, north)
-            format: Output format (default: 'png')
-            style: Style to apply (default: None)
-            transformations: List of transformations to apply (default: None)
-            filters: List of filters to apply (default: None)
-            **kwargs: Additional keyword arguments
-            
-        Returns:
-            Processed tile as numpy array
-        """
+        time: Optional[str] = None,
+        filter: Optional[str] = None,
+        transform: Optional[str] = None,
+        use_gpu: bool = False
+    ) -> bytes:
+        """Process raster tile with advanced features"""
         try:
-            # Create a simple test array for now
-            data = np.random.randint(0, 255, (256, 256), dtype=np.uint8)
+            # Get data for bounds
+            data = await self._get_data(bounds, time)
+            
+            # Process on GPU if requested and available
+            if use_gpu and HAS_CUDF and cudf:
+                try:
+                    data = self._process_on_gpu(data)
+                except Exception as e:
+                    logger.warning(f"GPU processing failed: {e}")
+                    data = self._process_on_cpu(data)
+            else:
+                data = self._process_on_cpu(data)
             
             # Apply filters if specified
-            if filters and isinstance(filters, list):
-                for filter in filters:
-                    if callable(filter):
-                        data = filter(data)
-                    elif filter == 'cloud_mask':
-                        data = data > 0
-                    elif filter == 'nodata_mask':
-                        data = data != 0
-                    elif filter.startswith('threshold:'):
-                        threshold = float(filter.split(':')[1])
-                        data = data > threshold
+            if filter:
+                data = self._apply_filter(data, filter)
             
             # Apply transformations if specified
-            if transformations and isinstance(transformations, list):
-                for transform in transformations:
-                    if callable(transform):
-                        data = transform(data)
-                    elif transform == 'normalize':
-                        data = (data - data.min()) / (data.max() - data.min() + 1e-8)
-                    elif transform == 'hillshade':
-                        data = self._calculate_hillshade(data, bounds)
-                    elif transform.startswith('resample:'):
-                        method = transform.split(':')[1]
-                        data = data.coarsen(
-                            x=2, y=2,
-                            boundary='trim'
-                        ).mean() if method == 'mean' else data
+            if transform:
+                data = self._apply_transformation(data, transform)
             
             # Apply styling if specified
-            if style and style in self._styles:
-                data = self._styles[style](data)
+            if style:
+                data = self._apply_style(data, style)
             
-            return data
+            # Convert to specified format
+            return self._to_format(data, format)
             
         except Exception as e:
             raise Exception(f"Error processing raster tile: {str(e)}")
-
-    def _calculate_hillshade(
-        self,
-        data: ImageType,
-        bounds: Bounds,
-        azimuth: float = 315.0,
-        altitude: float = 45.0
-    ) -> ImageType:
-        """
-        Calculate hillshade for elevation data.
-        
-        Args:
-            data: Input elevation data
-            bounds: Tile bounds (west, south, east, north)
-            azimuth: Sun azimuth in degrees (default: 315.0)
-            altitude: Sun altitude in degrees (default: 45.0)
-            
-        Returns:
-            Hillshade array
-        """
-        x, y = np.gradient(data)
-        slope = np.pi/2. - np.arctan(np.sqrt(x*x + y*y))
-        aspect = np.arctan2(-x, y)
-        azimuthrad = azimuth*np.pi/180.
-        altituderad = altitude*np.pi/180.
-        
-        shaded = np.sin(altituderad)*np.sin(slope) + \
-                np.cos(altituderad)*np.cos(slope)*np.cos(azimuthrad-aspect)
-        return shaded
-
-    def _init_database(self) -> duckdb.DuckDBPyConnection:
-        """Initialize database"""
-        return duckdb.connect(':memory:')
-
-    def available_styles(self) -> Dict[str, Any]:
-        """Get available styles"""
-        return self._styles
-
-    def _load_styles(self) -> Dict[str, Any]:
-        """Load style configurations"""
-        style_path = Path(__file__).parent / 'styles'
-        styles = {}
-        for style_file in style_path.glob('*.json'):
-            with open(style_file) as f:
-                styles[style_file.stem] = json.load(f)
-        return styles
-
-    def _apply_style(
-        self,
-        data: xr.DataArray,
-        style: str
-    ) -> xr.DataArray:
-        """
-        Apply styling rules to data.
-        
-        Args:
-            data: Input array
-            style: Style to apply
-            
-        Returns:
-            Styled array
-        """
-        style_func = self._styles.get(style)
-        if style_func is None:
-            return data
-            
-        # Apply style function
-        return style_func(data)
-    
-    def _apply_colormap(
-        self,
-        data: xr.DataArray,
-        colormap: Dict[str, List[int]]
-    ) -> xr.DataArray:
-        """Apply colormap to data"""
-        # Create lookup table
-        lut = np.zeros((256, 3), dtype=np.uint8)
-        for value, color in colormap.items():
-            lut[int(value)] = color
-            
-        # Apply lookup table
-        return xr.DataArray(
-            lut[data.values.astype(np.uint8)],
-            dims=('y', 'x', 'band'),
-            coords={
-                'y': data.y,
-                'x': data.x,
-                'band': ['R', 'G', 'B']
-            }
-        )
-    
-    def _apply_band_combination(
-        self,
-        data: xr.DataArray,
-        bands: List[int]
-    ) -> xr.DataArray:
-        """Apply band combination"""
-        return data.isel(band=bands)
     
     async def _get_data(
         self,
-        bounds: Bounds,
+        bounds: mercantile.bounds,
         time: Optional[str]
     ) -> xr.DataArray:
-        """
-        Get raster data for bounds.
-        
-        Args:
-            bounds: Tile bounds (west, south, east, north)
-            time: Optional time filter
-            
-        Returns:
-            Raster data as xarray DataArray
-        """
+        """Get raster data for bounds"""
         # Build query
         query = f"""
         SELECT path, band_metadata
@@ -289,88 +144,180 @@ class RasterTileProcessor:
         else:
             raise Exception("No data found for bounds")
     
-    def _apply_filter(
-        self,
-        data: ImageType,
-        bounds: Bounds,
-        filter_name: str
-    ) -> ImageType:
-        """
-        Apply filter to raster data.
+    def _process_on_gpu(self, data: xr.DataArray) -> xr.DataArray:
+        """Process data using GPU acceleration."""
+        if not (HAS_CUDF and cudf):
+            raise RuntimeError("GPU processing requested but GPU support not available")
         
-        Args:
-            data: Input array
-            bounds: Tile bounds (west, south, east, north)
-            filter_name: Filter to apply
-            
-        Returns:
-            Filtered array
-        """
-        # Implement the filter logic based on the filter_name
-        # This is a placeholder and should be replaced with the actual implementation
+        try:
+            # Convert to GPU DataFrame
+            gpu_data = cudf.from_pandas(data.to_dataframe())
+            # Add GPU processing logic here
+            return xr.DataArray.from_dataframe(gpu_data.to_pandas())
+        except Exception as e:
+            logger.error(f"GPU processing error: {e}")
+            raise
+
+    def _process_on_cpu(self, data: xr.DataArray) -> xr.DataArray:
+        """Process data using CPU."""
         return data
     
-    def _apply_transformation(
-        self,
-        data: ImageType,
-        bounds: Bounds,
-        transform: str
-    ) -> ImageType:
-        """
-        Apply transformation to raster data.
-        
-        Args:
-            data: Input array
-            bounds: Tile bounds (west, south, east, north)
-            transform: Transformation to apply
-            
-        Returns:
-            Transformed array
-        """
-        if transform == 'normalize':
-            # Normalize to 0-1 range
-            return (data - data.min()) / (data.max() - data.min())
-        elif transform == 'hillshade':
-            # Calculate hillshade
-            return self._calculate_hillshade(data, bounds)
-        elif transform.startswith('resample:'):
-            # Resample to new resolution
-            method = transform.split(':')[1]
-            return data.coarsen(
-                x=2, y=2,
-                boundary='trim'
-            ).mean() if method == 'mean' else data
+    def _apply_filter(self, data: xr.DataArray, filter: str) -> xr.DataArray:
+        """Apply filter to the data."""
+        if filter == 'median':
+            return data.rolling(y=3, x=3, min_periods=1).median()
+        elif filter == 'mean':
+            return data.rolling(y=3, x=3, min_periods=1).mean()
+        elif filter == 'gaussian':
+            import scipy.ndimage as ndimage
+            return xr.apply_ufunc(
+                ndimage.gaussian_filter,
+                data,
+                kwargs={'sigma': 1}
+            )
         return data
     
-    def _to_format(
-        self,
-        data: xr.DataArray,
-        bounds: Bounds,
-        format: str = 'png'
-    ) -> bytes:
-        """
-        Convert to requested format.
+    def _apply_transformation(self, data: xr.DataArray, transform: str) -> xr.DataArray:
+        """Apply transformation to the data."""
+        if transform == 'flip_vertical':
+            return data.flip('y')
+        elif transform == 'flip_horizontal':
+            return data.flip('x')
+        elif transform == 'rotate_90':
+            return data.transpose('y', 'x')
+        return data
+    
+    def _apply_style(self, data: xr.DataArray, style: str) -> xr.DataArray:
+        """Apply style to the data."""
+        style_config = self._styles.get(style, {})
+        if not style_config:
+            return data
         
-        Args:
-            data: Input array
-            bounds: Tile bounds (west, south, east, north)
-            format: Output format (default: 'png')
-            
-        Returns:
-            Formatted data as bytes
-        """
+        # Apply style transformations
+        if 'colormap' in style_config:
+            data = self._apply_colormap(data, style_config['colormap'])
+        if 'hillshade' in style_config:
+            data = self._calculate_hillshade(data)
+        return data
+    
+    def _to_format(self, data: xr.DataArray, format: str) -> bytes:
+        """Convert data to the specified format."""
+        import io
+        from PIL import Image
+        
         # Convert to numpy array
-        arr = data.values
+        array = data.values
         
-        # Scale to 0-255 range
-        arr = ((arr - arr.min()) * (255 / (arr.max() - arr.min()))).astype(np.uint8)
+        # Scale to 0-255 range if needed
+        if array.dtype != np.uint8:
+            array = ((array - array.min()) * (255.0 / (array.max() - array.min()))).astype(np.uint8)
         
-        # Create PIL image
-        img = Image.fromarray(arr)
+        # Create image
+        img = Image.fromarray(array)
         
         # Save to bytes
-        img_byte_arr = io.BytesIO()
-        img.save(img_byte_arr, format=format.upper())
-        img_byte_arr.seek(0)
+        output = io.BytesIO()
+        img.save(output, format=format.upper())
+        return output.getvalue()
+    
+    def _calculate_hillshade(
+        self,
+        data: xr.DataArray,
+        azimuth: float = 315.0,
+        altitude: float = 45.0
+    ) -> xr.DataArray:
+        """Calculate hillshade"""
+        x, y = np.gradient(data.values)
+        slope = np.pi/2. - np.arctan(np.sqrt(x*x + y*y))
+        aspect = np.arctan2(-x, y)
+        azimuthrad = azimuth*np.pi/180.
+        altituderad = altitude*np.pi/180.
         
-        return img_byte_arr.getvalue() 
+        shaded = np.sin(altituderad)*np.sin(slope) + \
+                np.cos(altituderad)*np.cos(slope)*np.cos(azimuthrad-aspect)
+                
+        return xr.DataArray(
+            shaded,
+            dims=data.dims,
+            coords=data.coords
+        )
+    
+    def _apply_colormap(
+        self,
+        data: xr.DataArray,
+        colormap: Dict[str, List[int]]
+    ) -> xr.DataArray:
+        """Apply colormap to data"""
+        # Create lookup table
+        lut = np.zeros((256, 3), dtype=np.uint8)
+        for value, color in colormap.items():
+            lut[int(value)] = color
+            
+        # Apply lookup table
+        return xr.DataArray(
+            lut[data.values.astype(np.uint8)],
+            dims=('y', 'x', 'band'),
+            coords={
+                'y': data.y,
+                'x': data.x,
+                'band': ['R', 'G', 'B']
+            }
+        )
+    
+    def available_styles(self) -> Dict[str, Any]:
+        """Get available styles"""
+        return self._styles
+    
+    def available_transformations(self) -> List[str]:
+        """Get available transformations"""
+        return list(self._transformations.keys())
+    
+    def available_filters(self) -> List[str]:
+        """Get available filters"""
+        return list(self._filters.keys())
+    
+    def _load_styles(self) -> Dict[str, Any]:
+        """Load style configurations"""
+        return {
+            'default': {
+                'colormap': {
+                    'water': [0, 0, 255],
+                    'land': [0, 255, 0]
+                }
+            }
+        }
+    
+    def _load_transformations(self) -> Dict[str, Any]:
+        """Load transformation configurations"""
+        return {
+            'flip_vertical': 'Flip vertically',
+            'flip_horizontal': 'Flip horizontally',
+            'rotate_90': 'Rotate 90 degrees'
+        }
+    
+    def _load_filters(self) -> Dict[str, Any]:
+        """Load filter configurations"""
+        return {
+            'median': 'Median filter',
+            'mean': 'Mean filter',
+            'gaussian': 'Gaussian filter'
+        }
+    
+    def _init_database(self) -> duckdb.DuckDBPyConnection:
+        """Initialize DuckDB database"""
+        db = duckdb.connect(':memory:')
+        
+        # Install and load spatial extension
+        db.execute("INSTALL spatial;")
+        db.execute("LOAD spatial;")
+        
+        db.execute("""
+            CREATE TABLE raster_data (
+                id INTEGER,
+                path VARCHAR,
+                bounds GEOMETRY,
+                time_column TIMESTAMP,
+                band_metadata JSON
+            )
+        """)
+        return db 

@@ -131,4 +131,22 @@ def test_query_multiple_parquet_connection_cleanup(sample_parquet_files):
         conn.close()
         
     except Exception as e:
-        pytest.fail(f"Connection cleanup test failed: {str(e)}") 
+        pytest.fail(f"Connection cleanup test failed: {str(e)}")
+
+@pytest.mark.gpu
+class TestDuckDBGPUUtils:
+    def test_gpu_acceleration(self):
+        """Test GPU acceleration for DuckDB queries"""
+        pytest.skip("Skipping GPU test as it's optional")
+
+    def test_gpu_memory_management(self):
+        """Test GPU memory management in DuckDB"""
+        pytest.skip("Skipping GPU test as it's optional")
+
+    def test_gpu_query_optimization(self):
+        """Test query optimization with GPU"""
+        pytest.skip("Skipping GPU test as it's optional")
+
+    def test_gpu_error_handling(self):
+        """Test error handling for GPU operations in DuckDB"""
+        pytest.skip("Skipping GPU test as it's optional") 

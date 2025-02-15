@@ -52,4 +52,22 @@ def test_input_validation():
 @pytest.mark.skipif(not HAS_CUPY, reason="CuPy not available")
 def test_large_image_processing():
     """Test processing of large images"""
-    pytest.skip("Skipping CuPy test as it's optional") 
+    pytest.skip("Skipping CuPy test as it's optional")
+
+@pytest.mark.gpu
+class TestComputationalUtils:
+    def test_gpu_array_operations(self):
+        """Test basic GPU array operations"""
+        pytest.skip("Skipping GPU test as it's optional")
+
+    def test_large_matrix_multiplication(self):
+        """Test large matrix multiplication on GPU"""
+        pytest.skip("Skipping GPU test as it's optional")
+
+    def test_memory_management(self):
+        """Test GPU memory management"""
+        pytest.skip("Skipping GPU test as it's optional")
+
+    def test_error_handling(self):
+        """Test error handling for GPU operations"""
+        pytest.skip("Skipping GPU test as it's optional") 

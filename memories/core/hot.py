@@ -1,11 +1,17 @@
 import redis
-from typing import Any, Optional, List, Dict
+from typing import Any, Optional, List, Dict, Union
 import json
 import logging
+import os
+from pathlib import Path
+import numpy as np
+import pandas as pd
+from datetime import datetime
+import uuid
 
-class HotStorage:
+class HotMemory:
     """
-    Hot storage implementation using Redis for cached memory operations.
+    Hot memory implementation using Redis for cached memory operations.
     """
     
     def __init__(self, host: str = 'localhost', port: int = 6379, db: int = 0):
@@ -24,6 +30,7 @@ class HotStorage:
             decode_responses=True  # Automatically decode responses to strings
         )
         self.logger = logging.getLogger(__name__)
+        self.instance_id = str(uuid.uuid4())
 
     def create(self, key: str, value: Any, expiry: Optional[int] = None) -> bool:
         """
@@ -51,33 +58,19 @@ class HotStorage:
         Read a value from Redis.
         
         Args:
-            key (str): The key to retrieve
+            key (str): The key to read
             
         Returns:
-            Optional[Any]: The deserialized value or None if not found
+            Optional[Any]: The deserialized value if found, None otherwise
         """
         try:
             value = self.redis_client.get(key)
-            if value is None:
-                return None
-            return json.loads(value)
+            if value:
+                return json.loads(value)
+            return None
         except Exception as e:
             self.logger.error(f"Error reading key {key}: {str(e)}")
             return None
-
-    def update(self, key: str, value: Any, expiry: Optional[int] = None) -> bool:
-        """
-        Update an existing key-value pair in Redis.
-        
-        Args:
-            key (str): The key to update
-            value (Any): The new value
-            expiry (Optional[int]): New expiry time in seconds
-            
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        return self.create(key, value, expiry)  # Redis set operation handles both create and update
 
     def delete(self, key: str) -> bool:
         """
@@ -106,21 +99,21 @@ class HotStorage:
             List[str]: List of matching keys
         """
         try:
-            return self.redis_client.keys(pattern)
+            return [key.decode() for key in self.redis_client.keys(pattern)]
         except Exception as e:
             self.logger.error(f"Error listing keys with pattern {pattern}: {str(e)}")
             return []
 
     def increment(self, key: str, amount: int = 1) -> Optional[int]:
         """
-        Increment a numeric value in Redis.
+        Increment a key's value.
         
         Args:
             key (str): The key to increment
             amount (int): Amount to increment by
             
         Returns:
-            Optional[int]: New value after increment or None if failed
+            Optional[int]: New value after increment, None if error
         """
         try:
             return self.redis_client.incrby(key, amount)
@@ -128,22 +121,17 @@ class HotStorage:
             self.logger.error(f"Error incrementing key {key}: {str(e)}")
             return None
 
-    def flush(self) -> bool:
-        """
-        Clear all keys in the current database.
-        
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        try:
-            self.redis_client.flushdb()
-            return True
-        except Exception as e:
-            self.logger.error(f"Error flushing database: {str(e)}")
-            return False
+    def cleanup(self):
+        """Clean up resources."""
+        if hasattr(self, 'redis_client'):
+            self.redis_client.close()
+
+    def __del__(self):
+        """Destructor to ensure connection is closed."""
+        self.cleanup()
 
 # Initialize hot storage
-hot_storage = HotStorage()
+hot_storage = HotMemory()
 
 # Create a key-value pair
 hot_storage.create("user:1", {"name": "John", "age": 30}, expiry=3600)  # expires in 1 hour
@@ -152,7 +140,7 @@ hot_storage.create("user:1", {"name": "John", "age": 30}, expiry=3600)  # expire
 user = hot_storage.read("user:1")
 
 # Update the value
-hot_storage.update("user:1", {"name": "John", "age": 31})
+hot_storage.create("user:1", {"name": "John", "age": 31})
 
 # Delete the key
 hot_storage.delete("user:1")

@@ -1,6 +1,6 @@
 Metadata-Version: 2.2
 Name: memories-dev
-Version: 1.0.4
+Version: 1.0.5
 Summary: A package for daily synthesis of Earth Memories, helping agents answer about location-first queries.
 Home-page: https://github.com/Vortx-AI/memories-dev
 Author: Memories-dev
@@ -211,6 +211,7 @@ Project-URL: Homepage, https://github.com/Vortx-AI/memories-dev
 Project-URL: Documentation, https://docs.memories-dev.dev
 Project-URL: Repository, https://github.com/Vortx-AI/memories-dev.git
 Project-URL: Issues, https://github.com/Vortx-AI/memories-dev/issues
+Project-URL: Changelog, https://github.com/Vortx-AI/memories-dev/blob/main/CHANGELOG.md
 Keywords: earth,memory,ai,geo,satellite
 Classifier: License :: OSI Approved :: Apache Software License
 Classifier: Programming Language :: Python
@@ -218,6 +219,12 @@ Classifier: Programming Language :: Python :: 3
 Classifier: Programming Language :: Python :: 3.9
 Classifier: Programming Language :: Python :: 3.10
 Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: Topic :: Scientific/Engineering :: GIS
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Science/Research
+Classifier: Intended Audience :: Developers
+Classifier: Natural Language :: English
 Requires-Python: >=3.9
 Description-Content-Type: text/markdown
 License-File: LICENSE
@@ -253,12 +260,48 @@ Requires-Dist: pystac>=1.8.0
 Requires-Dist: xarray>=2023.0.0
 Requires-Dist: dask>=2024.1.0
 Requires-Dist: dask[array]>=2024.1.0
+Requires-Dist: spacy>=3.8.0
+Requires-Dist: pytest>=8.3.4
+Requires-Dist: pytest-asyncio>=0.23.5
+Requires-Dist: pytest-cov>=4.1.0
+Requires-Dist: pytest-mock>=3.12.0
+Requires-Dist: pytest-xdist>=3.5.0
+Requires-Dist: pytest-benchmark>=4.0.0
+Requires-Dist: pytest-timeout>=2.2.0
+Requires-Dist: black>=24.1.0
+Requires-Dist: flake8>=7.0.0
+Requires-Dist: mypy>=1.8.0
+Requires-Dist: isort>=5.13.0
+Requires-Dist: pre-commit>=3.6.0
+Requires-Dist: sphinx>=7.2.0
+Requires-Dist: sphinx-rtd-theme>=2.0.0
+Requires-Dist: sphinx-autodoc-typehints>=2.0.0
+Requires-Dist: nbsphinx>=0.9.0
+Requires-Dist: pandoc>=2.3
 Provides-Extra: gpu
 Requires-Dist: faiss-gpu>=1.7.4; extra == "gpu"
+Requires-Dist: cupy-cuda12x>=12.0.0; extra == "gpu"
+Requires-Dist: cudf>=24.2.0; extra == "gpu"
+Requires-Dist: cuspatial>=24.2.0; extra == "gpu"
 Provides-Extra: dev
-Requires-Dist: pytest>=6.0; extra == "dev"
+Requires-Dist: pytest>=8.3.4; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23.5; extra == "dev"
+Requires-Dist: pytest-cov>=4.1.0; extra == "dev"
+Requires-Dist: pytest-mock>=3.12.0; extra == "dev"
+Requires-Dist: pytest-xdist>=3.5.0; extra == "dev"
+Requires-Dist: pytest-benchmark>=4.0.0; extra == "dev"
+Requires-Dist: pytest-timeout>=2.2.0; extra == "dev"
+Requires-Dist: black>=24.1.0; extra == "dev"
+Requires-Dist: flake8>=7.0.0; extra == "dev"
+Requires-Dist: mypy>=1.8.0; extra == "dev"
+Requires-Dist: isort>=5.13.0; extra == "dev"
+Requires-Dist: pre-commit>=3.6.0; extra == "dev"
 Provides-Extra: docs
-Requires-Dist: sphinx>=4.0.0; extra == "docs"
+Requires-Dist: sphinx>=7.2.0; extra == "docs"
+Requires-Dist: sphinx-rtd-theme>=2.0.0; extra == "docs"
+Requires-Dist: sphinx-autodoc-typehints>=2.0.0; extra == "docs"
+Requires-Dist: nbsphinx>=0.9.0; extra == "docs"
+Requires-Dist: pandoc>=2.3; extra == "docs"
 Dynamic: author
 Dynamic: home-page
 Dynamic: requires-python
@@ -349,7 +392,7 @@ pip install "memories-dev[gpu]"==1.0.4
 ```python
 # Import the package
 from memories.models import LoadModel  # ✅ Correct
-from memories_dev.models import LoadModel  # ❌ Incorrect
+from memories-dev.models import LoadModel  # ❌ Incorrect
 ```
 
 ### Core Components

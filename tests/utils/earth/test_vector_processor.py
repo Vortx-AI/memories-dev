@@ -2,7 +2,7 @@ import pytest
 import mercantile
 import geopandas as gpd
 from shapely.geometry import box
-from memories.utils.earth.vector_processor import VectorTileProcessor
+from memories.utils.earth.vector_processor import VectorTileProcessor, VectorProcessor
 from memories.utils.types import Bounds
 
 @pytest.fixture
@@ -109,4 +109,31 @@ def test_apply_transformation(vector_processor, sample_bounds):
     
     # Test boundary transformation
     result = vector_processor._apply_transformation(data, sample_bounds, 'boundary')
-    assert all(result.geom_type == 'LineString') 
+    assert all(result.geom_type == 'LineString')
+
+@pytest.mark.gpu
+@pytest.mark.earth
+class TestVectorProcessor:
+    def test_vector_processor_initialization(self, vector_processor):
+        """Test that VectorProcessor initializes correctly"""
+        assert vector_processor is not None
+        assert vector_processor.db is not None
+
+    def test_available_transformations(self, vector_processor):
+        """Test that available_transformations returns correct list"""
+        transformations = vector_processor.available_transformations
+        assert isinstance(transformations, list)
+        assert len(transformations) > 0
+        assert 'boundary' in transformations
+
+    def test_process_feature(self, vector_processor, sample_feature):
+        """Test processing a feature"""
+        result = vector_processor.process_feature(sample_feature)
+        assert result is not None
+        assert 'geometry' in result
+
+    def test_apply_transformation(self, vector_processor, sample_feature):
+        """Test applying a transformation"""
+        result = vector_processor.apply_transformation(sample_feature, 'boundary')
+        assert result is not None
+        assert 'geometry' in result 
