@@ -233,6 +233,81 @@ def check_faiss_storage(instance_id: str):
         print(f"\nNo FAISS index found for instance ID: {instance_id}")
         print(f"Looked in: {faiss_dir}")
 
+def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
+    """
+    Create memory store with specified configuration.
+    
+    Args:
+        model (LoadModel): Initialized model instance
+        instance_id (str): Instance ID for the model
+        
+    Returns:
+        Dict[str, Any]: Created memories data
+    """
+    from memories.core.memory import MemoryStore
+    import os
+    from dotenv import load_dotenv
+    
+    # Load environment variables
+    load_dotenv()
+    
+    # Initialize memory store
+    memory_store = MemoryStore()
+    
+    # Get project root and data paths
+    project_root = os.getenv("PROJECT_ROOT")
+    osm_data_path = os.path.join(project_root, "data", "osm_data")
+    
+    # Create the OSM data directory if it doesn't exist
+    os.makedirs(osm_data_path, exist_ok=True)
+    
+    # Define time range (last 30 days)
+    end_time = datetime.now()
+    start_time = end_time - timedelta(days=30)
+    time_range = (start_time.isoformat(), end_time.isoformat())
+    
+    # Define location (India bounding box)
+    location = {
+        "type": "Polygon",
+        "coordinates": [[[68.1766451354, 7.96553477623], 
+                        [97.4025614766, 7.96553477623],
+                        [97.4025614766, 35.4940095078],
+                        [68.1766451354, 35.4940095078],
+                        [68.1766451354, 7.96553477623]]]
+    }
+    
+    # Define artifacts
+    artifacts = {
+        "osm_data": ["points", "lines", "multipolygons"]
+    }
+    
+    # Create memories
+    memories = memory_store.create_memories(
+        model=model,
+        location=location,
+        time_range=time_range,
+        artifacts=artifacts,
+        data_connectors=[
+            {
+                "name": "india_points",
+                "type": "parquet",
+                "file_path": os.path.join(osm_data_path, "india_points.parquet")
+            },
+            {
+                "name": "india_lines",
+                "type": "parquet",
+                "file_path": os.path.join(osm_data_path, "india_lines.parquet")
+            },
+            {
+                "name": "india_multipolygons",
+                "type": "parquet",
+                "file_path": os.path.join(osm_data_path, "india_multipolygons.parquet")
+            }
+        ]
+    )
+    
+    return memories
+
 def main():
     """Print current model instance ID when run directly."""
     import argparse
@@ -241,17 +316,26 @@ def main():
     parser.add_argument('--instance-id', type=str, help='Check storage for specific instance ID')
     parser.add_argument('--list-instances', action='store_true', help='List all available instances')
     parser.add_argument('--check-faiss', type=str, help='Check FAISS storage for specific instance ID')
+    parser.add_argument('--create-memories', action='store_true', help='Create new memories with default configuration')
     
     args = parser.parse_args()
     
-    if args.check_faiss:
+    if args.create_memories:
+        # Initialize model and create memories
+        model, instance_id = get_model_config()
+        print(f"\nCreating memories for instance ID: {instance_id}")
+        memories = create_memory_store(model, instance_id)
+        print(f"\nMemories created successfully")
+        print(f"Instance ID: {instance_id}")
+        
+    elif args.check_faiss:
         check_faiss_storage(args.check_faiss)
     elif args.list_instances:
         list_available_instances()
     elif args.instance_id:
         check_instance_storage(args.instance_id)
     else:
-        # Original main function code...
+        # Original configuration display code...
         print("\nTesting Model Configuration")
         print("=" * 50)
         
