@@ -283,41 +283,44 @@ class MemoryEncoder:
 class MemoryStore:
     """Storage and retrieval system for earth observation memories with DuckDB."""
     
-    def __init__(
-        self,
-        config_path: str = None
-    ):
-        """Initialize MemoryStore with DuckDB."""
-        # Get the project root directory
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        print(f"[MemoryStore] Project root: {project_root}")
-
-        # Initialize DuckDB
-        try:
-            
-            self.db_path = os.path.join(project_root, 'data', 'memory.db')
-            os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-            
-            self.conn = duckdb.connect(self.db_path)
-            print(f"[MemoryStore] Connected to DuckDB at {self.db_path}")
-            
-            # Create single memories table with all required columns
-            self.conn.execute("""
-                CREATE TABLE IF NOT EXISTS memories (
-                    instance_id VARCHAR PRIMARY KEY,
-                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    data_connectors JSON,
-                    artifacts JSON,
-                    geometry JSON,
-                    input_location JSON,
-                    start_date TIMESTAMP,
-                    end_date TIMESTAMP
-                )
-            """)
-            print("[MemoryStore] Memories table initialized")
-        except Exception as e:
-            print(f"[MemoryStore] Error initializing DuckDB: {str(e)}")
-            self.conn = None
+    def __init__(self):
+        """Initialize the MemoryStore with database connection and FAISS index."""
+        # Set up logging
+        self.logger = logging.getLogger(__name__)
+        
+        # Get project root
+        self.project_root = os.getenv("PROJECT_ROOT")
+        if not self.project_root:
+            raise ValueError("PROJECT_ROOT environment variable not set")
+        print(f"[MemoryStore] Project root: {self.project_root}")
+        
+        # Initialize database
+        db_path = os.path.join(self.project_root, "data", "memory.db")
+        self.conn = duckdb.connect(db_path)
+        print(f"[MemoryStore] Connected to DuckDB at {db_path}")
+        
+        # Initialize FAISS index
+        self.index = None  # Will be created when first embeddings are added
+        self.data = []    # Store data corresponding to vectors
+        
+        # Initialize memories table
+        self._initialize_table()
+        print("[MemoryStore] Memories table initialized")
+        
+    def _initialize_table(self):
+        """Initialize the memories table if it doesn't exist."""
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS memories (
+                instance_id VARCHAR PRIMARY KEY,
+                data_connectors JSON,
+                artifacts JSON,
+                geometry JSON,
+                input_location JSON,
+                start_date VARCHAR,
+                end_date VARCHAR,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
     def create_memories(
         self,
