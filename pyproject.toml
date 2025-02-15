@@ -60,7 +60,7 @@ dependencies = [
     "dask[array]>=2024.1.0",
     "spacy==3.7.4",
     "thinc==8.2.2",
-    "blis==0.7.12",
+    "blis==0.7.11",
     "redis>=5.0.0",
     "pytest>=8.3.4",
     "pytest-asyncio>=0.23.5",

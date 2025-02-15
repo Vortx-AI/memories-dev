@@ -10,11 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Updated Python version requirement to exclude 3.13 temporarily
 - Added build requirements for better compatibility
-- Updated blis, thinc, and spacy dependencies
+- Updated blis dependency to version 0.7.11 for compatibility
+- Updated thinc and spacy dependencies
 
 ### Fixed
 - Compilation issues with Python 3.13's C API
 - Build system configuration for better cross-version support
+- Package dependency resolution issues with blis
 
 ## [1.0.7] - 2025-02-16
 
