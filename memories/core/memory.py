@@ -5,48 +5,23 @@ from typing import Dict, Any, List, Optional, Union, Tuple
 from pathlib import Path
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 import numpy as np
 import faiss
 import pickle
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-import sys
-import json
 import os
-from typing import List, Dict, Any, Optional, Tuple
 import torch
 import rasterio
-import numpy as np
-import uuid
-import sys
-from dotenv import load_dotenv
-import logging
 import geopandas as gpd
-from shapely.geometry import Polygon, MultiPolygon
+from shapely.geometry import Polygon, MultiPolygon, Point
 import pystac
 import duckdb
-import importlib
+from dotenv import load_dotenv
 
-from .cold import ColdStorage  # Ensure correct import path
-#from .earth_memory_encoder import MemoryEncoder  # Ensure you have this module
-
-# Reload the modules to ensure latest changes
-import memories.models.load_model
-import memories.models.base_model
-import memories.core.memory
-
-importlib.reload(memories.models.load_model)
-importlib.reload(memories.models.base_model)
-importlib.reload(memories.core.memory)
-
-# Import required classes after reload
+# Import required classes
 from memories.models.load_model import LoadModel
-from memories.core.memory import MemoryStore
-from shapely.geometry import Point, Polygon
-from datetime import datetime, timedelta
-import torch
-import logging
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
