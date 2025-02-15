@@ -26,23 +26,13 @@ import geopandas as gpd
 from shapely.geometry import Polygon, MultiPolygon
 import pystac
 import duckdb
-import importlib
 
-from .cold import ColdStorage  # Ensure correct import path
-#from .earth_memory_encoder import MemoryEncoder  # Ensure you have this module
+# Remove the self-reload
+# import importlib
+# importlib.reload(memories.core.memory)
 
-# Reload the modules to ensure latest changes
-import memories.models.load_model
-import memories.models.base_model
-import memories.core.memory
-
-importlib.reload(memories.models.load_model)
-importlib.reload(memories.models.base_model)
-importlib.reload(memories.core.memory)
-
-# Import required classes after reload
+# Import required classes
 from memories.models.load_model import LoadModel
-from memories.core.memory import MemoryStore
 from shapely.geometry import Point, Polygon
 from datetime import datetime, timedelta
 import torch
