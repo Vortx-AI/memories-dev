@@ -247,6 +247,7 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     from memories.core.memory import MemoryStore
     import os
     from dotenv import load_dotenv
+    import faiss
     
     # Load environment variables
     load_dotenv()
@@ -257,9 +258,23 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     # Get project root and data paths
     project_root = os.getenv("PROJECT_ROOT")
     osm_data_path = os.path.join(project_root, "data", "osm_data")
+    faiss_dir = os.path.join(project_root, "data", "faiss")
     
-    # Create the OSM data directory if it doesn't exist
+    # Create directories if they don't exist
     os.makedirs(osm_data_path, exist_ok=True)
+    os.makedirs(faiss_dir, exist_ok=True)
+    
+    # Create FAISS storage
+    dimension = 768  # Standard embedding dimension
+    faiss_storage = {
+        'index': faiss.IndexFlatL2(dimension),
+        'instance_id': instance_id,
+        'metadata': []
+    }
+    
+    print(f"\nCreated FAISS storage for instance: {instance_id}")
+    print(f"Vector dimension: {dimension}")
+    print(f"Initial vectors: {faiss_storage['index'].ntotal}")
     
     # Define time range (last 30 days)
     end_time = datetime.now()
@@ -281,32 +296,101 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
         "osm_data": ["points", "lines", "multipolygons"]
     }
     
-    # Create memories
+    # Process parquet files with FAISS storage
+    data_connectors = [
+        {
+            "name": "india_points",
+            "type": "parquet",
+            "file_path": os.path.join(osm_data_path, "india_points.parquet")
+        },
+        {
+            "name": "india_lines",
+            "type": "parquet",
+            "file_path": os.path.join(osm_data_path, "india_lines.parquet")
+        },
+        {
+            "name": "india_multipolygons",
+            "type": "parquet",
+            "file_path": os.path.join(osm_data_path, "india_multipolygons.parquet")
+        }
+    ]
+    
+    # Create memories with FAISS storage
     memories = memory_store.create_memories(
         model=model,
         location=location,
         time_range=time_range,
         artifacts=artifacts,
-        data_connectors=[
-            {
-                "name": "india_points",
-                "type": "parquet",
-                "file_path": os.path.join(osm_data_path, "india_points.parquet")
-            },
-            {
-                "name": "india_lines",
-                "type": "parquet",
-                "file_path": os.path.join(osm_data_path, "india_lines.parquet")
-            },
-            {
-                "name": "india_multipolygons",
-                "type": "parquet",
-                "file_path": os.path.join(osm_data_path, "india_multipolygons.parquet")
-            }
-        ]
+        data_connectors=data_connectors,
+        faiss_storage=faiss_storage  # Pass FAISS storage to memory creation
     )
     
+    # Process each parquet file
+    for connector in data_connectors:
+        if connector["type"] == "parquet":
+            print(f"\nProcessing {connector['name']}:")
+            print(f"Current vector count: {faiss_storage['index'].ntotal}")
+            
+            # Get metadata about the parquet file
+            parquet_info = parquet_connector(connector["file_path"], faiss_storage)
+            
+            print(f"After processing {connector['name']}:")
+            print(f"Vector count: {faiss_storage['index'].ntotal}")
+            print(f"Metadata entries: {len(faiss_storage['metadata'])}")
+    
+    print(f"\nFinal FAISS Storage Summary:")
+    print(f"Total vectors: {faiss_storage['index'].ntotal}")
+    print(f"Total metadata entries: {len(faiss_storage['metadata'])}")
+    print(f"Vector dimension: {dimension}")
+    
     return memories
+
+def create_faiss_storage(instance_id: str) -> bool:
+    """
+    Create FAISS storage for a specific instance ID.
+    
+    Args:
+        instance_id (str): Instance ID to create storage for
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    from memories.core.memory import MemoryStore
+    import faiss
+    import numpy as np
+    import os
+    
+    print("\nCreating FAISS Storage")
+    print("=" * 50)
+    print(f"Instance ID: {instance_id}")
+    
+    try:
+        # Initialize memory store
+        memory_store = MemoryStore()
+        
+        # Get project root and FAISS directory
+        project_root = os.getenv("PROJECT_ROOT")
+        faiss_dir = os.path.join(project_root, "data", "faiss")
+        os.makedirs(faiss_dir, exist_ok=True)
+        
+        # Create FAISS index (using dimension 768 for example, adjust as needed)
+        dimension = 768  # Standard embedding dimension
+        index = faiss.IndexFlatL2(dimension)
+        
+        # Save empty index
+        index_path = os.path.join(faiss_dir, f"index_{instance_id}.faiss")
+        faiss.write_index(index, index_path)
+        
+        print(f"\nFAISS Storage Created:")
+        print(f"Index Path: {index_path}")
+        print(f"Vector Dimension: {dimension}")
+        print(f"Initial Size: {index.ntotal} vectors")
+        
+        return True
+        
+    except Exception as e:
+        print(f"Error creating FAISS storage: {str(e)}")
+        return False
 
 def main():
     """Print current model instance ID when run directly."""
@@ -317,15 +401,22 @@ def main():
     parser.add_argument('--list-instances', action='store_true', help='List all available instances')
     parser.add_argument('--check-faiss', type=str, help='Check FAISS storage for specific instance ID')
     parser.add_argument('--create-memories', action='store_true', help='Create new memories with default configuration')
+    parser.add_argument('--create-faiss', type=str, help='Create FAISS storage for specific instance ID')
     
     args = parser.parse_args()
     
-    if args.create_memories:
+    if args.create_faiss:
+        create_faiss_storage(args.create_faiss)
+    elif args.create_memories:
         # Initialize model and create memories
         model, instance_id = get_model_config()
         print(f"\nCreating memories for instance ID: {instance_id}")
         memories = create_memory_store(model, instance_id)
-        print(f"\nMemories created successfully")
+        
+        # Create FAISS storage for this instance
+        create_faiss_storage(instance_id)
+        
+        print(f"\nMemories and FAISS storage created successfully")
         print(f"Instance ID: {instance_id}")
         
     elif args.check_faiss:

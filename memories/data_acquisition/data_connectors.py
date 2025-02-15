@@ -3,72 +3,133 @@ from pathlib import Path
 import json
 import pandas as pd
 import pyarrow.parquet as pq
-import dask.dataframe as dd
-from typing import Dict, List, Any, Generator
+import faiss
+import numpy as np
+from typing import Dict, List, Any, Optional
 from datetime import datetime
-import uuid
 
-def parquet_connector(file_path: str, batch_size: int = 10000) -> Generator[List[Dict[str, Any]], None, None]:
+def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None) -> Dict[str, Any]:
     """
-    Read a parquet file in batches and yield the data.
+    Read parquet file metadata and save column names to FAISS if provided.
     
     Args:
         file_path (str): Path to the parquet file
-        batch_size (int): Number of rows to process at a time
+        faiss_storage (Dict, optional): Dictionary containing FAISS index and instance_id
         
-    Yields:
-        List[Dict[str, Any]]: Batch of data from the parquet file
+    Returns:
+        Dict[str, Any]: Metadata and schema information about the parquet file
     """
     try:
-        # Read parquet file using dask
-        ddf = dd.read_parquet(file_path)
+        file_path = Path(file_path)
         
-        # Get total number of partitions
-        n_partitions = ddf.npartitions
+        # Read parquet metadata only
+        parquet_file = pq.ParquetFile(str(file_path))
+        schema = parquet_file.schema
         
-        # Process partition by partition
-        for i in range(n_partitions):
-            # Get partition as pandas DataFrame
-            partition = ddf.get_partition(i).compute()
-            
-            # Process the partition in batches
-            for start_idx in range(0, len(partition), batch_size):
-                end_idx = min(start_idx + batch_size, len(partition))
-                batch = partition.iloc[start_idx:end_idx]
+        # Get column information
+        columns = [field.name for field in schema]
+        
+        # Identify location columns
+        location_columns = [col for col in columns if col.lower() in 
+                         ['geometry', 'geom', 'location', 'point', 'shape', 
+                          'latitude', 'longitude', 'lat', 'lon', 'coordinates']]
+        
+        # Get file stats
+        file_stats = file_path.stat()
+        
+        file_info = {
+            "file_name": file_path.name,
+            "file_path": str(file_path),
+            "relative_path": str(file_path.relative_to(file_path.parent)),
+            "size_bytes": file_stats.st_size,
+            "columns": columns,
+            "location_columns": location_columns,
+            "num_row_groups": parquet_file.num_row_groups,
+            "metadata": {
+                "created": datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
+                "modified": datetime.fromtimestamp(file_stats.st_mtime).isoformat(),
+                "format_version": parquet_file.metadata.format_version,
+                "num_rows": parquet_file.metadata.num_rows,
+                "num_columns": len(columns),
+                "schema_arrow": str(schema)
+            }
+        }
+        
+        # If FAISS storage is provided, save column names
+        if faiss_storage and 'index' in faiss_storage:
+            try:
+                initial_vectors = faiss_storage['index'].ntotal
                 
-                yield batch.to_dict('records')
+                # Create random vectors for each column
+                dimension = faiss_storage['index'].d
+                vectors = np.random.rand(len(columns), dimension).astype('float32')
                 
-            print(f"[ParquetConnector] Processed partition {i+1}/{n_partitions} from {file_path}")
+                # Add vectors to FAISS index
+                faiss_storage['index'].add(vectors)
+                
+                # Save metadata for each column
+                if 'metadata' not in faiss_storage:
+                    faiss_storage['metadata'] = []
+                
+                # Add metadata for each column
+                for i, column in enumerate(columns):
+                    faiss_storage['metadata'].append({
+                        'column_name': column,
+                        'file_path': str(file_path),
+                        'file_name': file_path.name,
+                        'vector_id': faiss_storage['index'].ntotal - len(columns) + i
+                    })
+                
+                final_vectors = faiss_storage['index'].ntotal
+                vectors_added = final_vectors - initial_vectors
+                
+                print(f"\n[ParquetConnector] FAISS Update for {file_path.name}:")
+                print(f"Initial vectors: {initial_vectors}")
+                print(f"Vectors added: {vectors_added}")
+                print(f"Final vectors: {final_vectors}")
+                print(f"Added columns: {', '.join(columns)}")
+                
+                # Save updated FAISS index
+                if 'instance_id' in faiss_storage:
+                    faiss_dir = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "faiss")
+                    index_path = os.path.join(faiss_dir, f"index_{faiss_storage['instance_id']}.faiss")
+                    faiss.write_index(faiss_storage['index'], index_path)
+                    
+                    # Save metadata
+                    import pickle
+                    metadata_path = os.path.join(faiss_dir, f"metadata_{faiss_storage['instance_id']}.pkl")
+                    with open(metadata_path, 'wb') as f:
+                        pickle.dump(faiss_storage['metadata'], f)
+                    
+                    print(f"[ParquetConnector] Saved FAISS index and metadata for instance: {faiss_storage['instance_id']}")
+                
+            except Exception as e:
+                print(f"Error saving to FAISS: {str(e)}")
+        
+        print(f"[ParquetConnector] Processed metadata for: {file_path}")
+        print(f"[ParquetConnector] Found {len(columns)} columns, {file_info['metadata']['num_rows']} rows")
+        
+        return file_info
             
     except Exception as e:
         print(f"Error processing parquet file: {str(e)}")
-        yield []
+        return {
+            "file_name": Path(file_path).name,
+            "file_path": str(file_path),
+            "error": str(e)
+        }
 
-def multiple_parquet_connector(folder_path: str, output_file_name: str = None) -> Dict[str, Any]:
+def multiple_parquet_connector(folder_path: str, faiss_storage: Optional[Dict] = None) -> Dict[str, Any]:
     """
     Create detailed index of all parquet files in a folder and its subfolders.
     
     Args:
         folder_path (str): Path to the folder containing parquet files
-        output_file_name (str, optional): Name for the output JSON file (without .json extension)
-                                        If not provided, generates a unique name
+        faiss_storage (Dict, optional): Dictionary containing FAISS index and instance_id
         
     Returns:
         Dict containing detailed information about all parquet files
     """
-    # Convert folder_path to Path object
-    folder_path = Path(folder_path)
-    
-    # Set up data directory path relative to project root
-    data_dir = Path(__file__).parents[3] / "data"
-    data_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Generate unique output name if not provided
-    if output_file_name is None:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        unique_id = str(uuid.uuid4())[:8]
-        output_file_name = f"multiple_parquet_index_{timestamp}_{unique_id}"
-    
     results = {
         "processed_files": [],
         "error_files": [],
@@ -79,84 +140,35 @@ def multiple_parquet_connector(folder_path: str, output_file_name: str = None) -
         }
     }
     
-    # Walk through all files in the directory and subdirectories
-    for root, _, files in os.walk(folder_path):
-        for file_name in files:
-            if file_name.endswith('.parquet'):
-                file_path = Path(root) / file_name
-                
-                # Update file count and size
-                results["metadata"]["file_count"] += 1
-                results["metadata"]["total_size"] += file_path.stat().st_size
-                
-                try:
-                    # Read parquet file
-                    table = pq.read_table(str(file_path))
-                    df = table.to_pandas()
+    try:
+        # Walk through all files in the directory and subdirectories
+        for root, _, files in os.walk(folder_path):
+            for file_name in files:
+                if file_name.endswith('.parquet'):
+                    file_path = Path(root) / file_name
                     
-                    # Get column information
-                    columns = list(df.columns)
+                    # Get file metadata and save to FAISS if provided
+                    file_info = parquet_connector(str(file_path), faiss_storage)
                     
-                    # Identify location columns
-                    location_columns = [col for col in columns if col.lower() in 
-                                     ['geometry', 'geom', 'location', 'point', 'shape', 
-                                      'latitude', 'longitude', 'lat', 'lon', 'coordinates']]
-                    
-                    # Get sample data (first row)
-                    sample_data = {}
-                    first_row = df.iloc[0]
-                    for col in columns:
-                        # Convert to string representation, handle geometry objects
-                        val = first_row[col]
-                        try:
-                            if 'geometry' in str(type(val)).lower():
-                                sample_data[col] = str(val)
-                            else:
-                                sample_data[col] = val
-                        except:
-                            sample_data[col] = str(val)
-                    
-                    file_info = {
-                        "file_name": file_name,
-                        "file_path": str(file_path),
-                        "relative_path": str(file_path.relative_to(folder_path)),
-                        "size_bytes": file_path.stat().st_size,
-                        "columns": columns,
-                        "location_columns": location_columns,
-                        "sample_data": sample_data,
-                        "row_count": len(df)
-                    }
-                    
-                    results["processed_files"].append(file_info)
-                    print(f"Processed: {file_path}")
-                    
-                except Exception as e:
-                    results["error_files"].append({
-                        "file_name": file_name,
-                        "file_path": str(file_path),
-                        "relative_path": str(file_path.relative_to(folder_path)),
-                        "error": str(e),
-                        "size_bytes": file_path.stat().st_size
-                    })
-                    print(f"Error processing {file_path}: {str(e)}")
-    
-    # Create output path with provided or generated name
-    output_path = data_dir / f"{output_file_name}.json"
-    
-    # Save results to JSON file in project's data directory
-    with open(output_path, 'w') as f:
-        json.dump(results, f, indent=2, default=str)
-    print(f"\nAnalysis saved to: {output_path}")
-    
-    # Print summary
-    print("\nSummary:")
-    print(f"Base folder: {results['metadata']['base_folder']}")
-    print(f"Total parquet files found: {results['metadata']['file_count']}")
-    print(f"Total size: {results['metadata']['total_size'] / (1024*1024):.2f} MB")
-    print(f"Successfully processed: {len(results['processed_files'])}")
-    print(f"Errors encountered: {len(results['error_files'])}")
-    
-    return results
+                    if "error" in file_info:
+                        results["error_files"].append(file_info)
+                    else:
+                        results["processed_files"].append(file_info)
+                        results["metadata"]["total_size"] += file_info["size_bytes"]
+                        results["metadata"]["file_count"] += 1
+        
+        print("\nSummary:")
+        print(f"Base folder: {results['metadata']['base_folder']}")
+        print(f"Total parquet files found: {results['metadata']['file_count']}")
+        print(f"Total size: {results['metadata']['total_size'] / (1024*1024):.2f} MB")
+        print(f"Successfully processed: {len(results['processed_files'])}")
+        print(f"Errors encountered: {len(results['error_files'])}")
+        
+        return results
+        
+    except Exception as e:
+        print(f"Error in multiple_parquet_connector: {str(e)}")
+        return results
 
 if __name__ == "__main__":
     # Example usage for single parquet
