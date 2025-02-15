@@ -25,7 +25,7 @@ import logging
 import geopandas as gpd
 from shapely.geometry import Polygon, MultiPolygon
 import pystac
-
+import duckdb
 
 from .cold import ColdStorage  # Ensure correct import path
 #from .earth_memory_encoder import MemoryEncoder  # Ensure you have this module
@@ -299,7 +299,7 @@ class MemoryStore:
 
         # Initialize DuckDB
         try:
-            import duckdb
+            
             self.db_path = os.path.join(project_root, 'data', 'memory.db')
             os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
             
@@ -330,11 +330,14 @@ class MemoryStore:
                        str, gpd.GeoDataFrame, Polygon, MultiPolygon, 
                        pystac.Item, Dict[str, Any]],
         time_range: Tuple[str, str],
-        artifacts: List[str],
+        artifacts: Dict[str, List[str]],  # Changed to match artifacts_selection format
         data_connectors: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Dict[str, List[str]]]:
         """Create memories by inserting into the existing table."""
         try:
+            # Create FAISS storage based on selected artifacts
+            storage = create_faiss_storage(artifacts)
+            
             instance_id = str(uuid.uuid4())
             
             # Convert location to JSON-serializable format
@@ -345,7 +348,7 @@ class MemoryStore:
             else:
                 geometry = {"type": "Point", "coordinates": location} if isinstance(location, tuple) else location
 
-            # Insert into the existing memories table
+            # Insert into the existing memories table with storage metadata
             self.conn.execute("""
                 INSERT INTO memories (
                     instance_id,
@@ -354,8 +357,9 @@ class MemoryStore:
                     geometry,
                     input_location,
                     start_date,
-                    end_date
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    end_date,
+                    storage_metadata
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 instance_id,
                 json.dumps(data_connectors if data_connectors else {}),
@@ -363,11 +367,15 @@ class MemoryStore:
                 json.dumps(geometry),
                 json.dumps(location if isinstance(location, dict) else str(location)),
                 time_range[0],
-                time_range[1]
+                time_range[1],
+                json.dumps(storage.metadata)  # Store FAISS metadata
             ))
             
             print(f"[MemoryStore] Created memory with ID: {instance_id}")
-            return instance_id
+            return {
+                "instance_id": instance_id,
+                "storage": storage  # Return the FAISS storage instance
+            }
 
         except Exception as e:
             print(f"[MemoryStore] Error creating memory: {str(e)}")
@@ -507,6 +515,61 @@ def encode_geospatial_data(data: Dict[str, Any], encoder: MemoryEncoder) -> torc
         torch.Tensor: Embedding tensor
     """
     return encoder.encode(data)
+
+def create_faiss_storage(artifacts_selection):
+    """
+    Create FAISS storage based on selected artifacts.
+    
+    Args:
+        artifacts_selection (dict): Dictionary of selected artifacts like {'satellite': ['sentinel-2'], 'landuse': ['osm']}
+    
+    Returns:
+        FAISSStorage: Configured FAISS storage instance
+    """
+    # Load artifacts configuration
+    with open(os.path.join(os.path.dirname(__file__), 'artifacts.json'), 'r') as f:
+        artifacts_config = json.load(f)
+    
+    # Collect all output fields and metadata from selected artifacts
+    output_fields = []
+    metadata = {
+        'acquisition_files': {},
+        'inputs_required': set()
+    }
+    
+    for category, sources in artifacts_selection.items():
+        for source in sources:
+            if category in artifacts_config and source in artifacts_config[category]:
+                source_config = artifacts_config[category][source]
+                
+                # Collect output fields
+                output_fields.extend(source_config['output_fields'])
+                
+                # Store acquisition file info
+                metadata['acquisition_files'][f"{category}/{source}"] = source_config['acquisition_file']
+                
+                # Collect required inputs
+                metadata['inputs_required'].update(source_config['inputs_required'])
+    
+    # Convert inputs_required set to list for JSON serialization
+    metadata['inputs_required'] = list(metadata['inputs_required'])
+    
+    # Initialize FAISS storage with collected fields and metadata
+    storage = FAISSStorage(
+        dimension=len(output_fields),
+        field_names=output_fields,
+        metadata=metadata
+    )
+    
+    return storage
+
+def create_memories(artifacts_selection, **kwargs):
+    """Create memories from selected artifacts."""
+    # Initialize FAISS storage
+    storage = create_faiss_storage(artifacts_selection)
+    
+    # Rest of the create_memories implementation...
+    return storage
 
 
 

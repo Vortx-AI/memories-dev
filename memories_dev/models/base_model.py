@@ -83,9 +83,10 @@ class BaseModel:
             return cls.PROVIDER_GROUPS[provider]
         return list(cls.MODEL_MAPPINGS.keys())
 
-    def __new__(cls):
+    @classmethod
+    def __new__(cls, *args, **kwargs):
         if cls._instance is None:
-            cls._instance = super(BaseModel, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
         return cls._instance
     
     def __init__(self):
