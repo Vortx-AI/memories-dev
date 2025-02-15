@@ -47,26 +47,37 @@ class Agent:
             Dict[str, Any]: The response containing the classification and result.
         """
         try:
+            print("\n" + "="*50)
+            print("QUERY PROCESSING PIPELINE")
             print("="*50)
-            print(f"Starting query processing: {query}")
+            print(f"Input Query: {query}")
             print("="*50)
             
-            # Initialize and use the query classification agent
+            # Step 1: Query Classification Agent
+            print("\n1. Query Classification Agent")
+            print("-"*30)
             classification_agent = AgentQueryClassification(query, self.load_model)
-            result = classification_agent.process_query()
+            classification_result = classification_agent.process_query()
             
-            # Get data type from classification result
+            print(f"Classification: {classification_result.get('classification', '')}")
+            print(f"Data Type: {classification_result.get('data_type', '')}")
+            print(f"Explanation: {classification_result.get('explanation', '')}")
+            
+            result = classification_result
             data_type = result.get('data_type', '')
             
-            # Load FAISS index and metadata if instance_id is provided
+            # Step 2: FAISS Similarity Search
             if hasattr(self, 'instance_id') and data_type:
+                print("\n2. FAISS Similarity Search")
+                print("-"*30)
+                print(f"Searching for data type: {data_type}")
+                print(f"Instance ID: {self.instance_id}")
+                
                 try:
                     import faiss
                     import pickle
                     import os
                     import numpy as np
-                    
-                    print(f"\nPerforming similarity search for data type: {data_type}")
                     
                     project_root = os.getenv("PROJECT_ROOT")
                     faiss_dir = os.path.join(project_root, "data", "faiss")
@@ -103,15 +114,13 @@ class Agent:
                                     'vector_id': metadata.get('vector_id', index)
                                 })
                         
-                        print("\nSimilar columns found for data type:")
+                        print("\nSimilar columns found:")
                         for col in similar_columns:
                             print(f"\nColumn: {col['column_name']}")
                             print(f"File: {col['file_name']}")
                             print(f"Score: {col['similarity_score']:.3f}")
                             print(f"Vector ID: {col['vector_id']}")
-                            print(f"Data Type: {col['data_type']}")
                         
-                        # Add similarity results to the response
                         result['similar_columns'] = similar_columns
                         result['vector_search'] = {
                             'query_type': data_type,
@@ -124,15 +133,24 @@ class Agent:
                     print(f"Error in FAISS search: {str(e)}")
                     result['faiss_error'] = str(e)
             
-            # Process with context agent if classification is L1_2
+            # Step 3: Context Agent (if L1_2 classification)
             if result.get('classification') == 'L1_2':
+                print("\n3. Context Agent")
+                print("-"*30)
                 context_agent = AgentContext(query, self.load_model)
                 context_result = context_agent.process_query()
+                
+                print(f"Context Data Type: {context_result.get('data_type', '')}")
+                print(f"Location Info: {context_result.get('location_info', '')}")
                 
                 result.update({
                     'data_type': context_result.get('data_type'),
                     'location_details': context_result.get('location_info')
                 })
+            
+            print("\n" + "="*50)
+            print("PROCESSING COMPLETE")
+            print("="*50)
             
             return result
             
