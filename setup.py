@@ -47,6 +47,7 @@ setup(
         "dask>=2024.1.0",
         "dask[array]>=2024.1.0",
         "spacy>=3.8.0",
+        "redis>=5.0.0",
         "pytest>=8.3.4",
         "pytest-asyncio>=0.23.5",
         "pytest-cov>=4.1.0",
