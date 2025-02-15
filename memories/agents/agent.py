@@ -1,22 +1,8 @@
 from typing import Dict, Any
 from dotenv import load_dotenv
-<<<<<<< HEAD:memories_dev/agents/agent.py
-=======
-import importlib
-
-from memories.agents.agent_query_context import LocationExtractor, QueryContext
-from memories.agents.location_filter_agent import LocationFilterAgent
-from memories.memories.memories_index import FAISSStorage
-from memories.agents.agent_coder import CodeGenerator
-from memories.agents.agent_code_executor import AgentCodeExecutor
-from memories.agents.response_agent import ResponseAgent
-from memories.agents.agent_geometry import AgentGeometry
-
-import os
->>>>>>> de15d751916e940ce5b6cf90cca5baae5ad24350:memories/agents/agent.py
 import logging
 import os
-from memories_dev.agents.agent_query_classification import AgentQueryClassification
+from memories.agents.agent_query_classification import AgentQueryClassification
 
 # Load environment variables
 load_dotenv()
