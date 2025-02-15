@@ -3,11 +3,12 @@ from pathlib import Path
 import json
 import pandas as pd
 import pyarrow.parquet as pq
-from typing import Dict, List, Any
+import dask.dataframe as dd
+from typing import Dict, List, Any, Generator
 from datetime import datetime
 import uuid
 
-def parquet_connector(file_path: str, batch_size: int = 10000) -> List[Dict[str, Any]]:
+def parquet_connector(file_path: str, batch_size: int = 10000) -> Generator[List[Dict[str, Any]], None, None]:
     """
     Read a parquet file in batches and yield the data.
     
@@ -19,10 +20,21 @@ def parquet_connector(file_path: str, batch_size: int = 10000) -> List[Dict[str,
         List[Dict[str, Any]]: Batch of data from the parquet file
     """
     try:
-        # Read the parquet file in batches
-        for batch_df in pd.read_parquet(file_path, chunksize=batch_size):
-            # Convert batch to list of dictionaries
+        # Read parquet file using dask
+        ddf = dd.read_parquet(file_path)
+        
+        # Get total number of rows
+        total_rows = len(ddf)
+        
+        # Process in batches
+        for start_idx in range(0, total_rows, batch_size):
+            end_idx = min(start_idx + batch_size, total_rows)
+            
+            # Convert batch to pandas and then to records
+            batch_df = ddf.iloc[start_idx:end_idx].compute()
             yield batch_df.to_dict('records')
+            
+            print(f"[ParquetConnector] Processed {end_idx}/{total_rows} rows from {file_path}")
             
     except Exception as e:
         print(f"Error processing parquet file: {str(e)}")
