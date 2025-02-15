@@ -3,7 +3,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from dotenv import load_dotenv
 import os
 import logging
-from diffusers import StableDiffusionPipeline
+
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -172,6 +172,7 @@ class BaseModel:
         return self.tokenizer.decode(outputs[0], skip_special_tokens=True) 
     
     def load_stable_diffusion_model():
+        from diffusers import StableDiffusionPipeline
         """
         Preloads the Stable Diffusion model into the global `pipe` variable.
         """
