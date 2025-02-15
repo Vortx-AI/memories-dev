@@ -198,8 +198,8 @@ def main():
     query = input("Enter your query: ")
     instance_id = input("Enter FAISS instance ID (or press Enter to skip): ")
     
-    # Initialize model
-    model, _ = get_model_config(
+    # Initialize model with get_model_config
+    load_model, _ = get_model_config(
         use_gpu=True,
         model_provider="deepseek-ai",
         deployment_type="deployment",
@@ -214,7 +214,7 @@ def main():
     # Initialize and run agent
     agent = Agent(
         query=query, 
-        load_model=model, 
+        load_model=load_model,  # Changed from model to load_model
         memory_store=memory_store,
         instance_id=instance_id if instance_id else None
     )
