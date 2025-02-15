@@ -151,30 +151,9 @@ class LoadModel:
             str: The model's response
         """
         try:
-            # Use the already initialized model and tokenizer
-            inputs = self.tokenizer(prompt, return_tensors="pt")
-            if self.use_gpu:
-                inputs = {k: v.cuda() for k, v in inputs.items()}
-            
-            # Generate response
-            with torch.no_grad():
-                outputs = self.model.generate(
-                    **inputs,
-                    max_length=512,
-                    num_return_sequences=1,
-                    temperature=0.7,
-                    top_p=0.95,
-                    pad_token_id=self.tokenizer.eos_token_id
-                )
-            
-            # Decode and return the response
-            response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            
-            # Remove the original prompt from the response
-            if response.startswith(prompt):
-                response = response[len(prompt):].strip()
-            
-            return response
+            # Get response directly from the initialized model
+            response = self.model(prompt)
+            return response.strip()
         
         except Exception as e:
             raise Exception(f"Error generating response: {str(e)}")
