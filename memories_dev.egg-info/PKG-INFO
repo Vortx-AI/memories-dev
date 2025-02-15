@@ -1,6 +1,6 @@
 Metadata-Version: 2.2
 Name: memories-dev
-Version: 1.0.5
+Version: 1.0.9
 Summary: A package for daily synthesis of Earth Memories, helping agents answer about location-first queries.
 Home-page: https://github.com/Vortx-AI/memories-dev
 Author: Memories-dev
@@ -219,20 +219,21 @@ Classifier: Programming Language :: Python :: 3
 Classifier: Programming Language :: Python :: 3.9
 Classifier: Programming Language :: Python :: 3.10
 Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
 Classifier: Topic :: Scientific/Engineering :: GIS
 Classifier: Development Status :: 5 - Production/Stable
 Classifier: Intended Audience :: Science/Research
 Classifier: Intended Audience :: Developers
 Classifier: Natural Language :: English
-Requires-Python: >=3.9
+Requires-Python: >=3.9,<3.13
 Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: torch>=2.0.0
 Requires-Dist: transformers>=4.30.0
 Requires-Dist: accelerate>=1.3.0
 Requires-Dist: pillow>=10.0.0
-Requires-Dist: numpy>=1.24.0
+Requires-Dist: numpy==1.24.3
 Requires-Dist: pandas>=2.0.0
 Requires-Dist: duckdb>=0.9.0
 Requires-Dist: matplotlib>=3.7.0
@@ -260,7 +261,10 @@ Requires-Dist: pystac>=1.8.0
 Requires-Dist: xarray>=2023.0.0
 Requires-Dist: dask>=2024.1.0
 Requires-Dist: dask[array]>=2024.1.0
-Requires-Dist: spacy>=3.8.0
+Requires-Dist: spacy==3.7.4
+Requires-Dist: thinc<8.3.0,>=8.2.2
+Requires-Dist: blis==0.7.11
+Requires-Dist: redis>=5.0.0
 Requires-Dist: pytest>=8.3.4
 Requires-Dist: pytest-asyncio>=0.23.5
 Requires-Dist: pytest-cov>=4.1.0

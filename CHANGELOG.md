@@ -5,18 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.8] - 2025-02-16
+## [1.0.9] - 2025-02-16
+
+### Added
+- Graceful fallback to in-memory storage when Redis is not available
+- Improved error handling for Redis connection failures
+- Added socket timeout for Redis connection attempts
 
 ### Changed
 - Updated Python version requirement to exclude 3.13 temporarily
 - Added build requirements for better compatibility
 - Updated blis dependency to version 0.7.11 for compatibility
-- Updated thinc and spacy dependencies
+- Updated thinc dependency to match spacy requirements (>=8.2.2,<8.3.0)
+- Pinned numpy to version 1.24.3 to resolve binary incompatibility
+- Updated spacy dependencies
+- Made Redis optional with in-memory fallback
 
 ### Fixed
 - Compilation issues with Python 3.13's C API
 - Build system configuration for better cross-version support
-- Package dependency resolution issues with blis
+- Package dependency resolution issues with blis and thinc
+- Binary incompatibility between numpy and thinc
+- Redis connection handling in hot memory storage
+- Improved error handling for Redis operations
+- Added graceful degradation for Redis functionality
+
+## [1.0.8] - 2025-02-16
+
+### Changed
+- Initial support for Python 3.12
+- Enhanced error handling in memory operations
+- Improved package dependency management
+
+### Fixed
+- Various compatibility issues with newer Python versions
+- Memory management in GPU operations
+- Package installation issues
 
 ## [1.0.7] - 2025-02-16
 

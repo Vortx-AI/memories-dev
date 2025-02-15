@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="memories-dev",
-    version="1.0.8",
+    version="1.0.9",
     packages=find_packages(include=['memories', 'memories.*']),
     
     author="Memories-dev",
@@ -18,7 +18,7 @@ setup(
         "transformers>=4.30.0",
         "accelerate>=1.3.0",
         "pillow>=10.0.0",
-        "numpy>=1.24.0",
+        "numpy==1.24.3",
         "pandas>=2.0.0",
         "duckdb>=0.9.0",
         "matplotlib>=3.7.0",
@@ -47,7 +47,7 @@ setup(
         "dask>=2024.1.0",
         "dask[array]>=2024.1.0",
         "spacy==3.7.4",
-        "thinc==8.2.2",
+        "thinc>=8.2.2,<8.3.0",
         "blis==0.7.11",
         "redis>=5.0.0",
         "pytest>=8.3.4",

@@ -2,7 +2,7 @@
 Memories - A package for daily synthesis of Earth Memories
 """
 
-__version__ = "1.0.8"  # Match version in setup.py
+__version__ = "1.0.9"  # Match version in setup.py
 
 # Import core functionality
 from memories.core.memory import MemoryStore
