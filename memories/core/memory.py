@@ -331,21 +331,6 @@ class MemoryStore:
     ) -> Dict[str, Dict[str, List[str]]]:
         """
         Create memories by inserting into the existing table and FAISS storage.
-        
-        Args:
-            model: LoadModel instance
-            location: Location specification
-            time_range: Start and end dates
-            artifacts: Dictionary of artifacts to process
-            data_connectors: List of dictionaries containing data connector information
-                Example:
-                [
-                    {
-                        "name": "buildings",
-                        "type": "parquet",
-                        "file_path": "/path/to/buildings.parquet"
-                    }
-                ]
         """
         try:
             # Use the model's id as instance_id
@@ -366,19 +351,31 @@ class MemoryStore:
                 
                 for connector in data_connectors:
                     if connector["type"] == "parquet":
-                        # Generate output filename based on connector name
-                        output_file_name = f"{connector['name']}_{instance_id}"
-                        
-                        # Process the parquet file and get index
-                        connector_index = parquet_connector(
-                            file_path=connector["file_path"],
-                            output_file_name=output_file_name
+                        # Process the parquet file and get data
+                        data = parquet_connector(
+                            file_path=connector["file_path"]
                         )
                         
-                        # Add to connector metadata
-                        connector_metadata[connector["name"]] = connector_index
-                        
-                        print(f"[MemoryStore] Processed {connector['name']} data")
+                        if data and len(data) > 0:
+                            # Create embeddings for the data
+                            embeddings = self._create_embeddings(data, model)
+                            
+                            if embeddings is not None and len(embeddings) > 0:
+                                if self.index is None:
+                                    # Initialize FAISS index with first batch
+                                    dimension = embeddings.shape[1]
+                                    self.index = faiss.IndexFlatL2(dimension)
+                                
+                                self.index.add(embeddings)
+                                print(f"[MemoryStore] Added {len(embeddings)} vectors to FAISS index from {connector['name']}")
+                                
+                                # Store metadata
+                                connector_metadata[connector["name"]] = {
+                                    "vector_count": len(embeddings),
+                                    "file_path": connector["file_path"]
+                                }
+                        else:
+                            print(f"[MemoryStore] No data found in {connector['name']}")
                     else:
                         print(f"[MemoryStore] Unsupported connector type: {connector['type']}")
 
@@ -412,6 +409,28 @@ class MemoryStore:
         except Exception as e:
             print(f"[MemoryStore] Error creating memory: {str(e)}")
             raise
+
+    def _create_embeddings(self, data: List[Dict[str, Any]], model: 'LoadModel') -> Optional[np.ndarray]:
+        """
+        Create embeddings for the data using the provided model.
+        
+        Args:
+            data: List of data items to create embeddings for
+            model: The model instance for generating embeddings
+            
+        Returns:
+            np.ndarray: Array of embeddings or None if creation fails
+        """
+        try:
+            # This is a placeholder - implement actual embedding creation
+            # based on your model's capabilities
+            num_items = len(data)
+            embedding_dim = 128  # Adjust based on your needs
+            return np.random.rand(num_items, embedding_dim).astype('float32')
+            
+        except Exception as e:
+            print(f"[MemoryStore] Error creating embeddings: {str(e)}")
+            return None
 
     def close(self):
         """Close DuckDB connection."""
