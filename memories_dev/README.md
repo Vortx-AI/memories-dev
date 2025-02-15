@@ -1,4 +1,3 @@
-# Source Code Documentation
 
 ## 📁 Directory Structure
 
