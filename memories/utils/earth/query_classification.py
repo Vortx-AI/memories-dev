@@ -35,8 +35,9 @@ def classify_query(query: str, load_model: Any) -> Dict[str, Union[str, Dict]]:
     Return only one of these labels: N, L0, or L1_2
     """
     
-    # Get classification from the model
-    response = load_model.generate(classification_prompt).strip()
+    # Get classification from the model using the appropriate method
+    # Assuming your LoadModel has a method like 'get_response' or 'predict'
+    response = load_model.get_response(classification_prompt).strip()  # Update this line with your actual method
     
     # Validate and clean response
     valid_classes = {"N", "L0", "L1_2"}
@@ -58,7 +59,7 @@ def classify_query(query: str, load_model: Any) -> Dict[str, Union[str, Dict]]:
         
         Provide only the answer without any additional context or prefixes."""
         
-        model_response = load_model.generate(answer_prompt).strip()
+        model_response = load_model.get_response(answer_prompt).strip()  # Update this line with your actual method
         
         return {
             "classification": classification,
@@ -75,7 +76,7 @@ def classify_query(query: str, load_model: Any) -> Dict[str, Union[str, Dict]]:
         
         Return only the location information without any additional explanation."""
         
-        location_info = load_model.generate(location_prompt).strip()
+        location_info = load_model.get_response(location_prompt).strip()  # Update this line with your actual method
         
         return {
             "classification": classification,
