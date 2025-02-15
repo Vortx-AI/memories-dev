@@ -129,27 +129,71 @@ MEMORY_STORE_SETTINGS = {
     "top_k": 5,          # Number of results to return in similarity search
 }
 
+def check_instance_storage(instance_id: str):
+    """
+    Check storage details for a specific instance ID.
+    
+    Args:
+        instance_id (str): The instance ID to check
+    """
+    from memories.core.memory import MemoryStore
+    
+    print("\nChecking Storage for Instance")
+    print("=" * 50)
+    print(f"Instance ID: {instance_id}")
+    
+    # Initialize memory store
+    memory_store = MemoryStore()
+    
+    # Get stored memories
+    stored_data = memory_store.get_stored_memories(instance_id)
+    
+    if stored_data:
+        print("\nStorage Details:")
+        print(f"FAISS Index Size: {stored_data['faiss_data'].get('index_size', 0)} vectors")
+        print(f"Vector Dimension: {stored_data['faiss_data'].get('dimension', 'N/A')}")
+        print(f"Database Records: {len(stored_data['database_records'])}")
+        
+        # Print first database record details
+        if stored_data['database_records']:
+            record = stored_data['database_records'][0]
+            print("\nDatabase Record Details:")
+            print(f"Created At: {record['created_at']}")
+            print(f"Time Range: {record['start_date']} to {record['end_date']}")
+            print(f"Data Connectors: {list(record['data_connectors'].keys())}")
+    else:
+        print("\nNo data found for this instance ID")
+
 def main():
     """Print current model instance ID when run directly."""
-    print("\nTesting Model Configuration")
-    print("=" * 50)
+    import argparse
     
-    # Get model and instance ID with default configuration
-    model, instance_id = get_model_config()
+    parser = argparse.ArgumentParser(description='Check model configuration and storage')
+    parser.add_argument('--instance-id', type=str, help='Check storage for specific instance ID')
     
-    print(f"\nModel Configuration:")
-    print(f"Provider: {model.model_provider}")
-    print(f"Model: {model.model_name}")
-    print(f"Deployment: {model.deployment_type}")
-    print(f"GPU Enabled: {model.use_gpu}")
-    print(f"\nInstance ID: {instance_id}")
+    args = parser.parse_args()
     
-    # Print memory configuration
-    memory_config = get_memory_config()
-    print(f"\nMemory Configuration:")
-    print(f"Time Range: {memory_config['time_range'][0]} to {memory_config['time_range'][1]}")
-    print(f"Location: India Bounding Box")
-    print(f"Artifacts: {memory_config['artifacts']}")
+    if args.instance_id:
+        check_instance_storage(args.instance_id)
+    else:
+        # Original main function code...
+        print("\nTesting Model Configuration")
+        print("=" * 50)
+        
+        model, instance_id = get_model_config()
+        
+        print(f"\nModel Configuration:")
+        print(f"Provider: {model.model_provider}")
+        print(f"Model: {model.model_name}")
+        print(f"Deployment: {model.deployment_type}")
+        print(f"GPU Enabled: {model.use_gpu}")
+        print(f"\nInstance ID: {instance_id}")
+        
+        memory_config = get_memory_config()
+        print(f"\nMemory Configuration:")
+        print(f"Time Range: {memory_config['time_range'][0]} to {memory_config['time_range'][1]}")
+        print(f"Location: India Bounding Box")
+        print(f"Artifacts: {memory_config['artifacts']}")
 
 if __name__ == "__main__":
     main()
