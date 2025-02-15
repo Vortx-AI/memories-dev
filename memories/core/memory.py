@@ -1,5 +1,6 @@
 """Memory system for storing and retrieving processed data"""
 
+import os
 import logging
 from typing import Dict, Any, List, Optional, Union, Tuple
 from pathlib import Path
@@ -22,6 +23,7 @@ from dotenv import load_dotenv
 from .cold import ColdMemory
 from memories.models.load_model import LoadModel
 from memories.models.base_model import BaseModel
+from memories.core.memories_index import FAISSStorage
 
 # Load environment variables
 load_dotenv()
@@ -520,49 +522,6 @@ def encode_geospatial_data(data: Dict[str, Any], encoder: MemoryEncoder) -> torc
         torch.Tensor: Embedding tensor
     """
     return encoder.encode(data)
-
-class FAISSStorage:
-    def __init__(self, dimension, field_names, metadata, instance_id):
-        """
-        Initialize FAISS storage.
-        
-        Args:
-            dimension (int): Vector dimension based on total number of output fields
-            field_names (list): Names of the fields being stored
-            metadata (dict): Storage metadata including acquisition files and required inputs
-            instance_id (str): Unique instance ID to identify this storage
-        """
-        self.instance_id = instance_id
-        self.storage_path = Path(f"data/faiss_storage/{instance_id}")
-        self.storage_path.mkdir(parents=True, exist_ok=True)
-        
-        self.index = faiss.IndexFlatL2(dimension)
-        self.field_names = field_names
-        self.metadata = metadata
-        self.vectors = []
-        
-        # Save index configuration
-        self.index_path = self.storage_path / "index.faiss"
-        self.metadata_path = self.storage_path / "metadata.json"
-        
-        # Save metadata
-        with open(self.metadata_path, 'w') as f:
-            json.dump({
-                'dimension': dimension,
-                'field_names': field_names,
-                'metadata': metadata,
-                'instance_id': instance_id
-            }, f)
-        
-    def add(self, vector_data):
-        """Add vector data to storage."""
-        vector = [vector_data[field] for field in self.field_names]
-        self.vectors.append(vector)
-        if len(self.vectors) % 1000 == 0:  # Batch processing
-            vectors_array = np.array(self.vectors, dtype=np.float32)
-            self.index.add(vectors_array)
-            faiss.write_index(self.index, str(self.index_path))
-            self.vectors = []
 
 def create_faiss_storage(artifacts_selection, instance_id):
     """
