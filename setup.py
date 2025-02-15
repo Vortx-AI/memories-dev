@@ -18,7 +18,7 @@ setup(
         "transformers>=4.30.0",
         "accelerate>=1.3.0",
         "pillow>=10.0.0",
-        "numpy==1.24.3",
+        "numpy>=1.26.0",
         "pandas>=2.0.0",
         "duckdb>=0.9.0",
         "matplotlib>=3.7.0",

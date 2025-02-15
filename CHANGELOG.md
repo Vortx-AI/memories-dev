@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added build requirements for better compatibility
 - Fixed blis version to 0.7.11 (removed incorrect 0.7.12 reference)
 - Updated thinc dependency to match spacy requirements (>=8.2.2,<8.3.0)
-- Pinned numpy to version 1.24.3 to resolve binary incompatibility
+- Updated numpy to >=1.26.0 for Python 3.12 compatibility
 - Updated spacy dependencies
 - Made Redis optional with in-memory fallback
 
@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Compilation issues with Python 3.13's C API
 - Build system configuration for better cross-version support
 - Package dependency resolution issues with blis and thinc
-- Binary incompatibility between numpy and thinc
+- Binary incompatibility between numpy and Python 3.12
 - Redis connection handling in hot memory storage
 - Improved error handling for Redis operations
 - Added graceful degradation for Redis functionality
