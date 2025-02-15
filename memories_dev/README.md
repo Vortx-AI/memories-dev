@@ -272,7 +272,7 @@ memory = creator.create(
 )
 ```
 
-## 🎯 Features (v1.0.0)
+## 🎯 Features (v1.0.1)
 
 ### Core Capabilities
 - 🔄 Real-time memory formation and updates
@@ -532,13 +532,13 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ## 📜 Version History
 
-### v1.0.1 (March 21, 2024)
+### v1.0.1 (Feb 15, 2025)
 - Implemented query context agent for improved memory retrieval
 - Reorganized project structure (memories-dev → memories_dev)
 - Enhanced code organization and cleanup
 - Improved documentation and README structure
 
-### v1.0.0 (Initial Release)
+### v1.0.0 (Initial Release, Feb 14, 2025)
 - Initial stable release
 - Core memory system implementation
 - Basic agent framework
