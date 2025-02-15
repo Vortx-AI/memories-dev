@@ -1,5 +1,5 @@
 from typing import Dict, Any
-from memories_dev.utils.earth.query_classification import classify_query
+from memories.utils.earth.query_classification import classify_query
 
 class AgentQueryClassification:
     def __init__(self, query: str, load_model: Any):
