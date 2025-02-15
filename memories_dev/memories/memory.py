@@ -26,10 +26,30 @@ import geopandas as gpd
 from shapely.geometry import Polygon, MultiPolygon
 import pystac
 import duckdb
+import importlib
 
 from .cold import ColdStorage  # Ensure correct import path
 #from .earth_memory_encoder import MemoryEncoder  # Ensure you have this module
 
+# Reload the modules to ensure latest changes
+import memories_dev.models.load_model
+import memories_dev.models.base_model
+import memories_dev.memories.memory
+
+importlib.reload(memories_dev.models.load_model)
+importlib.reload(memories_dev.models.base_model)
+importlib.reload(memories_dev.memories.memory)
+
+# Import required classes after reload
+from memories_dev.models.load_model import LoadModel
+from memories_dev.memories.memory import MemoryStore
+from shapely.geometry import Point, Polygon
+from datetime import datetime, timedelta
+import torch
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 
 class NumpyEncoder(json.JSONEncoder):
     """Custom JSON encoder for NumPy types"""
@@ -336,11 +356,11 @@ class MemoryStore:
     ) -> Dict[str, Dict[str, List[str]]]:
         """Create memories by inserting into the existing table."""
         try:
-            # Create FAISS storage based on selected artifacts
-            storage = create_faiss_storage(artifacts)
-            
             # Use the instance_id from the loaded model
             instance_id = model.instance_id
+            
+            # Create FAISS storage based on selected artifacts and instance_id
+            storage = create_faiss_storage(artifacts, instance_id)
             
             # Convert location to JSON-serializable format
             if isinstance(location, (Polygon, MultiPolygon)):
@@ -524,12 +544,56 @@ def encode_geospatial_data(data: Dict[str, Any], encoder: MemoryEncoder) -> torc
     """
     return encoder.encode(data)
 
-def create_faiss_storage(artifacts_selection):
+class FAISSStorage:
+    def __init__(self, dimension, field_names, metadata, instance_id):
+        """
+        Initialize FAISS storage.
+        
+        Args:
+            dimension (int): Vector dimension based on total number of output fields
+            field_names (list): Names of the fields being stored
+            metadata (dict): Storage metadata including acquisition files and required inputs
+            instance_id (str): Unique instance ID to identify this storage
+        """
+        self.instance_id = instance_id
+        self.storage_path = Path(f"data/faiss_storage/{instance_id}")
+        self.storage_path.mkdir(parents=True, exist_ok=True)
+        
+        self.index = faiss.IndexFlatL2(dimension)
+        self.field_names = field_names
+        self.metadata = metadata
+        self.vectors = []
+        
+        # Save index configuration
+        self.index_path = self.storage_path / "index.faiss"
+        self.metadata_path = self.storage_path / "metadata.json"
+        
+        # Save metadata
+        with open(self.metadata_path, 'w') as f:
+            json.dump({
+                'dimension': dimension,
+                'field_names': field_names,
+                'metadata': metadata,
+                'instance_id': instance_id
+            }, f)
+        
+    def add(self, vector_data):
+        """Add vector data to storage."""
+        vector = [vector_data[field] for field in self.field_names]
+        self.vectors.append(vector)
+        if len(self.vectors) % 1000 == 0:  # Batch processing
+            vectors_array = np.array(self.vectors, dtype=np.float32)
+            self.index.add(vectors_array)
+            faiss.write_index(self.index, str(self.index_path))
+            self.vectors = []
+
+def create_faiss_storage(artifacts_selection, instance_id):
     """
     Create FAISS storage based on selected artifacts.
     
     Args:
-        artifacts_selection (dict): Dictionary of selected artifacts like {'satellite': ['sentinel-2'], 'landuse': ['osm']}
+        artifacts_selection (dict): Dictionary of selected artifacts
+        instance_id (str): Unique instance ID for this storage
     
     Returns:
         FAISSStorage: Configured FAISS storage instance
@@ -542,31 +606,26 @@ def create_faiss_storage(artifacts_selection):
     output_fields = []
     metadata = {
         'acquisition_files': {},
-        'inputs_required': set()
+        'inputs_required': set(),
+        'instance_id': instance_id  # Include instance_id in metadata
     }
     
     for category, sources in artifacts_selection.items():
         for source in sources:
             if category in artifacts_config and source in artifacts_config[category]:
                 source_config = artifacts_config[category][source]
-                
-                # Collect output fields
                 output_fields.extend(source_config['output_fields'])
-                
-                # Store acquisition file info
                 metadata['acquisition_files'][f"{category}/{source}"] = source_config['acquisition_file']
-                
-                # Collect required inputs
                 metadata['inputs_required'].update(source_config['inputs_required'])
     
-    # Convert inputs_required set to list for JSON serialization
     metadata['inputs_required'] = list(metadata['inputs_required'])
     
-    # Initialize FAISS storage with collected fields and metadata
+    # Initialize FAISS storage with instance ID
     storage = FAISSStorage(
         dimension=len(output_fields),
         field_names=output_fields,
-        metadata=metadata
+        metadata=metadata,
+        instance_id=instance_id
     )
     
     return storage

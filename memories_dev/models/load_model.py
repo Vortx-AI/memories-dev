@@ -50,7 +50,9 @@ class LoadModel:
         self.api_key = api_key
         
         # Initialize DuckDB connection
-        self.conn = duckdb.connect('memories.db')
+        self.db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'memories.db')
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        self.conn = duckdb.connect(self.db_path)
         
         # Create models table if it doesn't exist
         self.conn.execute("""
@@ -104,8 +106,8 @@ class LoadModel:
                 self.model_path
             ))
             
-        except ValueError as e:
-            self.logger.error(f"Error resolving model path: {str(e)}")
+        except Exception as e:
+            self.logger.error(f"Error initializing model: {str(e)}")
             raise
         
         # Initialize the model if using deployment type
@@ -120,7 +122,7 @@ class LoadModel:
         self.logger.info(f"Model loaded successfully with instance ID: {self.instance_id}")
     
     def cleanup(self):
-        """Clean up model resources and close DB connection"""
+        """Clean up model resources"""
         if hasattr(self.base_model, 'model'):
             del self.base_model.model
             self.base_model.model = None
@@ -130,8 +132,11 @@ class LoadModel:
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             torch.cuda.ipc_collect()
-        if hasattr(self, 'conn'):
-            self.conn.close()
         gc.collect()
         self.logger.info("Model resources cleaned up")
+    
+    def __del__(self):
+        """Destructor to ensure connection is closed"""
+        if hasattr(self, 'conn'):
+            self.conn.close()
 
