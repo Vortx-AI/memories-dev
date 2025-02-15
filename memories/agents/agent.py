@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import logging
 import os
 from memories.agents.agent_query_classification import AgentQueryClassification
+from memories.agents.agent_context import AgentContext
 
 # Load environment variables
 load_dotenv()
@@ -48,6 +49,17 @@ class Agent:
             # Initialize and use the query classification agent
             classification_agent = AgentQueryClassification(query, self.load_model)
             result = classification_agent.process_query()
+            
+            # If classification is L1_2, process with context agent
+            if result.get('classification') == 'L1_2':
+                context_agent = AgentContext(query, self.load_model)
+                context_result = context_agent.process_query()
+                
+                # Merge the context information with the classification result
+                result.update({
+                    'data_type': context_result.get('data_type'),
+                    'location_details': context_result.get('location_info')
+                })
             
             return result
             
@@ -118,11 +130,29 @@ def main():
         
         print("\nResults:")
         print(f"Classification: {result.get('classification', '')}")
-        if 'response' in result:
-            print(f"Response: {result['response']}")
-        elif 'location_info' in result:
-            print(f"Location Info: {result['location_info']}")
-        print(f"Explanation: {result.get('explanation', '')}")
+        
+        # For N and L0 classifications, show the direct model response
+        if result.get('classification') in ['N', 'L0'] and 'response' in result:
+            print(f"Answer: {result['response']}")
+        # For L1_2 classification, show detailed information
+        elif result.get('classification') == 'L1_2':
+            print("\nDetailed Information:")
+            print(f"Data Type: {result.get('data_type', '')}")
+            if 'location_details' in result:
+                loc_info = result['location_details']
+                print("\nLocation Information:")
+                print(f"Location: {loc_info.get('location', '')}")
+                print(f"Location Type: {loc_info.get('location_type', '')}")
+                if 'normalized' in loc_info:
+                    norm = loc_info['normalized']
+                    print("\nNormalized Location:")
+                    print(f"Type: {norm.get('type', '')}")
+                    if norm.get('coordinates'):
+                        coords = norm['coordinates']
+                        print(f"Coordinates: {coords.get('lat')}, {coords.get('lon')}")
+        # For errors or unexpected cases
+        else:
+            print(f"Explanation: {result.get('explanation', '')}")
 
 if __name__ == "__main__":
     main()

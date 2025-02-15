@@ -1,163 +1,180 @@
-import spacy
-import re
-import logging
-import os
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional
 
 class LocationExtractor:
-    """A class to extract location information from text using spaCy."""
-    
-    def __init__(self):
-        """Initialize the Location Extraction system with spaCy."""
-        try:
-            self.nlp = spacy.load("en_core_web_sm")
-        except OSError:
-            # If model is not found, download it
-            os.system("python -m spacy download en_core_web_sm")
-            self.nlp = spacy.load("en_core_web_sm")
-        
-        self.logger = logging.getLogger(__name__)
-        
-        # Configure logging
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-
-    def extract_coordinates(self, text: str) -> Optional[Tuple[float, float]]:
+    def __init__(self, load_model: Any):
         """
-        Extract coordinates from text using regex patterns.
+        Initialize the Location Extractor.
         
         Args:
-            text (str): Input text containing potential coordinates
-            
-        Returns:
-            Optional[Tuple[float, float]]: Tuple of (latitude, longitude) if found, None otherwise
+            load_model (Any): The initialized model instance
         """
-        patterns = [
-            r'\(?\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\)?',  # (12.345, 67.890) or 12.345, 67.890
-            r'(-?\d+\.?\d*)\s*°\s*[NSns]\s*,\s*(-?\d+\.?\d*)\s*°\s*[EWew]',  # 12.345°N, 67.890°E
-            r'(-?\d+\.?\d*)\s*[NSns]\s*,\s*(-?\d+\.?\d*)\s*[EWew]'  # 12.345N, 67.890E
-        ]
-        
-        for pattern in patterns:
-            match = re.search(pattern, text)
-            if match:
-                try:
-                    lat = float(match.group(1))
-                    lon = float(match.group(2))
-                    
-                    # Handle South and West coordinates
-                    if 'S' in text.upper() or 's' in text:
-                        lat = -lat
-                    if 'W' in text.upper() or 'w' in text:
-                        lon = -lon
-                    
-                    # Validate coordinate ranges
-                    if -90 <= lat <= 90 and -180 <= lon <= 180:
-                        return (lat, lon)
-                except ValueError:
-                    continue
-        return None
+        self.load_model = load_model
 
-    def process_query(self, user_query: str) -> Dict[str, Any]:
+    def extract_query_info(self, query: str) -> Dict[str, Any]:
         """
-        Process the query to extract location and information type.
+        Extract data type and location information from a query.
         
         Args:
-            user_query (str): User's input query
+            query (str): The user's query
             
         Returns:
-            Dict[str, Any]: Dictionary containing location and location type
+            Dict containing data type and location information
         """
         try:
-            # First check for coordinates
-            coordinates = self.extract_coordinates(user_query)
-            if coordinates:
-                return {
-                    "location": f"{coordinates[0]}, {coordinates[1]}",
-                    "location_type": "point",
-                    "coordinates": coordinates
-                }
+            # Extract data type being requested
+            data_type_prompt = f"""From the following query, what type of data or information is being requested?
+            Examples:
+            "Find restaurants near Central Park" -> restaurants
+            "What is the weather in London?" -> weather
+            "Show me hotels within 5km of the Eiffel Tower" -> hotels
+            "What is the population density in Manhattan?" -> population density
             
-            # Process with spaCy for named entities
-            doc = self.nlp(user_query)
+            Query: {query}
             
-            # Look for location entities
-            locations = []
-            for ent in doc.ents:
-                if ent.label_ in ["GPE", "LOC", "FAC"]:
-                    locations.append((ent.text, ent.label_))
+            Return only the type of data/information being requested, as a single word or short phrase."""
             
-            # If no entities found, check for state names specifically
-            if not locations:
-                # Common state indicators
-                state_indicators = ["state", "province"]
-                words = user_query.split()
-                for i, word in enumerate(words):
-                    if word.lower() in state_indicators:
-                        if i > 0:
-                            state_name = words[i-1]  # Get the word before "state"
-                            locations.append((state_name, "GPE"))  # Only store the state name
-                        elif i < len(words) - 1:
-                            state_name = words[i+1]  # Get the word after "state"
-                            locations.append((state_name, "GPE"))  # Only store the state name
+            data_type = self.load_model.get_response(data_type_prompt).strip()
             
-            if locations:
-                # Get the first location found
-                location_text, label = locations[0]
-                
-                # Determine location type based on entity label and text characteristics
+            # Extract location and its type
+            location_prompt = f"""From the following query, extract:
+            1. The location mentioned
+            2. The type of location (coordinates, address, landmark, city, state, country, etc.)
+            
+            Examples:
+            "Find cafes near 40.7128, -74.0060" -> Location: 40.7128, -74.0060 | Type: coordinates
+            "Show restaurants in Manhattan" -> Location: Manhattan | Type: city district
+            "What's the weather at the Eiffel Tower?" -> Location: Eiffel Tower | Type: landmark
+            
+            Query: {query}
+            
+            Return in format: Location: <location> | Type: <type>"""
+            
+            location_info = self.load_model.get_response(location_prompt).strip()
+            
+            # Parse location response
+            try:
+                location_parts = location_info.split("|")
+                location = location_parts[0].replace("Location:", "").strip()
+                location_type = location_parts[1].replace("Type:", "").strip()
+            except:
+                location = location_info
                 location_type = "unknown"
-                if label == "GPE":
-                    words = user_query.lower().split()
-                    if "state" in words or "province" in words:
-                        location_type = "state"
-                    elif len(location_text.split()) == 1:
-                        location_type = "city"
-                    else:
-                        location_type = "address"
-                elif label == "LOC":
-                    location_type = "point"
-                elif label == "FAC":
-                    location_type = "address"
-                
-                return {
-                    "location": location_text,
-                    "location_type": location_type,
-                    "coordinates": None
-                }
             
             return {
-                "location": "",
-                "location_type": "",
-                "coordinates": None
+                "data_type": data_type,
+                "location_info": {
+                    "location": location,
+                    "location_type": location_type
+                }
             }
             
         except Exception as e:
-            self.logger.error(f"Error processing query: {str(e)}")
             return {
-                "location": "",
-                "location_type": "",
+                "error": f"Error extracting information: {str(e)}",
+                "data_type": None,
+                "location_info": None
+            }
+
+    def is_valid_coordinates(self, location: str) -> bool:
+        """
+        Check if the location string contains valid coordinates.
+        
+        Args:
+            location (str): The location string to check
+            
+        Returns:
+            bool: True if valid coordinates, False otherwise
+        """
+        try:
+            # Remove any whitespace and split by comma
+            parts = location.replace(" ", "").split(",")
+            if len(parts) != 2:
+                return False
+                
+            # Try to convert to float
+            lat, lon = float(parts[0]), float(parts[1])
+            
+            # Check if within valid range
+            return -90 <= lat <= 90 and -180 <= lon <= 180
+        except:
+            return False
+
+    def normalize_location(self, location: str, location_type: str) -> Dict[str, Any]:
+        """
+        Normalize the location information based on its type.
+        
+        Args:
+            location (str): The location string
+            location_type (str): The type of location
+            
+        Returns:
+            Dict containing normalized location information
+        """
+        try:
+            normalized = {
+                "original": location,
+                "type": location_type.lower(),
+                "coordinates": None
+            }
+            
+            # If it's already coordinates, validate and format
+            if location_type.lower() == "coordinates":
+                if self.is_valid_coordinates(location):
+                    lat, lon = map(float, location.replace(" ", "").split(","))
+                    normalized["coordinates"] = {"lat": lat, "lon": lon}
+            
+            return normalized
+            
+        except Exception as e:
+            return {
+                "error": f"Error normalizing location: {str(e)}",
+                "original": location,
+                "type": location_type,
                 "coordinates": None
             }
 
-from memories.utils.query.location_extractor import LocationExtractor
-
-def test_location_extractor():
-    # Initialize the extractor
-    extractor = LocationExtractor()
+def main():
+    """Test the LocationExtractor"""
+    from memories.models.load_model import LoadModel
     
-    # Test cases
+    # Initialize the model
+    load_model = LoadModel(
+        use_gpu=True,
+        model_provider="deepseek-ai",
+        deployment_type="deployment",
+        model_name="deepseek-coder-1.3b-base"
+    )
+    
+    # Initialize the extractor
+    extractor = LocationExtractor(load_model)
+    
+    # Test queries
     test_queries = [
-        "Find airports near 51.150750, -108.799436"
+        "Find restaurants near Central Park",
+        "What's the weather at 40.7128, -74.0060",
+        "Show me hotels in Manhattan",
+        "What's the population density of New York City"
     ]
     
-    # Process each test query
+    # Test extraction
     for query in test_queries:
-        print("\nQuery:", query)
-        result = extractor.process_query(query)
-        print("Result:", result)
+        print("\n" + "="*50)
+        print(f"Query: {query}")
+        result = extractor.extract_query_info(query)
+        print("\nExtracted Information:")
+        print(f"Data Type: {result.get('data_type')}")
+        if result.get('location_info'):
+            loc_info = result['location_info']
+            print(f"Location: {loc_info.get('location')}")
+            print(f"Location Type: {loc_info.get('location_type')}")
+            
+            # Test normalization
+            normalized = extractor.normalize_location(
+                loc_info.get('location'),
+                loc_info.get('location_type')
+            )
+            print("\nNormalized Location:")
+            print(normalized)
 
 if __name__ == "__main__":
-    test_location_extractor()
+    main()
