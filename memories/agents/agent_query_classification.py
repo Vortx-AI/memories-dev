@@ -40,11 +40,14 @@ class AgentQueryClassification:
                 "explanation": explanations.get(classification, "Unknown classification type")
             }
             
-            # Add response or location_info based on what's in the result
-            if 'response' in result:
-                response['response'] = result['response']
-            elif 'location_info' in result:
-                response['location_info'] = result['location_info']
+            # For N and L0 classifications, get direct response from model
+            if classification in ["N", "L0"]:
+                model_response = self.load_model.get_response(self.query)
+                response['response'] = model_response
+            elif classification == "L1_2":
+                # For L1_2, extract location information
+                location_info = result.get('location_info', 'Location information not available')
+                response['location_info'] = location_info
                 
             return response
             
