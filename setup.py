@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="memories-dev",
-    version="1.0.9",
+    version="1.1.0",
     packages=find_packages(include=['memories', 'memories.*']),
     
     author="Memories-dev",
