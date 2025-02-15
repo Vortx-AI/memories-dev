@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="memories_dev",
+    name="memories-dev",
     version="1.0.2",
     packages=find_packages(),
     
@@ -10,7 +10,7 @@ setup(
     description="An awesome package for daily synthesis of Earth Memories, helping agents answer about location-first queries. ",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/Vortx-AI/memories_dev",
+    url="https://github.com/Vortx-AI/memories-dev",
     license="Apache License 2.0",
     
     install_requires=[
@@ -54,15 +54,15 @@ setup(
         "docs": ["sphinx>=4.0.0"]
     },
     
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Scientific/Engineering :: GIS"
     ],
@@ -74,7 +74,7 @@ setup(
     },
     
     package_data={
-        "memories_dev": [
+        "memories": [
             "config/*.yaml",
             "data/*.json"
         ]

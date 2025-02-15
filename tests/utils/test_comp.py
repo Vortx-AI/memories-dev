@@ -6,7 +6,7 @@ try:
 except ImportError:
     HAS_CUPY = False
 import torch
-from memories_dev.utils.processors.comp import calculate_ndvi, transformer_process
+from memories.utils.processors.comp import calculate_ndvi, transformer_process
 
 @pytest.fixture
 def sample_image_data():

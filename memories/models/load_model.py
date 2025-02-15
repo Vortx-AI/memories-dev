@@ -12,8 +12,8 @@ import uuid
 import duckdb
 
 
-from memories_dev.agents.agent_query_context import LocationExtractor
-from memories_dev.agents.agent_coder import CodeGenerator
+from memories.agents.agent_query_context import LocationExtractor
+from memories.agents.agent_coder import CodeGenerator
 
 class LoadModel:
     def __init__(self, 
@@ -72,7 +72,7 @@ class LoadModel:
             self.logger.warning("GPU requested but not available. Falling back to CPU.")
         
         # Initialize base_model
-        from memories_dev.models.base_model import BaseModel
+        from memories.models.base_model import BaseModel
         self.base_model = BaseModel.get_instance()
         
         # Clean up any existing model resources first
