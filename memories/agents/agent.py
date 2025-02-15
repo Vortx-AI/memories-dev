@@ -50,9 +50,11 @@ class Agent:
             classification_agent = AgentQueryClassification(query, self.load_model)
             result = classification_agent.process_query()
             
-            # If classification is L1_2, process with context agent
+            # Only process with context agent if classification is L1_2
             if result.get('classification') == 'L1_2':
+                # Create context agent with the query
                 context_agent = AgentContext(query, self.load_model)
+                # Get context information
                 context_result = context_agent.process_query()
                 
                 # Merge the context information with the classification result
@@ -60,6 +62,10 @@ class Agent:
                     'data_type': context_result.get('data_type'),
                     'location_details': context_result.get('location_info')
                 })
+            # For N and L0, just return the classification result directly
+            elif result.get('classification') in ['N', 'L0']:
+                # The response should already be in the result
+                pass
             
             return result
             
@@ -134,6 +140,7 @@ def main():
         # For N and L0 classifications, show the direct model response
         if result.get('classification') in ['N', 'L0'] and 'response' in result:
             print(f"Answer: {result['response']}")
+            print(f"Explanation: {result.get('explanation', '')}")
         # For L1_2 classification, show detailed information
         elif result.get('classification') == 'L1_2':
             print("\nDetailed Information:")
@@ -150,6 +157,7 @@ def main():
                     if norm.get('coordinates'):
                         coords = norm['coordinates']
                         print(f"Coordinates: {coords.get('lat')}, {coords.get('lon')}")
+            print(f"Explanation: {result.get('explanation', '')}")
         # For errors or unexpected cases
         else:
             print(f"Explanation: {result.get('explanation', '')}")
