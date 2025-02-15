@@ -551,7 +551,6 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 
 
-<p align="center">Built with 💜 by the memories.dev team</p>
 
 <p align="center">
 <a href="https://discord.com/invite/7qAFEekp">Discord</a> •
@@ -615,3 +614,4 @@ fused_memory = fusion.combine(
     }
 )
 ```
+<p align="center">Built with 💜 by the memories.dev team</p>
