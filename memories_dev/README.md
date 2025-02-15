@@ -5,7 +5,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Tests](https://github.com/Vortx-AI/memories-dev/actions/workflows/tests.yml/badge.svg)](https://github.com/Vortx-AI/memories-dev/actions/workflows/tests.yml)
 
-> Collective AGI memory - v1.0.0
+> Collective AGI memory - v1.0.1 (March 21, 2024)
 
 ## 🌟 Overview
 
@@ -532,7 +532,13 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ## 📜 Version History
 
-### v1.0.0 (Current)
+### v1.0.1 (March 21, 2024)
+- Implemented query context agent for improved memory retrieval
+- Reorganized project structure (memories-dev → memories_dev)
+- Enhanced code organization and cleanup
+- Improved documentation and README structure
+
+### v1.0.0 (Initial Release)
 - Initial stable release
 - Core memory system implementation
 - Basic agent framework
