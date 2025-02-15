@@ -641,6 +641,142 @@ class MemoryStore:
             print(f"[MemoryStore] Error calculating distance: {str(e)}")
             return float('inf')
 
+    def get_stored_memories(self, instance_id: str) -> Dict[str, Any]:
+        """
+        Retrieve all stored data for a given instance ID.
+        
+        Args:
+            instance_id (str): The instance ID to retrieve data for
+            
+        Returns:
+            Dict[str, Any]: Dictionary containing all stored data including:
+                - database_records: Records from DuckDB
+                - faiss_vectors: FAISS index data
+                - metadata: Any additional metadata
+        """
+        try:
+            # Get database records
+            db_records = self.conn.execute("""
+                SELECT *
+                FROM memories
+                WHERE instance_id = ?
+            """, [instance_id]).fetchall()
+            
+            if not db_records:
+                print(f"[MemoryStore] No records found for instance ID: {instance_id}")
+                return {}
+            
+            # Convert database records to dictionary
+            memory_data = {
+                "database_records": [{
+                    "instance_id": record[0],
+                    "data_connectors": json.loads(record[1]),
+                    "artifacts": json.loads(record[2]),
+                    "geometry": json.loads(record[3]),
+                    "input_location": json.loads(record[4]),
+                    "start_date": record[5],
+                    "end_date": record[6],
+                    "created_at": record[7]
+                } for record in db_records],
+                "faiss_data": {
+                    "index_size": self.index.ntotal if self.index else 0,
+                    "dimension": self.index.d if self.index else None
+                } if self.index else {},
+                "metadata": {
+                    "stored_data_count": len(self.data) if hasattr(self, 'data') else 0
+                }
+            }
+            
+            print(f"[MemoryStore] Retrieved memories for instance ID: {instance_id}")
+            print(f"[MemoryStore] Found {len(memory_data['database_records'])} database records")
+            print(f"[MemoryStore] FAISS index size: {memory_data['faiss_data'].get('index_size', 0)} vectors")
+            
+            return memory_data
+            
+        except Exception as e:
+            print(f"[MemoryStore] Error retrieving memories: {str(e)}")
+            return {}
+
+    def save_faiss_index(self, instance_id: str, output_dir: str = None) -> bool:
+        """
+        Save the FAISS index and associated data to disk.
+        
+        Args:
+            instance_id (str): The instance ID to save data for
+            output_dir (str, optional): Directory to save the index. Defaults to PROJECT_ROOT/data/faiss
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            if not self.index:
+                print("[MemoryStore] No FAISS index to save")
+                return False
+            
+            # Create output directory
+            if output_dir is None:
+                output_dir = os.path.join(self.project_root, "data", "faiss")
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Save FAISS index
+            index_path = os.path.join(output_dir, f"index_{instance_id}.faiss")
+            faiss.write_index(self.index, index_path)
+            
+            # Save associated data
+            data_path = os.path.join(output_dir, f"data_{instance_id}.pkl")
+            with open(data_path, 'wb') as f:
+                pickle.dump(self.data, f)
+            
+            print(f"[MemoryStore] Saved FAISS index and data for instance ID: {instance_id}")
+            print(f"[MemoryStore] Index path: {index_path}")
+            print(f"[MemoryStore] Data path: {data_path}")
+            
+            return True
+            
+        except Exception as e:
+            print(f"[MemoryStore] Error saving FAISS index: {str(e)}")
+            return False
+
+    def load_faiss_index(self, instance_id: str, input_dir: str = None) -> bool:
+        """
+        Load a FAISS index and associated data from disk.
+        
+        Args:
+            instance_id (str): The instance ID to load data for
+            input_dir (str, optional): Directory containing the index. Defaults to PROJECT_ROOT/data/faiss
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Get input directory
+            if input_dir is None:
+                input_dir = os.path.join(self.project_root, "data", "faiss")
+            
+            # Load FAISS index
+            index_path = os.path.join(input_dir, f"index_{instance_id}.faiss")
+            if not os.path.exists(index_path):
+                print(f"[MemoryStore] No index found for instance ID: {instance_id}")
+                return False
+            
+            self.index = faiss.read_index(index_path)
+            
+            # Load associated data
+            data_path = os.path.join(input_dir, f"data_{instance_id}.pkl")
+            if os.path.exists(data_path):
+                with open(data_path, 'rb') as f:
+                    self.data = pickle.load(f)
+                
+            print(f"[MemoryStore] Loaded FAISS index and data for instance ID: {instance_id}")
+            print(f"[MemoryStore] Index size: {self.index.ntotal} vectors")
+            print(f"[MemoryStore] Data items: {len(self.data)}")
+            
+            return True
+            
+        except Exception as e:
+            print(f"[MemoryStore] Error loading FAISS index: {str(e)}")
+            return False
+
 def encode_geospatial_data(data: Dict[str, Any], encoder: MemoryEncoder) -> torch.Tensor:
     """
     Example function to encode geospatial data.

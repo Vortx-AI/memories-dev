@@ -6,6 +6,7 @@ from memories.agents.agent_query_classification import AgentQueryClassification
 from memories.agents.agent_context import AgentContext
 from memories.core.memory import MemoryStore
 from datetime import datetime, timedelta
+from memories.agents.agent_config import get_model_config
 
 # Load environment variables
 load_dotenv()
@@ -154,20 +155,15 @@ def main():
     Main function to run the agent directly.
     Example usage: python3 agent.py
     """
-    from memories.models.load_model import LoadModel
-    from memories.core.memory import MemoryStore
-    import os
-    
-    # Load environment variables
-    load_dotenv()
-    
-    # Initialize the model
-    load_model = LoadModel(
+    # Get model configuration and instance ID
+    model, instance_id = get_model_config(
         use_gpu=True,
         model_provider="deepseek-ai",
         deployment_type="deployment",
         model_name="deepseek-coder-1.3b-base"
     )
+    
+    print(f"[Agent] Model initialized with instance ID: {instance_id}")
     
     # Initialize memory store
     memory_store = MemoryStore()
@@ -205,7 +201,7 @@ def main():
     print(f"[Agent] Looking for OSM data in: {osm_data_path}")
     
     memories = memory_store.create_memories(
-        model=load_model,
+        model=model,
         location=location,
         time_range=time_range,
         artifacts=artifacts,
@@ -228,10 +224,51 @@ def main():
         ]
     )
 
-    
+    # After creating memories, test similarity search
+    print("\n" + "="*50)
+    print("Testing Similarity Search")
+    print("="*50)
     
     # Test different types of queries
     test_queries = [
+        {
+            "query": "Find restaurants near Bangalore",
+            "coordinates": {"lat": 12.9716, "lon": 77.5946}  # Bangalore coordinates
+        },
+        {
+            "query": "Find cafes near Delhi",
+            "coordinates": {"lat": 28.6139, "lon": 77.2090}  # Delhi coordinates
+        },
+        {
+            "query": "Find hospitals near Mumbai",
+            "coordinates": {"lat": 19.0760, "lon": 72.8777}  # Mumbai coordinates
+        }
+    ]
+    
+    for test in test_queries:
+        print(f"\nSearching: {test['query']}")
+        results = memory_store.search_memories(
+            query=test['query'],
+            coordinates=test['coordinates'],
+            top_k=5
+        )
+        
+        if results:
+            print("\nResults found:")
+            for idx, result in enumerate(results, 1):
+                print(f"\n{idx}. Score: {result.get('score', 'N/A'):.3f}")
+                print(f"   Name: {result.get('name', 'N/A')}")
+                print(f"   Type: {result.get('amenity', result.get('type', 'N/A'))}")
+                if 'distance' in result:
+                    print(f"   Distance: {result['distance']:.2f} km")
+                if 'geometry' in result and 'coordinates' in result['geometry']:
+                    coords = result['geometry']['coordinates']
+                    print(f"   Location: {coords[1]:.4f}, {coords[0]:.4f}")
+        else:
+            print("No results found")
+            
+    # Original test queries for agent processing
+    agent_test_queries = [
         "How do I write a Python function?",
         "What is the capital of France?",
         "Find restaurants near Central Park",
@@ -239,11 +276,11 @@ def main():
     ]
     
     # Initialize and run the agent for each query
-    for query in test_queries:
+    for query in agent_test_queries:
         print("\n" + "="*50)
         print(f"Testing query: {query}")
         
-        agent = Agent(query=query, load_model=load_model, memory_store=memory_store)
+        agent = Agent(query=query, load_model=model, memory_store=memory_store)
         result = agent.process_query(query)
         
         print("\nResults:")
