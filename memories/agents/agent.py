@@ -191,7 +191,10 @@ def main():
                 "type": "parquet",
                 "file_path": os.path.join(osm_data_path, "india_multipolygons.parquet")
             }
-        ]
+        ],
+        location="",
+        time_range=(),
+        artifacts={},
     )
     
     # Test different types of queries
