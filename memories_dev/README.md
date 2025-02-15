@@ -103,7 +103,7 @@ pip install memories-dev[gpu]
 
 ## 📊 Monitoring & Observability
 
-### Available Now (v1.0.0)
+### Available Now (v1.0.1)
 - Basic logging system with structured output
 - Memory operation metrics
 - Performance tracking for core operations
