@@ -192,9 +192,19 @@ def main():
                 "file_path": os.path.join(osm_data_path, "india_multipolygons.parquet")
             }
         ],
-        location="",
-        time_range=(),
-        artifacts={},
+        location = {
+        "type": "Polygon",
+        "coordinates": [[[68.1766451354, 7.96553477623], 
+                        [97.4025614766, 7.96553477623],
+                        [97.4025614766, 35.4940095078],
+                        [68.1766451354, 35.4940095078],
+                        [68.1766451354, 7.96553477623]]]
+    }
+        time_range = (
+        (current_time - timedelta(days=30)).isoformat(),
+        current_time.isoformat()
+    )
+        artifacts={"all"},
     )
     
     # Test different types of queries
