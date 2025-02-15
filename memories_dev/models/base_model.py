@@ -2,6 +2,15 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from dotenv import load_dotenv
 import os
+import logging
+from diffusers import StableDiffusionPipeline
+
+# Configure logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+# Global pipe variable for Stable Diffusion
+pipe = None
 
 class BaseModel:
     """Base model class that can be shared across modules"""
