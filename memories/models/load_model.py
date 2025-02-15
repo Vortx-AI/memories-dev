@@ -14,121 +14,93 @@ import duckdb
 
 from memories.agents.agent_query_context import LocationExtractor
 from memories.agents.agent_coder import CodeGenerator
+from memories.models.base_model import BaseModel
 
-class LoadModel:
+class LoadModel(BaseModel):
     def __init__(self, 
                  use_gpu: bool = True,
-                 model_provider: str = None,
-                 deployment_type: str = None,  # "deployment" or "api"
-                 model_name: str = None,
-                 api_key: str = None):
+                 model_provider: str = "deepseek-ai",
+                 deployment_type: str = "deployment",
+                 model_name: str = "deepseek-coder-1.3b-base"):
         """
-        Initialize model loader with configuration.
+        Initialize the model loader.
         
         Args:
             use_gpu (bool): Whether to use GPU if available
-            model_provider (str): The model provider (e.g., "deepseek", "llama", "mistral")
-            deployment_type (str): Either "deployment" or "api"
-            model_name (str): Short name of the model from BaseModel.MODEL_MAPPINGS
-            api_key (str): API key for the model provider (required for API deployment type)
+            model_provider (str): The model provider (e.g., "deepseek-ai")
+            deployment_type (str): Type of deployment
+            model_name (str): Name of the model to load
         """
-        if not all([model_provider, deployment_type, model_name]):
-            raise ValueError("model_provider, deployment_type, and model_name are required")
-            
-        if deployment_type not in ["deployment", "api"]:
-            raise ValueError("deployment_type must be either 'deployment' or 'api'")
-            
-        if deployment_type == "api" and not api_key:
-            raise ValueError("api_key is required for API deployment type")
-            
-        self.instance_id = str(uuid.uuid4())
-        self.logger = logging.getLogger(__name__)
+        super().__init__()
         self.use_gpu = use_gpu and torch.cuda.is_available()
         self.model_provider = model_provider
         self.deployment_type = deployment_type
         self.model_name = model_name
-        self.api_key = api_key
         
-        # Initialize DuckDB connection
-        self.db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'memories.db')
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-        self.conn = duckdb.connect(self.db_path)
-        
-        # Create models table if it doesn't exist
-        self.conn.execute("""
-            CREATE TABLE IF NOT EXISTS models (
-                instance_id VARCHAR PRIMARY KEY,
-                model_provider VARCHAR,
-                model_name VARCHAR,
-                deployment_type VARCHAR,
-                use_gpu BOOLEAN,
-                api_key VARCHAR,
-                model_path VARCHAR,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        if use_gpu and not torch.cuda.is_available():
-            self.logger.warning("GPU requested but not available. Falling back to CPU.")
-        
-        # Initialize base_model
-        from memories.models.base_model import BaseModel
-        self.base_model = BaseModel.get_instance()
-        
-        # Clean up any existing model resources first
-        if hasattr(self, 'base_model'):
-            self.cleanup()
-        
+        # Initialize the model and tokenizer
+        self.initialize_model()
+
+    def initialize_model(self):
+        """Initialize the model and tokenizer"""
         try:
-            self.model_path = model_name
-            if deployment_type == "deployment":
-                self.model_path = f"{model_provider}/{model_name}"
-            self.logger.info(f"Resolved model path: {self.model_path}")
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+            self.model = AutoModelForCausalLM.from_pretrained(self.model_name)
             
-            # Store model details in DuckDB
-            self.conn.execute("""
-                INSERT INTO models (
-                    instance_id,
-                    model_provider,
-                    model_name,
-                    deployment_type,
-                    use_gpu,
-                    api_key,
-                    model_path
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                self.instance_id,
-                model_provider,
-                model_name,
-                deployment_type,
-                use_gpu,
-                api_key,
-                self.model_path
-            ))
+            if self.use_gpu:
+                self.model = self.model.cuda()
+                
+            self.model.eval()  # Set to evaluation mode
             
         except Exception as e:
-            self.logger.error(f"Error initializing model: {str(e)}")
-            raise
+            raise Exception(f"Error initializing model: {str(e)}")
+
+    def get_response(self, prompt: str) -> str:
+        """
+        Get a response from the model for a given prompt.
         
-        # Initialize the model if using deployment type
-        if deployment_type == "deployment":
-            success = self.base_model.initialize_model(
-                model=self.model_path,
-                use_gpu=self.use_gpu
-            )
-            if not success:
-                raise RuntimeError("Failed to initialize model")
+        Args:
+            prompt (str): The input prompt
+            
+        Returns:
+            str: The model's response
+        """
+        try:
+            # Tokenize the input
+            inputs = self.tokenizer(prompt, return_tensors="pt")
+            if self.use_gpu:
+                inputs = {k: v.cuda() for k, v in inputs.items()}
+            
+            # Generate response
+            with torch.no_grad():
+                outputs = self.model.generate(
+                    **inputs,
+                    max_length=512,
+                    num_return_sequences=1,
+                    temperature=0.7,
+                    top_p=0.95,
+                    pad_token_id=self.tokenizer.eos_token_id
+                )
+            
+            # Decode and return the response
+            response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            
+            # Remove the original prompt from the response
+            if response.startswith(prompt):
+                response = response[len(prompt):].strip()
                 
-        self.logger.info(f"Model loaded successfully with instance ID: {self.instance_id}")
-    
+            return response
+            
+        except Exception as e:
+            raise Exception(f"Error generating response: {str(e)}")
+
     def cleanup(self):
         """Clean up model resources"""
-        if hasattr(self.base_model, 'model'):
-            del self.base_model.model
-            self.base_model.model = None
-        if hasattr(self.base_model, 'tokenizer'):
-            del self.base_model.tokenizer
-            self.base_model.tokenizer = None
+        if hasattr(self.model, 'model'):
+            del self.model
+            self.model = None
+        if hasattr(self.tokenizer, 'tokenizer'):
+            del self.tokenizer
+            self.tokenizer = None
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             torch.cuda.ipc_collect()
