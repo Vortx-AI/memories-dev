@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "memories-dev"
-version = "1.0.3"
+version = "1.0.4"
 description = "A package for daily synthesis of Earth Memories, helping agents answer about location-first queries."
 readme = "README.md"
 authors = [{ name = "Memories-dev", email = "hello@memories-dev.com" }]

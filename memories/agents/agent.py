@@ -4,7 +4,7 @@ import importlib
 
 from memories.agents.agent_query_context import LocationExtractor, QueryContext
 from memories.agents.location_filter_agent import LocationFilterAgent
-from memories.memories.memories_index import FAISSStorage
+from memories.core.memories_index import FAISSStorage
 from memories.agents.agent_coder import CodeGenerator
 from memories.agents.agent_code_executor import AgentCodeExecutor
 from memories.agents.response_agent import ResponseAgent

@@ -27,6 +27,9 @@ mercantile>=1.2.1
 mapbox-vector-tile>=2.0.1
 pyproj>=3.6.1
 pystac>=1.8.0
+xarray>=2023.0.0
+dask>=2024.1.0
+dask[array]>=2024.1.0
 
 [dev]
 pytest>=6.0
