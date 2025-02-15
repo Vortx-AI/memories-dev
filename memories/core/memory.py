@@ -331,11 +331,21 @@ class MemoryStore:
         time_range: Tuple[str, str],
         artifacts: Dict[str, List[str]],
         data_connectors: Optional[List[Dict[str, str]]] = None,
-        batch_size: int = 10000  # Added batch size parameter
+        faiss_storage: Optional[Dict] = None
     ) -> Dict[str, Dict[str, List[str]]]:
         """
-        Create memories by inserting into the existing table and FAISS storage.
-        Process data in batches to manage memory usage.
+        Create memories by storing metadata about data sources.
+        
+        Args:
+            model (LoadModel): Initialized model instance
+            location: Location information in various formats
+            time_range (Tuple[str, str]): Start and end dates
+            artifacts (Dict[str, List[str]]): Artifact configuration
+            data_connectors (List[Dict[str, str]], optional): Data connector configurations
+            faiss_storage (Dict, optional): FAISS index and metadata storage
+            
+        Returns:
+            Dict[str, Dict[str, List[str]]]: Created memories data
         """
         try:
             instance_id = str(id(model))
@@ -348,43 +358,22 @@ class MemoryStore:
             else:
                 geometry = {"type": "Point", "coordinates": location} if isinstance(location, tuple) else location
 
-            # Process data connectors and add to FAISS storage
+            # Process data connectors metadata
             connector_metadata = {}
             if data_connectors:
                 from memories.data_acquisition.data_connectors import parquet_connector
                 
                 for connector in data_connectors:
                     if connector["type"] == "parquet":
-                        total_vectors = 0
+                        # Get metadata about the parquet file and save to FAISS if provided
+                        parquet_info = parquet_connector(connector["file_path"], faiss_storage)
                         
-                        # Process the parquet file in batches
-                        for batch_data in parquet_connector(
-                            file_path=connector["file_path"],
-                            batch_size=batch_size
-                        ):
-                            if batch_data and len(batch_data) > 0:
-                                # Create embeddings for the batch
-                                embeddings = self._create_embeddings(batch_data, model)
-                                
-                                # Add batch to FAISS index
-                                if embeddings is not None and len(embeddings) > 0:
-                                    if self.index is None:
-                                        # Initialize FAISS index with first batch
-                                        dimension = embeddings.shape[1]
-                                        self.index = faiss.IndexFlatL2(dimension)
-                                    
-                                    self.index.add(embeddings)
-                                    total_vectors += len(embeddings)
-                                    print(f"[MemoryStore] Added batch of {len(embeddings)} vectors to FAISS index from {connector['name']}")
-                        
-                        if total_vectors > 0:
-                            print(f"[MemoryStore] Total vectors added from {connector['name']}: {total_vectors}")
-                            connector_metadata[connector["name"]] = {
-                                "vector_count": total_vectors,
-                                "file_path": connector["file_path"]
-                            }
-                        else:
-                            print(f"[MemoryStore] No data found in {connector['name']}")
+                        # Store metadata for this connector
+                        connector_metadata[connector["name"]] = {
+                            "file_path": connector["file_path"],
+                            "metadata": parquet_info
+                        }
+                        print(f"[MemoryStore] Processed metadata for {connector['name']}")
                     else:
                         print(f"[MemoryStore] Unsupported connector type: {connector['type']}")
 
@@ -401,7 +390,7 @@ class MemoryStore:
                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
                 instance_id,
-                json.dumps(connector_metadata if connector_metadata else {}),
+                json.dumps(connector_metadata),
                 json.dumps(artifacts),
                 json.dumps(geometry),
                 json.dumps(location if isinstance(location, dict) else str(location)),
