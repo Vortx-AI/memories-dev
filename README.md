@@ -84,7 +84,7 @@ pip install "memories-dev[gpu]"==1.0.4
 ```python
 # Import the package
 from memories.models import LoadModel  # ✅ Correct
-from memories_dev.models import LoadModel  # ❌ Incorrect
+from memories-dev.models import LoadModel  # ❌ Incorrect
 ```
 
 ### Core Components
