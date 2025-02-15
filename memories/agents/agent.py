@@ -5,6 +5,7 @@ import os
 from memories.agents.agent_query_classification import AgentQueryClassification
 from memories.agents.agent_context import AgentContext
 from memories.core.memory import MemoryStore
+from datetime import datetime, timedelta
 
 # Load environment variables
 load_dotenv()
@@ -154,6 +155,8 @@ def main():
     Example usage: python3 agent.py
     """
     from memories.models.load_model import LoadModel
+    from memories.core.memory import MemoryStore
+    import os
     
     # Load environment variables
     load_dotenv()
@@ -166,14 +169,31 @@ def main():
         model_name="deepseek-coder-1.3b-base"
     )
     
-    # Initialize memory store with OSM data connectors
+    # Initialize memory store
     memory_store = MemoryStore()
     
     # Get the project root path
     project_root = os.getenv("PROJECT_ROOT")
-    osm_data_path = os.path.join(project_root, "location_data", "osm_data")
+    osm_data_path = os.path.join(project_root, "data", "osm_data")
     
-    # Define artifacts (changed from set to list)
+    # Define time range (last 30 days)
+    end_time = datetime.now()
+    start_time = end_time - timedelta(days=30)
+    time_range = (start_time.isoformat(), end_time.isoformat())
+    
+    print(f"[Agent] Time range: {time_range[0]} to {time_range[1]}")
+    
+    # Define location (India bounding box)
+    location = {
+        "type": "Polygon",
+        "coordinates": [[[68.1766451354, 7.96553477623], 
+                        [97.4025614766, 7.96553477623],
+                        [97.4025614766, 35.4940095078],
+                        [68.1766451354, 35.4940095078],
+                        [68.1766451354, 7.96553477623]]]
+    }
+    
+    # Define artifacts (using lists instead of sets)
     artifacts = {
         "osm_data": ["points", "lines", "multipolygons"]
     }
@@ -188,7 +208,7 @@ def main():
         model=load_model,
         location=location,
         time_range=time_range,
-        artifacts=artifacts,  # Now using dict with lists instead of sets
+        artifacts=artifacts,
         data_connectors=[
             {
                 "name": "india_points",
