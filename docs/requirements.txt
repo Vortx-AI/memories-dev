@@ -1,28 +1,49 @@
-# Base dependencies
+# Core dependencies
 pip==23.0.1
 setuptools==67.6.1
 wheel==0.40.0
 
-# Core Sphinx dependencies
+# Documentation
 sphinx==6.2.1
 sphinx-rtd-theme==1.2.0
 sphinx-autodoc-typehints==1.23.0
 myst-parser==0.19.1
 sphinx-copybutton==0.5.1
 sphinx-notfound-page==0.8.3
+sphinxcontrib-applehelp==1.0.4
+sphinxcontrib-devhelp==1.0.2
+sphinxcontrib-htmlhelp==2.0.1
+sphinxcontrib-jsmath==1.0.1
+sphinxcontrib-qthelp==1.0.3
+sphinxcontrib-serializinghtml==1.1.5
 
-# Documentation dependencies
+# Documentation tools
+docutils==0.18.1
+jinja2==3.1.2
+pygments==2.15.1
+alabaster==0.7.13
+babel==2.12.1
+imagesize==1.4.1
+packaging==23.1
+snowballstemmer==2.2.0
+sphinxcontrib-jquery==4.1
+
+# Required for code examples
 ipython==8.12.0
 ipykernel==6.22.0
 matplotlib==3.7.1
 numpy==1.24.3
 pandas==2.0.0
+PyYAML==6.0
+python-dotenv==1.0.0
+tqdm==4.65.0
+nltk==3.8.1
+pydantic==1.10.7
 
 # Required dependencies for code examples
 torch==2.0.0
 transformers==4.28.1
 Pillow==9.5.0
-PyYAML==6.0
 python-dotenv==1.0.0
 tqdm==4.65.0
 nltk==3.8.1

@@ -12,6 +12,7 @@ build:
     python: "3.9"
   apt_packages:
     - graphviz
+    - pandoc
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
@@ -21,9 +22,10 @@ sphinx:
 # Python requirements
 python:
   install:
-    - requirements: docs/requirements.txt
-    - method: setuptools
+    - method: pip
       path: .
+      extra_requirements:
+        - docs
 
 # Generate PDF and ePub
 formats:
