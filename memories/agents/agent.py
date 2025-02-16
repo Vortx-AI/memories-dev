@@ -83,9 +83,10 @@ class Agent:
                 print("\n[Invoking L1 Agent - Similar Column Search]")
                 print("-"*50)
                 
-                if self.instance_id:
-                    # Use Agent_L1 to find similar columns
-                    l1_agent = Agent_L1(self.instance_id, query)
+                if self.instance_id and result.get('data_type'):
+                    # Use only the data type for column search
+                    search_term = result['data_type']
+                    l1_agent = Agent_L1(self.instance_id, search_term)
                     l1_result = l1_agent.process()
                     
                     print("L1 Agent Response:")
@@ -94,6 +95,7 @@ class Agent:
                         result['similar_columns'] = similar_columns
                         result['sql_query'] = l1_result.get('sql_query')
                         
+                        print(f"\n• Searching columns for data type: {search_term}")
                         print("\n• Similar columns found:")
                         for col in similar_columns:
                             print(f"\n  Column: {col['column_name']}")
