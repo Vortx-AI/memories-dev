@@ -19,9 +19,4 @@ sphinx:
 # Python requirements
 python:
   install:
-    - requirements: docs/requirements.txt
-
-# Generate PDF and ePub
-formats:
-  - pdf
-  - epub 
+    - requirements: docs/requirements.txt 

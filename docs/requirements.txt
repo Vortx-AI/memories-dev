@@ -4,29 +4,30 @@ setuptools>=67.6.1
 wheel>=0.40.0
 
 # Documentation
-sphinx==6.2.1
-sphinx-rtd-theme==1.2.0
-docutils==0.18.1
+sphinx>=7.2.0
+sphinx-rtd-theme>=2.0.0
+sphinx-autodoc-typehints>=2.0.0
+nbsphinx>=0.9.0
+docutils>=0.18.1
 
 # Required for code documentation
-sphinx-autodoc-typehints==1.23.0
 sphinx-copybutton==0.5.1
 
 # Required for markdown support
-myst-parser==0.19.1
+myst-parser>=0.19.1
 
 # Basic dependencies for examples
-numpy==1.24.3
-matplotlib==3.7.1
+numpy>=1.24.4,<2.0.0
+matplotlib>=3.7.0
 
 # Documentation tools
-jinja2==3.1.2
-pygments==2.15.1
+jinja2>=3.1.2
+pygments>=2.15.1
 alabaster==0.7.13
-babel==2.12.1
-imagesize==1.4.1
-packaging==23.1
-snowballstemmer==2.2.0
+babel>=2.12.1
+imagesize>=1.4.1
+packaging>=23.1
+snowballstemmer>=2.2.0
 sphinxcontrib-jquery==4.1
 
 # Required for code examples
