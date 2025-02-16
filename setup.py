@@ -4,154 +4,127 @@ import sys
 # Determine Python version and set appropriate dependencies
 python_version = sys.version_info
 
-def get_gpu_packages():
-    """Get GPU packages based on CUDA version if available."""
-    # Return basic GPU packages without CUDA detection during build
-    return [
-        "cupy-cuda12x>=12.0.0"  # Default to CUDA 12.x
-    ]  # Remove faiss-gpu as it's not available for all Python versions
-
-# Core dependencies that are the same for all Python versions
-core_dependencies = [
-    "transformers>=4.30.0",
-    "pillow>=10.0.0",
-    "requests>=2.31.0",
-    "pyyaml>=6.0.1",
-    "python-dotenv>=1.0.0",
-    "tqdm>=4.65.0",
-    "pyarrow>=14.0.1",
-    "mercantile>=1.2.1",
-    "mapbox-vector-tile>=1.2.0,<2.0.0",  # Pin to older version for shapely compatibility
-    "pyproj>=3.6.1",
-    "pystac>=1.8.0",
-    "redis>=5.0.0",
-    "nltk>=3.8.1",
-    "diffusers>=0.25.0",
-    "langchain>=0.1.0",
-    "langchain-community>=0.0.1",
-    "duckdb>=0.9.0",
-    "shapely>=1.7.0,<2.0.0",  # Keep this version for landsatxplore compatibility
-    "geopy>=2.3.0",
-    "aiohttp>=3.9.0",
-    "fsspec>=2024.2.0",
-    "cryptography>=42.0.0",
-    "pyjwt>=2.8.0",
-    "pystac-client>=0.8.3",
-    "planetary-computer>=1.0.0",
-    "fastapi>=0.109.0",
-    "netCDF4>=1.6.5",
-    "earthengine-api>=0.1.390",
-    "sentinelhub>=3.9.0",
-    "typing-extensions>=4.9.0",
-    "pydantic>=2.6.0",
-    "uvicorn>=0.27.0",
-    "python-multipart>=0.0.9",
-    "landsatxplore>=0.13.0",
-    "sentinelsat>=1.2.1",
-    "osmnx>=1.9.0",
-    "py6s>=1.9.0",
-    "opencv-python>=4.8.0"
-]
-
-# Version-specific dependencies
-version_specific_deps = {
-    (3, 9): [
-        "numpy>=1.24.4,<2.0.0",
-        "pandas>=2.0.0,<2.1.0",
-        "matplotlib>=3.7.0,<3.8.0",
-        "ipywidgets>=8.0.0",
-        "scikit-learn>=1.3.0,<1.4.0",
-        "rasterio>=1.3.8",
-        "geopandas>=0.14.0",
-        "albumentations>=1.3.1,<1.4.0",
-        "faiss-cpu>=1.7.4",
-        "sentence-transformers>=2.2.0",
-        "xarray>=2023.0.0",
-        "dask>=2024.1.0",
-        "accelerate>=1.3.0,<1.4.0",
-        "scipy>=1.11.0",
-        "noise>=1.2.2"
-    ],
-    (3, 10): [
-        "numpy>=1.24.4,<2.0.0",
-        "pandas>=2.0.0",
-        "matplotlib>=3.7.0",
+def get_version_specific_deps():
+    """Get version-specific dependencies based on Python version."""
+    version = sys.version_info[:2]
+    
+    # Base dependencies common to all Python versions
+    base_deps = [
+        "numpy>=1.24.4,<2.0.0" if version < (3, 12) else "numpy>=1.26.0,<2.0.0",
+        "pandas>=2.0.0" if version < (3, 12) else "pandas>=2.2.0",
+        "matplotlib>=3.7.0" if version < (3, 12) else "matplotlib>=3.8.0",
         "ipywidgets>=8.0.0",
         "scikit-learn>=1.3.0",
         "rasterio>=1.3.8",
         "geopandas>=0.14.0",
         "albumentations>=1.3.1",
-        "faiss-cpu>=1.7.4",
         "sentence-transformers>=2.2.0",
         "xarray>=2023.0.0",
         "dask>=2024.1.0",
         "accelerate>=1.3.0",
-        "scipy>=1.11.0",
-        "noise>=1.2.2"
-    ],
-    (3, 11): [
-        "numpy>=1.24.4,<2.0.0",
-        "pandas>=2.0.0",
-        "matplotlib>=3.7.0",
-        "ipywidgets>=8.0.0",
-        "scikit-learn>=1.3.0",
-        "rasterio>=1.3.8",
-        "geopandas>=0.14.0",
-        "albumentations>=1.3.1",
-        "faiss-cpu>=1.7.4",
-        "sentence-transformers>=2.2.0",
-        "xarray>=2023.0.0",
-        "dask>=2024.1.0",
-        "accelerate>=1.3.0",
-        "scipy>=1.11.0",
-        "noise>=1.2.2"
-    ],
-    (3, 12): [
-        "numpy>=1.26.0,<1.27.0",
-        "pandas>=2.1.0,<2.2.0",
-        "matplotlib>=3.8.0",
-        "ipywidgets>=8.0.0",
-        "scikit-learn>=1.3.0",
-        "rasterio>=1.3.8",
-        "geopandas>=0.14.0",
-        "albumentations>=1.3.1",
-        "faiss-cpu>=1.7.4",
-        "sentence-transformers>=2.2.0",
-        "xarray>=2023.0.0",
-        "dask>=2024.1.0",
-        "accelerate>=1.3.0",
-        "scipy>=1.12.0",
-        "noise>=1.2.2"
-    ],
-    (3, 13): [
-        "numpy>=1.26.0,<2.0.0",
-        "pandas>=2.2.0",
-        "matplotlib>=3.8.0",
-        "ipywidgets>=8.0.0",
-        "scikit-learn>=1.3.0",
-        "rasterio>=1.3.8",
-        "geopandas>=0.14.0",
-        "albumentations>=1.3.1",
-        "faiss-cpu>=1.7.4",
-        "sentence-transformers>=2.2.0",
-        "xarray>=2023.0.0",
-        "dask>=2024.1.0",
-        "accelerate>=1.3.0",
-        "scipy>=1.12.0",
+        "scipy>=1.11.0" if version < (3, 12) else "scipy>=1.12.0",
         "noise>=1.2.2",
-        "shapely>=2.0.0"  # Override the core dependency for Python 3.13
+        "faiss-cpu>=1.7.4"
     ]
-}
+    
+    # Add version-specific constraints
+    if version == (3, 9):
+        base_deps.extend([
+            "pandas<2.1.0",
+            "matplotlib<3.8.0",
+            "scikit-learn<1.4.0",
+            "albumentations<1.4.0",
+            "accelerate<1.4.0"
+        ])
+    
+    # Add Python 3.13+ specific dependencies
+    if version >= (3, 13):
+        base_deps.append("shapely>=2.0.0")  # Modern Shapely for 3.13+
+    
+    return base_deps
 
-def get_shapely_version():
-    """Get appropriate Shapely version based on Python version."""
-    if sys.version_info >= (3, 13):
-        return "shapely>=2.0.0"  # Use newer version for Python 3.13+
-    return "shapely>=1.7.0,<2.0.0"  # Use older version for Python <3.13
+def get_core_deps():
+    """Get core dependencies with version-specific adjustments."""
+    version = sys.version_info[:2]
+    
+    deps = [
+        "transformers>=4.30.0",
+        "pillow>=10.0.0",
+        "requests>=2.31.0",
+        "pyyaml>=6.0.1",
+        "python-dotenv>=1.0.0",
+        "tqdm>=4.65.0",
+        "pyarrow>=14.0.1",
+        "mercantile>=1.2.1",
+        "pyproj>=3.6.1",
+        "pystac>=1.8.0",
+        "redis>=5.0.0",
+        "nltk>=3.8.1",
+        "diffusers>=0.25.0",
+        "langchain>=0.1.0",
+        "langchain-community>=0.0.1",
+        "duckdb>=0.9.0",
+        "geopy>=2.3.0",
+        "aiohttp>=3.9.0",
+        "fsspec>=2024.2.0",
+        "cryptography>=42.0.0",
+        "pyjwt>=2.8.0",
+        "pystac-client>=0.8.3",
+        "planetary-computer>=1.0.0",
+        "fastapi>=0.109.0",
+        "netCDF4>=1.6.5",
+        "earthengine-api>=0.1.390",
+        "sentinelhub>=3.9.0",
+        "typing-extensions>=4.9.0",
+        "pydantic>=2.6.0",
+        "uvicorn>=0.27.0",
+        "python-multipart>=0.0.9",
+        "landsatxplore>=0.13.0",
+        "sentinelsat>=1.2.1",
+        "osmnx>=1.9.0",
+        "py6s>=1.9.0",
+        "opencv-python>=4.8.0"
+    ]
+    
+    # Add version-specific core dependencies
+    if version >= (3, 13):
+        deps.extend([
+            "mapbox-vector-tile>=2.0.1",  # Modern version compatible with Shapely 2.0+
+            "shapely>=2.0.0"  # Modern version for Python 3.13+
+        ])
+    else:
+        deps.extend([
+            "mapbox-vector-tile>=1.2.0,<2.0.0",  # Older version compatible with Shapely 1.x
+            "shapely>=1.7.0,<2.0.0"  # Legacy version for older Python
+        ])
+    
+    return deps
 
-# Get the appropriate dependencies for the current Python version
-current_version = (python_version.major, python_version.minor)
-install_requires = core_dependencies + version_specific_deps.get(current_version, version_specific_deps[(3, 13)])
+def get_gpu_packages():
+    """Get GPU packages based on Python version and availability."""
+    version = sys.version_info[:2]
+    packages = ["cupy-cuda12x>=12.0.0"]  # Base GPU package
+    
+    # Only include faiss-gpu for compatible Python versions
+    if version < (3, 12):  # faiss-gpu not yet available for 3.12+
+        packages.append("faiss-gpu>=1.7.2")
+    
+    return packages
+
+def get_torch_packages():
+    """Get PyTorch related packages."""
+    return [
+        "torch>=2.2.0",
+        "torchvision>=0.17.0",
+        "torchaudio>=2.2.0",
+        "torch-scatter>=2.1.2",
+        "torch-sparse>=0.6.18",
+        "torch-cluster>=1.6.3",
+        "torch-geometric>=2.4.0"
+    ]
+
+# Get all dependencies
+install_requires = get_core_deps() + get_version_specific_deps()
 
 setup(
     name="memories-dev",
@@ -170,15 +143,7 @@ setup(
     
     extras_require={
         "gpu": get_gpu_packages(),
-        "torch": [
-            "torch>=2.2.0",
-            "torchvision>=0.17.0",
-            "torchaudio>=2.2.0",
-            "torch-scatter>=2.1.2",
-            "torch-sparse>=0.6.18",
-            "torch-cluster>=1.6.3",
-            "torch-geometric>=2.4.0"
-        ],
+        "torch": get_torch_packages(),
         "dev": [
             "pytest>=8.3.4",
             "pytest-asyncio>=0.23.5",
