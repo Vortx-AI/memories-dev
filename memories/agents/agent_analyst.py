@@ -9,10 +9,34 @@ class AgentAnalyst:
         Initialize Agent Analyst.
 
         Args:
-            load_model: LLM model instance that provides get_query_function(prompt) -> str.
+            load_model: Model or other component (not used for query selection anymore)
         """
         self.load_model = load_model
         self.project_root = os.getenv("PROJECT_ROOT", "")
+
+    def select_query_function(self, query: str, lat: float, lon: float, data_type: str) -> str:
+        """
+        Selects the appropriate query function based on the input query and other parameters.
+
+        Args:
+            query (str): The user query describing what to search for.
+            lat (float): Target latitude coordinate.
+            lon (float): Target longitude coordinate.
+            data_type (str): Data type or column name to be used (for example, 'amenity').
+
+        Returns:
+            str: The chosen function name from the available set, e.g., "nearest_query",
+                 "within_radius_query", "at_coordinates_query", or "exact_match_query".
+        """
+        query_lower = query.lower()
+        if "nearest" in query_lower:
+            return "nearest_query"
+        elif "within" in query_lower:
+            return "within_radius_query"
+        elif "at" in query_lower:
+            return "at_coordinates_query"
+        else:
+            return "exact_match_query"
 
     def analyze_query(self, 
                       query: str, 
@@ -23,7 +47,7 @@ class AgentAnalyst:
                       extra_params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Analyze the given query by determining the appropriate DuckDB query template from
-        a knowledge base, fill in the required parameters, and execute the resulting SQL code.
+        a knowledge base, substituting required parameters, and executing the resulting SQL code.
 
         Args:
             query (str): The user query describing what to search for.
@@ -34,7 +58,7 @@ class AgentAnalyst:
             extra_params (Optional[Dict[str, Any]]): Additional parameters (e.g., radius, value, pattern).
 
         Returns:
-            Dict[str, Any]: The status of execution, generated SQL query, the results data, and
+            Dict[str, Any]: The execution status, generated SQL query, results, and
                             the selected function name.
         """
         try:
@@ -43,14 +67,8 @@ class AgentAnalyst:
             with open(kb_path, "r") as f:
                 kb = json.load(f)
 
-            # Assemble a list of available function names from the knowledge base.
-            available_functions = ", ".join([item["function"] for item in kb["queries"]])
-            prompt = (f"Given the query: '{query}', latitude: {lat}, longitude: {lon}, data type: '{data_type}', "
-                      f"and available functions: {available_functions}, which function should be used? "
-                      "Output only the function name.")
-
-            # Use the provided LLM to determine the appropriate query template.
-            chosen_function = self.load_model.get_query_function(prompt)
+            # Use the internal function to select the correct query template.
+            chosen_function = self.select_query_function(query, lat, lon, data_type)
 
             # Find the corresponding template entry in the knowledge base.
             func_details = next((item for item in kb["queries"] if item["function"] == chosen_function), None)
@@ -98,22 +116,8 @@ def main():
     """
     Example usage of the updated Agent Analyst.
     """
-    # Dummy LLM implementation for demonstration purposes.
-    class DummyLLM:
-        def get_query_function(self, prompt: str) -> str:
-            # In an actual implementation, the LLM will analyze the prompt and return
-            # one of the function names defined in the duckdb_parquet_kb.json.
-            prompt_lower = prompt.lower()
-            if "nearest" in prompt_lower:
-                return "nearest_query"
-            elif "within" in prompt_lower:
-                return "within_radius_query"
-            elif "at" in prompt_lower:
-                return "at_coordinates_query"
-            else:
-                return "exact_match_query"
-
-    load_model = DummyLLM()
+    # For demonstration purposes, we don't need the load_model to provide query selection.
+    load_model = None  
     analyst = AgentAnalyst(load_model)
 
     # Example inputs.
@@ -123,8 +127,8 @@ def main():
     data_type = "amenity"
     parquet_file = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "example.parquet")
     extra_params = {
-        "radius": 5000,          # used by spatial queries like within_radius_query
-        "value": "restaurant",   # used by exact_match_query if needed
+        "radius": 5000,           # used by spatial queries like within_radius_query
+        "value": "restaurant",    # used by exact_match_query if needed
         "pattern": "%restaurant%"  # used by like_query if needed
     }
 
