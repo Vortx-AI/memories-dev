@@ -19,9 +19,9 @@ sphinx:
 # Python requirements
 python:
   install:
-    - requirements: docs/requirements.txt
     - method: pip
       path: .
+    - requirements: docs/requirements.txt
 
 # Generate PDF and ePub
 formats:
