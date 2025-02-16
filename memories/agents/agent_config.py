@@ -343,14 +343,20 @@ class AgentConfig:
                 # Load the index
                 index = faiss.read_index(index_path)
                 
-                # Get all vectors
-                vectors = faiss.vector_to_array(index.get_xb())
-                vectors = vectors.reshape(index.ntotal, index.d)
+                # Create a numpy array to store vectors
+                vectors = np.zeros((index.ntotal, index.d), dtype=np.float32)
+                
+                # Extract vectors from index
+                for i in range(index.ntotal):
+                    # Get vector i
+                    vector = np.zeros(index.d, dtype=np.float32)
+                    index.reconstruct(i, vector)
+                    vectors[i] = vector
                 
                 print(f"\nFAISS Vectors for Instance {args.dump_vectors}")
                 print(f"Total vectors: {index.ntotal}")
                 print(f"Vector dimension: {index.d}")
-                print("\nFirst {args.limit} vectors:")
+                print(f"\nFirst {min(args.limit, index.ntotal)} vectors:")
                 
                 for i, vector in enumerate(vectors[:args.limit]):
                     print(f"\nVector {i}:")
@@ -362,42 +368,48 @@ class AgentConfig:
                 import traceback
                 print(traceback.format_exc())
 
-        if args.create_memories:
-            print("create memories")
-            # Initialize model and create memories
-            model, instance_id = get_model_config()
-            print(f"\nCreating memories for instance ID: {instance_id}")
-            memories = create_memory_store(model, instance_id)
+        elif args.create_memories:
+            # Default configuration
+            config = {
+                "input": {
+                    "model_provider": "deepseek-ai",
+                    "deployment_type": "deployment",
+                    "model_name": "deepseek-coder-1.3b-base",
+                    "use_gpu": True,
+                    "project_root": project_root,
+                    "data_connectors": [
+                        {
+                            "type": "parquet",
+                            "path": "/home/jaya/memories-dev/data/osm_data/india_points_processed.parquet",
+                            "name": "india_points_processed"
+                        }
+                    ]
+                }
+            }
             
-            # Create FAISS storage for this instance
-            
-            
-            print(f"\nMemories and FAISS storage created successfully")
+            # Create agent config and memory store
+            agent = AgentConfig(config)
+            instance_id = agent.create_memory_store()
+            print(f"\nSuccessfully created memory store!")
             print(f"Instance ID: {instance_id}")
             
-        elif args.list_indices:
-            list_available_instances()
-        elif args.instance_id:
-            check_instance_storage(args.instance_id)
-        else:
-            # Original configuration display code...
-            print("\nTesting Model Configuration")
-            print("=" * 50)
+            # Print vector information for the newly created instance
+            agent.print_faiss_vectors()
             
-            model, instance_id = get_model_config()
-            
-            print(f"\nModel Configuration:")
-            print(f"Provider: {model.model_provider}")
-            print(f"Model: {model.model_name}")
-            print(f"Deployment: {model.deployment_type}")
-            print(f"GPU Enabled: {model.use_gpu}")
-            print(f"\nInstance ID: {instance_id}")
-            
-            memory_config = get_memory_config()
-            print(f"\nMemory Configuration:")
-            print(f"Time Range: {memory_config['time_range'][0]} to {memory_config['time_range'][1]}")
-            print(f"Location: India Bounding Box")
-            print(f"Artifacts: {memory_config['artifacts']}")
+        elif args.print_vectors:
+            # Create minimal config just to access FAISS information
+            config = {
+                "input": {
+                    "model_provider": "deepseek-ai",
+                    "deployment_type": "deployment",
+                    "model_name": "deepseek-coder-1.3b-base",
+                    "use_gpu": True,
+                    "project_root": project_root,
+                    "data_connectors": []
+                }
+            }
+            agent = AgentConfig(config)
+            agent.print_faiss_vectors(args.print_vectors)
 
 if __name__ == "__main__":
     AgentConfig.main()
