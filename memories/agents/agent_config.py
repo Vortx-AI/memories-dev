@@ -12,6 +12,7 @@ from memories.models.load_model import LoadModel
 from memories.data_acquisition.data_connectors import parquet_connector
 import requests
 import zipfile
+import pickle
 
 def get_model_config(
     use_gpu: Optional[bool] = True,
@@ -285,6 +286,7 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     """
     from memories.core.memory import MemoryStore
     from dotenv import load_dotenv
+    import json
     
     # Load environment variables
     load_dotenv()
@@ -330,12 +332,45 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     if os.path.exists(parquet_file):
         print(f"\nProcessing parquet file: {parquet_file}")
         parquet_info = parquet_connector(parquet_file, faiss_storage, word_vectors)
-        memory_store.process_metadata(parquet_info)
+        
+        # Save FAISS index
+        index_path = os.path.join(faiss_dir, f"index_{instance_id}.faiss")
+        faiss.write_index(faiss_storage['index'], index_path)
+        print(f"Saved FAISS index to: {index_path}")
+        
+        # Save metadata
+        metadata_path = os.path.join(faiss_dir, f"metadata_{instance_id}.pkl")
+        with open(metadata_path, 'wb') as f:
+            pickle.dump(faiss_storage['metadata'], f)
+        print(f"Saved metadata to: {metadata_path}")
+        
+        # Store in database
+        memory_store.conn.execute("""
+            INSERT INTO memories (
+                instance_id,
+                created_at,
+                start_date,
+                end_date,
+                data_connectors,
+                faiss_data
+            ) VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            instance_id,
+            datetime.now().isoformat(),
+            datetime.now().isoformat(),
+            datetime.now().isoformat(),
+            json.dumps({'parquet': parquet_file}),
+            json.dumps({
+                'index_size': faiss_storage['index'].ntotal,
+                'dimension': dimension
+            })
+        ))
+        print(f"Stored memory information in database")
     
     print("\nMemories and FAISS storage created successfully")
     print(f"Instance ID: {instance_id}")
     
-    # Return the instance ID and FAISS storage info instead of memories
+    # Return the instance ID and FAISS storage info
     return {
         'instance_id': instance_id,
         'faiss_storage': {
