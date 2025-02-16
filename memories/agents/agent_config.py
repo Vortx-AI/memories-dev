@@ -102,27 +102,6 @@ def get_data_connectors(osm_data_path: str) -> List[Dict[str, str]]:
     ]
 
 # Test Query Configuration
-TEST_QUERIES = [
-    {
-        "query": "Find restaurants near Bangalore",
-        "coordinates": {"lat": 12.9716, "lon": 77.5946}
-    },
-    {
-        "query": "Find cafes near Delhi",
-        "coordinates": {"lat": 28.6139, "lon": 77.2090}
-    },
-    {
-        "query": "Find hospitals near Mumbai",
-        "coordinates": {"lat": 19.0760, "lon": 72.8777}
-    }
-]
-
-AGENT_TEST_QUERIES = [
-    "How do I write a Python function?",
-    "What is the capital of France?",
-    "Find restaurants near Central Park",
-    "What cafes are within 2km of 12.9096437,77.6088268?"
-]
 
 # Memory Store Settings
 MEMORY_STORE_SETTINGS = {
@@ -391,8 +370,10 @@ def main():
     args = parser.parse_args()
     
     if args.create_faiss:
+        print("create faiss storage")
         create_faiss_storage(args.create_faiss)
     elif args.create_memories:
+        print("create memories")
         # Initialize model and create memories
         model, instance_id = get_model_config()
         print(f"\nCreating memories for instance ID: {instance_id}")
