@@ -39,72 +39,85 @@ class Agent:
 
     def process_query(self, query: str) -> Dict[str, Any]:
         """
-        Process a query using the query classification agent and search FAISS if needed.
-        
-        Args:
-            query (str): The user's query.
-        
-        Returns:
-            Dict[str, Any]: The response containing the classification and result.
+        Process a query using multiple agents.
         """
         try:
-            print("\n" + "="*50)
+            print("\n" + "="*80)
             print("QUERY PROCESSING PIPELINE")
-            print("="*50)
+            print("="*80)
             print(f"Input Query: {query}")
-            print("="*50)
+            print("="*80)
             
             # Step 1: Query Classification Agent
-            print("\n1. Query Classification Agent")
-            print("-"*30)
+            print("\n[Invoking Query Classification Agent]")
+            print("-"*50)
             classification_agent = AgentQueryClassification(query, self.load_model)
             classification_result = classification_agent.process_query()
             
-            print(f"Classification: {classification_result.get('classification', '')}")
-            print(f"Explanation: {classification_result.get('explanation', '')}")
+            print("Classification Agent Response:")
+            print(f"• Classification: {classification_result.get('classification', '')}")
+            print(f"• Explanation: {classification_result.get('explanation', '')}")
+            if 'processing_hint' in classification_result:
+                print(f"• Processing Hint: {classification_result.get('processing_hint', '')}")
             
             result = classification_result
             
             # Step 2: Process based on classification
             if result.get('classification') == 'L1':
-                print("\n2. L1 Processing - Similar Column Search")
-                print("-"*30)
+                print("\n[Invoking L1 Agent - Similar Column Search]")
+                print("-"*50)
                 
                 if self.instance_id:
                     # Use Agent_L1 to find similar columns
                     l1_agent = Agent_L1(self.instance_id, query)
                     l1_result = l1_agent.process()
                     
+                    print("L1 Agent Response:")
                     if l1_result["status"] == "success":
                         similar_columns = l1_result["similar_columns"]
                         result['similar_columns'] = similar_columns
                         
-                        print("\nSimilar columns found:")
+                        print("\n• Similar columns found:")
                         for col in similar_columns:
-                            print(f"\nColumn: {col['column_name']}")
-                            print(f"File: {col['file_name']}")
-                            print(f"Distance: {col['distance']:.4f}")
+                            print(f"\n  Column: {col['column_name']}")
+                            print(f"  File: {col['file_name']}")
+                            print(f"  Distance: {col['distance']:.4f}")
                     else:
-                        print(f"Error in L1 processing: {l1_result.get('error', 'Unknown error')}")
+                        print(f"• Error: {l1_result.get('error', 'Unknown error')}")
             
             # Step 3: Context Agent (if needed)
             if result.get('classification') == 'L1_2':
-                print("\n3. Context Agent")
-                print("-"*30)
+                print("\n[Invoking Context Agent]")
+                print("-"*50)
                 context_agent = AgentContext(query, self.load_model)
                 context_result = context_agent.process_query()
                 
-                print(f"Context Data Type: {context_result.get('data_type', '')}")
-                print(f"Location Info: {context_result.get('location_info', '')}")
+                print("Context Agent Response:")
+                print(f"• Data Type: {context_result.get('data_type', '')}")
+                print(f"• Location Info: {context_result.get('location_info', '')}")
                 
                 result.update({
                     'data_type': context_result.get('data_type'),
                     'location_details': context_result.get('location_info')
                 })
             
-            print("\n" + "="*50)
-            print("PROCESSING COMPLETE")
-            print("="*50)
+            print("\n" + "="*80)
+            print("FINAL PROCESSING RESULT")
+            print("="*80)
+            print(f"• Query: {result.get('query', '')}")
+            print(f"• Classification: {result.get('classification', '')}")
+            print(f"• Explanation: {result.get('explanation', '')}")
+            
+            if 'similar_columns' in result:
+                print("\n• Similar Columns:")
+                for col in result['similar_columns']:
+                    print(f"  - {col['column_name']} ({col['file_name']})")
+            
+            if 'data_type' in result:
+                print(f"\n• Data Type: {result['data_type']}")
+                print(f"• Location Details: {result.get('location_details', '')}")
+            
+            print("="*80)
             
             return result
             
@@ -173,19 +186,7 @@ def main():
         instance_id=instance_id if instance_id else None
     )
     
-    result = agent.run()
-    
-    # Print results
-    print("\nResults:")
-    if result.get('similar_columns'):
-        print("\nSimilar columns found:")
-        for col in result['similar_columns']:
-            print(f"\nColumn: {col['column_name']}")
-            print(f"File: {col['file_name']}")
-            print(f"Distance: {col['distance']:.4f}")
-    
-    print(f"\nClassification: {result.get('classification', '')}")
-    print(f"Explanation: {result.get('explanation', '')}")
+    agent.run()
 
 if __name__ == "__main__":
     main()
