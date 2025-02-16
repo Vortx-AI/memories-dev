@@ -12,14 +12,14 @@ from gensim.models import Word2Vec, KeyedVectors
 import faiss
 import pickle
 
-def get_word_embedding(word: str, word_vectors: KeyedVectors, vector_size: int = 300) -> np.ndarray:
+def get_word_embedding(word: str, word_vectors: KeyedVectors, vector_size: int = 768) -> np.ndarray:
     """
     Get word embedding for a single word, handling multi-word phrases by averaging.
     
     Args:
         word (str): Word or phrase to get embedding for
         word_vectors (KeyedVectors): Loaded word vectors model
-        vector_size (int): Size of the word vectors
+        vector_size (int): Size of the word vectors (default 768 for BERT-like dimensions)
         
     Returns:
         np.ndarray: Word embedding vector
@@ -39,10 +39,12 @@ def get_word_embedding(word: str, word_vectors: KeyedVectors, vector_size: int =
         
         if vectors:
             avg_vector = np.mean(vectors, axis=0)
-            # Pad or truncate vector to match desired size
+            # Pad vector to match 768 dimensions
             if len(avg_vector) < vector_size:
+                print(f"Padding vector from {len(avg_vector)} to {vector_size} dimensions")
                 avg_vector = np.pad(avg_vector, (0, vector_size - len(avg_vector)))
             elif len(avg_vector) > vector_size:
+                print(f"Truncating vector from {len(avg_vector)} to {vector_size} dimensions")
                 avg_vector = avg_vector[:vector_size]
             
             # Normalize
@@ -51,6 +53,7 @@ def get_word_embedding(word: str, word_vectors: KeyedVectors, vector_size: int =
                 avg_vector = avg_vector / norm
             return avg_vector.astype('float32')
         else:
+            print(f"No vectors found for word '{word}', returning zero vector")
             return np.zeros(vector_size, dtype='float32')
     except Exception as e:
         print(f"Error in get_word_embedding for word '{word}': {str(e)}")
@@ -84,6 +87,7 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None, word
                 
                 print(f"\nProcessing {len(columns)} columns for FAISS storage...")
                 print(f"FAISS dimension: {dimension}")
+                print(f"Word vectors dimension: {word_vectors.vector_size}")
                 
                 # Create embeddings for column names
                 vectors = []
@@ -91,25 +95,33 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None, word
                 
                 for column in columns:
                     try:
+                        print(f"\nProcessing column: {column}")
                         vector = get_word_embedding(column, word_vectors, dimension)
-                        if not np.all(vector == 0):  # Only add non-zero vectors
+                        
+                        # Verify vector is valid
+                        if not np.all(vector == 0) and len(vector) == dimension:
+                            print(f"Created valid vector for '{column}' with dimension {len(vector)}")
                             vectors.append(vector)
                             valid_columns.append(column)
+                        else:
+                            print(f"Skipping invalid vector for '{column}'")
                     except Exception as e:
                         print(f"Error processing column '{column}': {str(e)}")
                         continue
                 
                 if vectors:
                     vectors = np.array(vectors).astype('float32')
-                    print(f"Created {len(vectors)} valid vectors")
+                    print(f"\nCreated {len(vectors)} valid vectors with shape {vectors.shape}")
                     
                     # Verify vector dimensions
                     if vectors.shape[1] != dimension:
                         print(f"Warning: Vector dimension mismatch. Expected {dimension}, got {vectors.shape[1]}")
                         vectors = np.pad(vectors, ((0, 0), (0, dimension - vectors.shape[1])))
+                        print(f"Padded vectors to shape {vectors.shape}")
                     
                     # Add vectors to FAISS index
                     try:
+                        print("\nAdding vectors to FAISS index...")
                         faiss_storage['index'].add(vectors)
                         
                         # Initialize metadata list if not exists
@@ -136,10 +148,12 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None, word
                         
                     except Exception as e:
                         print(f"Error adding vectors to FAISS: {str(e)}")
+                        print(f"Vector shape: {vectors.shape}")
+                        print(f"FAISS dimension: {dimension}")
                 else:
                     print("No valid vectors created for columns")
                 
-                # Save FAISS index and metadata if instance_id provided
+                # Save FAISS index and metadata
                 if 'instance_id' in faiss_storage:
                     try:
                         faiss_dir = Path(os.getenv("PROJECT_ROOT", "")) / "data" / "faiss"
@@ -158,6 +172,8 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None, word
                 
             except Exception as e:
                 print(f"Error in FAISS processing: {str(e)}")
+                import traceback
+                traceback.print_exc()
         
         # Identify location columns
         location_columns = [col for col in columns if col.lower() in 
@@ -192,6 +208,8 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None, word
             
     except Exception as e:
         print(f"Error processing parquet file: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return {
             "file_name": Path(file_path).name,
             "file_path": str(file_path),
