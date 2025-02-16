@@ -5,16 +5,15 @@
 # Required
 version: 2
 
-# Explicitly declare the main branch
-checkout:
-  default_branch: main
-
 # Set the OS, Python version and other tools you might need
 build:
   os: ubuntu-22.04
   tools:
     python: "3.9"
   jobs:
+    pre_build:
+      - git fetch origin
+      - git checkout main
     post_checkout:
       - git fetch --unshallow || true
       - git fetch origin main
