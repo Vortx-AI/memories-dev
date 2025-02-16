@@ -4,6 +4,9 @@ from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timedelta
 from memories.models.load_model import LoadModel
 from memories.data_acquisition.data_connectors import parquet_connector
+import os
+import faiss
+import pickle
 
 def get_model_config(
     use_gpu: Optional[bool] = True,
@@ -309,7 +312,59 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     
     return memories
 
+def print_faiss_vectors(instance_id: str = None):
+    """
+    Print FAISS vector information for a specific instance or the current instance.
+    
+    Args:
+        instance_id (str, optional): Instance ID to check. If None, uses current instance.
+    """
+    if instance_id is None and faiss_storage is None:
+        print("No FAISS storage initialized.")
+        return
 
+    try:
+        if instance_id:
+            # Load the saved FAISS index and metadata
+            index_path = os.path.join(faiss_dir, f"index_{instance_id}.faiss")
+            metadata_path = os.path.join(faiss_dir, f"metadata_{instance_id}.pkl")
+            
+            if not os.path.exists(index_path) or not os.path.exists(metadata_path):
+                print(f"No FAISS data found for instance ID: {instance_id}")
+                return
+            
+            index = faiss.read_index(index_path)
+            with open(metadata_path, 'rb') as f:
+                metadata = pickle.load(f)
+            
+            print(f"\nFAISS Vector Information for Instance {instance_id}:")
+            print(f"Total vectors: {index.ntotal}")
+            print(f"Vector dimension: {index.d}")
+            
+            # Print metadata information
+            print("\nMetadata Summary:")
+            for entry in metadata['metadata']:
+                print(f"\nConnector: {entry['name']}")
+                print(f"Type: {entry['type']}")
+                print(f"Vectors added: {entry['num_vectors_added']}")
+            
+        else:
+            # Print current instance information
+            print(f"\nCurrent FAISS Vector Information:")
+            print(f"Total vectors: {faiss_storage['index'].ntotal}")
+            print(f"Vector dimension: {faiss_storage['index'].d}")
+            
+            # Print metadata information
+            print("\nMetadata Summary:")
+            for entry in faiss_storage['metadata']:
+                print(f"\nConnector: {entry['name']}")
+                print(f"Type: {entry['type']}")
+                print(f"Vectors added: {entry['num_vectors_added']}")
+            
+    except Exception as e:
+        print(f"Error reading FAISS data: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
 
 def main():
     """Print current model instance ID when run directly."""
@@ -321,12 +376,13 @@ def main():
     parser.add_argument('--check-faiss', type=str, help='Check FAISS storage for specific instance ID')
     parser.add_argument('--create-memories', action='store_true', help='Create new memories with default configuration')
     parser.add_argument('--create-faiss', type=str, help='Create FAISS storage for specific instance ID')
+    parser.add_argument('--print-vectors', type=str, help='Print FAISS vectors for a specific instance ID')
     
     args = parser.parse_args()
     
     if args.create_faiss:
         print("create faiss storage")
-        create_faiss_storage(args.create_faiss)
+        #create_faiss_storage(args.create_faiss)
     elif args.create_memories:
         print("create memories")
         # Initialize model and create memories
@@ -346,6 +402,8 @@ def main():
         list_available_instances()
     elif args.instance_id:
         check_instance_storage(args.instance_id)
+    elif args.print_vectors:
+        print_faiss_vectors(args.print_vectors)
     else:
         # Original configuration display code...
         print("\nTesting Model Configuration")
