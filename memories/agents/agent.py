@@ -102,6 +102,7 @@ class Agent:
                         for col in similar_columns:
                             print(f"\n  Column: {col['column_name']}")
                             print(f"  File: {col['file_name']}")
+                            print(f"  File Path: {col['file_path']}")
                             print(f"  Distance: {col['distance']:.4f}")
                         
                         # Extract latitude and longitude from location_details (assumed to be a dict).
