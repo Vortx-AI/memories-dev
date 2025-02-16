@@ -4,6 +4,7 @@ from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timedelta
 from memories.models.load_model import LoadModel
 from memories.data_acquisition.data_connectors import parquet_connector
+import pickle
 
 def get_model_config(
     use_gpu: Optional[bool] = True,
@@ -235,20 +236,12 @@ def check_faiss_storage(instance_id: str):
         print(f"Looked in: {faiss_dir}")
 
 def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
-    """
-    Create memory store with specified configuration.
-    
-    Args:
-        model (LoadModel): Initialized model instance
-        instance_id (str): Instance ID for the model
-        
-    Returns:
-        Dict[str, Any]: Created memories data
-    """
+    """Create memory store with specified configuration."""
     from memories.core.memory import MemoryStore
     import os
     from dotenv import load_dotenv
     import faiss
+    from memories.data_acquisition.data_connectors import parquet_connector
     
     # Load environment variables
     load_dotenv()
@@ -266,7 +259,7 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     os.makedirs(faiss_dir, exist_ok=True)
     
     # Create FAISS storage
-    dimension = 768  # Standard embedding dimension
+    dimension = 768
     faiss_storage = {
         'index': faiss.IndexFlatL2(dimension),
         'instance_id': instance_id,
@@ -277,56 +270,69 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     print(f"Vector dimension: {dimension}")
     print(f"Initial vectors: {faiss_storage['index'].ntotal}")
     
-    # Define time range (last 30 days)
-    end_time = datetime.now()
-    start_time = end_time - timedelta(days=30)
-    time_range = (start_time.isoformat(), end_time.isoformat())
+    # Define data connectors
+    data_connectors = [
+        {
+            "name": "india_points_processed",
+            "type": "parquet",
+            "file_path": os.path.join(osm_data_path, "india_points_processed.parquet")
+        }
+    ]
     
-    # Define location (India bounding box)
-    location = {
-        "type": "Polygon",
-        "coordinates": [[[68.1766451354, 7.96553477623], 
-                        [97.4025614766, 7.96553477623],
-                        [97.4025614766, 35.4940095078],
-                        [68.1766451354, 35.4940095078],
-                        [68.1766451354, 7.96553477623]]]
-    }
-    
-    # Define artifacts
-    artifacts = {
-        "osm_data": ["points_processed", "lines", "multipolygons"]
-    }
-    
-    # Get data connectors
-    data_connectors = get_data_connectors(osm_data_path)
-    
-    # Create memories with FAISS storage
-    memories = memory_store.create_memories(
-        model=model,
-        location=location,
-        time_range=time_range,
-        artifacts=artifacts,
-        data_connectors=data_connectors,
-        faiss_storage=faiss_storage
-    )
-    
-    # Process each parquet file
+    # Process each parquet file and add to FAISS
+    print("\nProcessing data files...")
     for connector in data_connectors:
-        if connector["type"] == "parquet":
+        if connector["type"] == "parquet" and os.path.exists(connector["file_path"]):
             print(f"\nProcessing {connector['name']}:")
+            print(f"File: {connector['file_path']}")
             print(f"Current vector count: {faiss_storage['index'].ntotal}")
             
-            # Get metadata about the parquet file
-            parquet_info = parquet_connector(connector["file_path"], faiss_storage)
-            
-            print(f"After processing {connector['name']}:")
-            print(f"Vector count: {faiss_storage['index'].ntotal}")
-            print(f"Metadata entries: {len(faiss_storage['metadata'])}")
+            try:
+                # Process the parquet file and add vectors to FAISS
+                file_info = parquet_connector(connector["file_path"], faiss_storage)
+                
+                print(f"Processed file info:")
+                print(f"Columns: {len(file_info['columns'])}")
+                print(f"Rows: {file_info['num_rows']}")
+                print(f"New vector count: {faiss_storage['index'].ntotal}")
+                
+                # Save FAISS index after each file
+                index_path = os.path.join(faiss_dir, f"index_{instance_id}.faiss")
+                faiss.write_index(faiss_storage['index'], index_path)
+                
+                # Save metadata
+                metadata_path = os.path.join(faiss_dir, f"metadata_{instance_id}.pkl")
+                with open(metadata_path, 'wb') as f:
+                    pickle.dump(faiss_storage['metadata'], f)
+                
+            except Exception as e:
+                print(f"Error processing {connector['name']}: {str(e)}")
+                import traceback
+                print(traceback.format_exc())
+        else:
+            print(f"\nSkipping {connector['name']}: File not found or wrong type")
     
     print(f"\nFinal FAISS Storage Summary:")
     print(f"Total vectors: {faiss_storage['index'].ntotal}")
     print(f"Total metadata entries: {len(faiss_storage['metadata'])}")
     print(f"Vector dimension: {dimension}")
+    
+    # Create memories with the populated FAISS storage
+    memories = memory_store.create_memories(
+        model=model,
+        location={
+            "type": "Polygon",
+            "coordinates": [[[68.1766451354, 7.96553477623], 
+                           [97.4025614766, 7.96553477623],
+                           [97.4025614766, 35.4940095078],
+                           [68.1766451354, 35.4940095078],
+                           [68.1766451354, 7.96553477623]]]
+        },
+        time_range=(datetime.now() - timedelta(days=30)).isoformat(),
+        artifacts={"osm_data": ["points_processed"]},
+        data_connectors=data_connectors,
+        faiss_storage=faiss_storage
+    )
     
     return memories
 
