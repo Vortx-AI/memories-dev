@@ -25,14 +25,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx_autodoc_typehints',
     'nbsphinx',
-    'sphinx_notfound_page',
     'sphinx_copybutton',
-    'sphinx_design',
-    'sphinx_tabs.tabs',
-    'sphinx_togglebutton',
-    'sphinx_hoverxref.extension',
-    'sphinx.ext.duration',
-    'sphinxcontrib.mermaid',
     'myst_parser'
 ]
 
