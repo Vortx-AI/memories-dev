@@ -45,17 +45,80 @@ class AgentConfig:
         self.faiss_storage = self._initialize_faiss_storage()
         self.memory_store = MemoryStore()
 
-    def _load_environment(self):
-        # Implementation of _load_environment method
-        pass
+    def _load_environment(self) -> str:
+        """Load environment variables and return the project root."""
+        load_dotenv()
+        project_root = os.getenv("PROJECT_ROOT")
+        if not project_root:
+            raise EnvironmentError("PROJECT_ROOT environment variable not set.")
+        return project_root
 
-    def _load_model(self):
-        # Implementation of _load_model method
-        pass
+    def _load_model(self) -> LoadModel:
+        """Load the model using the LoadModel class."""
+        return LoadModel(
+            model_provider=self.model_provider,
+            deployment_type=self.deployment_type,
+            model_name=self.model_name,
+            use_gpu=self.use_gpu
+        )
 
-    def _initialize_faiss_storage(self):
-        # Implementation of _initialize_faiss_storage method
-        pass
+    def _initialize_faiss_storage(self) -> Dict[str, Any]:
+        """Initialize FAISS storage."""
+        print(f"\nInitializing FAISS storage")
+        index = faiss.IndexFlatL2(self.dimension)
+        return {
+            'index': index,
+            'metadata': [],
+            'vectors': []
+        }
+
+    def create_memory_store(self) -> str:
+        """
+        Process data connectors and create FAISS index.
+        
+        Returns:
+            str: The instance ID of the created memory store
+        """
+        instance_id = str(id(self.faiss_storage))
+        print(f"\nCreating memory store with instance ID: {instance_id}")
+        
+        for connector in self.data_connectors:
+            try:
+                print(f"\nProcessing Data Connector: {connector['name']}")
+                data = parquet_connector(connector['path'])
+                vectors = self.model.vectorize(data)
+
+                # Add vectors to FAISS index
+                self.faiss_storage['index'].add(vectors)
+                self.faiss_storage['vectors'].extend(vectors.tolist())
+
+                # Update metadata
+                self.faiss_storage['metadata'].append({
+                    'name': connector['name'],
+                    'type': connector['type'],
+                    'path': connector['path'],
+                    'num_vectors_added': vectors.shape[0]
+                })
+
+                print(f"Added {vectors.shape[0]} vectors to FAISS index from '{connector['name']}'")
+
+            except Exception as e:
+                print(f"Error processing {connector['name']}: {str(e)}")
+                continue
+
+        # Save FAISS index and metadata
+        index_path = os.path.join(self.faiss_dir, f"index_{instance_id}.faiss")
+        metadata_path = os.path.join(self.faiss_dir, f"metadata_{instance_id}.pkl")
+        
+        faiss.write_index(self.faiss_storage['index'], index_path)
+        with open(metadata_path, 'wb') as f:
+            pickle.dump(self.faiss_storage, f)
+            
+        print(f"\nFAISS index and metadata saved successfully")
+        print(f"Instance ID: {instance_id}")
+        print(f"Total vectors: {self.faiss_storage['index'].ntotal}")
+        
+        return instance_id
 
 def get_model_config(
     use_gpu: Optional[bool] = True,
