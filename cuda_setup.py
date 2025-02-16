@@ -49,7 +49,8 @@ def install_cuda_packages():
             f"cupy-cuda{cuda_major}{cuda_minor}x>=12.0.0",
             "torch>=2.2.0+cu118",  # Latest PyTorch with CUDA support
             "torchvision>=0.17.0+cu118",
-            "torchaudio>=2.2.0+cu118"
+            "torchaudio>=2.2.0+cu118",
+            "faiss-gpu>=1.7.2"
         ]
         
         for package in packages:
@@ -79,6 +80,10 @@ def install_cuda_packages():
                 logger.info(f"Successfully installed {package}")
             except subprocess.CalledProcessError as e:
                 logger.error(f"Failed to install {package}: {str(e)}")
+        
+        logger.info("\nNote: For RAPIDS libraries (cudf, cuspatial), please install via conda:")
+        logger.info("conda install -c rapidsai -c conda-forge -c nvidia \\")
+        logger.info(f"  cudf=24.2 cuspatial=24.2 python={sys.version_info.major}.{sys.version_info.minor} cuda-version={cuda_major}.{cuda_minor}")
         
         return True
         

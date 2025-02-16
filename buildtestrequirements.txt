@@ -68,8 +68,16 @@ scipy>=1.11.0
 # Optional: GPU Dependencies
 faiss-gpu>=1.7.2
 cupy-cuda12x>=12.0.0
-cudf>=24.2.0
-cuspatial>=24.2.0
+
+# RAPIDS libraries (install via conda):
+# conda install -c rapidsai -c conda-forge -c nvidia \
+#   cudf=24.2 cuspatial=24.2 \
+#   python=3.10 cuda-version=11.8
+# Or for nightly versions:
+# conda install -c rapidsai-nightly -c conda-forge -c nvidia \
+#   cudf cuspatial \
+#   python=3.10 cuda-version=11.8
+
 # CUDA-enabled PyTorch packages (install manually with: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118)
 # torch==2.2.0+cu118
 # torchvision==0.17.0+cu118

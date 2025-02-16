@@ -9,9 +9,7 @@ def get_gpu_packages():
     # Return basic GPU packages without CUDA detection during build
     return [
         "faiss-gpu>=1.7.2",
-        "cupy-cuda12x>=12.0.0",  # Default to CUDA 12.x
-        "cudf>=24.2.0",
-        "cuspatial>=24.2.0"
+        "cupy-cuda12x>=12.0.0"  # Default to CUDA 12.x
     ]
 
 # Core dependencies that are the same for all Python versions
