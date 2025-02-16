@@ -6,6 +6,7 @@ from memories.models.load_model import LoadModel
 from memories.data_acquisition.data_connectors import parquet_connector
 import pickle
 import pandas as pd
+import numpy as np
 
 def get_model_config(
     use_gpu: Optional[bool] = True,
@@ -368,16 +369,16 @@ def create_faiss_storage(instance_id: str) -> bool:
         
         # Create FAISS index (using dimension 768 for example, adjust as needed)
         dimension = 768  # Standard embedding dimension
-        index = faiss.IndexFlatL2(dimension)
+        #index = faiss.IndexFlatL2(dimension)
         
         # Save empty index
-        index_path = os.path.join(faiss_dir, f"index_{instance_id}.faiss")
-        faiss.write_index(index, index_path)
+        #index_path = os.path.join(faiss_dir, f"index_{instance_id}.faiss")
+        #faiss.write_index(index, index_path)
         
-        print(f"\nFAISS Storage Created:")
-        print(f"Index Path: {index_path}")
-        print(f"Vector Dimension: {dimension}")
-        print(f"Initial Size: {index.ntotal} vectors")
+        #print(f"\nFAISS Storage Created:")
+        #print(f"Index Path: {index_path}")
+        #print(f"Vector Dimension: {dimension}")
+        #print(f"Initial Size: {index.ntotal} vectors")
         
         return True
         
