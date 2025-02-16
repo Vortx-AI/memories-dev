@@ -84,7 +84,7 @@ class Agent:
             # Step 3: L1 Agent (if classification is L1)
             if result.get('classification') == 'L1':
                 print("\n[Invoking L1 Agent - Similar Column Search]")
-                print("-"*50)
+                print("-" * 50)
                 
                 if self.instance_id and result.get('data_type'):
                     # Use only the data type for column search
@@ -104,31 +104,42 @@ class Agent:
                             print(f"  File: {col['file_name']}")
                             print(f"  Distance: {col['distance']:.4f}")
                         
-                        # Step 4: Analyst Agent (only for L1 after successful column search)
-                        print("\n[Invoking Agent Analyst]")
-                        print("-"*50)
-                        analyst = AgentAnalyst(self.load_model)
+                        # Extract latitude and longitude from location_details (assumed to be a dict).
+                        location_details = result.get('location_details', {})
+                        if isinstance(location_details, dict):
+                            lat_val = location_details.get('lat') or location_details.get('latitude')
+                            lon_val = location_details.get('lon') or location_details.get('longitude')
+                        else:
+                            # Fallback values if location details are missing or not a dict.
+                            lat_val, lon_val = 0.0, 0.0
                         
-                        # Use the best matching column (first in the list)
+                        # Use the previously retrieved data_type.
+                        data_type = result.get('data_type', '')
+                        # Get the Parquet file path from the best matching column.
                         best_column = similar_columns[0]
+                        parquet_file_path = best_column.get('file_name', '')
+    
+                        print("\n[Invoking Agent Analyst]")
+                        print("-" * 50)
+                        analyst = AgentAnalyst(self.load_model)
                         analyst_result = analyst.analyze_query(
                             query=query,
-                            column_info=best_column,
-                            location_info=result.get('location_details')
+                            lat=lat_val,
+                            lon=lon_val,
+                            data_type=data_type,
+                            parquet_file=parquet_file_path,
+                            extra_params={"radius": 5000}  # Adjust extra parameters as needed.
                         )
-                        
+    
                         if analyst_result["status"] == "success":
                             result.update({
                                 'generated_code': analyst_result['generated_code'],
                                 'query_results': analyst_result['results'],
-                                'row_count': analyst_result['row_count']
+                                'chosen_function': analyst_result['chosen_function']
                             })
-                            
                             print("\nAnalyst Agent Response:")
                             print(f"• Generated Code:\n{analyst_result['generated_code']}")
-                            print(f"\n• Query Results:")
-                            print(analyst_result['results'])
-                            print(f"\n• Total Rows: {analyst_result['row_count']}")
+                            print(f"\n• Query Results:\n{analyst_result['results']}")
                         else:
                             print(f"• Error in Analyst: {analyst_result.get('error', 'Unknown error')}")
                     else:

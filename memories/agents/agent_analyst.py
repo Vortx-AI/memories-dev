@@ -1,141 +1,142 @@
-from typing import Dict, Any, Optional
 import os
-from pathlib import Path
-from memories.utils.duckdb_queries import DuckDBQueryGenerator
+import json
+import duckdb
+from typing import Dict, Any, Optional
 
 class AgentAnalyst:
     def __init__(self, load_model: Any):
         """
         Initialize Agent Analyst.
-        
+
         Args:
-            load_model: LLM model instance
+            load_model: LLM model instance that provides get_query_function(prompt) -> str.
         """
         self.load_model = load_model
         self.project_root = os.getenv("PROJECT_ROOT", "")
-        
+
     def analyze_query(self, 
-                     query: str,
-                     column_info: Dict[str, Any],
-                     location_info: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                      query: str, 
+                      lat: float, 
+                      lon: float, 
+                      data_type: str, 
+                      parquet_file: str, 
+                      extra_params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Analyze query and generate appropriate DuckDB code.
-        
+        Analyze the given query by determining the appropriate DuckDB query template from
+        a knowledge base, fill in the required parameters, and execute the resulting SQL code.
+
         Args:
-            query (str): User query
-            column_info (Dict): Column information from L1 agent
-            location_info (Dict, optional): Location details from context agent
+            query (str): The user query describing what to search for.
+            lat (float): Target latitude coordinate.
+            lon (float): Target longitude coordinate.
+            data_type (str): Data type or column to be used (for example, 'amenity').
+            parquet_file (str): Full file path to the Parquet file.
+            extra_params (Optional[Dict[str, Any]]): Additional parameters (e.g., radius, value, pattern).
+
+        Returns:
+            Dict[str, Any]: The status of execution, generated SQL query, the results data, and
+                            the selected function name.
         """
         try:
-            print("\n[Agent Analyst] Processing Query")
-            print("-" * 50)
-            print(f"Query: {query}")
-            print(f"Column: {column_info.get('column_name')}")
-            print(f"File: {column_info.get('file_name')}")
-            
-            # Initialize DuckDB Query Generator
-            parquet_file = os.path.join(
-                self.project_root, 
-                "data",
-                "osm_data",
-                column_info.get('file_name', '')
-            )
-            
-            generator = DuckDBQueryGenerator(parquet_file, self.load_model)
-            
-            # Generate Python code
-            print("\nGenerating DuckDB query code...")
-            code = generator.generate_query_code(
-                query=query,
-                column_info=column_info,
-                location_info=location_info
-            )
-            
-            # Execute generated code
-            print("\nExecuting generated code...")
-            results = generator.execute_generated_code(code)
-            
+            # Load DuckDB knowledge base from JSON.
+            kb_path = os.path.join(self.project_root, "memories", "utils", "earth", "duckdb_parquet_kb.json")
+            with open(kb_path, "r") as f:
+                kb = json.load(f)
+
+            # Assemble a list of available function names from the knowledge base.
+            available_functions = ", ".join([item["function"] for item in kb["queries"]])
+            prompt = (f"Given the query: '{query}', latitude: {lat}, longitude: {lon}, data type: '{data_type}', "
+                      f"and available functions: {available_functions}, which function should be used? "
+                      "Output only the function name.")
+
+            # Use the provided LLM to determine the appropriate query template.
+            chosen_function = self.load_model.get_query_function(prompt)
+
+            # Find the corresponding template entry in the knowledge base.
+            func_details = next((item for item in kb["queries"] if item["function"] == chosen_function), None)
+            if func_details is None:
+                return {
+                    "status": "error",
+                    "error": f"Function '{chosen_function}' not found in the knowledge base."
+                }
+
+            # Prepare a parameters dictionary for substitution into the SQL template.
+            extra = extra_params if extra_params is not None else {}
+            params = {
+                "parquet_file": parquet_file,
+                "lat_col": extra.get("lat_col", "latitude"),
+                "lon_col": extra.get("lon_col", "longitude"),
+                "target_lat": lat,
+                "target_lon": lon,
+                "column_name": data_type,
+                "value": extra.get("value", ""),
+                "pattern": extra.get("pattern", ""),
+                "radius": extra.get("radius", 1000)  # default radius if not provided
+            }
+
+            # Generate the SQL query by filling in the template.
+            query_to_run = func_details["code_to_execute"].format(**params)
+
+            # Execute the generated query using DuckDB.
+            conn = duckdb.connect(':memory:')
+            results = conn.execute(query_to_run).fetchdf()
+
             return {
                 "status": "success",
-                "query": query,
-                "generated_code": code,
+                "generated_code": query_to_run,
                 "results": results,
-                "row_count": len(results) if results is not None else 0
+                "chosen_function": chosen_function
             }
-            
+
         except Exception as e:
-            print(f"[Agent Analyst] Error: {str(e)}")
             return {
                 "status": "error",
-                "query": query,
                 "error": str(e)
             }
 
 def main():
-    """Example usage of Agent Analyst"""
-    from memories.models.load_model import LoadModel
-    
-    # Initialize model
-    load_model = LoadModel()
-    
-    # Example inputs
-    query = "find hospitals near bangalore"
-    column_info = {
-        "column_name": "amenity",
-        "file_name": "india_points_processed.parquet",
-        "distance": 0.7762
-    }
-    location_info = {
-        "location": "bangalore",
-        "coordinates": [12.9716, 77.5946],
-        "radius": 5000
-    }
-    
-    # Initialize analyst
+    """
+    Example usage of the updated Agent Analyst.
+    """
+    # Dummy LLM implementation for demonstration purposes.
+    class DummyLLM:
+        def get_query_function(self, prompt: str) -> str:
+            # In an actual implementation, the LLM will analyze the prompt and return
+            # one of the function names defined in the duckdb_parquet_kb.json.
+            prompt_lower = prompt.lower()
+            if "nearest" in prompt_lower:
+                return "nearest_query"
+            elif "within" in prompt_lower:
+                return "within_radius_query"
+            elif "at" in prompt_lower:
+                return "at_coordinates_query"
+            else:
+                return "exact_match_query"
+
+    load_model = DummyLLM()
     analyst = AgentAnalyst(load_model)
-    
-    # Process query
-    result = analyst.analyze_query(
-        query=query,
-        column_info=column_info,
-        location_info=location_info
-    )
-    
-    # Print results
+
+    # Example inputs.
+    query = "find restaurants near"
+    lat = 12.9716
+    lon = 77.5946
+    data_type = "amenity"
+    parquet_file = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "example.parquet")
+    extra_params = {
+        "radius": 5000,          # used by spatial queries like within_radius_query
+        "value": "restaurant",   # used by exact_match_query if needed
+        "pattern": "%restaurant%"  # used by like_query if needed
+    }
+
+    result = analyst.analyze_query(query, lat, lon, data_type, parquet_file, extra_params)
     print("\nAnalysis Results:")
     print("=" * 50)
     if result["status"] == "success":
+        print(f"\nChosen Function: {result['chosen_function']}")
         print(f"\nGenerated Code:\n{result['generated_code']}")
         print(f"\nResults DataFrame:\n{result['results']}")
-        print(f"\nTotal Rows: {result['row_count']}")
     else:
         print(f"Error: {result['error']}")
-
-def fetch_data():
-    """
-    Find parks within Bangalore bounds
-    """
-    try:
-        conn = duckdb.connect(':memory:')
-        query = """
-            SELECT 
-                leisure,
-                name,
-                ST_X(geom) as longitude,
-                ST_Y(geom) as latitude,
-                ST_Area(geom) as area_sqm
-            FROM parquet_scan('india_points_processed.parquet')
-            WHERE 
-                leisure = 'park'
-                AND ST_X(geom) BETWEEN 77.4850 AND 77.7480
-                AND ST_Y(geom) BETWEEN 12.8539 AND 13.0730
-            ORDER BY area_sqm DESC
-            LIMIT 100
-        """
-        return conn.execute(query).fetchdf()
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return pd.DataFrame()
 
 if __name__ == "__main__":
     main()
