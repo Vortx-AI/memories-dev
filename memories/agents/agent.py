@@ -116,10 +116,18 @@ class Agent:
                         
                         # Use the previously retrieved data_type.
                         data_type = result.get('data_type', '')
-                        # Get the Parquet file path from the best matching column.
+
+                        # Get the Parquet file information from the best matching column.
                         best_column = similar_columns[0]
-                        parquet_file_path = best_column.get('file_name', '')
-    
+                        raw_file_path = best_column.get('file_path', '')
+
+                        # Construct the full Parquet file path if the provided file_path is not absolute.
+                        if not os.path.isabs(raw_file_path):
+                            project_root = os.getenv("PROJECT_ROOT", "")
+                            parquet_file_path = os.path.join(project_root, "data", "parquet", raw_file_path)
+                        else:
+                            parquet_file_path = raw_file_path
+
                         print("\n[Invoking Agent Analyst]")
                         print("-" * 50)
                         analyst = AgentAnalyst(self.load_model)
@@ -128,7 +136,7 @@ class Agent:
                             lat=lat_val,
                             lon=lon_val,
                             data_type=data_type,
-                            parquet_file=parquet_file_path,
+                            parquet_file=parquet_file_path,  # now using the full file path from the L1 agent response
                             extra_params={"radius": 5000}  # Adjust extra parameters as needed.
                         )
     
