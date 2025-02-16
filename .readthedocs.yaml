@@ -10,28 +10,18 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.9"
-  jobs:
-    pre_build:
-      - git fetch origin
-      - git checkout main
-    post_checkout:
-      - git fetch --unshallow || true
-      - git fetch origin main
-      - git checkout main
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
   configuration: docs/source/conf.py
   fail_on_warning: false
 
-# Optionally declare the Python requirements required to build your docs
+# Python requirements
 python:
   install:
+    - requirements: docs/requirements.txt
     - method: pip
       path: .
-      extra_requirements:
-        - docs
-    - requirements: docs/requirements.txt
 
 # Generate PDF and ePub
 formats:
