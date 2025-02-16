@@ -4,6 +4,42 @@ import sys
 # Determine Python version and set appropriate dependencies
 python_version = sys.version_info
 
+def get_gpu_packages():
+    """Get GPU packages based on CUDA version if available."""
+    try:
+        import subprocess
+        # Try nvcc first
+        try:
+            output = subprocess.check_output(["nvcc", "--version"]).decode()
+            version = output.split("release ")[-1].split(",")[0]
+        except:
+            # Try nvidia-smi if nvcc fails
+            output = subprocess.check_output(["nvidia-smi"]).decode()
+            version = output.split("CUDA Version: ")[1].split(" ")[0]
+        
+        cuda_major = version.split(".")[0]
+        cuda_minor = version.split(".")[1]
+        
+        # Basic GPU packages that don't need CUDA version
+        gpu_packages = [
+            "faiss-gpu>=1.7.4",
+            "cudf>=24.2.0",
+            "cuspatial>=24.2.0"
+        ]
+        
+        # Add CUDA version specific package
+        gpu_packages.append(f"cupy-cuda{cuda_major}{cuda_minor}x>=12.0.0")
+        
+        return gpu_packages
+    except:
+        # Return basic GPU packages if CUDA detection fails
+        return [
+            "faiss-gpu>=1.7.4",
+            "cupy-cuda12x>=12.0.0",
+            "cudf>=24.2.0",
+            "cuspatial>=24.2.0"
+        ]
+
 # Core dependencies that are the same for all Python versions
 core_dependencies = [
     "torch>=2.2.0",
@@ -177,19 +213,7 @@ setup(
     install_requires=install_requires,
     
     extras_require={
-        "gpu": [
-            "faiss-gpu>=1.7.4",
-            "cupy-cuda12x>=12.0.0",
-            "cudf>=24.2.0",
-            "cuspatial>=24.2.0",
-            "torch>=2.2.0+cu118",
-            "torchvision>=0.17.0+cu118",
-            "torchaudio>=2.2.0+cu118",
-            "torch-scatter>=2.1.2+cu118",
-            "torch-sparse>=0.6.18+cu118",
-            "torch-cluster>=1.6.3+cu118",
-            "torch-geometric>=2.4.0+cu118"
-        ],
+        "gpu": get_gpu_packages(),
         "dev": [
             "pytest>=8.3.4",
             "pytest-asyncio>=0.23.5",
@@ -234,7 +258,8 @@ setup(
     
     entry_points={
         "console_scripts": [
-            "memories=memories.cli:main"
+            "memories=memories.cli:main",
+            "memories-gpu-setup=install_gpu:install_gpu_dependencies"
         ]
     },
     

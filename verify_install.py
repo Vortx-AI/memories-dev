@@ -139,6 +139,7 @@ def check_gpu() -> bool:
     
     gpu_available = False
     gpu_details = []
+    cuda_version = None
     
     # Check CUDA availability
     try:
@@ -146,16 +147,30 @@ def check_gpu() -> bool:
         if torch.cuda.is_available():
             gpu_available = True
             device_count = torch.cuda.device_count()
+            cuda_version = torch.version.cuda
+            
+            # Log CUDA and PyTorch versions
+            logger.info(f"✅ CUDA Version: {cuda_version}")
+            logger.info(f"✅ PyTorch Version: {torch.__version__}")
+            logger.info(f"✅ GPU is available: {device_count} device(s)")
+            
+            # Get device details
             for i in range(device_count):
                 device_name = torch.cuda.get_device_name(i)
-                cuda_version = torch.version.cuda
-                gpu_details.append(f"  - Device {i}: {device_name}")
-                gpu_details.append(f"  - CUDA Version: {cuda_version}")
-            logger.info(f"✅ GPU is available: {device_count} device(s)")
+                device_capability = torch.cuda.get_device_capability(i)
+                total_memory = torch.cuda.get_device_properties(i).total_memory / (1024**3)  # Convert to GB
+                
+                gpu_details.extend([
+                    f"  - Device {i}: {device_name}",
+                    f"    • Compute Capability: {device_capability[0]}.{device_capability[1]}",
+                    f"    • Total Memory: {total_memory:.2f} GB"
+                ])
+            
             for detail in gpu_details:
                 logger.info(detail)
         else:
             logger.warning("⚠️ No GPU available, using CPU")
+            logger.info(f"PyTorch Version: {torch.__version__} (CPU only)")
             return False
     except Exception as e:
         logger.error(f"❌ GPU check failed: {str(e)}")
@@ -163,19 +178,37 @@ def check_gpu() -> bool:
     
     # Check GPU-related packages
     if gpu_available:
+        logger.info("\nChecking GPU-enabled packages:")
         for package, attribute in gpu_packages:
             try:
-                module = __import__(package.replace("-", "_").replace(".", "_"))
+                if '.' in package:
+                    module = __import__(package.split('.')[0])
+                    for comp in package.split('.')[1:]:
+                        module = getattr(module, comp)
+                else:
+                    module = __import__(package.replace("-", "_"))
+                
                 if attribute:
-                    if '.' in package:
-                        for comp in package.split('.')[1:]:
-                            module = getattr(module, comp)
-                    getattr(module, attribute)
-                logger.info(f"✅ {package} is available")
+                    attr = getattr(module, attribute)
+                    if callable(attr):
+                        attr()
+                
+                # Get version if available
+                version = getattr(module, "__version__", "unknown version")
+                logger.info(f"✅ {package} ({version}) is available")
+                
             except ImportError:
                 logger.warning(f"⚠️ {package} is not installed (optional)")
             except Exception as e:
                 logger.error(f"❌ {package} check failed: {str(e)}")
+        
+        # Additional CUDA toolkit checks
+        try:
+            import subprocess
+            nvcc_version = subprocess.check_output(["nvcc", "--version"]).decode()
+            logger.info(f"\nNVCC Version Info:\n{nvcc_version.strip()}")
+        except Exception:
+            logger.warning("⚠️ NVCC not found in PATH (optional)")
     
     return gpu_available
 

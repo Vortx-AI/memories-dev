@@ -66,13 +66,14 @@ faiss-gpu>=1.7.4
 cupy-cuda12x>=12.0.0
 cudf>=24.2.0
 cuspatial>=24.2.0
-torch>=2.2.0+cu118
-torchvision>=0.17.0+cu118
-torchaudio>=2.2.0+cu118
-torch-scatter>=2.1.2+cu118
-torch-sparse>=0.6.18+cu118
-torch-cluster>=1.6.3+cu118
-torch-geometric>=2.4.0+cu118
+# CUDA-enabled PyTorch packages (install manually with: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118)
+# torch==2.2.0+cu118
+# torchvision==0.17.0+cu118
+# torchaudio==2.2.0+cu118
+# torch-scatter==2.1.2+cu118
+# torch-sparse==0.6.18+cu118
+# torch-cluster==1.6.3+cu118
+# torch-geometric==2.4.0+cu118
 
 # Test dependencies
 pytest>=8.3.4
