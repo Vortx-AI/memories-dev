@@ -64,7 +64,9 @@ def get_core_deps():
         "langchain>=0.1.0",
         "langchain-community>=0.0.1",
         "duckdb>=0.9.0",
-        "geopy>=2.3.0",
+        "geopy>=2.4.1",
+        "folium>=0.15.1",
+        "rtree>=1.1.0",
         "aiohttp>=3.9.0",
         "fsspec>=2024.2.0",
         "cryptography>=42.0.0",
@@ -130,7 +132,7 @@ install_requires = get_core_deps() + get_version_specific_deps()
 
 setup(
     name="memories-dev",
-    version="1.1.5",
+    version="1.1.6",
     packages=find_packages(include=['memories', 'memories.*']),
     
     author="Memories-dev",
@@ -192,7 +194,8 @@ setup(
     entry_points={
         "console_scripts": [
             "memories=memories.cli:main",
-            "memories-gpu-setup=install_gpu:install_gpu_dependencies"
+            "memories-gpu-setup=install_gpu:install_gpu_dependencies",
+            "memories-cuda-setup=cuda_setup:install_cuda_packages"
         ]
     },
     

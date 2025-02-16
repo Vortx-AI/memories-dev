@@ -1,0 +1,43 @@
+
+==================================================
+ memories-dev Installation Report 
+==================================================
+
+System Information:
+  OS: Darwin Darwin Kernel Version 23.5.0: Wed May  1 20:16:51 PDT 2024; root:xnu-10063.121.3~5/RELEASE_ARM64_T8103
+  Python: 3.13.2 (CPython)
+  Machine: arm64 (arm)
+  CUDA: Not found
+
+Installation Status:
+  Dependencies: ❌ Incomplete
+  GPU Support: ⚠️ Not available
+  PyTorch Geometric: ⚠️ Not installed
+  Basic Functionality: ✅ Working
+
+GPU Support:
+  • CUDA is not available
+  • Run 'memories-gpu-setup' after installing CUDA toolkit
+
+Troubleshooting Steps:
+1. If missing packages:
+   pip install -r requirements.txt
+
+2. If version conflicts:
+   a. Create new virtual environment:
+      python -m venv venv
+      source venv/bin/activate  # Linux/Mac
+      .\venv\Scripts\activate  # Windows
+   b. Install dependencies in order:
+      pip install torch torchvision torchaudio
+      pip install -r requirements.txt
+      pip install memories-dev
+
+3. For GPU support:
+   memories-gpu-setup
+
+4. For development setup:
+   pip install -e .[dev]
+
+5. Documentation:
+   https://docs.memories.dev

@@ -94,7 +94,10 @@ def check_dependencies() -> Tuple[bool, List[str], List[str]]:
             "pyproj",
             "pystac",
             "osmnx",
-            "py6s"
+            "py6s",
+            "geopy",
+            "folium",
+            "rtree"
         ],
         "Image Processing": [
             "pillow",
@@ -136,20 +139,44 @@ def check_dependencies() -> Tuple[bool, List[str], List[str]]:
     
     installed = []
     missing = []
+    version_conflicts = []
     
     logger.info("\nChecking dependencies:")
     for category, packages in dependencies.items():
         logger.info(f"\n{category}:")
         for package in packages:
-            version = get_package_version(package.replace("-", "_"))
-            if version:
-                installed.append(f"{package}=={version}")
-                logger.info(f"  ✅ {package} {version}")
-            else:
-                missing.append(package)
-                logger.error(f"  ❌ {package} not found")
+            try:
+                version = get_package_version(package.replace("-", "_"))
+                if version:
+                    installed.append(f"{package}=={version}")
+                    logger.info(f"  ✅ {package} {version}")
+                    
+                    # Test import to catch runtime issues
+                    try:
+                        module_name = package.replace("-", "_")
+                        __import__(module_name)
+                    except ImportError as e:
+                        logger.error(f"  ⚠️ {package} installed but import failed: {str(e)}")
+                        version_conflicts.append(f"{package}: Import failed - {str(e)}")
+                else:
+                    missing.append(package)
+                    logger.error(f"  ❌ {package} not found")
+            except pkg_resources.VersionConflict as e:
+                version_conflicts.append(f"{package}: {str(e)}")
+                logger.error(f"  ⚠️ {package} version conflict: {str(e)}")
     
-    return len(missing) == 0, installed, missing
+    if version_conflicts:
+        logger.error("\nVersion conflicts found:")
+        for conflict in version_conflicts:
+            logger.error(f"  • {conflict}")
+        logger.info("\nTo resolve conflicts:")
+        logger.info("1. Create a new virtual environment")
+        logger.info("2. Install dependencies in order:")
+        logger.info("   pip install torch torchvision torchaudio")
+        logger.info("   pip install -r requirements.txt")
+        logger.info("   pip install memories-dev")
+    
+    return len(missing) == 0 and len(version_conflicts) == 0, installed, missing
 
 def check_gpu_support() -> Tuple[bool, Dict[str, str]]:
     """Check GPU support and capabilities."""
@@ -221,14 +248,34 @@ def test_basic_functionality() -> bool:
         logger.info(f"\nTesting memories-dev functionality:")
         logger.info(f"  ✅ Version {memories.__version__}")
         
-        # Test imports
-        from memories.core.memory import MemoryStore
-        from memories.models.load_model import LoadModel
-        logger.info("  ✅ Core modules imported successfully")
-        
-        return True
+        # Test core imports
+        try:
+            from memories.core.memory import MemoryStore
+            from memories.models.load_model import LoadModel
+            from memories.core.memories_index import HeaderMemory  # Added this import
+            logger.info("  ✅ Core modules imported successfully")
+            
+            # Test geocoding functionality
+            try:
+                from geopy.geocoders import Nominatim
+                geolocator = Nominatim(user_agent="memories-dev-test")
+                logger.info("  ✅ Geocoding functionality available")
+            except Exception as e:
+                logger.error(f"  ❌ Geocoding test failed: {str(e)}")
+                return False
+            
+            return True
+        except ImportError as e:
+            logger.error(f"  ❌ Core module import failed: {str(e)}")
+            logger.error("  💡 Try reinstalling the package: pip install -e .")
+            return False
+            
     except Exception as e:
         logger.error(f"  ❌ Error testing functionality: {str(e)}")
+        if "No module named" in str(e):
+            missing_module = str(e).split("'")[1]
+            logger.error(f"  💡 Missing module: {missing_module}")
+            logger.error(f"  💡 Install with: pip install {missing_module}")
         return False
 
 def generate_report(
@@ -267,7 +314,9 @@ def generate_report(
     if missing_packages:
         report.extend([
             "\nMissing Packages:",
-            *[f"  • {pkg}" for pkg in missing_packages]
+            *[f"  • {pkg}" for pkg in missing_packages],
+            "\nTo install missing packages:",
+            "  pip install -r requirements.txt"
         ])
     
     if not gpu_ok and gpu_info.get('cuda_available') == 'No':
@@ -278,11 +327,28 @@ def generate_report(
         ])
     
     report.extend([
-        "\nNext Steps:",
-        "  1. If missing packages, run: pip install -r requirements.txt",
-        "  2. For GPU support, run: memories-gpu-setup",
-        "  3. For development setup: pip install -e .[dev]",
-        "  4. Check documentation at: https://docs.memories.dev"
+        "\nTroubleshooting Steps:",
+        "1. If missing packages:",
+        "   pip install -r requirements.txt",
+        "",
+        "2. If version conflicts:",
+        "   a. Create new virtual environment:",
+        "      python -m venv venv",
+        "      source venv/bin/activate  # Linux/Mac",
+        "      .\\venv\\Scripts\\activate  # Windows",
+        "   b. Install dependencies in order:",
+        "      pip install torch torchvision torchaudio",
+        "      pip install -r requirements.txt",
+        "      pip install memories-dev",
+        "",
+        "3. For GPU support:",
+        "   memories-gpu-setup",
+        "",
+        "4. For development setup:",
+        "   pip install -e .[dev]",
+        "",
+        "5. Documentation:",
+        "   https://docs.memories.dev"
     ])
     
     return "\n".join(report)
