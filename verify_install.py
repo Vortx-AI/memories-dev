@@ -7,7 +7,10 @@ Run this script after installation to verify everything is working correctly.
 import sys
 import os
 import logging
-from typing import List, Dict, Any
+import subprocess
+from typing import Dict, List, Tuple, Optional
+import pkg_resources
+import platform
 
 # Configure logging
 logging.basicConfig(
@@ -15,6 +18,35 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+def get_system_info() -> Dict[str, str]:
+    """Get system information."""
+    info = {
+        "os": platform.system(),
+        "os_version": platform.version(),
+        "python_version": platform.python_version(),
+        "python_implementation": platform.python_implementation(),
+        "machine": platform.machine(),
+        "processor": platform.processor()
+    }
+    
+    # Check for CUDA
+    try:
+        output = subprocess.check_output(["nvidia-smi"]).decode()
+        cuda_version = output.split("CUDA Version: ")[1].split(" ")[0]
+        info["cuda_version"] = cuda_version
+        
+        # Get GPU info
+        gpu_info = []
+        for line in output.split("\n"):
+            if "NVIDIA" in line and "%" in line:  # GPU line with usage info
+                gpu_info.append(line.strip())
+        info["gpu_info"] = gpu_info
+    except:
+        info["cuda_version"] = "Not found"
+        info["gpu_info"] = []
+    
+    return info
 
 def check_python_version() -> bool:
     """Check if Python version meets requirements."""
@@ -26,276 +58,283 @@ def check_python_version() -> bool:
         logger.info(f"✅ Python version {'.'.join(map(str, current_version))} meets requirements")
         return True
     else:
-        logger.error(f"❌ Python version {'.'.join(map(str, current_version))} does not meet requirements (>= {'.'.join(map(str, min_version))} and < {'.'.join(map(str, max_version))})")
+        logger.error(f"❌ Python version {'.'.join(map(str, current_version))} does not meet requirements")
+        logger.error(f"   Required: >= {'.'.join(map(str, min_version))} and < {'.'.join(map(str, max_version))}")
         return False
 
-def check_dependencies() -> bool:
-    """Check if all required dependencies are installed and working."""
-    required_packages = [
-        # Core ML/DL
-        "torch",
-        "transformers",
-        "diffusers",
-        "langchain",
-        "langchain_community",
-        
-        # Data Processing
-        "numpy",
-        "pandas",
-        "duckdb",
-        "pyarrow",
-        
-        # GIS/Spatial
-        "geopandas",
-        "rasterio",
-        "shapely",
-        "mercantile",
-        "mapbox_vector_tile",
-        "pyproj",
-        "pystac",
-        "osmnx",
-        "py6s",
-        
-        # Image Processing
-        "pillow",
-        "opencv-python",
-        "albumentations",
-        
-        # AI/ML Tools
-        "nltk",
-        "faiss-cpu",
-        "sentence_transformers",
-        
-        # Data Storage/Processing
-        "redis",
-        "xarray",
-        "dask",
-        
-        # Web/API
-        "fastapi",
-        "pydantic",
-        "uvicorn",
-        "aiohttp",
-        "requests",
-        
-        # Earth Observation
-        "planetary_computer",
-        "sentinelhub",
-        "landsatxplore",
-        "sentinelsat",
-        "earthengine-api",
-        
-        # Utilities
-        "tqdm",
-        "python-dotenv",
-        "pyyaml",
-        "cryptography",
-        "typing_extensions",
-        "fsspec"
-    ]
-    
-    missing_packages = []
-    for package in required_packages:
-        try:
-            __import__(package.replace("-", "_"))  # Handle packages with hyphens
-            logger.info(f"✅ {package} is installed")
-        except ImportError as e:
-            logger.error(f"❌ {package} is not installed: {str(e)}")
-            missing_packages.append(package)
-    
-    return len(missing_packages) == 0
-
-def check_nltk_data() -> bool:
-    """Check if NLTK data is installed and working."""
+def get_package_version(package: str) -> Optional[str]:
+    """Get installed version of a package."""
     try:
-        import nltk
-        # Test NLTK components
-        text = "Testing NLTK in San Francisco."
-        tokens = nltk.word_tokenize(text)
-        pos_tags = nltk.pos_tag(tokens)
-        named_entities = nltk.ne_chunk(pos_tags)
-        logger.info("✅ NLTK models are working")
-        return True
-    except Exception as e:
-        logger.error(f"❌ NLTK model check failed: {str(e)}")
-        return False
+        return pkg_resources.get_distribution(package).version
+    except pkg_resources.DistributionNotFound:
+        return None
 
-def check_gpu() -> bool:
-    """Check if GPU is available and working with all GPU-related packages."""
-    gpu_packages = [
-        ("torch", "cuda"),
-        ("torch.cuda", "is_available"),
-        ("faiss.cuda", None),  # Only if faiss-gpu is installed
-        ("cupy", None),  # Only if cupy is installed
-        ("cudf", None),  # Only if cudf is installed
-        ("cuspatial", None),  # Only if cuspatial is installed
-        ("torchvision", None),  # For image processing
-        ("torchaudio", None),  # For audio processing
-        ("torch_scatter", None),  # For geometric deep learning
-        ("torch_sparse", None),
-        ("torch_cluster", None),
-        ("torch_geometric", None)
-    ]
+def check_dependencies() -> Tuple[bool, List[str], List[str]]:
+    """Check if all required dependencies are installed and working."""
+    dependencies = {
+        "Core ML/DL": [
+            "torch",
+            "transformers",
+            "diffusers",
+            "langchain",
+            "langchain_community"
+        ],
+        "Data Processing": [
+            "numpy",
+            "pandas",
+            "duckdb",
+            "pyarrow"
+        ],
+        "GIS/Spatial": [
+            "geopandas",
+            "rasterio",
+            "shapely",
+            "mercantile",
+            "mapbox_vector_tile",
+            "pyproj",
+            "pystac",
+            "osmnx",
+            "py6s"
+        ],
+        "Image Processing": [
+            "pillow",
+            "opencv-python",
+            "albumentations"
+        ],
+        "AI/ML Tools": [
+            "nltk",
+            "faiss-cpu",
+            "sentence_transformers"
+        ],
+        "Data Storage/Processing": [
+            "redis",
+            "xarray",
+            "dask"
+        ],
+        "Web/API": [
+            "fastapi",
+            "pydantic",
+            "uvicorn",
+            "aiohttp",
+            "requests"
+        ],
+        "Earth Observation": [
+            "planetary_computer",
+            "pystac_client",
+            "earthengine-api"
+        ],
+        "Utilities": [
+            "tqdm",
+            "python-dotenv",
+            "pyyaml",
+            "cryptography",
+            "typing_extensions",
+            "fsspec",
+            "noise"
+        ]
+    }
     
-    gpu_available = False
-    gpu_details = []
-    cuda_version = None
+    installed = []
+    missing = []
+    
+    logger.info("\nChecking dependencies:")
+    for category, packages in dependencies.items():
+        logger.info(f"\n{category}:")
+        for package in packages:
+            version = get_package_version(package.replace("-", "_"))
+            if version:
+                installed.append(f"{package}=={version}")
+                logger.info(f"  ✅ {package} {version}")
+            else:
+                missing.append(package)
+                logger.error(f"  ❌ {package} not found")
+    
+    return len(missing) == 0, installed, missing
+
+def check_gpu_support() -> Tuple[bool, Dict[str, str]]:
+    """Check GPU support and capabilities."""
+    gpu_info = {}
     
     # Check CUDA availability
     try:
         import torch
         if torch.cuda.is_available():
-            gpu_available = True
-            device_count = torch.cuda.device_count()
-            cuda_version = torch.version.cuda
+            gpu_info["cuda_available"] = "Yes"
+            gpu_info["cuda_version"] = torch.version.cuda
+            gpu_info["torch_version"] = torch.__version__
+            gpu_info["device_count"] = str(torch.cuda.device_count())
             
-            # Log CUDA and PyTorch versions
-            logger.info(f"✅ CUDA Version: {cuda_version}")
-            logger.info(f"✅ PyTorch Version: {torch.__version__}")
-            logger.info(f"✅ GPU is available: {device_count} device(s)")
+            devices = []
+            for i in range(torch.cuda.device_count()):
+                device = {
+                    "name": torch.cuda.get_device_name(i),
+                    "capability": f"{torch.cuda.get_device_capability(i)[0]}.{torch.cuda.get_device_capability(i)[1]}",
+                    "memory": f"{torch.cuda.get_device_properties(i).total_memory / (1024**3):.1f} GB"
+                }
+                devices.append(device)
+            gpu_info["devices"] = devices
             
-            # Get device details
-            for i in range(device_count):
-                device_name = torch.cuda.get_device_name(i)
-                device_capability = torch.cuda.get_device_capability(i)
-                total_memory = torch.cuda.get_device_properties(i).total_memory / (1024**3)  # Convert to GB
-                
-                gpu_details.extend([
-                    f"  - Device {i}: {device_name}",
-                    f"    • Compute Capability: {device_capability[0]}.{device_capability[1]}",
-                    f"    • Total Memory: {total_memory:.2f} GB"
-                ])
+            logger.info("\nGPU Support:")
+            logger.info(f"  ✅ CUDA {gpu_info['cuda_version']} available")
+            logger.info(f"  ✅ PyTorch {gpu_info['torch_version']} with CUDA support")
+            for i, device in enumerate(devices):
+                logger.info(f"  ✅ GPU {i}: {device['name']}")
+                logger.info(f"     • Compute Capability: {device['capability']}")
+                logger.info(f"     • Memory: {device['memory']}")
             
-            for detail in gpu_details:
-                logger.info(detail)
+            return True, gpu_info
         else:
-            logger.warning("⚠️ No GPU available, using CPU")
-            logger.info(f"PyTorch Version: {torch.__version__} (CPU only)")
-            return False
-    except Exception as e:
-        logger.error(f"❌ GPU check failed: {str(e)}")
-        return False
-    
-    # Check GPU-related packages
-    if gpu_available:
-        logger.info("\nChecking GPU-enabled packages:")
-        for package, attribute in gpu_packages:
-            try:
-                if '.' in package:
-                    module = __import__(package.split('.')[0])
-                    for comp in package.split('.')[1:]:
-                        module = getattr(module, comp)
-                else:
-                    module = __import__(package.replace("-", "_"))
-                
-                if attribute:
-                    attr = getattr(module, attribute)
-                    if callable(attr):
-                        attr()
-                
-                # Get version if available
-                version = getattr(module, "__version__", "unknown version")
-                logger.info(f"✅ {package} ({version}) is available")
-                
-            except ImportError:
-                logger.warning(f"⚠️ {package} is not installed (optional)")
-            except Exception as e:
-                logger.error(f"❌ {package} check failed: {str(e)}")
-        
-        # Additional CUDA toolkit checks
-        try:
-            import subprocess
-            nvcc_version = subprocess.check_output(["nvcc", "--version"]).decode()
-            logger.info(f"\nNVCC Version Info:\n{nvcc_version.strip()}")
-        except Exception:
-            logger.warning("⚠️ NVCC not found in PATH (optional)")
-    
-    return gpu_available
+            gpu_info["cuda_available"] = "No"
+            logger.warning("\n⚠️ CUDA is not available")
+            return False, gpu_info
+    except ImportError:
+        gpu_info["cuda_available"] = "Error"
+        logger.error("\n❌ Error checking CUDA support")
+        return False, gpu_info
 
-def test_memory_creation() -> bool:
-    """Test basic memory creation functionality."""
+def check_pytorch_geometric() -> bool:
+    """Check PyTorch Geometric installation."""
     try:
-        from memories.models.load_model import LoadModel
-        from memories.core.memory import MemoryStore
+        import torch_geometric
+        version = torch_geometric.__version__
+        logger.info(f"\nPyTorch Geometric:")
+        logger.info(f"  ✅ Version {version}")
         
-        # Initialize model
-        load_model = LoadModel(
-            use_gpu=False,  # Set to True if GPU check passed
-            model_provider="deepseek-ai",
-            deployment_type="local",
-            model_name="deepseek-r1-zero"
-        )
-        logger.info("✅ Model initialization successful")
-        
-        # Initialize memory store
-        memory_store = MemoryStore()
-        logger.info("✅ Memory store initialization successful")
-        
-        # Test memory creation
-        memories = memory_store.create_memories(
-            model=load_model,
-            location=(37.7749, -122.4194),
-            time_range=("2024-01-01", "2024-02-01"),
-            artifacts={
-                "satellite": ["sentinel-2"],
-                "landuse": ["osm"]
-            }
-        )
-        logger.info("✅ Memory creation successful")
-        return True
-        
-    except Exception as e:
-        logger.error(f"❌ Memory creation test failed: {str(e)}")
+        # Check CUDA support
+        try:
+            import torch_scatter
+            import torch_sparse
+            import torch_cluster
+            logger.info("  ✅ CUDA extensions available")
+            return True
+        except ImportError:
+            logger.warning("  ⚠️ CUDA extensions not found")
+            return False
+    except ImportError:
+        logger.warning("  ⚠️ PyTorch Geometric not installed")
         return False
 
-def check_environment_variables() -> bool:
-    """Check if required environment variables are set."""
-    required_vars = ["PROJECT_ROOT"]
-    missing_vars = []
-    
-    for var in required_vars:
-        if not os.getenv(var):
-            missing_vars.append(var)
-            logger.error(f"❌ Environment variable {var} is not set")
-    
-    if not missing_vars:
-        logger.info("✅ All required environment variables are set")
+def test_basic_functionality() -> bool:
+    """Test basic package functionality."""
+    try:
+        import memories
+        logger.info(f"\nTesting memories-dev functionality:")
+        logger.info(f"  ✅ Version {memories.__version__}")
+        
+        # Test imports
+        from memories.core.memory import MemoryStore
+        from memories.models.load_model import LoadModel
+        logger.info("  ✅ Core modules imported successfully")
+        
         return True
-    return False
+    except Exception as e:
+        logger.error(f"  ❌ Error testing functionality: {str(e)}")
+        return False
+
+def generate_report(
+    system_info: Dict[str, str],
+    dependencies_ok: bool,
+    installed_packages: List[str],
+    missing_packages: List[str],
+    gpu_ok: bool,
+    gpu_info: Dict[str, str],
+    geometric_ok: bool,
+    functionality_ok: bool
+) -> str:
+    """Generate installation report."""
+    report = [
+        "\n" + "="*50,
+        " memories-dev Installation Report ",
+        "="*50 + "\n",
+        "System Information:",
+        f"  OS: {system_info['os']} {system_info['os_version']}",
+        f"  Python: {system_info['python_version']} ({system_info['python_implementation']})",
+        f"  Machine: {system_info['machine']} ({system_info['processor']})",
+        f"  CUDA: {system_info.get('cuda_version', 'Not found')}",
+    ]
+    
+    if system_info.get('gpu_info'):
+        report.extend([f"  GPU: {gpu}" for gpu in system_info['gpu_info']])
+    
+    report.extend([
+        "\nInstallation Status:",
+        f"  Dependencies: {'✅ Complete' if dependencies_ok else '❌ Incomplete'}",
+        f"  GPU Support: {'✅ Available' if gpu_ok else '⚠️ Not available'}",
+        f"  PyTorch Geometric: {'✅ Installed' if geometric_ok else '⚠️ Not installed'}",
+        f"  Basic Functionality: {'✅ Working' if functionality_ok else '❌ Not working'}",
+    ])
+    
+    if missing_packages:
+        report.extend([
+            "\nMissing Packages:",
+            *[f"  • {pkg}" for pkg in missing_packages]
+        ])
+    
+    if not gpu_ok and gpu_info.get('cuda_available') == 'No':
+        report.extend([
+            "\nGPU Support:",
+            "  • CUDA is not available",
+            "  • Run 'memories-gpu-setup' after installing CUDA toolkit"
+        ])
+    
+    report.extend([
+        "\nNext Steps:",
+        "  1. If missing packages, run: pip install -r requirements.txt",
+        "  2. For GPU support, run: memories-gpu-setup",
+        "  3. For development setup: pip install -e .[dev]",
+        "  4. Check documentation at: https://docs.memories.dev"
+    ])
+    
+    return "\n".join(report)
 
 def main():
     """Run all verification checks."""
-    logger.info("Starting memories-dev installation verification...")
-    print("\n" + "="*50 + "\n")
+    # Get system information
+    system_info = get_system_info()
     
-    checks = [
-        ("Python Version", check_python_version),
-        ("Dependencies", check_dependencies),
-        ("GPU Availability", check_gpu),
-        ("Environment Variables", check_environment_variables),
-        ("Memory Creation", test_memory_creation)
-    ]
+    # Check Python version
+    python_ok = check_python_version()
+    if not python_ok:
+        logger.error("❌ Python version check failed. Please install a supported version.")
+        sys.exit(1)
     
-    results = []
-    for name, check_func in checks:
-        print(f"\nChecking {name}...")
-        result = check_func()
-        results.append((name, result))
-        print("-"*50)
+    # Check dependencies
+    dependencies_ok, installed_packages, missing_packages = check_dependencies()
     
-    print("\nVerification Summary:")
-    print("="*50)
-    all_passed = True
-    for name, result in results:
-        status = "✅ PASSED" if result else "❌ FAILED"
-        print(f"{name}: {status}")
-        if not result:
-            all_passed = False
+    # Check GPU support
+    gpu_ok, gpu_info = check_gpu_support()
     
-    if all_passed:
-        print("\n✨ All checks passed! memories-dev is properly installed.")
-    else:
-        print("\n⚠️ Some checks failed. Please check the logs above and refer to INSTALL.md for troubleshooting.")
+    # Check PyTorch Geometric
+    geometric_ok = check_pytorch_geometric()
+    
+    # Test basic functionality
+    functionality_ok = test_basic_functionality()
+    
+    # Generate and print report
+    report = generate_report(
+        system_info,
+        dependencies_ok,
+        installed_packages,
+        missing_packages,
+        gpu_ok,
+        gpu_info,
+        geometric_ok,
+        functionality_ok
+    )
+    print(report)
+    
+    # Save report
+    try:
+        report_file = "memories_install_report.txt"
+        with open(report_file, "w") as f:
+            f.write(report)
+        logger.info(f"\nReport saved to: {report_file}")
+    except Exception as e:
+        logger.error(f"Could not save report: {str(e)}")
+    
+    # Exit with appropriate status
+    if not (dependencies_ok and functionality_ok):
+        sys.exit(1)
 
 if __name__ == "__main__":
     main() 

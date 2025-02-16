@@ -8,7 +8,8 @@ import sys
 import os
 import subprocess
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
+import pkg_resources
 
 # Configure logging
 logging.basicConfig(
@@ -33,8 +34,8 @@ def get_cuda_version() -> Optional[str]:
         except Exception:
             return None
 
-def get_pytorch_command(cuda_version: str) -> Tuple[str, str]:
-    """Get the appropriate pip install command for PyTorch based on CUDA version."""
+def get_pytorch_commands(cuda_version: str) -> List[str]:
+    """Get the appropriate pip install commands for PyTorch based on CUDA version."""
     cuda_major = cuda_version.split(".")[0]
     cuda_minor = cuda_version.split(".")[1]
     
@@ -47,10 +48,30 @@ def get_pytorch_command(cuda_version: str) -> Tuple[str, str]:
     
     pytorch_cuda = cuda_map.get((cuda_major, cuda_minor), "cu118")  # Default to cu118 if version not found
     
-    base_command = f"pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/{pytorch_cuda}"
-    geometric_command = f"pip install torch-scatter torch-sparse torch-cluster torch-geometric -f https://data.pyg.org/whl/torch-2.2.0+{pytorch_cuda}.html"
+    commands = []
     
-    return base_command, geometric_command
+    # Uninstall existing PyTorch packages
+    commands.extend([
+        "pip uninstall -y torch torchvision torchaudio",
+        f"pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/{pytorch_cuda}"
+    ])
+    
+    # PyTorch Geometric packages
+    pyg_url = f"https://data.pyg.org/whl/torch-2.2.0+{pytorch_cuda}.html"
+    commands.extend([
+        f"pip install torch-scatter -f {pyg_url}",
+        f"pip install torch-sparse -f {pyg_url}",
+        f"pip install torch-cluster -f {pyg_url}",
+        f"pip install torch-geometric -f {pyg_url}"
+    ])
+    
+    # CUDA-specific packages
+    commands.extend([
+        f"pip install cupy-cuda{cuda_major}{cuda_minor}x>=12.0.0",
+        "pip install faiss-gpu>=1.7.4"
+    ])
+    
+    return commands
 
 def install_gpu_dependencies():
     """Install GPU-enabled dependencies."""
@@ -61,40 +82,56 @@ def install_gpu_dependencies():
     
     logger.info(f"✅ Found CUDA version {cuda_version}")
     
-    # Get appropriate install commands
-    pytorch_command, geometric_command = get_pytorch_command(cuda_version)
+    # Get installation commands
+    commands = get_pytorch_commands(cuda_version)
     
-    # Install dependencies
+    # Execute commands
+    for cmd in commands:
+        try:
+            logger.info(f"\nExecuting: {cmd}")
+            subprocess.check_call(cmd.split())
+            logger.info("✅ Command completed successfully")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"❌ Command failed: {str(e)}")
+            if "faiss-gpu" in cmd and sys.version_info >= (3, 12):
+                logger.warning("⚠️ Note: faiss-gpu is not available for Python 3.12+")
+            else:
+                logger.error("Please check your CUDA installation and try again.")
+    
+    # Print RAPIDS installation instructions
+    logger.info("\nNote: For RAPIDS libraries (cudf, cuspatial), please install via conda:")
+    logger.info("conda install -c rapidsai -c conda-forge -c nvidia \\")
+    logger.info(f"  cudf=24.2 cuspatial=24.2 python={sys.version_info.major}.{sys.version_info.minor} cuda-version={cuda_version}")
+
+def verify_installation():
+    """Verify the GPU package installation."""
     try:
-        logger.info("\nInstalling PyTorch with CUDA support...")
-        subprocess.check_call(pytorch_command.split())
-        
-        logger.info("\nInstalling PyTorch Geometric...")
-        subprocess.check_call(geometric_command.split())
-        
-        logger.info("\nInstalling other GPU dependencies...")
-        gpu_deps = [
-            "faiss-gpu>=1.7.4",
-            f"cupy-cuda{cuda_version.replace('.', '')}x>=12.0.0",
-            "cudf>=24.2.0",
-            "cuspatial>=24.2.0"
-        ]
-        
-        for dep in gpu_deps:
-            try:
-                subprocess.check_call(["pip", "install", dep])
-            except subprocess.CalledProcessError:
-                logger.warning(f"⚠️ Failed to install {dep} (optional)")
-        
-        logger.info("\n✨ GPU dependencies installation completed!")
-        
-    except subprocess.CalledProcessError as e:
-        logger.error(f"❌ Error installing dependencies: {str(e)}")
-        sys.exit(1)
+        import torch
+        if torch.cuda.is_available():
+            logger.info(f"\n✅ PyTorch CUDA is available")
+            logger.info(f"  - CUDA Version: {torch.version.cuda}")
+            logger.info(f"  - PyTorch Version: {torch.__version__}")
+            for i in range(torch.cuda.device_count()):
+                logger.info(f"  - GPU {i}: {torch.cuda.get_device_name(i)}")
+        else:
+            logger.error("❌ PyTorch CUDA is not available")
+    except ImportError:
+        logger.error("❌ PyTorch is not installed")
+    
+    try:
+        import torch_geometric
+        logger.info(f"✅ PyTorch Geometric version: {torch_geometric.__version__}")
+    except ImportError:
+        logger.error("❌ PyTorch Geometric is not installed")
 
 if __name__ == "__main__":
     print("\n" + "="*50)
     print(" memories-dev GPU Dependencies Installer ")
     print("="*50 + "\n")
     
-    install_gpu_dependencies() 
+    install_gpu_dependencies()
+    verify_installation()
+    
+    print("\n" + "="*50)
+    print(" Installation Complete ")
+    print("="*50 + "\n") 

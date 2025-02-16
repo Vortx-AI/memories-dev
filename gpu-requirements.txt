@@ -1,27 +1,61 @@
-# GPU Dependencies
-# Note: These packages require CUDA to be installed
-# For CUDA 11.8:
+# GPU Dependencies for memories-dev
+# Note: These packages require CUDA toolkit to be installed
+
+# ==============================================
+# CUDA 11.8 Dependencies (Recommended)
+# ==============================================
+
+# PyTorch with CUDA 11.8
+--find-links https://download.pytorch.org/whl/cu118
 torch>=2.2.0+cu118
 torchvision>=0.17.0+cu118
 torchaudio>=2.2.0+cu118
-faiss-gpu>=1.7.4  # Only available for Python <3.12
-cupy-cuda11x>=12.0.0  # For CUDA 11.x
 
-# For CUDA 12.x:
-# torch>=2.2.0+cu121
-# torchvision>=0.17.0+cu121
-# torchaudio>=2.2.0+cu121
-# faiss-gpu>=1.7.4  # Only available for Python <3.12
-# cupy-cuda12x>=12.0.0  # For CUDA 12.x
-
-# PyTorch Geometric packages for CUDA 11.8:
+# PyTorch Geometric with CUDA 11.8
+--find-links https://data.pyg.org/whl/torch-2.2.0+cu118.html
 torch-scatter>=2.1.2+cu118
 torch-sparse>=0.6.18+cu118
 torch-cluster>=1.6.3+cu118
-torch-geometric>=2.4.0+cu118
+torch-geometric>=2.4.0
 
-# For CUDA 12.1, replace +cu118 with +cu121 in the above packages
+# CUDA-specific packages
+cupy-cuda11x>=12.0.0
+faiss-gpu>=1.7.4  # Only available for Python <3.12
 
-# Optional: RAPIDS packages (install via conda)
+# ==============================================
+# CUDA 12.1 Dependencies (Alternative)
+# ==============================================
+
+# PyTorch with CUDA 12.1
+# --find-links https://download.pytorch.org/whl/cu121
+# torch>=2.2.0+cu121
+# torchvision>=0.17.0+cu121
+# torchaudio>=2.2.0+cu121
+
+# PyTorch Geometric with CUDA 12.1
+# --find-links https://data.pyg.org/whl/torch-2.2.0+cu121.html
+# torch-scatter>=2.1.2+cu121
+# torch-sparse>=0.6.18+cu121
+# torch-cluster>=1.6.3+cu121
+# torch-geometric>=2.4.0
+
+# CUDA-specific packages for 12.1
+# cupy-cuda12x>=12.0.0
+# faiss-gpu>=1.7.4  # Only available for Python <3.12
+
+# ==============================================
+# Optional: RAPIDS (via conda)
+# ==============================================
+# Install with:
 # conda install -c rapidsai -c conda-forge -c nvidia \
-#   cudf=24.2 cuspatial=24.2 python=3.x cuda-version=11.8 
+#   cudf=24.2 cuspatial=24.2 python=3.x cuda-version=11.8
+
+# Note: Replace cuda-version=11.8 with 12.1 if using CUDA 12.1
+
+# ==============================================
+# Installation Instructions
+# ==============================================
+# 1. Install CUDA toolkit (11.8 or 12.1)
+# 2. Run: pip install -r gpu-requirements.txt
+# 3. For RAPIDS: Use conda command above
+# 4. Verify installation: python verify_install.py 
