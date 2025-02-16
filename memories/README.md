@@ -551,11 +551,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 
 
-<p align="center">Built with 💜 by the memories.dev team</p>
 
-<p align="center">
-<a href="https://discord.com/invite/7qAFEekp">Discord</a> •
-</p>
 
 ## 🔌 Integration Examples
 
@@ -837,3 +833,9 @@ insights = agent.analyze()
 ## Contributing
 
 See the main [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines on contributing to this package.
+
+<p align="center">Built with 💜 by the memories.dev team</p>
+
+<p align="center">
+<a href="https://discord.com/invite/7qAFEekp">Discord</a> •
+</p>
