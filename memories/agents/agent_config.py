@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from memories.models.load_model import LoadModel
 from memories.data_acquisition.data_connectors import parquet_connector
 import pickle
+import pandas as pd
 
 def get_model_config(
     use_gpu: Optional[bool] = True,
@@ -263,7 +264,8 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     faiss_storage = {
         'index': faiss.IndexFlatL2(dimension),
         'instance_id': instance_id,
-        'metadata': []
+        'metadata': [],
+        'vectors': []
     }
     
     print(f"\nCreated FAISS storage for instance: {instance_id}")
@@ -303,7 +305,7 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
                 # Save metadata
                 metadata_path = os.path.join(faiss_dir, f"metadata_{instance_id}.pkl")
                 with open(metadata_path, 'wb') as f:
-                    pickle.dump(faiss_storage['metadata'], f)
+                    pickle.dump(faiss_storage, f)
                 
             except Exception as e:
                 print(f"Error processing {connector['name']}: {str(e)}")
@@ -328,7 +330,7 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
                            [68.1766451354, 35.4940095078],
                            [68.1766451354, 7.96553477623]]]
         },
-        time_range=(datetime.now() - timedelta(days=30)).isoformat(),
+        time_range=("2024-01-01", "2024-02-01"),,
         artifacts={"osm_data": ["points_processed"]},
         data_connectors=data_connectors,
         faiss_storage=faiss_storage
@@ -382,6 +384,25 @@ def create_faiss_storage(instance_id: str) -> bool:
     except Exception as e:
         print(f"Error creating FAISS storage: {str(e)}")
         return False
+
+def sanitize_timestamps(df: pd.DataFrame, timestamp_fields: list) -> pd.DataFrame:
+    """
+    Sanitize timestamp fields in the DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to sanitize.
+        timestamp_fields (list): List of column names that are expected to be timestamps.
+
+    Returns:
+        pd.DataFrame: The sanitized DataFrame.
+    """
+    for field in timestamp_fields:
+        if field in df.columns:
+            # Attempt to convert to datetime, coerce errors to NaT
+            df[field] = pd.to_datetime(df[field], errors='coerce')
+            # Optionally, fill NaT with a default timestamp or remove such rows
+            df[field].fillna(pd.Timestamp('1970-01-01'), inplace=True)
+    return df
 
 def main():
     """Print current model instance ID when run directly."""
