@@ -11,6 +11,10 @@ build:
   tools:
     python: "3.9"
 
+# Explicitly declare the main branch
+checkout:
+  default_branch: main
+
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
    configuration: docs/source/conf.py
@@ -23,6 +27,8 @@ python:
   install:
     - method: pip
       path: .
+      extra_requirements:
+        - docs
     - requirements: docs/requirements.txt
 
 formats:
