@@ -7,6 +7,8 @@ from memories.agents.agent_context import AgentContext
 from memories.agents.agent_L1 import Agent_L1
 from memories.agents.agent_analyst import AgentAnalyst
 from memories.core.memory import MemoryStore
+from memories.utils.duckdb_queries import DuckDBQueryGenerator
+import pandas as pd
 
 # Load environment variables
 load_dotenv()
