@@ -62,31 +62,8 @@ class Agent:
             
             result = classification_result
             
-            # Step 2: Process based on classification
-            if result.get('classification') == 'L1':
-                print("\n[Invoking L1 Agent - Similar Column Search]")
-                print("-"*50)
-                
-                if self.instance_id:
-                    # Use Agent_L1 to find similar columns
-                    l1_agent = Agent_L1(self.instance_id, query)
-                    l1_result = l1_agent.process()
-                    
-                    print("L1 Agent Response:")
-                    if l1_result["status"] == "success":
-                        similar_columns = l1_result["similar_columns"]
-                        result['similar_columns'] = similar_columns
-                        
-                        print("\n• Similar columns found:")
-                        for col in similar_columns:
-                            print(f"\n  Column: {col['column_name']}")
-                            print(f"  File: {col['file_name']}")
-                            print(f"  Distance: {col['distance']:.4f}")
-                    else:
-                        print(f"• Error: {l1_result.get('error', 'Unknown error')}")
-            
-            # Step 3: Context Agent (if needed)
-            if result.get('classification') == 'L1_2':
+            # Step 2: Context Agent (for both L1 and L1_2)
+            if result.get('classification') in ['L1', 'L1_2']:
                 print("\n[Invoking Context Agent]")
                 print("-"*50)
                 context_agent = AgentContext(query, self.load_model)
@@ -101,6 +78,34 @@ class Agent:
                     'location_details': context_result.get('location_info')
                 })
             
+            # Step 3: L1 Agent (if classification is L1)
+            if result.get('classification') == 'L1':
+                print("\n[Invoking L1 Agent - Similar Column Search]")
+                print("-"*50)
+                
+                if self.instance_id:
+                    # Use Agent_L1 to find similar columns
+                    l1_agent = Agent_L1(self.instance_id, query)
+                    l1_result = l1_agent.process()
+                    
+                    print("L1 Agent Response:")
+                    if l1_result["status"] == "success":
+                        similar_columns = l1_result["similar_columns"]
+                        result['similar_columns'] = similar_columns
+                        result['sql_query'] = l1_result.get('sql_query')
+                        
+                        print("\n• Similar columns found:")
+                        for col in similar_columns:
+                            print(f"\n  Column: {col['column_name']}")
+                            print(f"  File: {col['file_name']}")
+                            print(f"  Distance: {col['distance']:.4f}")
+                        
+                        if 'sql_query' in l1_result:
+                            print("\n• Generated SQL Query:")
+                            print(f"{l1_result['sql_query']}")
+                    else:
+                        print(f"• Error: {l1_result.get('error', 'Unknown error')}")
+            
             print("\n" + "="*80)
             print("FINAL PROCESSING RESULT")
             print("="*80)
@@ -108,14 +113,18 @@ class Agent:
             print(f"• Classification: {result.get('classification', '')}")
             print(f"• Explanation: {result.get('explanation', '')}")
             
+            if 'data_type' in result:
+                print(f"\n• Data Type: {result['data_type']}")
+                print(f"• Location Details: {result.get('location_details', '')}")
+            
             if 'similar_columns' in result:
                 print("\n• Similar Columns:")
                 for col in result['similar_columns']:
                     print(f"  - {col['column_name']} ({col['file_name']})")
             
-            if 'data_type' in result:
-                print(f"\n• Data Type: {result['data_type']}")
-                print(f"• Location Details: {result.get('location_details', '')}")
+            if 'sql_query' in result:
+                print("\n• SQL Query:")
+                print(result['sql_query'])
             
             print("="*80)
             
