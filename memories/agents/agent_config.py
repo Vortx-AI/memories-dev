@@ -392,31 +392,3 @@ def sanitize_timestamps(df: pd.DataFrame, timestamp_fields: list) -> pd.DataFram
             df[field].fillna(pd.Timestamp('1970-01-01'), inplace=True)
     return df
 
-def main():
-    # Define configuration
-    config = {
-        "model_provider": "deepseek-ai",
-        "deployment_type": "deployment",
-        "model_name": "deepseek-coder-1.3b-base",
-        "use_gpu": True,
-        "data_connectors": [
-            {
-                "type": "parquet",
-                "path": "/home/jaya/memories-dev/data/osm_data/india_points_processed.parquet",
-                "name": "india_points_processed"
-            }
-        ],
-        "project_root": "/home/jaya/memories-dev"  # Optional: if not set in .env
-    }
-
-    # Create agent config and memory store
-    try:
-        agent = AgentConfig(**config)
-        instance_id = agent.create_memory_store()
-        print(f"\nSuccessfully created memory store!")
-        print(f"Instance ID: {instance_id}")
-    except Exception as e:
-        print(f"Error creating memory store: {str(e)}")
-
-if __name__ == "__main__":
-    main()
