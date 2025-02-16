@@ -73,11 +73,7 @@ version_specific_deps = {
         "dask>=2024.1.0",
         "accelerate>=1.3.0,<1.4.0",
         "scipy>=1.11.0",
-        "noise>=1.2.2",
-        "torch-scatter>=2.1.2",
-        "torch-sparse>=0.6.18",
-        "torch-cluster>=1.6.3",
-        "torch-geometric>=2.4.0"
+        "noise>=1.2.2"
     ],
     (3, 10): [
         "numpy>=1.24.4,<2.0.0",
@@ -94,11 +90,7 @@ version_specific_deps = {
         "dask>=2024.1.0",
         "accelerate>=1.3.0",
         "scipy>=1.11.0",
-        "noise>=1.2.2",
-        "torch-scatter>=2.1.2",
-        "torch-sparse>=0.6.18",
-        "torch-cluster>=1.6.3",
-        "torch-geometric>=2.4.0"
+        "noise>=1.2.2"
     ],
     (3, 11): [
         "numpy>=1.24.4,<2.0.0",
@@ -115,11 +107,7 @@ version_specific_deps = {
         "dask>=2024.1.0",
         "accelerate>=1.3.0",
         "scipy>=1.11.0",
-        "noise>=1.2.2",
-        "torch-scatter>=2.1.2",
-        "torch-sparse>=0.6.18",
-        "torch-cluster>=1.6.3",
-        "torch-geometric>=2.4.0"
+        "noise>=1.2.2"
     ],
     (3, 12): [
         "numpy>=1.26.0,<1.27.0",
@@ -136,11 +124,7 @@ version_specific_deps = {
         "dask>=2024.1.0",
         "accelerate>=1.3.0",
         "scipy>=1.12.0",
-        "noise>=1.2.2",
-        "torch-scatter>=2.1.2",
-        "torch-sparse>=0.6.18",
-        "torch-cluster>=1.6.3",
-        "torch-geometric>=2.4.0"
+        "noise>=1.2.2"
     ],
     (3, 13): [
         "numpy>=1.26.0,<2.0.0",
@@ -157,11 +141,7 @@ version_specific_deps = {
         "dask>=2024.1.0",
         "accelerate>=1.3.0",
         "scipy>=1.12.0",
-        "noise>=1.2.2",
-        "torch-scatter>=2.1.2",
-        "torch-sparse>=0.6.18",
-        "torch-cluster>=1.6.3",
-        "torch-geometric>=2.4.0"
+        "noise>=1.2.2"
     ]
 }
 
