@@ -8,6 +8,7 @@ import numpy as np
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 import pickle
+from memories.models.load_model import LoadModel
 
 def parquet_connector(file_path: str, faiss_storage: Dict = None, model: LoadModel = None) -> Dict:
     """
@@ -26,21 +27,17 @@ def parquet_connector(file_path: str, faiss_storage: Dict = None, model: LoadMod
         df = pd.read_parquet(file_path)
         print(f"\nProcessing columns for FAISS vectors...")
         
-        # Get column names and generate embeddings
+        # Get column names
         columns = df.columns.tolist()
+        
+        # Generate embeddings for column names
         column_embeddings = model.get_embeddings(columns)
         
         # Add vectors to FAISS index
         for col_name, embedding in zip(columns, column_embeddings):
             try:
-                # Skip geometry columns
-                if 'geom' in col_name.lower():
-                    print(f"Warning: Skipping geometry column {col_name}")
-                    continue
-                    
                 # Add vector to FAISS
                 faiss_storage['index'].add(np.array([embedding], dtype=np.float32))
-                faiss_storage['vectors'].append(embedding)
                 
                 # Store metadata
                 faiss_storage['metadata'].append({
@@ -52,12 +49,7 @@ def parquet_connector(file_path: str, faiss_storage: Dict = None, model: LoadMod
             except Exception as e:
                 print(f"Warning: Error processing column {col_name}: {str(e)}")
                 continue
-        
-        print(f"[ParquetConnector] FAISS Update for {os.path.basename(file_path)}:")
-        print(f"Initial vectors: {len(faiss_storage['vectors']) - len(column_embeddings)}")
-        print(f"Vectors added: {len(column_embeddings)}")
-        print(f"Final vectors: {len(faiss_storage['vectors'])}")
-        
+                
         return faiss_storage
         
     except Exception as e:
