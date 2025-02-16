@@ -1,9 +1,17 @@
 """Configuration settings for the Agent system"""
 
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional, Tuple, Union
 from datetime import datetime, timedelta
 from memories.models.load_model import LoadModel
 from memories.data_acquisition.data_connectors import parquet_connector
+import os
+import faiss
+import pickle
+import numpy as np
+import pandas as pd
+from pathlib import Path
+from dotenv import load_dotenv
+from memories.core.memory import MemoryStore
 
 def get_model_config(
     use_gpu: Optional[bool] = True,
@@ -137,14 +145,11 @@ def check_instance_storage(instance_id: str):
     Args:
         instance_id (str): The instance ID to check
     """
-    from memories.core.memory import MemoryStore
+    memory_store = MemoryStore()
     
     print("\nChecking Storage for Instance")
     print("=" * 50)
     print(f"Instance ID: {instance_id}")
-    
-    # Initialize memory store
-    memory_store = MemoryStore()
     
     # Get stored memories
     stored_data = memory_store.get_stored_memories(instance_id)
@@ -167,37 +172,30 @@ def check_instance_storage(instance_id: str):
 
 def list_available_instances():
     """List all available instance IDs in the database."""
-    from memories.core.memory import MemoryStore
+    memory_store = MemoryStore()
     
     print("\nListing Available Instances")
     print("=" * 50)
     
-    # Initialize memory store
-    memory_store = MemoryStore()
+    # Query all instance IDs
+    instances = memory_store.conn.execute("""
+        SELECT 
+            instance_id,
+            created_at,
+            start_date,
+            end_date
+        FROM memories
+        ORDER BY created_at DESC
+    """).fetchall()
     
-    try:
-        # Query all instance IDs
-        instances = memory_store.conn.execute("""
-            SELECT 
-                instance_id,
-                created_at,
-                start_date,
-                end_date
-            FROM memories
-            ORDER BY created_at DESC
-        """).fetchall()
-        
-        if instances:
-            print(f"\nFound {len(instances)} instances:")
-            for instance in instances:
-                print(f"\nInstance ID: {instance[0]}")
-                print(f"Created At: {instance[1]}")
-                print(f"Time Range: {instance[2]} to {instance[3]}")
-        else:
-            print("\nNo instances found in the database")
-            
-    except Exception as e:
-        print(f"Error listing instances: {str(e)}")
+    if instances:
+        print(f"\nFound {len(instances)} instances:")
+        for instance in instances:
+            print(f"\nInstance ID: {instance[0]}")
+            print(f"Created At: {instance[1]}")
+            print(f"Time Range: {instance[2]} to {instance[3]}")
+    else:
+        print("\nNo instances found in the database")
 
 def check_faiss_storage(instance_id: str):
     """
@@ -206,15 +204,11 @@ def check_faiss_storage(instance_id: str):
     Args:
         instance_id (str): The instance ID to check
     """
-    from memories.core.memory import MemoryStore
-    import os
+    memory_store = MemoryStore()
     
     print("\nChecking FAISS Storage")
     print("=" * 50)
     print(f"Instance ID: {instance_id}")
-    
-    # Initialize memory store
-    memory_store = MemoryStore()
     
     # Check if FAISS index exists
     faiss_dir = os.path.join(memory_store.project_root, "data", "faiss")
@@ -245,16 +239,13 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: Created memories data
     """
-    from memories.core.memory import MemoryStore
+    memory_store = MemoryStore()
     import os
     from dotenv import load_dotenv
     import faiss
     
     # Load environment variables
     load_dotenv()
-    
-    # Initialize memory store
-    memory_store = MemoryStore()
     
     # Get project root and data paths
     project_root = os.getenv("PROJECT_ROOT")
@@ -340,9 +331,8 @@ def create_faiss_storage(instance_id: str) -> bool:
     Returns:
         bool: True if successful, False otherwise
     """
-    from memories.core.memory import MemoryStore
+    memory_store = MemoryStore()
     import faiss
-    import numpy as np
     import os
     
     print("\nCreating FAISS Storage")
@@ -350,9 +340,6 @@ def create_faiss_storage(instance_id: str) -> bool:
     print(f"Instance ID: {instance_id}")
     
     try:
-        # Initialize memory store
-        memory_store = MemoryStore()
-        
         # Get project root and FAISS directory
         project_root = os.getenv("PROJECT_ROOT")
         faiss_dir = os.path.join(project_root, "data", "faiss")
@@ -376,6 +363,174 @@ def create_faiss_storage(instance_id: str) -> bool:
     except Exception as e:
         print(f"Error creating FAISS storage: {str(e)}")
         return False
+
+class AgentConfig:
+    def __init__(
+        self,
+        input: Dict[str, Any]
+    ):
+        """
+        Initialize the AgentConfig with the provided parameters.
+
+        Args:
+            input (Dict[str, Any]): Dictionary containing configuration parameters
+        """
+        self.model_provider = input["model_provider"]
+        self.deployment_type = input["deployment_type"]
+        self.model_name = input["model_name"]
+        self.use_gpu = input.get("use_gpu", True)
+        self.data_connectors = input.get("data_connectors", [])
+        self.project_root = input.get("project_root") or self._load_environment()
+        
+        # Initialize model
+        self.model = self._load_model()
+        
+        # Create necessary directories
+        self.osm_data_path = os.path.join(self.project_root, "data", "osm_data")
+        self.faiss_dir = os.path.join(self.project_root, "data", "faiss")
+        os.makedirs(self.osm_data_path, exist_ok=True)
+        os.makedirs(self.faiss_dir, exist_ok=True)
+        
+        # Initialize dimensions
+        self.dimension = 768  # FAISS vector dimension
+        
+        # Initialize memory store
+        self.memory_store = MemoryStore()
+        
+        # FAISS storage will be initialized when needed
+        self.faiss_storage = None
+
+    def _load_environment(self) -> str:
+        """Load environment variables and return the project root."""
+        load_dotenv()
+        project_root = os.getenv("PROJECT_ROOT")
+        if not project_root:
+            raise EnvironmentError("PROJECT_ROOT environment variable not set.")
+        return project_root
+
+    def _load_model(self) -> LoadModel:
+        """Load the model using the LoadModel class."""
+        return LoadModel(
+            model_provider=self.model_provider,
+            deployment_type=self.deployment_type,
+            model_name=self.model_name,
+            use_gpu=self.use_gpu
+        )
+
+    def _initialize_faiss_storage(self) -> Dict[str, Any]:
+        """Initialize FAISS storage if not already initialized."""
+        if self.faiss_storage is None:
+            print(f"\nInitializing FAISS storage")
+            index = faiss.IndexFlatL2(self.dimension)
+            self.faiss_storage = {
+                'index': index,
+                'metadata': [],
+                'vectors': []
+            }
+        return self.faiss_storage
+
+    def _vectorize_data(self, data: Union[Dict[str, Any], pd.DataFrame]) -> np.ndarray:
+        """
+        Vectorize the data using the loaded model.
+        
+        Args:
+            data (Union[Dict[str, Any], pd.DataFrame]): Data to vectorize
+            
+        Returns:
+            np.ndarray: Vectorized data
+        """
+        # Convert dictionary data to DataFrame if it's not already
+        if isinstance(data, dict):
+            df = pd.DataFrame(data)
+        elif isinstance(data, pd.DataFrame):
+            df = data
+        else:
+            raise ValueError(f"Unsupported data type: {type(data)}")
+
+        print(f"DataFrame shape: {df.shape}")
+        print(f"DataFrame columns: {df.columns.tolist()}")
+
+        # Convert data to text format for embedding
+        texts = []
+        for _, row in df.iterrows():
+            # Combine relevant fields into a text representation
+            text_parts = []
+            for field in ['name', 'amenity', 'shop', 'description']:
+                if field in row and pd.notna(row[field]):
+                    text_parts.append(f"{field}: {row[field]}")
+            texts.append(" | ".join(text_parts))
+
+        print(f"Generated {len(texts)} text representations")
+
+        # Get embeddings from the model
+        embeddings = []
+        batch_size = 32  # Adjust based on your memory constraints
+        
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i + batch_size]
+            batch_embeddings = self.model.get_embeddings(batch)
+            embeddings.extend(batch_embeddings)
+            print(f"Processed batch {i//batch_size + 1}/{(len(texts)-1)//batch_size + 1}")
+
+        vectors = np.array(embeddings, dtype=np.float32)
+        print(f"Generated vectors shape: {vectors.shape}")
+        
+        return vectors
+
+    def create_memory_store(self) -> str:
+        """
+        Process data connectors and create FAISS index.
+        
+        Returns:
+            str: The instance ID of the created memory store
+        """
+        # Initialize FAISS storage if not already initialized
+        self._initialize_faiss_storage()
+        
+        instance_id = str(id(self.faiss_storage))
+        print(f"\nCreating memory store with instance ID: {instance_id}")
+        
+        for connector in self.data_connectors:
+            try:
+                print(f"\nProcessing Data Connector: {connector['name']}")
+                data = parquet_connector(connector['file_path'])
+                
+                # Vectorize the data
+                vectors = self._vectorize_data(data)
+
+                # Add vectors to FAISS index
+                self.faiss_storage['index'].add(vectors)
+                self.faiss_storage['vectors'].extend(vectors.tolist())
+
+                # Update metadata
+                self.faiss_storage['metadata'].append({
+                    'name': connector['name'],
+                    'type': connector['type'],
+                    'path': connector['file_path'],
+                    'num_vectors_added': vectors.shape[0]
+                })
+
+                print(f"Added {vectors.shape[0]} vectors to FAISS index from '{connector['name']}'")
+
+            except Exception as e:
+                print(f"Error processing {connector['name']}: {str(e)}")
+                import traceback
+                print(traceback.format_exc())
+                continue
+
+        # Save FAISS index and metadata
+        index_path = os.path.join(self.faiss_dir, f"index_{instance_id}.faiss")
+        metadata_path = os.path.join(self.faiss_dir, f"metadata_{instance_id}.pkl")
+        
+        faiss.write_index(self.faiss_storage['index'], index_path)
+        with open(metadata_path, 'wb') as f:
+            pickle.dump(self.faiss_storage, f)
+            
+        print(f"\nFAISS index and metadata saved successfully")
+        print(f"Instance ID: {instance_id}")
+        print(f"Total vectors: {self.faiss_storage['index'].ntotal}")
+        
+        return instance_id
 
 def main():
     """Print current model instance ID when run directly."""
