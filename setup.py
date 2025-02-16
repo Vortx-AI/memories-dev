@@ -74,13 +74,10 @@ def get_core_deps():
         "fastapi>=0.109.0",
         "netCDF4>=1.6.5",
         "earthengine-api>=0.1.390",
-        "sentinelhub>=3.9.0",
         "typing-extensions>=4.9.0",
         "pydantic>=2.6.0",
         "uvicorn>=0.27.0",
         "python-multipart>=0.0.9",
-        "landsatxplore>=0.13.0",
-        "sentinelsat>=1.2.1",
         "osmnx>=1.9.0",
         "py6s>=1.9.0",
         "opencv-python>=4.8.0"
@@ -90,7 +87,7 @@ def get_core_deps():
     if version >= (3, 13):
         deps.extend([
             "mapbox-vector-tile>=2.0.1",  # Modern version compatible with Shapely 2.0+
-            "shapely>=2.0.0"  # Modern version for Python 3.13+
+            "shapely>=2.0.0,<3.0.0"  # Modern version for Python 3.13+
         ])
     else:
         deps.extend([

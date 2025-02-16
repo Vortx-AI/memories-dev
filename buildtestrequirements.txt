@@ -17,9 +17,9 @@ mercantile>=1.2.1
 #   shapely>=1.7.0,<2.0.0
 # Python >=3.13:
 #   mapbox-vector-tile>=2.0.1
-#   shapely>=2.0.0
+#   shapely>=2.0.0,<3.0.0
 mapbox-vector-tile>=2.0.1  # Will be adjusted during install based on Python version
-shapely>=2.0.0  # Will be adjusted during install based on Python version
+shapely>=2.0.0,<3.0.0  # Will be adjusted during install based on Python version
 
 pyproj>=3.6.1
 pystac>=1.8.0
@@ -39,13 +39,10 @@ planetary-computer>=1.0.0
 fastapi>=0.109.0
 netCDF4>=1.6.5
 earthengine-api>=0.1.390
-sentinelhub>=3.9.0
 typing-extensions>=4.9.0
 pydantic>=2.6.0
 uvicorn>=0.27.0
 python-multipart>=0.0.9
-landsatxplore>=0.13.0
-sentinelsat>=1.2.1
 osmnx>=1.9.0
 py6s>=1.9.0
 opencv-python>=4.8.0
@@ -80,10 +77,9 @@ scipy>=1.11.0
 # FAISS CPU version (GPU version available for Python <3.12)
 faiss-cpu>=1.7.4
 
-# Optional: GPU Dependencies
-# Note: faiss-gpu is only available for Python <3.12
-# Install manually if needed: pip install faiss-gpu>=1.7.2
-cupy-cuda12x>=12.0.0
+# Note: GPU dependencies are now in a separate file: gpu-requirements.txt
+# To install GPU support, run:
+# pip install -r gpu-requirements.txt
 
 # PyTorch Geometric packages
 # These must be installed AFTER PyTorch using:

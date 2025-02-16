@@ -1,0 +1,27 @@
+# GPU Dependencies
+# Note: These packages require CUDA to be installed
+# For CUDA 11.8:
+torch>=2.2.0+cu118
+torchvision>=0.17.0+cu118
+torchaudio>=2.2.0+cu118
+faiss-gpu>=1.7.4  # Only available for Python <3.12
+cupy-cuda11x>=12.0.0  # For CUDA 11.x
+
+# For CUDA 12.x:
+# torch>=2.2.0+cu121
+# torchvision>=0.17.0+cu121
+# torchaudio>=2.2.0+cu121
+# faiss-gpu>=1.7.4  # Only available for Python <3.12
+# cupy-cuda12x>=12.0.0  # For CUDA 12.x
+
+# PyTorch Geometric packages for CUDA 11.8:
+torch-scatter>=2.1.2+cu118
+torch-sparse>=0.6.18+cu118
+torch-cluster>=1.6.3+cu118
+torch-geometric>=2.4.0+cu118
+
+# For CUDA 12.1, replace +cu118 with +cu121 in the above packages
+
+# Optional: RAPIDS packages (install via conda)
+# conda install -c rapidsai -c conda-forge -c nvidia \
+#   cudf=24.2 cuspatial=24.2 python=3.x cuda-version=11.8 
