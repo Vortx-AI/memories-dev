@@ -185,10 +185,17 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 - Documentation: https://docs.memories.dev
 - Issues: https://github.com/Vortx-AI/memories-dev/issues
 - Discussions: https://github.com/Vortx-AI/memories-dev/discussions
+- Discord Community: [Join us on Discord](https://discord.com/invite/7qAFEekp)
 
 ---
 
 <div align="center">
 <p>Empowering AI with Real-World Context</p>
+
+<p>
+<a href="https://discord.com/invite/7qAFEekp">
+  <img src="https://img.shields.io/discord/1234567890?color=7289da&label=Discord&logo=discord&logoColor=white" alt="Join our Discord community">
+</a>
+</p>
 </div>
 
