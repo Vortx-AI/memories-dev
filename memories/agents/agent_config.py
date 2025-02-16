@@ -1,9 +1,15 @@
 """Configuration settings for the Agent system"""
 
+import os
+from pathlib import Path
+import json
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timedelta
-from memories.models.load_model import LoadModel
-from memories.data_acquisition.data_connectors import parquet_connector
+from gensim.models import KeyedVectors
+import faiss
+import numpy as np
+from memories.core.model import LoadModel
+from memories.data_acquisition.data_connectors import get_data_connectors, parquet_connector
 
 def get_model_config(
     use_gpu: Optional[bool] = True,
