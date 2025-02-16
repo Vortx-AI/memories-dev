@@ -12,6 +12,7 @@ import faiss
 from pathlib import Path
 from dotenv import load_dotenv
 from memories.core.memory import MemoryStore
+from memories.agents.agent_config import AgentConfig
 
 def get_model_config(
     use_gpu: Optional[bool] = True,
@@ -392,174 +393,30 @@ def sanitize_timestamps(df: pd.DataFrame, timestamp_fields: list) -> pd.DataFram
     return df
 
 def main():
-    """Print current model instance ID when run directly."""
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='Check model configuration and storage')
-    parser.add_argument('--instance-id', type=str, help='Check storage for specific instance ID')
-    parser.add_argument('--list-instances', action='store_true', help='List all available instances')
-    parser.add_argument('--check-faiss', type=str, help='Check FAISS storage for specific instance ID')
-    parser.add_argument('--create-memories', action='store_true', help='Create new memories with default configuration')
-    parser.add_argument('--create-faiss', type=str, help='Create FAISS storage for specific instance ID')
-    
-    args = parser.parse_args()
-    
-    if args.create_faiss:
-        create_faiss_storage(args.create_faiss)
-    elif args.create_memories:
-        # Initialize model and create memories
-        model, instance_id = get_model_config()
-        print(f"\nCreating memories for instance ID: {instance_id}")
-        memories = create_memory_store(model, instance_id)
-        
-        # Create FAISS storage for this instance
-        create_faiss_storage(instance_id)
-        
-        print(f"\nMemories and FAISS storage created successfully")
+    # Define configuration
+    config = {
+        "model_provider": "deepseek-ai",
+        "deployment_type": "deployment",
+        "model_name": "deepseek-coder-1.3b-base",
+        "use_gpu": True,
+        "data_connectors": [
+            {
+                "type": "parquet",
+                "path": "/home/jaya/memories-dev/data/osm_data/india_points_processed.parquet",
+                "name": "india_points_processed"
+            }
+        ],
+        "project_root": "/home/jaya/memories-dev"  # Optional: if not set in .env
+    }
+
+    # Create agent config and memory store
+    try:
+        agent = AgentConfig(**config)
+        instance_id = agent.create_memory_store()
+        print(f"\nSuccessfully created memory store!")
         print(f"Instance ID: {instance_id}")
-        
-    elif args.check_faiss:
-        check_faiss_storage(args.check_faiss)
-    elif args.list_instances:
-        list_available_instances()
-    elif args.instance_id:
-        check_instance_storage(args.instance_id)
-    else:
-        # Original configuration display code...
-        print("\nTesting Model Configuration")
-        print("=" * 50)
-        
-        model, instance_id = get_model_config()
-        
-        print(f"\nModel Configuration:")
-        print(f"Provider: {model.model_provider}")
-        print(f"Model: {model.model_name}")
-        print(f"Deployment: {model.deployment_type}")
-        print(f"GPU Enabled: {model.use_gpu}")
-        print(f"\nInstance ID: {instance_id}")
-        
-        memory_config = get_memory_config()
-        print(f"\nMemory Configuration:")
-        print(f"Time Range: {memory_config['time_range'][0]} to {memory_config['time_range'][1]}")
-        print(f"Location: India Bounding Box")
-        print(f"Artifacts: {memory_config['artifacts']}")
+    except Exception as e:
+        print(f"Error creating memory store: {str(e)}")
 
 if __name__ == "__main__":
     main()
-
-class AgentConfig:
-    def __init__(
-        self,
-        model_provider: str,
-        deployment_type: str,
-        model_name: str,
-        use_gpu: bool = True,
-        data_connectors: Optional[List[Dict[str, Any]]] = None,
-        project_root: Optional[str] = None
-    ):
-        """
-        Initialize the AgentConfig with the provided parameters.
-
-        Args:
-            model_provider (str): The model provider (e.g., "deepseek-ai").
-            deployment_type (str): Type of deployment (e.g., "deployment").
-            model_name (str): Name of the model (e.g., "deepseek-coder-1.3b-base").
-            use_gpu (bool, optional): Whether to use GPU. Defaults to True.
-            data_connectors (List[Dict[str, Any]], optional): List of data connector configurations.
-            project_root (str, optional): Root directory of the project.
-        """
-        self.model_provider = model_provider
-        self.deployment_type = deployment_type
-        self.model_name = model_name
-        self.use_gpu = use_gpu
-        self.data_connectors = data_connectors or []
-        self.project_root = project_root or self._load_environment()
-        
-        # Initialize model
-        self.model = self._load_model()
-        
-        # Create necessary directories
-        self.osm_data_path = os.path.join(self.project_root, "data", "osm_data")
-        self.faiss_dir = os.path.join(self.project_root, "data", "faiss")
-        os.makedirs(self.osm_data_path, exist_ok=True)
-        os.makedirs(self.faiss_dir, exist_ok=True)
-        
-        # Initialize FAISS storage
-        self.dimension = 768  # FAISS vector dimension
-        self.faiss_storage = self._initialize_faiss_storage()
-        self.memory_store = MemoryStore()
-
-    def _load_environment(self) -> str:
-        """Load environment variables and return the project root."""
-        load_dotenv()
-        project_root = os.getenv("PROJECT_ROOT")
-        if not project_root:
-            raise EnvironmentError("PROJECT_ROOT environment variable not set.")
-        return project_root
-
-    def _load_model(self) -> LoadModel:
-        """Load the model using the LoadModel class."""
-        return LoadModel(
-            model_provider=self.model_provider,
-            deployment_type=self.deployment_type,
-            model_name=self.model_name,
-            use_gpu=self.use_gpu
-        )
-
-    def _initialize_faiss_storage(self) -> Dict[str, Any]:
-        """Initialize FAISS storage."""
-        print(f"\nInitializing FAISS storage")
-        index = faiss.IndexFlatL2(self.dimension)
-        return {
-            'index': index,
-            'metadata': [],
-            'vectors': []
-        }
-
-    def create_memory_store(self) -> str:
-        """
-        Process data connectors and create FAISS index.
-        
-        Returns:
-            str: The instance ID of the created memory store
-        """
-        instance_id = str(id(self.faiss_storage))
-        print(f"\nCreating memory store with instance ID: {instance_id}")
-        
-        for connector in self.data_connectors:
-            try:
-                print(f"\nProcessing Data Connector: {connector['name']}")
-                data = parquet_connector(connector['path'])
-                vectors = self.model.vectorize(data)
-
-                # Add vectors to FAISS index
-                self.faiss_storage['index'].add(vectors)
-                self.faiss_storage['vectors'].extend(vectors.tolist())
-
-                # Update metadata
-                self.faiss_storage['metadata'].append({
-                    'name': connector['name'],
-                    'type': connector['type'],
-                    'path': connector['path'],
-                    'num_vectors_added': vectors.shape[0]
-                })
-
-                print(f"Added {vectors.shape[0]} vectors to FAISS index from '{connector['name']}'")
-
-            except Exception as e:
-                print(f"Error processing {connector['name']}: {str(e)}")
-                continue
-
-        # Save FAISS index and metadata
-        index_path = os.path.join(self.faiss_dir, f"index_{instance_id}.faiss")
-        metadata_path = os.path.join(self.faiss_dir, f"metadata_{instance_id}.pkl")
-        
-        faiss.write_index(self.faiss_storage['index'], index_path)
-        with open(metadata_path, 'wb') as f:
-            pickle.dump(self.faiss_storage, f)
-            
-        print(f"\nFAISS index and metadata saved successfully")
-        print(f"Instance ID: {instance_id}")
-        print(f"Total vectors: {self.faiss_storage['index'].ntotal}")
-        
-        return instance_id
