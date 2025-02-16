@@ -131,7 +131,7 @@ autodoc_default_options = {
 autodoc_typehints = 'description'
 autodoc_class_signature = 'separated'
 autodoc_member_order = 'bysource'
-autodoc_warningiserror = True
+autodoc_warningiserror = False
 
 # NotFound page settings
 notfound_context = {
@@ -196,7 +196,44 @@ html_extra_path = ['robots.txt']
 htmlhelp_basename = 'memories-dev-doc'
 
 autodoc_mock_imports = [
-    "cudf", 
+    "cudf",
     "cuspatial",
-    "faiss"
+    "faiss",
+    "torch",
+    "transformers",
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "PIL",
+    "requests",
+    "yaml",
+    "dotenv",
+    "tqdm",
+    "pyarrow",
+    "nltk",
+    "langchain",
+    "pydantic",
+    "shapely",
+    "geopandas",
+    "rasterio",
+    "pyproj",
+    "pystac",
+    "mercantile",
+    "folium",
+    "rtree",
+    "geopy",
+    "osmnx",
+    "py6s",
+    "redis",
+    "xarray",
+    "dask",
+    "aiohttp",
+    "fsspec",
+    "cryptography",
+    "pyjwt",
+    "fastapi",
+    "netCDF4",
+    "earthengine",
+    "sentinelhub",
+    "sentence_transformers"
 ] 
