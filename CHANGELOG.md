@@ -5,22 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.4] - 2025-02-16
+
+### Changed
+- Updated text processing to use LangChain and DeepSeek consistently
+- Improved dependency management and version compatibility
+- Enhanced error handling and logging
+
+### Fixed
+- Resolved remaining dependency conflicts
+- Optimized memory usage in text processing
+- Improved overall system stability
+
 ## [1.1.3] - 2025-02-16
 
 ### Added
 - Added version-specific dependency management for Python 3.9-3.13
 - Added `diffusers>=0.25.0` to core dependencies
 - Enhanced version compatibility across different Python versions
+- Added LangChain and DeepSeek for advanced text processing
 
 ### Changed
 - Reorganized dependencies into core and version-specific groups
 - Updated dependency version constraints for better compatibility
 - Improved Python version-specific package management
+- Pinned numpy to 1.26.x for Python 3.12 to ensure binary compatibility
+- Removed spacy/thinc dependencies for better compatibility
+- Updated text processing to use LangChain and DeepSeek
 
 ### Fixed
 - Fixed dependency conflicts between different Python versions
 - Optimized package requirements for each Python version
 - Improved installation process across different Python environments
+- Fixed numpy binary incompatibility issues in Python 3.12
+- Maintained consistent text processing across all versions
 
 ## [1.1.2] - 2025-02-16
 

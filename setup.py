@@ -89,8 +89,8 @@ version_specific_deps = {
         "accelerate>=1.3.0"
     ],
     (3, 12): [
-        "numpy>=1.26.0,<2.0.0",
-        "pandas>=2.1.0",
+        "numpy>=1.26.0,<1.27.0",
+        "pandas>=2.1.0,<2.2.0",
         "duckdb>=0.9.0",
         "matplotlib>=3.8.0",
         "ipywidgets>=8.0.0",
@@ -107,7 +107,8 @@ version_specific_deps = {
         "sentence-transformers>=2.2.0",
         "xarray>=2023.0.0",
         "dask>=2024.1.0",
-        "accelerate>=1.3.0"
+        "accelerate>=1.3.0",
+        "nltk>=3.8.1"
     ],
     (3, 13): [
         "numpy>=1.26.0,<2.0.0",
@@ -138,7 +139,7 @@ install_requires = core_dependencies + version_specific_deps.get(current_version
 
 setup(
     name="memories-dev",
-    version="1.1.3",
+    version="1.1.4",
     packages=find_packages(include=['memories', 'memories.*']),
     
     author="Memories-dev",

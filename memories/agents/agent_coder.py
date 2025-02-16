@@ -252,7 +252,7 @@ class CodeGenerator:
 
 class LocationExtractor:
     def __init__(self):
-        """Initialize the Information Extraction system with LangChain and DeepSeek."""
+        """Initialize the Information Extraction system with NLTK."""
         offload_folder = os.path.join(
             tempfile.gettempdir(),
             'deepseek_offload'

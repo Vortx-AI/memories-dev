@@ -17,6 +17,8 @@ import requests
 from urllib.parse import quote
 from core.memories.agent_capabilities import AGENT_CAPABILITIES
 from .agentic_tool import AgenticTools, APIResponse
+import nltk
+import re
 
 # Load environment variables
 load_dotenv()
@@ -135,65 +137,22 @@ class LocationInfo:
 
 class InformationExtractor:
     def __init__(self, model: str = None):
-        """Initialize the Information Extraction system with LangChain and DeepSeek.
+        """Initialize the Information Extraction system with NLTK.
         
         Args:
-            model (str, optional): The model to use for information extraction. Defaults to None.
+            model (str, optional): Not used, kept for backward compatibility. Defaults to None.
         """
-        offload_folder = os.path.join(
-            tempfile.gettempdir(),
-            'deepseek_offload'
-        )
-        os.makedirs(offload_folder, exist_ok=True)
+        # Initialize NLTK resources
+        try:
+            nltk.download('punkt', quiet=True)
+            nltk.download('averaged_perceptron_tagger', quiet=True)
+            nltk.download('maxent_ne_chunker', quiet=True)
+            nltk.download('words', quiet=True)
+        except Exception as e:
+            self.logger.error(f"Error downloading NLTK data: {str(e)}")
         
-        self.llm = DeepSeekLLM(
-            model_name=model or os.getenv("DEEPEEKS_MODEL_NAME", "deepseek-ai/deepseek-coder-1.3b-base"),
-            temperature=0.7,
-            max_tokens=150,
-            top_p=0.95,
-            verbose=True,
-            offload_folder=offload_folder
-        )
-        
-        self.location_prompt = PromptTemplate(
-            input_variables=["query"],
-            template="""Given the query: '{query}'
-If the query contains coordinates (numbers separated by comma), return those exact coordinates.
-Otherwise, extract the location name.
-Return ONLY the location without any additional text.
-Location:"""
-        )
-        
-        self.context_prompt = PromptTemplate(
-            input_variables=["query"],
-            template="""Given the query: '{query}'
-Extract and return ONLY the type of information being requested (like area, population, weather, etc).
-If asking about what is at a location, return 'location details'.
-Information type:"""
-        )
-        
-        self.geocode_prompt = PromptTemplate(
-            input_variables=["address", "api_response"],
-            template="""Given this address: '{address}' and the API response: {api_response}
-Extract ONLY the latitude and longitude values.
-Format the response exactly as 'lat, lon' (just the numbers).
-Coordinates:"""
-        )
-        
-        self.reverse_geocode_prompt = PromptTemplate(
-            input_variables=["coordinates", "api_response"],
-            template="""Given these coordinates: '{coordinates}' and the API response: {api_response}
-Extract ONLY the complete address from the display_name field.
-Return just the address text, nothing else.
-Address:"""
-        )
-        
-        self.location_chain = LLMChain(llm=self.llm, prompt=self.location_prompt)
-        self.context_chain = LLMChain(llm=self.llm, prompt=self.context_prompt)
-        self.geocode_chain = LLMChain(llm=self.llm, prompt=self.geocode_prompt)
-        self.reverse_geocode_chain = LLMChain(llm=self.llm, prompt=self.reverse_geocode_prompt)
-        self.location_info = LocationInfo()
         self.logger = logging.getLogger(__name__)
+        self.location_info = LocationInfo()
 
     def process_query(self, query: str) -> Dict[str, Any]:
         """Process the query to extract location and context information."""
@@ -227,3 +186,60 @@ Address:"""
                 "error": str(e),
                 "query": query
             }
+
+    def extract_location_info(self, query: str) -> Dict[str, Any]:
+        """Extract location information from query using NLTK."""
+        # First check for coordinates
+        coordinates_pattern = r'\(?\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\)?'
+        coord_match = re.search(coordinates_pattern, query)
+        if coord_match:
+            lat, lon = map(float, coord_match.groups())
+            return {
+                "location": f"{lat}, {lon}",
+                "location_type": "point",
+                "coordinates": (lat, lon)
+            }
+        
+        # Process with NLTK for named entities
+        tokens = nltk.word_tokenize(query)
+        pos_tags = nltk.pos_tag(tokens)
+        named_entities = nltk.ne_chunk(pos_tags)
+        
+        # Look for location entities
+        locations = []
+        for entity in named_entities:
+            if hasattr(entity, 'label'):
+                if entity.label() in ["GPE", "LOCATION", "FACILITY"]:
+                    location_text = ' '.join([leaf[0] for leaf in entity.leaves()])
+                    locations.append((location_text, entity.label()))
+        
+        if locations:
+            # Get the first location found
+            location_text, label = locations[0]
+            
+            # Determine location type based on entity label
+            location_type = "unknown"
+            if label == "GPE":
+                words = query.lower().split()
+                if "state" in words or "province" in words:
+                    location_type = "state"
+                elif len(location_text.split()) == 1:
+                    location_type = "city"
+                else:
+                    location_type = "address"
+            elif label == "LOCATION":
+                location_type = "point"
+            elif label == "FACILITY":
+                location_type = "address"
+            
+            return {
+                "location": location_text,
+                "location_type": location_type,
+                "coordinates": None
+            }
+        
+        return {
+            "location": "",
+            "location_type": "",
+            "coordinates": None
+        }

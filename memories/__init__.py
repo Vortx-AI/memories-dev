@@ -2,7 +2,7 @@
 Memories - A package for daily synthesis of Earth Memories
 """
 
-__version__ = "1.1.3"  # Match version in pyproject.toml
+__version__ = "1.1.4"  # Match version in pyproject.toml
 
 # Import core functionality
 from memories.core.memory import MemoryStore
