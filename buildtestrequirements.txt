@@ -14,6 +14,8 @@ pystac>=1.8.0
 redis>=5.0.0
 nltk>=3.8.1
 diffusers>=0.25.0
+langchain>=0.1.0
+langchain-community>=0.0.1
 
 # Python 3.9 specific dependencies
 # Uncomment these if using Python 3.9
@@ -51,8 +53,6 @@ geopandas>=0.14.0
 shapely>=2.0.0
 opencv-python>=4.8.0
 albumentations>=1.3.1
-langchain>=0.1.0
-langchain-community>=0.0.1
 geopy>=2.3.0
 faiss-cpu>=1.7.4
 sentence-transformers>=2.2.0
