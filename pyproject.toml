@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "memories-dev"
-version = "1.1.7"
+version = "1.1.8"
 description = "A Python package for managing and processing earth observation data"
 readme = "README.md"
 requires-python = ">=3.9,<3.14.0"
@@ -43,6 +43,7 @@ dependencies = [
     "pandas>=2.0.0",  # Version adjusted based on Python version during install
     "duckdb>=0.9.0",
     "pyarrow>=14.0.1",
+    "matplotlib>=3.7.0",  # Required for visualization
     
     # GIS/Spatial
     "geopandas>=0.14.0",

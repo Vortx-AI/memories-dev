@@ -82,7 +82,8 @@ def get_core_deps():
         "python-multipart>=0.0.9",
         "osmnx>=1.9.0",
         "py6s>=1.9.0",
-        "opencv-python>=4.8.0"
+        "opencv-python>=4.8.0",
+        "matplotlib>=3.7.0"  # Required for visualization
     ]
     
     # Add version-specific core dependencies
@@ -132,7 +133,7 @@ install_requires = get_core_deps() + get_version_specific_deps()
 
 setup(
     name="memories-dev",
-    version="1.1.7",
+    version="1.1.8",
     packages=find_packages(include=['memories', 'memories.*']),
     
     author="Memories-dev",
