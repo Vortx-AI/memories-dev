@@ -6,8 +6,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 project = 'memories-dev'
 copyright = '2024, Memories-dev'
 author = 'Memories-dev'
-
-# The full version, including alpha/beta/rc tags
+version = '1.1.8'
 release = '1.1.8'
 
 # Add any Sphinx extension module names here
@@ -25,13 +24,30 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx_autodoc_typehints',
     'nbsphinx',
+    'sphinx_notfound_page',
+    'sphinx_copybutton',
+    'sphinx_design',
+    'sphinx_tabs.tabs',
+    'sphinx_togglebutton',
+    'sphinx_hoverxref.extension',
+    'sphinx.ext.duration',
+    'sphinxcontrib.mermaid'
 ]
 
 # Add any paths that contain templates here
 templates_path = ['_templates']
 
+# The suffix of source filenames
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
+}
+
+# The master toctree document
+master_doc = 'index'
+
 # List of patterns to exclude
-exclude_patterns = []
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 
 # The theme to use for HTML and HTML Help pages
 html_theme = 'sphinx_rtd_theme'
@@ -51,6 +67,15 @@ html_theme_options = {
     'navigation_depth': 4,
     'includehidden': True,
     'titles_only': False
+}
+
+# Custom sidebar templates
+html_sidebars = {
+    '**': [
+        'relations.html',
+        'searchbox.html',
+        'navigation.html',
+    ]
 }
 
 # Intersphinx configuration
@@ -84,5 +109,23 @@ autodoc_default_options = {
     'exclude-members': '__weakref__'
 }
 
+# NotFound page settings
+notfound_context = {
+    'title': 'Page Not Found',
+    'body': '''
+        <h1>Page Not Found</h1>
+        <p>Sorry, we couldn't find that page. Try using the navigation or search box.</p>
+    '''
+}
+notfound_no_urls_prefix = True
+
 # Enable todo items
-todo_include_todos = True 
+todo_include_todos = True
+
+# HoverXRef settings
+hoverxref_auto_ref = True
+hoverxref_domains = ['py']
+hoverxref_roles = [
+    'ref',
+    'doc',
+] 
