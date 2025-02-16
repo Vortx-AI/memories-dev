@@ -8,9 +8,8 @@ def get_gpu_packages():
     """Get GPU packages based on CUDA version if available."""
     # Return basic GPU packages without CUDA detection during build
     return [
-        "faiss-gpu>=1.7.2",
         "cupy-cuda12x>=12.0.0"  # Default to CUDA 12.x
-    ]
+    ]  # Remove faiss-gpu as it's not available for all Python versions
 
 # Core dependencies that are the same for all Python versions
 core_dependencies = [
@@ -22,7 +21,7 @@ core_dependencies = [
     "tqdm>=4.65.0",
     "pyarrow>=14.0.1",
     "mercantile>=1.2.1",
-    "mapbox-vector-tile>=2.0.1",
+    "mapbox-vector-tile>=1.2.0,<2.0.0",  # Pin to older version for shapely compatibility
     "pyproj>=3.6.1",
     "pystac>=1.8.0",
     "redis>=5.0.0",
@@ -31,7 +30,7 @@ core_dependencies = [
     "langchain>=0.1.0",
     "langchain-community>=0.0.1",
     "duckdb>=0.9.0",
-    "shapely>=1.7.0,<2.0.0",
+    "shapely>=1.7.0,<2.0.0",  # Keep this version for landsatxplore compatibility
     "geopy>=2.3.0",
     "aiohttp>=3.9.0",
     "fsspec>=2024.2.0",
