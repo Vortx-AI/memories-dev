@@ -213,6 +213,87 @@ def check_faiss_storage(instance_id: str):
         print(f"\nNo FAISS index found for instance ID: {instance_id}")
         print(f"Looked in: {faiss_dir}")
 
+def download_word_vectors(model_path: str, model_type: str = 'glove') -> None:
+    """
+    Download word vectors model if it doesn't exist.
+    
+    Args:
+        model_path (str): Path where the model should be saved
+        model_type (str): Type of model to download ('glove' or 'fasttext')
+    """
+    import os
+    import requests
+    from pathlib import Path
+    import zipfile
+    
+    model_dir = Path(model_path).parent
+    model_dir.mkdir(parents=True, exist_ok=True)
+    
+    if not os.path.exists(model_path):
+        print(f"Downloading {model_type} vectors to {model_path}...")
+        
+        if model_type == 'glove':
+            # GloVe 100d (~150MB)
+            url = "https://nlp.stanford.edu/data/glove.6B.zip"
+            zip_path = model_dir / "glove.6B.zip"
+        else:
+            # FastText 100d (~150MB)
+            url = "https://dl.fbaipublicfiles.com/fasttext/vectors-english/wiki-news-100d-1M.vec.zip"
+            zip_path = model_dir / "wiki-news-100d-1M.vec.zip"
+        
+        # Download
+        response = requests.get(url, stream=True)
+        total_size = int(response.headers.get('content-length', 0))
+        block_size = 1024
+        
+        with open(zip_path, 'wb') as f:
+            for data in response.iter_content(block_size):
+                f.write(data)
+                
+        # Extract
+        print("Extracting vectors...")
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            if model_type == 'glove':
+                # Extract only the 100d vectors
+                for file in zip_ref.namelist():
+                    if '100d' in file:
+                        zip_ref.extract(file, model_dir)
+                os.rename(model_dir / "glove.6B.100d.txt", model_path)
+            else:
+                zip_ref.extractall(model_dir)
+                os.rename(model_dir / "wiki-news-100d-1M.vec", model_path)
+        
+        # Clean up
+        os.remove(zip_path)
+        print("Download completed!")
+    else:
+        print(f"Word vectors already exist at {model_path}")
+
+def load_word_vectors(model_path: str, model_type: str = 'glove') -> KeyedVectors:
+    """
+    Load word vectors from file.
+    
+    Args:
+        model_path (str): Path to the model file
+        model_type (str): Type of model ('glove' or 'fasttext')
+        
+    Returns:
+        KeyedVectors: Loaded word vectors
+    """
+    from gensim.scripts.glove2word2vec import glove2word2vec
+    from gensim.models import KeyedVectors
+    import os
+    
+    if model_type == 'glove':
+        # Convert GloVe format to Word2Vec format if needed
+        word2vec_path = model_path + '.word2vec'
+        if not os.path.exists(word2vec_path):
+            glove2word2vec(model_path, word2vec_path)
+        return KeyedVectors.load_word2vec_format(word2vec_path)
+    else:
+        # FastText is already in Word2Vec format
+        return KeyedVectors.load_word2vec_format(model_path)
+
 def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     """
     Create memory store with specified configuration.
@@ -240,19 +321,32 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     project_root = os.getenv("PROJECT_ROOT")
     osm_data_path = os.path.join(project_root, "data", "osm_data")
     faiss_dir = os.path.join(project_root, "data", "faiss")
+    models_dir = os.path.join(project_root, "data", "models")
     
     # Create directories if they don't exist
     os.makedirs(osm_data_path, exist_ok=True)
     os.makedirs(faiss_dir, exist_ok=True)
+    os.makedirs(models_dir, exist_ok=True)
+    
+    # Choose model type ('glove' or 'fasttext')
+    model_type = 'glove'
     
     # Load word vectors
-    print("Loading Word2Vec model...")
-    word_vectors_path = os.path.join(project_root, "data", "models", "GoogleNews-vectors-negative300.bin")
-    word_vectors = KeyedVectors.load_word2vec_format(word_vectors_path, binary=True)
-    print("Word2Vec model loaded successfully")
+    print("Setting up word vectors...")
+    if model_type == 'glove':
+        vectors_path = os.path.join(models_dir, "glove.6B.100d.txt")
+    else:
+        vectors_path = os.path.join(models_dir, "wiki-news-100d-1M.vec")
+    
+    # Download model if it doesn't exist
+    download_word_vectors(vectors_path, model_type)
+    
+    print("Loading word vectors...")
+    word_vectors = load_word_vectors(vectors_path, model_type)
+    print("Word vectors loaded successfully")
     
     # Create FAISS storage
-    dimension = 768  # Standard embedding dimension
+    dimension = 100  # Using 100d vectors
     faiss_storage = {
         'index': faiss.IndexFlatL2(dimension),
         'instance_id': instance_id,
