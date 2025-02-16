@@ -25,10 +25,6 @@ numpy>=1.26.0,<2.0.0
 matplotlib>=3.8.0
 ipython>=8.12.0
 ipykernel>=6.22.0
-
-# Python 3.12 compatible dependencies
-pandas>=2.2.0
-scipy>=1.12.0
 PyYAML>=6.0.1
 python-dotenv>=1.0.0
 tqdm>=4.65.0
@@ -36,19 +32,4 @@ pydantic>=2.6.0
 Pillow>=10.0.0
 requests>=2.31.0
 
-# Required dependencies for code examples
-torch==2.0.0
-transformers==4.28.1
-nltk==3.8.1
-langchain>=0.1.0
-duckdb==0.8.1
-pydantic>=2.6.0
-
-# Theme dependencies
-sphinx-rtd-theme==1.2.0
-
-# Theme and extensions
-furo>=2023.9.10
-pydata-sphinx-theme>=0.14.0
-sphinx-book-theme>=1.0.0
-sphinx-material>=0.0.35 
+# Remove all theme duplicates and conflicting dependencies below this line 
