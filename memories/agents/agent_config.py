@@ -330,7 +330,7 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     if os.path.exists(parquet_file):
         print(f"\nProcessing parquet file: {parquet_file}")
         parquet_info = parquet_connector(parquet_file, faiss_storage, word_vectors)
-        memory_store.process_metadata(parquet_info)
+        #memory_store.process_metadata(parquet_info)
     
     print("\nMemories and FAISS storage created successfully")
     print(f"Instance ID: {instance_id}")
