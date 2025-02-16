@@ -8,142 +8,53 @@ import numpy as np
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 import pickle
+from transformers import LoadModel
 
-def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None) -> Dict[str, Any]:
+def parquet_connector(file_path: str, faiss_storage: Dict = None, model: LoadModel = None) -> Dict:
     """
-    Read parquet file metadata and save column names as vectors in FAISS if provided.
+    Process parquet file and update FAISS storage
     
     Args:
-        file_path (str): Path to the parquet file
-        faiss_storage (Dict, optional): Dictionary containing FAISS index and instance_id
+        file_path (str): Path to parquet file
+        faiss_storage (Dict): FAISS storage dictionary
+        model (LoadModel): Model for generating embeddings
         
     Returns:
-        Dict[str, Any]: Metadata and schema information about the parquet file
+        Dict: Updated FAISS storage
     """
     try:
-        file_path = Path(file_path)
+        # Read parquet file
+        df = pd.read_parquet(file_path)
+        print(f"\nProcessing columns for FAISS vectors...")
         
-        # Read parquet metadata only
-        parquet_file = pq.ParquetFile(str(file_path))
-        schema = parquet_file.schema
+        # Get column names
+        columns = df.columns.tolist()
         
-        # Get column information
-        columns = [field.name for field in schema]
+        # Generate embeddings for column names
+        column_embeddings = model.get_embeddings(columns)
         
-        # If FAISS storage is provided, save column names as vectors
-        if faiss_storage and 'index' in faiss_storage:
+        # Add vectors to FAISS index
+        for col_name, embedding in zip(columns, column_embeddings):
             try:
-                initial_vectors = faiss_storage['index'].ntotal
-                dimension = faiss_storage['index'].d
-                vectors = []
+                # Add vector to FAISS
+                faiss_storage['index'].add(np.array([embedding], dtype=np.float32))
                 
-                # Read data with proper encoding handling
-                table = pq.read_table(str(file_path))
-                df = table.to_pandas(strings_to_categorical=True)  # Convert strings to categorical
-                
-                print(f"\nProcessing columns for FAISS vectors...")
-                for column in columns:
-                    vector = np.zeros(dimension, dtype='float32')
-                    
-                    try:
-                        if column in df.columns:
-                            # Get column data
-                            col_data = df[column]
-                            
-                            # Handle different data types
-                            if pd.api.types.is_numeric_dtype(col_data):
-                                # Numeric data
-                                numeric_stats = col_data.agg(['mean', 'std', 'min', 'max']).fillna(0)
-                                vector[:4] = numeric_stats.values
-                            else:
-                                # Convert to string and get basic stats
-                                str_data = col_data.astype(str)
-                                vector[4:8] = [
-                                    str_data.str.len().mean(),
-                                    len(str_data.unique()),
-                                    str_data.str.count(r'[0-9]').mean(),
-                                    str_data.str.count(r'[A-Za-z]').mean()
-                                ]
-                            
-                            # Fill remaining dimensions with hash of column name
-                            name_hash = np.array([hash(column) % 100 for _ in range(dimension-8)], dtype='float32')
-                            vector[8:] = name_hash
-                            
-                            # Normalize
-                            norm = np.linalg.norm(vector)
-                            if norm > 0:
-                                vector = vector / norm
-                        
-                    except Exception as col_error:
-                        print(f"Warning: Error processing column {column}: {str(col_error)}")
-                        # Use hash-based vector as fallback
-                        vector = np.array([hash(column + str(i)) % 100 for i in range(dimension)], dtype='float32')
-                        vector = vector / np.linalg.norm(vector)
-                    
-                    vectors.append(vector)
-                
-                # Add vectors to FAISS
-                vectors_array = np.array(vectors, dtype='float32')
-                faiss_storage['index'].add(vectors_array)
-                
-                # Update metadata
-                if 'metadata' not in faiss_storage:
-                    faiss_storage['metadata'] = []
-                
-                for i, column in enumerate(columns):
-                    vector_id = initial_vectors + i
-                    faiss_storage['metadata'].append({
-                        'column_name': column,
-                        'file_path': str(file_path),
-                        'file_name': file_path.name,
-                        'vector_id': vector_id
-                    })
-                
-                final_vectors = faiss_storage['index'].ntotal
-                vectors_added = final_vectors - initial_vectors
-                
-                print(f"\n[ParquetConnector] FAISS Update for {file_path.name}:")
-                print(f"Initial vectors: {initial_vectors}")
-                print(f"Vectors added: {vectors_added}")
-                print(f"Final vectors: {final_vectors}")
-                
-                # Save FAISS index and metadata
-                if 'instance_id' in faiss_storage:
-                    faiss_dir = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "faiss")
-                    os.makedirs(faiss_dir, exist_ok=True)
-                    
-                    index_path = os.path.join(faiss_dir, f"index_{faiss_storage['instance_id']}.faiss")
-                    faiss.write_index(faiss_storage['index'], index_path)
-                    
-                    metadata_path = os.path.join(faiss_dir, f"metadata_{faiss_storage['instance_id']}.pkl")
-                    with open(metadata_path, 'wb') as f:
-                        pickle.dump(faiss_storage['metadata'], f)
-                    
-                    print(f"[ParquetConnector] Saved FAISS index and metadata")
+                # Store metadata
+                faiss_storage['metadata'].append({
+                    'column_name': col_name,
+                    'file_path': file_path,
+                    'file_name': os.path.basename(file_path)
+                })
                 
             except Exception as e:
-                print(f"Error saving to FAISS: {str(e)}")
-                import traceback
-                print(traceback.format_exc())
+                print(f"Warning: Error processing column {col_name}: {str(e)}")
+                continue
+                
+        return faiss_storage
         
-        # Return file info
-        return {
-            "file_name": file_path.name,
-            "file_path": str(file_path),
-            "columns": columns,
-            "num_rows": parquet_file.metadata.num_rows,
-            "num_columns": len(columns)
-        }
-            
     except Exception as e:
-        print(f"Error processing parquet file: {str(e)}")
-        import traceback
-        print(traceback.format_exc())
-        return {
-            "file_name": Path(file_path).name,
-            "file_path": str(file_path),
-            "error": str(e)
-        }
+        print(f"Error: {str(e)}")
+        return None
 
 def multiple_parquet_connector(folder_path: str, faiss_storage: Optional[Dict] = None) -> Dict[str, Any]:
     """
