@@ -11,20 +11,35 @@ import duckdb
 _WORD_VECTORS = None
 
 class Agent_L1:
-    def __init__(self, instance_id: str, query: str):
+    def __init__(self, 
+                 instance_id: str, 
+                 query: str, 
+                 file_path: Optional[str] = None, 
+                 geometry_column: Optional[str] = None, 
+                 geometry_type: Optional[str] = None):
         """
-        Initialize Agent_L1 with FAISS instance ID and query.
-        
+        Initialize Agent_L1 with FAISS instance ID, query, and options to override
+        the default Parquet file path and provide geometry details.
+
         Args:
-            instance_id (str): FAISS instance ID
-            query (str): Query string to process
+            instance_id (str): FAISS instance ID.
+            query (str): Query string to process.
+            file_path (Optional[str]): Custom path to the Parquet file. If provided,
+                                       it overrides the file name from metadata.
+            geometry_column (Optional[str]): Name of the geometry column.
+            geometry_type (Optional[str]): Type of geometry (e.g., 'point', 'polygon').
         """
         self.instance_id = instance_id
         self.query = query
+        self.file_path = file_path
+        self.geometry_column = geometry_column
+        self.geometry_type = geometry_type
+        
         self.faiss_index = None
         self.metadata = None
-        self.parquet_file = None
-        
+        # If a file_path is provided, initialize parquet_file with it.
+        self.parquet_file = self.file_path if self.file_path is not None else None
+
     def get_word_embedding(self, word: str, vector_size: int = 100) -> np.ndarray:
         """
         Get word embedding for a single word, handling multi-word phrases by averaging.
@@ -67,7 +82,7 @@ class Agent_L1:
         """
         global _WORD_VECTORS
         try:
-            # Load word vectors if not already loaded
+            # Load word vectors if not already loaded.
             if _WORD_VECTORS is None:
                 models_dir = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "models")
                 vectors_path = os.path.join(models_dir, "glove.6B.100d.txt.word2vec")
@@ -77,7 +92,7 @@ class Agent_L1:
             else:
                 print("Using cached word vectors")
             
-            # Load FAISS index and metadata
+            # Load FAISS index and metadata.
             faiss_dir = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "faiss")
             index_path = os.path.join(faiss_dir, f"index_{self.instance_id}.faiss")
             metadata_path = os.path.join(faiss_dir, f"metadata_{self.instance_id}.pkl")
@@ -89,8 +104,10 @@ class Agent_L1:
             with open(metadata_path, 'rb') as f:
                 self.metadata = pickle.load(f)
             
-            # Get parquet file path from metadata
-            if self.metadata and len(self.metadata) > 0:
+            # Use provided file_path if available; otherwise use the file_name from metadata.
+            if self.file_path:
+                self.parquet_file = self.file_path
+            elif self.metadata and len(self.metadata) > 0:
                 self.parquet_file = self.metadata[0].get('file_name')
                 
             print("Resources loaded successfully")
@@ -104,20 +121,20 @@ class Agent_L1:
         Find k most similar columns to the query.
         
         Args:
-            k (int): Number of similar columns to retrieve
+            k (int): Number of similar columns to retrieve.
             
         Returns:
-            List[Dict[str, Any]]: List of similar columns with their metadata
+            List[Dict[str, Any]]: List of similar columns with their metadata.
         """
         try:
-            # Create query vector
+            # Create query vector.
             query_vector = self.get_word_embedding(self.query)
             query_vector = np.array([query_vector]).astype('float32')
             
-            # Search for similar vectors
+            # Search for similar vectors.
             D, I = self.faiss_index.search(query_vector, k)
             
-            # Prepare results
+            # Prepare results.
             results = []
             for i, (idx, distance) in enumerate(zip(I[0], D[0])):
                 if idx < len(self.metadata):
@@ -140,13 +157,13 @@ class Agent_L1:
         Process the query and return similar columns.
         
         Returns:
-            Dict[str, Any]: Processing results including similar columns
+            Dict[str, Any]: Processing results including similar columns.
         """
         try:
-            # Load required resources
+            # Load required resources.
             self.load_resources()
             
-            # Find similar columns
+            # Find similar columns.
             similar_columns = self.find_similar_columns()
             
             return {
@@ -166,17 +183,20 @@ class Agent_L1:
 
 def main():
     """
-    Example usage of Agent_L1
+    Example usage of Agent_L1 with file_path, geometry_column, and geometry_type provided.
     """
-    # Example query and instance ID
-    instance_id = "126324854065696"  # Replace with your instance ID
-    query = "hospital"  # Replace with your query
+    # Example query and instance ID, with added file_path, geometry_column and geometry_type.
+    instance_id = "126324854065696"  # Replace with your instance ID.
+    query = "hospital"               # Replace with your query.
+    file_path = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "parquet", "example.parquet")
+    geometry_column = "geom"         # Replace with your geometry column name.
+    geometry_type = "polygon"        # Replace with your geometry type if needed.
     
-    # Create and run agent
-    agent = Agent_L1(instance_id, query)
+    # Create and run agent.
+    agent = Agent_L1(instance_id, query, file_path, geometry_column, geometry_type)
     result = agent.process()
     
-    # Print results
+    # Print results.
     if result["status"] == "success":
         print(f"\nQuery: {result['query']}")
         print(f"Instance ID: {result['instance_id']}")
