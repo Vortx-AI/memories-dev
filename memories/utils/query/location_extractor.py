@@ -1,20 +1,22 @@
-import spacy
+import nltk
 import re
 import logging
 import os
 from typing import Dict, Any, Optional, Tuple
 
 class LocationExtractor:
-    """A class to extract location information from text using spaCy."""
+    """A class to extract location information from text using NLTK."""
     
     def __init__(self):
-        """Initialize the Location Extraction system with spaCy."""
+        """Initialize the Location Extraction system with NLTK."""
         try:
-            self.nlp = spacy.load("en_core_web_sm")
-        except OSError:
-            # If model is not found, download it
-            os.system("python -m spacy download en_core_web_sm")
-            self.nlp = spacy.load("en_core_web_sm")
+            # Download required NLTK data
+            nltk.download('punkt', quiet=True)
+            nltk.download('averaged_perceptron_tagger', quiet=True)
+            nltk.download('maxent_ne_chunker', quiet=True)
+            nltk.download('words', quiet=True)
+        except Exception as e:
+            self.logger.error(f"Error downloading NLTK data: {str(e)}")
         
         self.logger = logging.getLogger(__name__)
         
@@ -80,14 +82,18 @@ class LocationExtractor:
                     "coordinates": coordinates
                 }
             
-            # Process with spaCy for named entities
-            doc = self.nlp(user_query)
+            # Process with NLTK for named entities
+            tokens = nltk.word_tokenize(user_query)
+            pos_tags = nltk.pos_tag(tokens)
+            named_entities = nltk.ne_chunk(pos_tags)
             
             # Look for location entities
             locations = []
-            for ent in doc.ents:
-                if ent.label_ in ["GPE", "LOC", "FAC"]:
-                    locations.append((ent.text, ent.label_))
+            for entity in named_entities:
+                if hasattr(entity, 'label'):
+                    if entity.label() in ["GPE", "LOCATION", "FACILITY"]:
+                        location_text = ' '.join([leaf[0] for leaf in entity.leaves()])
+                        locations.append((location_text, entity.label()))
             
             # If no entities found, check for state names specifically
             if not locations:
@@ -117,9 +123,9 @@ class LocationExtractor:
                         location_type = "city"
                     else:
                         location_type = "address"
-                elif label == "LOC":
+                elif label == "LOCATION":
                     location_type = "point"
-                elif label == "FAC":
+                elif label == "FACILITY":
                     location_type = "address"
                 
                 return {

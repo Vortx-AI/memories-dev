@@ -2,15 +2,15 @@ from setuptools import setup, find_packages
 
 setup(
     name="memories-dev",
-    version="1.1.1",
+    version="1.1.2",
     packages=find_packages(include=['memories', 'memories.*']),
     
     author="Memories-dev",
-    author_email="hello@memories-dev.com",
-    description="An awesome package for daily synthesis of Earth Memories, helping agents answer about location-first queries. ",
+    author_email="hello@memories.dev",
+    description="A Python package for managing and processing earth observation data",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/Vortx-AI/memories-dev",
+    url="https://memories.dev",
     license="Apache License 2.0",
     
     install_requires=[
@@ -18,7 +18,7 @@ setup(
         "transformers>=4.30.0",
         "accelerate>=1.3.0",
         "pillow>=10.0.0",
-        "numpy==1.24.3",
+        "numpy>=2.2.3",
         "pandas>=2.0.0",
         "duckdb>=0.9.0",
         "matplotlib>=3.7.0",
@@ -45,10 +45,7 @@ setup(
         "pystac>=1.8.0",
         "xarray>=2023.0.0",
         "dask>=2024.1.0",
-        "dask[array]>=2024.1.0",
-        "spacy>=3.7.0,<3.8.0",
-        "thinc>=8.1.10,<8.2.0",
-        "blis==0.7.11",
+        "nltk>=3.8.1",
         "redis>=5.0.0",
         "pytest>=8.3.4",
         "pytest-asyncio>=0.23.5",
@@ -99,7 +96,7 @@ setup(
         ]
     },
     
-    python_requires=">=3.9,<3.13",
+    python_requires=">=3.9,<3.14.0",
     
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
@@ -109,6 +106,7 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Scientific/Engineering :: GIS",
         "Development Status :: 5 - Production/Stable",
@@ -136,8 +134,8 @@ setup(
     zip_safe=False,
     
     project_urls={
-        "Homepage": "https://github.com/Vortx-AI/memories-dev",
-        "Documentation": "https://docs.memories-dev.dev",
+        "Homepage": "https://memories.dev",
+        "Documentation": "https://docs.memories.dev",
         "Repository": "https://github.com/Vortx-AI/memories-dev.git",
         "Issues": "https://github.com/Vortx-AI/memories-dev/issues",
         "Changelog": "https://github.com/Vortx-AI/memories-dev/blob/main/CHANGELOG.md"

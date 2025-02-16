@@ -92,6 +92,7 @@ memories/tests/utils/test_comp.py
 memories/tests/utils/test_gpu_stat.py
 memories/utils/__init__.py
 memories/utils/duckdb_utils.py
+memories/utils/text.py
 memories/utils/types.py
 memories/utils/__pycache__/__init__.py
 memories/utils/earth/__init__.py
@@ -130,6 +131,7 @@ memories_dev.egg-info/top_level.txt
 tests/__init__.py
 tests/conftest.py
 tests/test_installation.py
+tests/test_text_processing.py
 tests/utils/__init__.py
 tests/utils/test_comp.py
 tests/utils/test_duckdb_utils.py

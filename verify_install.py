@@ -33,7 +33,7 @@ def check_dependencies() -> bool:
     required_packages = [
         "torch",
         "transformers",
-        "spacy",
+        "nltk",
         "numpy",
         "pandas",
         "geopandas",
@@ -54,18 +54,19 @@ def check_dependencies() -> bool:
     
     return len(missing_packages) == 0
 
-def check_spacy_model() -> bool:
-    """Check if spaCy model is installed and working."""
+def check_nltk_data() -> bool:
+    """Check if NLTK data is installed and working."""
     try:
-        import spacy
-        nlp = spacy.load("en_core_web_sm")
-        # Test the model
-        text = "Testing spaCy model in San Francisco."
-        doc = nlp(text)
-        logger.info("✅ spaCy model is working")
+        import nltk
+        # Test NLTK components
+        text = "Testing NLTK in San Francisco."
+        tokens = nltk.word_tokenize(text)
+        pos_tags = nltk.pos_tag(tokens)
+        named_entities = nltk.ne_chunk(pos_tags)
+        logger.info("✅ NLTK models are working")
         return True
     except Exception as e:
-        logger.error(f"❌ spaCy model check failed: {str(e)}")
+        logger.error(f"❌ NLTK model check failed: {str(e)}")
         return False
 
 def check_gpu() -> bool:
@@ -144,7 +145,6 @@ def main():
     checks = [
         ("Python Version", check_python_version),
         ("Dependencies", check_dependencies),
-        ("spaCy Model", check_spacy_model),
         ("GPU Availability", check_gpu),
         ("Environment Variables", check_environment_variables),
         ("Memory Creation", test_memory_creation)

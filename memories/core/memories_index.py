@@ -13,7 +13,7 @@ from sentence_transformers import SentenceTransformer
 import os
 from pathlib import Path
 import base64
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 import logging
 
 @dataclass

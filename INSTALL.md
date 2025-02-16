@@ -74,11 +74,11 @@ pip install memories-dev
 ### 2. Install Additional Components
 
 ```bash
-# Download spaCy model
-python -m spacy download en_core_web_sm
+# Download NLTK data
+python -c "import nltk; nltk.download('punkt'); nltk.download('averaged_perceptron_tagger'); nltk.download('maxent_ne_chunker'); nltk.download('words')"
 
-# Verify spaCy installation
-python -c "import spacy; nlp = spacy.load('en_core_web_sm'); print('spaCy installation successful!')"
+# Verify NLTK installation
+python -c "import nltk; tokens = nltk.word_tokenize('Test'); print('NLTK installation successful!')"
 ```
 
 ### 3. GPU Support (Optional)
