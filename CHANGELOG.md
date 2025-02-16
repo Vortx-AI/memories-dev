@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.5] - 2025-02-16
+
+### Changed
+- Cleaned up dependency management
+- Removed redundant and built-in Python modules from dependencies
+- Standardized version constraints across Python versions
+- Added missing dependencies for core functionality
+
+### Fixed
+- Removed duplicate package entries
+- Fixed incorrect package specifications
+- Ensured consistent dependency versions across Python versions
+- Improved package compatibility across Python 3.9-3.13
+
 ## [1.1.4] - 2025-02-16
 
 ### Changed

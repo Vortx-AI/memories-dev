@@ -18,35 +18,86 @@ logger = logging.getLogger(__name__)
 
 def check_python_version() -> bool:
     """Check if Python version meets requirements."""
-    required_version = (3, 9)
+    min_version = (3, 9)
+    max_version = (3, 14)
     current_version = sys.version_info[:2]
     
-    if current_version >= required_version:
+    if min_version <= current_version < max_version:
         logger.info(f"✅ Python version {'.'.join(map(str, current_version))} meets requirements")
         return True
     else:
-        logger.error(f"❌ Python version {'.'.join(map(str, current_version))} does not meet minimum requirement of {'.'.join(map(str, required_version))}")
+        logger.error(f"❌ Python version {'.'.join(map(str, current_version))} does not meet requirements (>= {'.'.join(map(str, min_version))} and < {'.'.join(map(str, max_version))})")
         return False
 
 def check_dependencies() -> bool:
     """Check if all required dependencies are installed and working."""
     required_packages = [
+        # Core ML/DL
         "torch",
         "transformers",
-        "nltk",
+        "diffusers",
+        "langchain",
+        "langchain_community",
+        
+        # Data Processing
         "numpy",
         "pandas",
+        "duckdb",
+        "pyarrow",
+        
+        # GIS/Spatial
         "geopandas",
         "rasterio",
-        "duckdb",
+        "shapely",
+        "mercantile",
+        "mapbox_vector_tile",
+        "pyproj",
+        "pystac",
+        "osmnx",
+        "py6s",
+        
+        # Image Processing
+        "pillow",
+        "opencv-python",
+        "albumentations",
+        
+        # AI/ML Tools
+        "nltk",
         "faiss-cpu",
-        "shapely"
+        "sentence_transformers",
+        
+        # Data Storage/Processing
+        "redis",
+        "xarray",
+        "dask",
+        
+        # Web/API
+        "fastapi",
+        "pydantic",
+        "uvicorn",
+        "aiohttp",
+        "requests",
+        
+        # Earth Observation
+        "planetary_computer",
+        "sentinelhub",
+        "landsatxplore",
+        "sentinelsat",
+        "earthengine-api",
+        
+        # Utilities
+        "tqdm",
+        "python-dotenv",
+        "pyyaml",
+        "cryptography",
+        "typing_extensions",
+        "fsspec"
     ]
     
     missing_packages = []
     for package in required_packages:
         try:
-            __import__(package)
+            __import__(package.replace("-", "_"))  # Handle packages with hyphens
             logger.info(f"✅ {package} is installed")
         except ImportError as e:
             logger.error(f"❌ {package} is not installed: {str(e)}")
@@ -70,21 +121,63 @@ def check_nltk_data() -> bool:
         return False
 
 def check_gpu() -> bool:
-    """Check if GPU is available and working."""
+    """Check if GPU is available and working with all GPU-related packages."""
+    gpu_packages = [
+        ("torch", "cuda"),
+        ("torch.cuda", "is_available"),
+        ("faiss.cuda", None),  # Only if faiss-gpu is installed
+        ("cupy", None),  # Only if cupy is installed
+        ("cudf", None),  # Only if cudf is installed
+        ("cuspatial", None),  # Only if cuspatial is installed
+        ("torchvision", None),  # For image processing
+        ("torchaudio", None),  # For audio processing
+        ("torch_scatter", None),  # For geometric deep learning
+        ("torch_sparse", None),
+        ("torch_cluster", None),
+        ("torch_geometric", None)
+    ]
+    
+    gpu_available = False
+    gpu_details = []
+    
+    # Check CUDA availability
     try:
         import torch
         if torch.cuda.is_available():
+            gpu_available = True
             device_count = torch.cuda.device_count()
-            device_name = torch.cuda.get_device_name(0)
+            for i in range(device_count):
+                device_name = torch.cuda.get_device_name(i)
+                cuda_version = torch.version.cuda
+                gpu_details.append(f"  - Device {i}: {device_name}")
+                gpu_details.append(f"  - CUDA Version: {cuda_version}")
             logger.info(f"✅ GPU is available: {device_count} device(s)")
-            logger.info(f"  - Device 0: {device_name}")
-            return True
+            for detail in gpu_details:
+                logger.info(detail)
         else:
             logger.warning("⚠️ No GPU available, using CPU")
             return False
     except Exception as e:
         logger.error(f"❌ GPU check failed: {str(e)}")
         return False
+    
+    # Check GPU-related packages
+    if gpu_available:
+        for package, attribute in gpu_packages:
+            try:
+                module = __import__(package.replace("-", "_").replace(".", "_"))
+                if attribute:
+                    if '.' in package:
+                        for comp in package.split('.')[1:]:
+                            module = getattr(module, comp)
+                    getattr(module, attribute)
+                logger.info(f"✅ {package} is available")
+            except ImportError:
+                logger.warning(f"⚠️ {package} is not installed (optional)")
+            except Exception as e:
+                logger.error(f"❌ {package} check failed: {str(e)}")
+    
+    return gpu_available
 
 def test_memory_creation() -> bool:
     """Test basic memory creation functionality."""
