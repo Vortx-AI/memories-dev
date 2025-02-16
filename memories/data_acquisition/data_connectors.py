@@ -3,144 +3,72 @@ from pathlib import Path
 import json
 import pandas as pd
 import pyarrow.parquet as pq
-import faiss
-import numpy as np
-from typing import Dict, List, Any, Optional
+import dask.dataframe as dd
+from typing import Dict, List, Any, Generator
 from datetime import datetime
-from gensim.models import KeyedVectors
-import pickle
+import uuid
 
-def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None, word_vectors: Optional[KeyedVectors] = None) -> Dict[str, Any]:
+def parquet_connector(file_path: str, batch_size: int = 10000) -> Generator[List[Dict[str, Any]], None, None]:
     """
-    Read parquet file metadata and save column names to FAISS using word embeddings.
+    Read a parquet file in batches and yield the data.
     
     Args:
         file_path (str): Path to the parquet file
-        faiss_storage (Dict, optional): Dictionary containing FAISS index and instance_id
-        word_vectors (KeyedVectors, optional): Loaded word vectors model for embeddings
+        batch_size (int): Number of rows to process at a time
         
-    Returns:
-        Dict[str, Any]: Metadata and schema information about the parquet file
+    Yields:
+        List[Dict[str, Any]]: Batch of data from the parquet file
     """
     try:
-        file_path = Path(file_path)
+        # Read parquet file using dask
+        ddf = dd.read_parquet(file_path)
         
-        # Read parquet metadata only
-        parquet_file = pq.ParquetFile(str(file_path))
-        schema = parquet_file.schema
+        # Get total number of partitions
+        n_partitions = ddf.npartitions
         
-        # Get column information
-        columns = [field.name for field in schema]
-        
-        # If FAISS storage is provided, save column names using word embeddings
-        if faiss_storage and 'index' in faiss_storage and word_vectors:
-            try:
-                initial_vectors = faiss_storage['index'].ntotal
+        # Process partition by partition
+        for i in range(n_partitions):
+            # Get partition as pandas DataFrame
+            partition = ddf.get_partition(i).compute()
+            
+            # Process the partition in batches
+            for start_idx in range(0, len(partition), batch_size):
+                end_idx = min(start_idx + batch_size, len(partition))
+                batch = partition.iloc[start_idx:end_idx]
                 
-                # Get dimension from FAISS index
-                dimension = faiss_storage['index'].d
+                yield batch.to_dict('records')
                 
-                # Create word embeddings for each column name
-                vectors = []
-                for column in columns:
-                    # Get word embedding for column name
-                    vector = get_word_embedding(column, word_vectors, dimension)
-                    vectors.append(vector)
-                
-                # Convert to numpy array
-                vectors = np.array(vectors).astype('float32')
-                
-                # Add vectors to FAISS index
-                faiss_storage['index'].add(vectors)
-                
-                # Save metadata for each column
-                if 'metadata' not in faiss_storage:
-                    faiss_storage['metadata'] = []
-                
-                # Add metadata for each column
-                for i, column in enumerate(columns):
-                    faiss_storage['metadata'].append({
-                        'column_name': column,
-                        'file_path': str(file_path),
-                        'file_name': file_path.name,
-                        'vector_id': initial_vectors + i
-                    })
-                
-                final_vectors = faiss_storage['index'].ntotal
-                vectors_added = final_vectors - initial_vectors
-                
-                print(f"\n[ParquetConnector] FAISS Update for {file_path.name}:")
-                print(f"Initial vectors: {initial_vectors}")
-                print(f"Vectors added: {vectors_added}")
-                print(f"Final vectors: {final_vectors}")
-                print(f"Added columns: {', '.join(columns)}")
-                
-                # Save updated FAISS index
-                if 'instance_id' in faiss_storage:
-                    faiss_dir = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "faiss")
-                    index_path = os.path.join(faiss_dir, f"index_{faiss_storage['instance_id']}.faiss")
-                    faiss.write_index(faiss_storage['index'], index_path)
-                    
-                    # Save metadata
-                    metadata_path = os.path.join(faiss_dir, f"metadata_{faiss_storage['instance_id']}.pkl")
-                    with open(metadata_path, 'wb') as f:
-                        pickle.dump(faiss_storage['metadata'], f)
-                    
-                    print(f"[ParquetConnector] Saved FAISS index and metadata for instance: {faiss_storage['instance_id']}")
-                
-            except Exception as e:
-                print(f"Error saving to FAISS: {str(e)}")
-        
-        # Identify location columns
-        location_columns = [col for col in columns if col.lower() in 
-                         ['geometry', 'geom', 'location', 'point', 'shape', 
-                          'latitude', 'longitude', 'lat', 'lon', 'coordinates']]
-        
-        # Get file stats
-        file_stats = file_path.stat()
-        
-        file_info = {
-            "file_name": file_path.name,
-            "file_path": str(file_path),
-            "relative_path": str(file_path.relative_to(file_path.parent)),
-            "size_bytes": file_stats.st_size,
-            "columns": columns,
-            "location_columns": location_columns,
-            "num_row_groups": parquet_file.num_row_groups,
-            "metadata": {
-                "created": datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
-                "modified": datetime.fromtimestamp(file_stats.st_mtime).isoformat(),
-                "format_version": parquet_file.metadata.format_version,
-                "num_rows": parquet_file.metadata.num_rows,
-                "num_columns": len(columns),
-                "schema_arrow": str(schema)
-            }
-        }
-        
-        print(f"[ParquetConnector] Processed metadata for: {file_path}")
-        print(f"[ParquetConnector] Found {len(columns)} columns, {file_info['metadata']['num_rows']} rows")
-        
-        return file_info
+            print(f"[ParquetConnector] Processed partition {i+1}/{n_partitions} from {file_path}")
             
     except Exception as e:
         print(f"Error processing parquet file: {str(e)}")
-        return {
-            "file_name": Path(file_path).name,
-            "file_path": str(file_path),
-            "error": str(e)
-        }
+        yield []
 
-def multiple_parquet_connector(folder_path: str, faiss_storage: Optional[Dict] = None) -> Dict[str, Any]:
+def multiple_parquet_connector(folder_path: str, output_file_name: str = None) -> Dict[str, Any]:
     """
     Create detailed index of all parquet files in a folder and its subfolders.
     
     Args:
         folder_path (str): Path to the folder containing parquet files
-        faiss_storage (Dict, optional): Dictionary containing FAISS index and instance_id
+        output_file_name (str, optional): Name for the output JSON file (without .json extension)
+                                        If not provided, generates a unique name
         
     Returns:
         Dict containing detailed information about all parquet files
     """
+    # Convert folder_path to Path object
+    folder_path = Path(folder_path)
+    
+    # Set up data directory path relative to project root
+    data_dir = Path(__file__).parents[3] / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Generate unique output name if not provided
+    if output_file_name is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique_id = str(uuid.uuid4())[:8]
+        output_file_name = f"multiple_parquet_index_{timestamp}_{unique_id}"
+    
     results = {
         "processed_files": [],
         "error_files": [],
@@ -151,136 +79,84 @@ def multiple_parquet_connector(folder_path: str, faiss_storage: Optional[Dict] =
         }
     }
     
-    try:
-        # Walk through all files in the directory and subdirectories
-        for root, _, files in os.walk(folder_path):
-            for file_name in files:
-                if file_name.endswith('.parquet'):
-                    file_path = Path(root) / file_name
+    # Walk through all files in the directory and subdirectories
+    for root, _, files in os.walk(folder_path):
+        for file_name in files:
+            if file_name.endswith('.parquet'):
+                file_path = Path(root) / file_name
+                
+                # Update file count and size
+                results["metadata"]["file_count"] += 1
+                results["metadata"]["total_size"] += file_path.stat().st_size
+                
+                try:
+                    # Read parquet file
+                    table = pq.read_table(str(file_path))
+                    df = table.to_pandas()
                     
-                    # Get file metadata and save to FAISS if provided
-                    file_info = parquet_connector(str(file_path))
+                    # Get column information
+                    columns = list(df.columns)
                     
-                    if "error" in file_info:
-                        results["error_files"].append(file_info)
-                    else:
-                        results["processed_files"].append(file_info)
-                        results["metadata"]["total_size"] += file_info["size_bytes"]
-                        results["metadata"]["file_count"] += 1
-        
-        print("\nSummary:")
-        print(f"Base folder: {results['metadata']['base_folder']}")
-        print(f"Total parquet files found: {results['metadata']['file_count']}")
-        print(f"Total size: {results['metadata']['total_size'] / (1024*1024):.2f} MB")
-        print(f"Successfully processed: {len(results['processed_files'])}")
-        print(f"Errors encountered: {len(results['error_files'])}")
-        
-        return results
-        
-    except Exception as e:
-        print(f"Error in multiple_parquet_connector: {str(e)}")
-        return results
-
-def get_word_embedding(word: str, word_vectors: KeyedVectors, vector_size: int = 300) -> np.ndarray:
-    """
-    Get word embedding for a single word, handling multi-word phrases by averaging.
+                    # Identify location columns
+                    location_columns = [col for col in columns if col.lower() in 
+                                     ['geometry', 'geom', 'location', 'point', 'shape', 
+                                      'latitude', 'longitude', 'lat', 'lon', 'coordinates']]
+                    
+                    # Get sample data (first row)
+                    sample_data = {}
+                    first_row = df.iloc[0]
+                    for col in columns:
+                        # Convert to string representation, handle geometry objects
+                        val = first_row[col]
+                        try:
+                            if 'geometry' in str(type(val)).lower():
+                                sample_data[col] = str(val)
+                            else:
+                                sample_data[col] = val
+                        except:
+                            sample_data[col] = str(val)
+                    
+                    file_info = {
+                        "file_name": file_name,
+                        "file_path": str(file_path),
+                        "relative_path": str(file_path.relative_to(folder_path)),
+                        "size_bytes": file_path.stat().st_size,
+                        "columns": columns,
+                        "location_columns": location_columns,
+                        "sample_data": sample_data,
+                        "row_count": len(df)
+                    }
+                    
+                    results["processed_files"].append(file_info)
+                    print(f"Processed: {file_path}")
+                    
+                except Exception as e:
+                    results["error_files"].append({
+                        "file_name": file_name,
+                        "file_path": str(file_path),
+                        "relative_path": str(file_path.relative_to(folder_path)),
+                        "error": str(e),
+                        "size_bytes": file_path.stat().st_size
+                    })
+                    print(f"Error processing {file_path}: {str(e)}")
     
-    Args:
-        word (str): Word or phrase to get embedding for
-        word_vectors (KeyedVectors): Loaded word vectors model
-        vector_size (int): Size of the word vectors
-        
-    Returns:
-        np.ndarray: Word embedding vector
-    """
-    # Convert to lowercase and split into words
-    words = word.lower().split('_')
-    vectors = []
+    # Create output path with provided or generated name
+    output_path = data_dir / f"{output_file_name}.json"
     
-    for w in words:
-        try:
-            # Try to get vector for the word
-            vector = word_vectors[w]
-            vectors.append(vector)
-        except KeyError:
-            print(f"Warning: '{w}' not found in vocabulary")
-            continue
+    # Save results to JSON file in project's data directory
+    with open(output_path, 'w') as f:
+        json.dump(results, f, indent=2, default=str)
+    print(f"\nAnalysis saved to: {output_path}")
     
-    if vectors:
-        # Average the vectors if we found any
-        avg_vector = np.mean(vectors, axis=0)
-        # Normalize the vector
-        norm = np.linalg.norm(avg_vector)
-        if norm > 0:
-            avg_vector = avg_vector / norm
-        return avg_vector
-    else:
-        # Return zero vector if no words were found
-        return np.zeros(vector_size)
-
-def create_column_embeddings(metadata: list, word_vectors: KeyedVectors) -> pd.DataFrame:
-    """
-    Create embeddings for all column names in metadata.
+    # Print summary
+    print("\nSummary:")
+    print(f"Base folder: {results['metadata']['base_folder']}")
+    print(f"Total parquet files found: {results['metadata']['file_count']}")
+    print(f"Total size: {results['metadata']['total_size'] / (1024*1024):.2f} MB")
+    print(f"Successfully processed: {len(results['processed_files'])}")
+    print(f"Errors encountered: {len(results['error_files'])}")
     
-    Args:
-        metadata (list): List of metadata dictionaries containing column_name
-        word_vectors (KeyedVectors): Loaded word vectors model
-        
-    Returns:
-        pd.DataFrame: DataFrame with column names and their embeddings
-    """
-    # Create list to store results
-    embedding_data = []
-    
-    # Process each metadata entry
-    for meta in metadata:
-        column_name = meta.get('column_name', '')
-        if column_name:
-            # Get embedding for column name
-            vector = get_word_embedding(column_name, word_vectors)
-            
-            # Store result
-            embedding_data.append({
-                'column_name': column_name,
-                'vector': vector,
-                'file_name': meta.get('file_name', ''),
-                'file_path': meta.get('file_path', '')
-            })
-    
-    # Create DataFrame
-    df = pd.DataFrame(embedding_data)
-    return df
-
-def find_similar_columns(query_word: str, df: pd.DataFrame, word_vectors: KeyedVectors, top_k: int = 5) -> pd.DataFrame:
-    """
-    Find columns most similar to a query word.
-    
-    Args:
-        query_word (str): Word to find similar columns for
-        df (pd.DataFrame): DataFrame with column embeddings
-        word_vectors (KeyedVectors): Loaded word vectors model
-        top_k (int): Number of top similar results to return
-        
-    Returns:
-        pd.DataFrame: Top similar columns with similarity scores
-    """
-    # Get query vector
-    query_vector = get_word_embedding(query_word, word_vectors)
-    
-    # Calculate similarities
-    similarities = []
-    for vector in df['vector']:
-        similarity = np.dot(query_vector, vector)
-        similarities.append(similarity)
-    
-    # Add similarities to DataFrame
-    results_df = df.copy()
-    results_df['similarity'] = similarities
-    
-    # Sort by similarity and get top k results
-    results_df = results_df.sort_values('similarity', ascending=False).head(top_k)
-    
-    return results_df[['column_name', 'file_name', 'file_path', 'similarity']]
+    return results
 
 if __name__ == "__main__":
     # Example usage for single parquet
