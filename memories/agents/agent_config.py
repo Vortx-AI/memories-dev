@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from gensim.models import KeyedVectors
 import faiss
 import numpy as np
-from memories.core.model import LoadModel
+from memories.models.load_model import LoadModel
 from memories.data_acquisition.data_connectors import parquet_connector
 import requests
 import zipfile
