@@ -4,15 +4,6 @@ from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timedelta
 from memories.models.load_model import LoadModel
 from memories.data_acquisition.data_connectors import parquet_connector
-import pickle
-import pandas as pd
-import numpy as np
-import os
-import faiss
-from pathlib import Path
-from dotenv import load_dotenv
-from memories.core.memory import MemoryStore
-from memories.agents.agent_config import AgentConfig
 
 def get_model_config(
     use_gpu: Optional[bool] = True,
@@ -146,11 +137,14 @@ def check_instance_storage(instance_id: str):
     Args:
         instance_id (str): The instance ID to check
     """
-    memory_store = MemoryStore()
+    from memories.core.memory import MemoryStore
     
     print("\nChecking Storage for Instance")
     print("=" * 50)
     print(f"Instance ID: {instance_id}")
+    
+    # Initialize memory store
+    memory_store = MemoryStore()
     
     # Get stored memories
     stored_data = memory_store.get_stored_memories(instance_id)
@@ -173,10 +167,13 @@ def check_instance_storage(instance_id: str):
 
 def list_available_instances():
     """List all available instance IDs in the database."""
-    memory_store = MemoryStore()
+    from memories.core.memory import MemoryStore
     
     print("\nListing Available Instances")
     print("=" * 50)
+    
+    # Initialize memory store
+    memory_store = MemoryStore()
     
     try:
         # Query all instance IDs
@@ -209,11 +206,15 @@ def check_faiss_storage(instance_id: str):
     Args:
         instance_id (str): The instance ID to check
     """
-    memory_store = MemoryStore()
+    from memories.core.memory import MemoryStore
+    import os
     
     print("\nChecking FAISS Storage")
     print("=" * 50)
     print(f"Instance ID: {instance_id}")
+    
+    # Initialize memory store
+    memory_store = MemoryStore()
     
     # Check if FAISS index exists
     faiss_dir = os.path.join(memory_store.project_root, "data", "faiss")
@@ -234,15 +235,26 @@ def check_faiss_storage(instance_id: str):
         print(f"Looked in: {faiss_dir}")
 
 def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
-    """Create memory store with specified configuration."""
-    memory_store = MemoryStore()
+    """
+    Create memory store with specified configuration.
+    
+    Args:
+        model (LoadModel): Initialized model instance
+        instance_id (str): Instance ID for the model
+        
+    Returns:
+        Dict[str, Any]: Created memories data
+    """
+    from memories.core.memory import MemoryStore
     import os
     from dotenv import load_dotenv
     import faiss
-    from memories.data_acquisition.data_connectors import parquet_connector
     
     # Load environment variables
     load_dotenv()
+    
+    # Initialize memory store
+    memory_store = MemoryStore()
     
     # Get project root and data paths
     project_root = os.getenv("PROJECT_ROOT")
@@ -254,81 +266,67 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     os.makedirs(faiss_dir, exist_ok=True)
     
     # Create FAISS storage
-    dimension = 768
+    dimension = 768  # Standard embedding dimension
     faiss_storage = {
         'index': faiss.IndexFlatL2(dimension),
         'instance_id': instance_id,
-        'metadata': [],
-        'vectors': []
+        'metadata': []
     }
     
     print(f"\nCreated FAISS storage for instance: {instance_id}")
     print(f"Vector dimension: {dimension}")
     print(f"Initial vectors: {faiss_storage['index'].ntotal}")
     
-    # Define data connectors
-    data_connectors = [
-        {
-            "name": "india_points_processed",
-            "type": "parquet",
-            "file_path": os.path.join(osm_data_path, "india_points_processed.parquet")
-        }
-    ]
+    # Define time range (last 30 days)
+    end_time = datetime.now()
+    start_time = end_time - timedelta(days=30)
+    time_range = (start_time.isoformat(), end_time.isoformat())
     
-    # Process each parquet file and add to FAISS
-    print("\nProcessing data files...")
+    # Define location (India bounding box)
+    location = {
+        "type": "Polygon",
+        "coordinates": [[[68.1766451354, 7.96553477623], 
+                        [97.4025614766, 7.96553477623],
+                        [97.4025614766, 35.4940095078],
+                        [68.1766451354, 35.4940095078],
+                        [68.1766451354, 7.96553477623]]]
+    }
+    
+    # Define artifacts
+    artifacts = {
+        "osm_data": ["points_processed", "lines", "multipolygons"]
+    }
+    
+    # Get data connectors
+    data_connectors = get_data_connectors(osm_data_path)
+    
+    # Create memories with FAISS storage
+    memories = memory_store.create_memories(
+        model=model,
+        location=location,
+        time_range=time_range,
+        artifacts=artifacts,
+        data_connectors=data_connectors,
+        faiss_storage=faiss_storage
+    )
+    
+    # Process each parquet file
     for connector in data_connectors:
-        if connector["type"] == "parquet" and os.path.exists(connector["file_path"]):
+        if connector["type"] == "parquet":
             print(f"\nProcessing {connector['name']}:")
-            print(f"File: {connector['file_path']}")
             print(f"Current vector count: {faiss_storage['index'].ntotal}")
             
-            try:
-                # Process the parquet file and add vectors to FAISS
-                file_info = parquet_connector(connector["file_path"], faiss_storage)
-                
-                print(f"Processed file info:")
-                print(f"Columns: {len(file_info['columns'])}")
-                print(f"Rows: {file_info['num_rows']}")
-                print(f"New vector count: {faiss_storage['index'].ntotal}")
-                
-                # Save FAISS index after each file
-                index_path = os.path.join(faiss_dir, f"index_{instance_id}.faiss")
-                faiss.write_index(faiss_storage['index'], index_path)
-                
-                # Save metadata
-                metadata_path = os.path.join(faiss_dir, f"metadata_{instance_id}.pkl")
-                with open(metadata_path, 'wb') as f:
-                    pickle.dump(faiss_storage, f)
-                
-            except Exception as e:
-                print(f"Error processing {connector['name']}: {str(e)}")
-                import traceback
-                print(traceback.format_exc())
-        else:
-            print(f"\nSkipping {connector['name']}: File not found or wrong type")
+            # Get metadata about the parquet file
+            parquet_info = parquet_connector(connector["file_path"], faiss_storage)
+            
+            print(f"After processing {connector['name']}:")
+            print(f"Vector count: {faiss_storage['index'].ntotal}")
+            print(f"Metadata entries: {len(faiss_storage['metadata'])}")
     
     print(f"\nFinal FAISS Storage Summary:")
     print(f"Total vectors: {faiss_storage['index'].ntotal}")
     print(f"Total metadata entries: {len(faiss_storage['metadata'])}")
     print(f"Vector dimension: {dimension}")
-    
-    # Create memories with the populated FAISS storage
-    memories = memory_store.create_memories(
-        model=model,
-        location={
-            "type": "Polygon",
-            "coordinates": [[[68.1766451354, 7.96553477623], 
-                           [97.4025614766, 7.96553477623],
-                           [97.4025614766, 35.4940095078],
-                           [68.1766451354, 35.4940095078],
-                           [68.1766451354, 7.96553477623]]]
-        },
-        time_range=("2024-01-01", "2024-02-01"),
-        artifacts={"osm_data": ["points_processed"]},
-        data_connectors=data_connectors,
-        faiss_storage=faiss_storage
-    )
     
     return memories
 
@@ -342,13 +340,19 @@ def create_faiss_storage(instance_id: str) -> bool:
     Returns:
         bool: True if successful, False otherwise
     """
-    memory_store = MemoryStore()
+    from memories.core.memory import MemoryStore
+    import faiss
+    import numpy as np
+    import os
     
     print("\nCreating FAISS Storage")
     print("=" * 50)
     print(f"Instance ID: {instance_id}")
     
     try:
+        # Initialize memory store
+        memory_store = MemoryStore()
+        
         # Get project root and FAISS directory
         project_root = os.getenv("PROJECT_ROOT")
         faiss_dir = os.path.join(project_root, "data", "faiss")
@@ -373,50 +377,58 @@ def create_faiss_storage(instance_id: str) -> bool:
         print(f"Error creating FAISS storage: {str(e)}")
         return False
 
-def sanitize_timestamps(df: pd.DataFrame, timestamp_fields: list) -> pd.DataFrame:
-    """
-    Sanitize timestamp fields in the DataFrame.
-
-    Args:
-        df (pd.DataFrame): The DataFrame to sanitize.
-        timestamp_fields (list): List of column names that are expected to be timestamps.
-
-    Returns:
-        pd.DataFrame: The sanitized DataFrame.
-    """
-    for field in timestamp_fields:
-        if field in df.columns:
-            # Attempt to convert to datetime, coerce errors to NaT
-            df[field] = pd.to_datetime(df[field], errors='coerce')
-            # Optionally, fill NaT with a default timestamp or remove such rows
-            df[field].fillna(pd.Timestamp('1970-01-01'), inplace=True)
-    return df
-
 def main():
-    # Define configuration
-    config = {
-        "model_provider": "deepseek-ai",
-        "deployment_type": "deployment",
-        "model_name": "deepseek-coder-1.3b-base",
-        "use_gpu": True,
-        "data_connectors": [
-            {
-                "type": "parquet",
-                "path": "/home/jaya/memories-dev/data/osm_data/india_points_processed.parquet",
-                "name": "india_points_processed"
-            }
-        ],
-        "project_root": "/home/jaya/memories-dev"  # Optional: if not set in .env
-    }
-
-    # Create agent config and memory store
-    try:
-        agent = AgentConfig(**config)
-        instance_id = agent.create_memory_store()
-        print(f"\nSuccessfully created memory store!")
+    """Print current model instance ID when run directly."""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Check model configuration and storage')
+    parser.add_argument('--instance-id', type=str, help='Check storage for specific instance ID')
+    parser.add_argument('--list-instances', action='store_true', help='List all available instances')
+    parser.add_argument('--check-faiss', type=str, help='Check FAISS storage for specific instance ID')
+    parser.add_argument('--create-memories', action='store_true', help='Create new memories with default configuration')
+    parser.add_argument('--create-faiss', type=str, help='Create FAISS storage for specific instance ID')
+    
+    args = parser.parse_args()
+    
+    if args.create_faiss:
+        create_faiss_storage(args.create_faiss)
+    elif args.create_memories:
+        # Initialize model and create memories
+        model, instance_id = get_model_config()
+        print(f"\nCreating memories for instance ID: {instance_id}")
+        memories = create_memory_store(model, instance_id)
+        
+        # Create FAISS storage for this instance
+        create_faiss_storage(instance_id)
+        
+        print(f"\nMemories and FAISS storage created successfully")
         print(f"Instance ID: {instance_id}")
-    except Exception as e:
-        print(f"Error creating memory store: {str(e)}")
+        
+    elif args.check_faiss:
+        check_faiss_storage(args.check_faiss)
+    elif args.list_instances:
+        list_available_instances()
+    elif args.instance_id:
+        check_instance_storage(args.instance_id)
+    else:
+        # Original configuration display code...
+        print("\nTesting Model Configuration")
+        print("=" * 50)
+        
+        model, instance_id = get_model_config()
+        
+        print(f"\nModel Configuration:")
+        print(f"Provider: {model.model_provider}")
+        print(f"Model: {model.model_name}")
+        print(f"Deployment: {model.deployment_type}")
+        print(f"GPU Enabled: {model.use_gpu}")
+        print(f"\nInstance ID: {instance_id}")
+        
+        memory_config = get_memory_config()
+        print(f"\nMemory Configuration:")
+        print(f"Time Range: {memory_config['time_range'][0]} to {memory_config['time_range'][1]}")
+        print(f"Location: India Bounding Box")
+        print(f"Artifacts: {memory_config['artifacts']}")
 
 if __name__ == "__main__":
     main()
