@@ -393,7 +393,6 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 ---
 
 <div align="center">
-<p>Empowering AI with Real-World Context</p>
 
 
 <p align="center">Built with 💜 by the memories.dev team</p>
