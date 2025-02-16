@@ -367,6 +367,44 @@ def print_faiss_vectors(instance_id: str = None):
         print(traceback.format_exc())
 
 class AgentConfig:
+    def __init__(
+        self,
+        input: Dict[str, Any]
+    ):
+        """
+        Initialize the AgentConfig with the provided parameters.
+
+        Args:
+            input (Dict[str, Any]): Dictionary containing configuration parameters
+        """
+        # Extract configuration from input dictionary
+        config = input.get("input", {})
+        
+        self.model_provider = config["model_provider"]
+        self.deployment_type = config["deployment_type"]
+        self.model_name = config["model_name"]
+        self.use_gpu = config.get("use_gpu", True)
+        self.data_connectors = config.get("data_connectors", [])
+        self.project_root = config.get("project_root") or self._load_environment()
+        
+        # Initialize model
+        self.model = self._load_model()
+        
+        # Create necessary directories
+        self.osm_data_path = os.path.join(self.project_root, "data", "osm_data")
+        self.faiss_dir = os.path.join(self.project_root, "data", "faiss")
+        os.makedirs(self.osm_data_path, exist_ok=True)
+        os.makedirs(self.faiss_dir, exist_ok=True)
+        
+        # Initialize dimensions
+        self.dimension = 768  # FAISS vector dimension
+        
+        # Initialize memory store
+        self.memory_store = MemoryStore()
+        
+        # FAISS storage will be initialized when needed
+        self.faiss_storage = None
+
     @staticmethod
     def main():
         """Command-line interface for the AgentConfig class."""
@@ -402,7 +440,7 @@ class AgentConfig:
             }
             
             # Create agent config and memory store
-            agent = AgentConfig(**config)
+            agent = AgentConfig(config)  # Changed from AgentConfig(**config)
             instance_id = agent.create_memory_store()
             print(f"\nSuccessfully created memory store!")
             print(f"Instance ID: {instance_id}")
@@ -422,7 +460,7 @@ class AgentConfig:
                     "data_connectors": []
                 }
             }
-            agent = AgentConfig(**config)
+            agent = AgentConfig(config)  # Changed from AgentConfig(**config)
             agent.print_faiss_vectors(args.print_vectors)
 
 if __name__ == "__main__":
