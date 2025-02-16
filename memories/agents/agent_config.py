@@ -4,6 +4,9 @@ from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timedelta
 from memories.models.load_model import LoadModel
 from memories.data_acquisition.data_connectors import parquet_connector
+import os
+import faiss
+import numpy as np
 
 def get_model_config(
     use_gpu: Optional[bool] = True,
@@ -309,62 +312,92 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     
     return memories
 
+class AgentConfig:
+    @staticmethod
+    def main():
+        """Command-line interface for the AgentConfig class."""
+        import argparse
+        from dotenv import load_dotenv
+        
+        parser = argparse.ArgumentParser(description='Agent Configuration Tool')
+        parser.add_argument('--create-memories', action='store_true', help='Create memories from data connectors')
+        parser.add_argument('--print-vectors', type=str, help='Print FAISS vectors for a specific instance ID')
+        parser.add_argument('--list-indices', action='store_true', help='List all available FAISS indices')
+        parser.add_argument('--dump-vectors', type=str, help='Dump vectors from a specific instance ID')
+        parser.add_argument('--limit', type=int, default=5, help='Limit number of vectors to display')
+        args = parser.parse_args()
 
+        # Load environment variables
+        load_dotenv()
+        project_root = os.getenv("PROJECT_ROOT", "/home/jaya/memories-dev")
 
-def main():
-    """Print current model instance ID when run directly."""
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='Check model configuration and storage')
-    parser.add_argument('--instance-id', type=str, help='Check storage for specific instance ID')
-    parser.add_argument('--list-instances', action='store_true', help='List all available instances')
-    parser.add_argument('--check-faiss', type=str, help='Check FAISS storage for specific instance ID')
-    parser.add_argument('--create-memories', action='store_true', help='Create new memories with default configuration')
-    parser.add_argument('--create-faiss', type=str, help='Create FAISS storage for specific instance ID')
-    
-    args = parser.parse_args()
-    
-    if args.create_faiss:
-        print("create faiss storage")
-        #create_faiss_storage(args.create_faiss)
-    elif args.create_memories:
-        print("create memories")
-        # Initialize model and create memories
-        model, instance_id = get_model_config()
-        print(f"\nCreating memories for instance ID: {instance_id}")
-        memories = create_memory_store(model, instance_id)
-        
-        # Create FAISS storage for this instance
-        
-        
-        print(f"\nMemories and FAISS storage created successfully")
-        print(f"Instance ID: {instance_id}")
-        
-    elif args.check_faiss:
-        check_faiss_storage(args.check_faiss)
-    elif args.list_instances:
-        list_available_instances()
-    elif args.instance_id:
-        check_instance_storage(args.instance_id)
-    else:
-        # Original configuration display code...
-        print("\nTesting Model Configuration")
-        print("=" * 50)
-        
-        model, instance_id = get_model_config()
-        
-        print(f"\nModel Configuration:")
-        print(f"Provider: {model.model_provider}")
-        print(f"Model: {model.model_name}")
-        print(f"Deployment: {model.deployment_type}")
-        print(f"GPU Enabled: {model.use_gpu}")
-        print(f"\nInstance ID: {instance_id}")
-        
-        memory_config = get_memory_config()
-        print(f"\nMemory Configuration:")
-        print(f"Time Range: {memory_config['time_range'][0]} to {memory_config['time_range'][1]}")
-        print(f"Location: India Bounding Box")
-        print(f"Artifacts: {memory_config['artifacts']}")
+        if args.dump_vectors:
+            faiss_dir = os.path.join(project_root, "data", "faiss")
+            index_path = os.path.join(faiss_dir, f"index_{args.dump_vectors}.faiss")
+            
+            if not os.path.exists(index_path):
+                print(f"No FAISS index found for instance ID: {args.dump_vectors}")
+                return
+                
+            try:
+                # Load the index
+                index = faiss.read_index(index_path)
+                
+                # Get all vectors
+                vectors = faiss.vector_to_array(index.get_xb())
+                vectors = vectors.reshape(index.ntotal, index.d)
+                
+                print(f"\nFAISS Vectors for Instance {args.dump_vectors}")
+                print(f"Total vectors: {index.ntotal}")
+                print(f"Vector dimension: {index.d}")
+                print("\nFirst {args.limit} vectors:")
+                
+                for i, vector in enumerate(vectors[:args.limit]):
+                    print(f"\nVector {i}:")
+                    print(vector)
+                    print(f"Magnitude: {np.linalg.norm(vector)}")
+                    
+            except Exception as e:
+                print(f"Error reading vectors: {str(e)}")
+                import traceback
+                print(traceback.format_exc())
+
+        if args.create_memories:
+            print("create memories")
+            # Initialize model and create memories
+            model, instance_id = get_model_config()
+            print(f"\nCreating memories for instance ID: {instance_id}")
+            memories = create_memory_store(model, instance_id)
+            
+            # Create FAISS storage for this instance
+            
+            
+            print(f"\nMemories and FAISS storage created successfully")
+            print(f"Instance ID: {instance_id}")
+            
+        elif args.list_indices:
+            list_available_instances()
+        elif args.instance_id:
+            check_instance_storage(args.instance_id)
+        else:
+            # Original configuration display code...
+            print("\nTesting Model Configuration")
+            print("=" * 50)
+            
+            model, instance_id = get_model_config()
+            
+            print(f"\nModel Configuration:")
+            print(f"Provider: {model.model_provider}")
+            print(f"Model: {model.model_name}")
+            print(f"Deployment: {model.deployment_type}")
+            print(f"GPU Enabled: {model.use_gpu}")
+            print(f"\nInstance ID: {instance_id}")
+            
+            memory_config = get_memory_config()
+            print(f"\nMemory Configuration:")
+            print(f"Time Range: {memory_config['time_range'][0]} to {memory_config['time_range'][1]}")
+            print(f"Location: India Bounding Box")
+            print(f"Artifacts: {memory_config['artifacts']}")
 
 if __name__ == "__main__":
-    main()
+    AgentConfig.main()
