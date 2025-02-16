@@ -4,6 +4,9 @@ from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timedelta
 from memories.models.load_model import LoadModel
 from memories.data_acquisition.data_connectors import parquet_connector
+import os
+import glob
+import pickle
 
 def get_model_config(
     use_gpu: Optional[bool] = True,
@@ -309,62 +312,99 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     
     return memories
 
-
-
-def main():
-    """Print current model instance ID when run directly."""
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='Check model configuration and storage')
-    parser.add_argument('--instance-id', type=str, help='Check storage for specific instance ID')
-    parser.add_argument('--list-instances', action='store_true', help='List all available instances')
-    parser.add_argument('--check-faiss', type=str, help='Check FAISS storage for specific instance ID')
-    parser.add_argument('--create-memories', action='store_true', help='Create new memories with default configuration')
-    parser.add_argument('--create-faiss', type=str, help='Create FAISS storage for specific instance ID')
-    
-    args = parser.parse_args()
-    
-    if args.create_faiss:
-        print("create faiss storage")
-        #create_faiss_storage(args.create_faiss)
-    elif args.create_memories:
-        print("create memories")
-        # Initialize model and create memories
-        model, instance_id = get_model_config()
-        print(f"\nCreating memories for instance ID: {instance_id}")
-        memories = create_memory_store(model, instance_id)
+class AgentConfig:
+    @staticmethod
+    def main():
+        """Command-line interface for the AgentConfig class."""
+        import argparse
+        from dotenv import load_dotenv
+        import glob
         
-        # Create FAISS storage for this instance
+        parser = argparse.ArgumentParser(description='Agent Configuration Tool')
+        parser.add_argument('--create-memories', action='store_true', help='Create memories from data connectors')
+        parser.add_argument('--print-vectors', type=str, help='Print FAISS vectors for a specific instance ID')
+        parser.add_argument('--list-indices', action='store_true', help='List all available FAISS indices')
+        args = parser.parse_args()
         
+        # Load environment variables
+        load_dotenv()
+        project_root = os.getenv("PROJECT_ROOT", "/home/jaya/memories-dev")
         
-        print(f"\nMemories and FAISS storage created successfully")
-        print(f"Instance ID: {instance_id}")
-        
-    elif args.check_faiss:
-        check_faiss_storage(args.check_faiss)
-    elif args.list_instances:
-        list_available_instances()
-    elif args.instance_id:
-        check_instance_storage(args.instance_id)
-    else:
-        # Original configuration display code...
-        print("\nTesting Model Configuration")
-        print("=" * 50)
-        
-        model, instance_id = get_model_config()
-        
-        print(f"\nModel Configuration:")
-        print(f"Provider: {model.model_provider}")
-        print(f"Model: {model.model_name}")
-        print(f"Deployment: {model.deployment_type}")
-        print(f"GPU Enabled: {model.use_gpu}")
-        print(f"\nInstance ID: {instance_id}")
-        
-        memory_config = get_memory_config()
-        print(f"\nMemory Configuration:")
-        print(f"Time Range: {memory_config['time_range'][0]} to {memory_config['time_range'][1]}")
-        print(f"Location: India Bounding Box")
-        print(f"Artifacts: {memory_config['artifacts']}")
+        if args.list_indices:
+            faiss_dir = os.path.join(project_root, "data", "faiss")
+            print(f"\nSearching for FAISS indices in: {faiss_dir}")
+            
+            # Find all FAISS index files
+            index_files = glob.glob(os.path.join(faiss_dir, "index_*.faiss"))
+            
+            if not index_files:
+                print("No FAISS indices found.")
+                return
+                
+            print(f"\nFound {len(index_files)} FAISS indices:")
+            for idx_file in index_files:
+                instance_id = os.path.basename(idx_file).replace("index_", "").replace(".faiss", "")
+                metadata_file = os.path.join(faiss_dir, f"metadata_{instance_id}.pkl")
+                
+                try:
+                    # Load index and metadata
+                    index = faiss.read_index(idx_file)
+                    with open(metadata_file, 'rb') as f:
+                        metadata = pickle.load(f)
+                    
+                    print(f"\nInstance ID: {instance_id}")
+                    print(f"Total vectors: {index.ntotal}")
+                    print(f"Vector dimension: {index.d}")
+                    print("Data Connectors:")
+                    for entry in metadata['metadata']:
+                        print(f"  - {entry['name']}: {entry.get('num_vectors_added', 'N/A')} vectors")
+                    
+                except Exception as e:
+                    print(f"Error reading index {instance_id}: {str(e)}")
+                    continue
+            
+        elif args.create_memories:
+            # Default configuration
+            config = {
+                "input": {
+                    "model_provider": "deepseek-ai",
+                    "deployment_type": "deployment",
+                    "model_name": "deepseek-coder-1.3b-base",
+                    "use_gpu": True,
+                    "project_root": project_root,
+                    "data_connectors": [
+                        {
+                            "type": "parquet",
+                            "path": "/home/jaya/memories-dev/data/osm_data/india_points_processed.parquet",
+                            "name": "india_points_processed"
+                        }
+                    ]
+                }
+            }
+            
+            # Create agent config and memory store
+            agent = AgentConfig(config)
+            instance_id = agent.create_memory_store()
+            print(f"\nSuccessfully created memory store!")
+            print(f"Instance ID: {instance_id}")
+            
+            # Print vector information for the newly created instance
+            agent.print_faiss_vectors()
+            
+        elif args.print_vectors:
+            # Create minimal config just to access FAISS information
+            config = {
+                "input": {
+                    "model_provider": "deepseek-ai",
+                    "deployment_type": "deployment",
+                    "model_name": "deepseek-coder-1.3b-base",
+                    "use_gpu": True,
+                    "project_root": project_root,
+                    "data_connectors": []
+                }
+            }
+            agent = AgentConfig(config)
+            agent.print_faiss_vectors(args.print_vectors)
 
 if __name__ == "__main__":
-    main()
+    AgentConfig.main()
