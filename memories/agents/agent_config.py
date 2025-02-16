@@ -1,6 +1,6 @@
 """Configuration settings for the Agent system"""
 
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional, Tuple, Union
 from datetime import datetime, timedelta
 from memories.models.load_model import LoadModel
 from memories.data_acquisition.data_connectors import parquet_connector
@@ -72,21 +72,26 @@ class AgentConfig:
             'vectors': []
         }
 
-    def _vectorize_data(self, data: Dict[str, Any]) -> np.ndarray:
+    def _vectorize_data(self, data: Union[Dict[str, Any], pd.DataFrame]) -> np.ndarray:
         """
         Vectorize the data using the loaded model.
         
         Args:
-            data (Dict[str, Any]): Data to vectorize
+            data (Union[Dict[str, Any], pd.DataFrame]): Data to vectorize
             
         Returns:
             np.ndarray: Vectorized data
         """
         # Convert dictionary data to DataFrame if it's not already
         if isinstance(data, dict):
-            df = pd.DataFrame(data['data'])
-        else:
+            df = pd.DataFrame(data)
+        elif isinstance(data, pd.DataFrame):
             df = data
+        else:
+            raise ValueError(f"Unsupported data type: {type(data)}")
+
+        print(f"DataFrame shape: {df.shape}")
+        print(f"DataFrame columns: {df.columns.tolist()}")
 
         # Convert data to text format for embedding
         texts = []
@@ -98,6 +103,8 @@ class AgentConfig:
                     text_parts.append(f"{field}: {row[field]}")
             texts.append(" | ".join(text_parts))
 
+        print(f"Generated {len(texts)} text representations")
+
         # Get embeddings from the model
         embeddings = []
         batch_size = 32  # Adjust based on your memory constraints
@@ -106,8 +113,12 @@ class AgentConfig:
             batch = texts[i:i + batch_size]
             batch_embeddings = self.model.get_embeddings(batch)
             embeddings.extend(batch_embeddings)
+            print(f"Processed batch {i//batch_size + 1}/{(len(texts)-1)//batch_size + 1}")
 
-        return np.array(embeddings, dtype=np.float32)
+        vectors = np.array(embeddings, dtype=np.float32)
+        print(f"Generated vectors shape: {vectors.shape}")
+        
+        return vectors
 
     def create_memory_store(self) -> str:
         """
