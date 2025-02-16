@@ -2,8 +2,6 @@ from typing import Dict, Any, Optional
 import os
 from pathlib import Path
 from memories.utils.duckdb_queries import DuckDBQueryGenerator
-import duckdb
-import pandas as pd
 
 class AgentAnalyst:
     def __init__(self, load_model: Any):

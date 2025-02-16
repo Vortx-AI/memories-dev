@@ -1,76 +1,50 @@
+from typing import Dict, List, Any, Optional
+import duckdb
+from pathlib import Path
+import pandas as pd
+from memories.agents.agent_config import get_duckdb_connection
 
-Generate complete, working code based on these requirements.
-"""
-        
-        # Get response from LLM
-        response = self.load_model.generate_code(prompt)
-        
-        # Extract code from response
-        code = response.strip()
-        
-        return code
-    
-    def execute_generated_code(self, code: str) -> pd.DataFrame:
+def fetch_data(conn):
+    """
+    Example DuckDB spatial query template.
+    Shows how to:
+    1. Use existing DuckDB connection
+    2. Query parquet files with geometry data
+    3. Use spatial functions
+    4. Return results as DataFrame
+    """
+    try:
+        query = """
+            SELECT 
+                amenity,
+                name,
+                ST_X(geom) as longitude,
+                ST_Y(geom) as latitude,
+                ST_Distance(geom, ST_Point(77.5946, 12.9716)) as distance_meters
+            FROM parquet_scan('india_points_processed.parquet')
+            WHERE 
+                amenity = 'hospital'
+                AND ST_DWithin(
+                    geom,
+                    ST_Point(77.5946, 12.9716),
+                    5000  -- 5km radius
+                )
+            ORDER BY distance_meters
+            LIMIT 100
         """
-        Execute the LLM-generated code and return results.
-        
-        Args:
-            code (str): Generated Python code
-        """
-        try:
-            # Create a local namespace for execution
-            local_namespace = {}
-            
-            # Execute the code
-            exec(code, globals(), local_namespace)
-            
-            # Call the fetch_data function
-            if 'fetch_data' in local_namespace:
-                result = local_namespace['fetch_data']()
-                return result
-            else:
-                print("Error: fetch_data function not found in generated code")
-                return pd.DataFrame()
-                
-        except Exception as e:
-            print(f"Error executing generated code: {str(e)}")
-            return pd.DataFrame()
-
-def main():
-    """Example usage of DuckDBQueryGenerator with LLM"""
-    from memories.models.load_model import LoadModel
-    
-    # Initialize model
-    load_model = LoadModel()
-    
-    # Example inputs
-    parquet_file = "/path/to/india_points_processed.parquet"
-    query = "find hospitals near bangalore"
-    column_info = {
-        "column_name": "services",
-        "file_name": "india_points_processed.parquet",
-        "distance": 0.7762
-    }
-    location_info = {
-        "location": "bangalore",
-        "coordinates": [12.9716, 77.5946],
-        "radius": 5000
-    }
-    
-    # Initialize generator
-    generator = DuckDBQueryGenerator(parquet_file, load_model)
-    
-    # Generate code
-    print("\nGenerating Python Code...")
-    code = generator.generate_query_code(query, column_info, location_info)
-    print("\nGenerated Code:")
-    print(code)
-    
-    # Execute code
-    print("\nExecuting Generated Code:")
-    results = generator.execute_generated_code(code)
-    print("\nResults:")
-    print(results)
+        return conn.execute(query).fetchdf()
+    except Exception as e:
+        print(f"Error executing query: {str(e)}")
+        return pd.DataFrame()
 
 if __name__ == "__main__":
-    main()
+    # Get DuckDB connection
+    conn = get_duckdb_connection()
+    
+    # Execute query
+    results = fetch_data(conn)
+    
+    # Display results
+    print("\nQuery Results:")
+    print(results)
+    print(f"\nTotal rows: {len(results)}")
