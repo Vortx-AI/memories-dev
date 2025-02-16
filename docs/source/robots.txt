@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Sitemap: https://memories-dev.readthedocs.io/sitemap.xml
+
+# Disallow indexing of search results and other dynamic pages
+Disallow: /search/
+Disallow: /search.html
+Disallow: /_sources/
+Disallow: /_static/
+Disallow: /_images/ 

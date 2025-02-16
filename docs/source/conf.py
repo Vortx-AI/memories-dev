@@ -1,3 +1,4 @@
+# Configuration file for the Sphinx documentation builder.
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../..'))
@@ -31,11 +32,21 @@ extensions = [
     'sphinx_togglebutton',
     'sphinx_hoverxref.extension',
     'sphinx.ext.duration',
-    'sphinxcontrib.mermaid'
+    'sphinxcontrib.mermaid',
+    'myst_parser'
 ]
 
 # Add any paths that contain templates here
 templates_path = ['_templates']
+
+# These paths are either relative to html_static_path or fully qualified paths (eg. https://...)
+html_css_files = [
+    'custom.css',
+]
+
+html_js_files = [
+    'https://buttons.github.io/buttons.js',
+]
 
 # The suffix of source filenames
 source_suffix = {
@@ -45,6 +56,7 @@ source_suffix = {
 
 # The master toctree document
 master_doc = 'index'
+root_doc = 'index'
 
 # List of patterns to exclude
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
@@ -59,22 +71,33 @@ html_static_path = ['_static']
 html_theme_options = {
     'logo_only': False,
     'display_version': True,
-    'prev_next_buttons_location': 'bottom',
-    'style_external_links': False,
-    'style_nav_header_background': '#2980B9',
-    'collapse_navigation': True,
+    'prev_next_buttons_location': 'both',
+    'style_external_links': True,
+    'style_nav_header_background': '#2c3e50',
+    'collapse_navigation': False,
     'sticky_navigation': True,
     'navigation_depth': 4,
     'includehidden': True,
-    'titles_only': False
+    'titles_only': False,
+    'analytics_id': 'UA-XXXXXXXX-1',  # Replace with your Google Analytics ID
+}
+
+# HTML context
+html_context = {
+    'display_github': True,
+    'github_user': 'Vortx-AI',
+    'github_repo': 'memories-dev',
+    'github_version': 'main',
+    'conf_py_path': '/docs/source/',
 }
 
 # Custom sidebar templates
 html_sidebars = {
     '**': [
+        'globaltoc.html',
         'relations.html',
+        'sourcelink.html',
         'searchbox.html',
-        'navigation.html',
     ]
 }
 
@@ -89,16 +112,17 @@ intersphinx_mapping = {
 # Napoleon settings
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
-napoleon_include_init_with_doc = False
+napoleon_include_init_with_doc = True
 napoleon_include_private_with_doc = False
 napoleon_include_special_with_doc = True
-napoleon_use_admonition_for_examples = False
-napoleon_use_admonition_for_notes = False
-napoleon_use_admonition_for_references = False
+napoleon_use_admonition_for_examples = True
+napoleon_use_admonition_for_notes = True
+napoleon_use_admonition_for_references = True
 napoleon_use_ivar = False
 napoleon_use_param = True
 napoleon_use_rtype = True
 napoleon_type_aliases = None
+napoleon_attr_annotations = True
 
 # Autodoc settings
 autodoc_default_options = {
@@ -106,8 +130,15 @@ autodoc_default_options = {
     'member-order': 'bysource',
     'special-members': '__init__',
     'undoc-members': True,
-    'exclude-members': '__weakref__'
+    'exclude-members': '__weakref__',
+    'show-inheritance': True,
+    'inherited-members': True,
 }
+
+autodoc_typehints = 'description'
+autodoc_class_signature = 'separated'
+autodoc_member_order = 'bysource'
+autodoc_warningiserror = True
 
 # NotFound page settings
 notfound_context = {
@@ -118,9 +149,12 @@ notfound_context = {
     '''
 }
 notfound_no_urls_prefix = True
+notfound_template = '404.html'
 
 # Enable todo items
 todo_include_todos = True
+todo_emit_warnings = True
+todo_link_only = False
 
 # HoverXRef settings
 hoverxref_auto_ref = True
@@ -128,4 +162,42 @@ hoverxref_domains = ['py']
 hoverxref_roles = [
     'ref',
     'doc',
-] 
+]
+hoverxref_role_types = {
+    'ref': 'tooltip',
+    'doc': 'tooltip',
+    'class': 'tooltip',
+    'func': 'tooltip',
+    'meth': 'tooltip',
+}
+
+# Copy button settings
+copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
+copybutton_prompt_is_regexp = True
+copybutton_only_copy_prompt_lines = True
+copybutton_remove_prompts = True
+
+# Mermaid settings
+mermaid_params = {
+    'theme': 'default',
+}
+
+# MyST settings
+myst_enable_extensions = [
+    'amsmath',
+    'colon_fence',
+    'deflist',
+    'dollarmath',
+    'html_admonition',
+    'html_image',
+    'replacements',
+    'smartquotes',
+    'substitution',
+    'tasklist',
+]
+
+# Add any extra paths that contain custom files
+html_extra_path = ['robots.txt']
+
+# Output file base name for HTML help builder
+htmlhelp_basename = 'memories-dev-doc' 
