@@ -4,6 +4,11 @@ from gensim.models import KeyedVectors
 import os
 import pickle
 from typing import Dict, List, Any, Optional
+import pandas as pd
+import duckdb
+
+# Module-level cache for word vectors
+_WORD_VECTORS = None
 
 class Agent_L1:
     def __init__(self, instance_id: str, query: str):
@@ -16,22 +21,22 @@ class Agent_L1:
         """
         self.instance_id = instance_id
         self.query = query
-        self.word_vectors = None
         self.faiss_index = None
         self.metadata = None
+        self.parquet_file = None
         
     def get_word_embedding(self, word: str, vector_size: int = 100) -> np.ndarray:
         """
         Get word embedding for a single word, handling multi-word phrases by averaging.
         """
+        global _WORD_VECTORS
         try:
-            # Convert to lowercase and split into words
             words = word.lower().split('_')
             vectors = []
             
             for w in words:
                 try:
-                    vector = self.word_vectors[w]
+                    vector = _WORD_VECTORS[w]
                     vectors.append(vector)
                 except KeyError:
                     print(f"Warning: '{w}' not found in vocabulary")
@@ -60,12 +65,17 @@ class Agent_L1:
         """
         Load required resources: word vectors, FAISS index, and metadata.
         """
+        global _WORD_VECTORS
         try:
-            # Load word vectors
-            models_dir = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "models")
-            vectors_path = os.path.join(models_dir, "glove.6B.100d.txt.word2vec")
-            print(f"Loading word vectors from {vectors_path}")
-            self.word_vectors = KeyedVectors.load_word2vec_format(vectors_path)
+            # Load word vectors if not already loaded
+            if _WORD_VECTORS is None:
+                models_dir = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "models")
+                vectors_path = os.path.join(models_dir, "glove.6B.100d.txt.word2vec")
+                print(f"Loading word vectors from {vectors_path}")
+                _WORD_VECTORS = KeyedVectors.load_word2vec_format(vectors_path)
+                print("Word vectors loaded and cached")
+            else:
+                print("Using cached word vectors")
             
             # Load FAISS index and metadata
             faiss_dir = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "faiss")
@@ -78,6 +88,10 @@ class Agent_L1:
             print(f"Loading metadata from {metadata_path}")
             with open(metadata_path, 'rb') as f:
                 self.metadata = pickle.load(f)
+            
+            # Get parquet file path from metadata
+            if self.metadata and len(self.metadata) > 0:
+                self.parquet_file = self.metadata[0].get('file_name')
                 
             print("Resources loaded successfully")
             

@@ -5,6 +5,7 @@ import os
 from memories.agents.agent_query_classification import AgentQueryClassification
 from memories.agents.agent_context import AgentContext
 from memories.agents.agent_L1 import Agent_L1
+from memories.agents.agent_analyst import AgentAnalyst
 from memories.core.memory import MemoryStore
 
 # Load environment variables
@@ -93,7 +94,6 @@ class Agent:
                     if l1_result["status"] == "success":
                         similar_columns = l1_result["similar_columns"]
                         result['similar_columns'] = similar_columns
-                        result['sql_query'] = l1_result.get('sql_query')
                         
                         print(f"\n• Searching columns for data type: {search_term}")
                         print("\n• Similar columns found:")
@@ -102,11 +102,35 @@ class Agent:
                             print(f"  File: {col['file_name']}")
                             print(f"  Distance: {col['distance']:.4f}")
                         
-                        if 'sql_query' in l1_result:
-                            print("\n• Generated SQL Query:")
-                            print(f"{l1_result['sql_query']}")
+                        # Step 4: Analyst Agent (only for L1 after successful column search)
+                        print("\n[Invoking Agent Analyst]")
+                        print("-"*50)
+                        analyst = AgentAnalyst(self.load_model)
+                        
+                        # Use the best matching column (first in the list)
+                        best_column = similar_columns[0]
+                        analyst_result = analyst.analyze_query(
+                            query=query,
+                            column_info=best_column,
+                            location_info=result.get('location_details')
+                        )
+                        
+                        if analyst_result["status"] == "success":
+                            result.update({
+                                'generated_code': analyst_result['generated_code'],
+                                'query_results': analyst_result['results'],
+                                'row_count': analyst_result['row_count']
+                            })
+                            
+                            print("\nAnalyst Agent Response:")
+                            print(f"• Generated Code:\n{analyst_result['generated_code']}")
+                            print(f"\n• Query Results:")
+                            print(analyst_result['results'])
+                            print(f"\n• Total Rows: {analyst_result['row_count']}")
+                        else:
+                            print(f"• Error in Analyst: {analyst_result.get('error', 'Unknown error')}")
                     else:
-                        print(f"• Error: {l1_result.get('error', 'Unknown error')}")
+                        print(f"• Error in L1: {l1_result.get('error', 'Unknown error')}")
             
             print("\n" + "="*80)
             print("FINAL PROCESSING RESULT")
@@ -124,9 +148,10 @@ class Agent:
                 for col in result['similar_columns']:
                     print(f"  - {col['column_name']} ({col['file_name']})")
             
-            if 'sql_query' in result:
-                print("\n• SQL Query:")
-                print(result['sql_query'])
+            if 'query_results' in result:
+                print("\n• Query Results:")
+                print(result['query_results'])
+                print(f"\n• Total Rows: {result['row_count']}")
             
             print("="*80)
             
