@@ -89,16 +89,16 @@ def get_data_connectors(osm_data_path: str) -> List[Dict[str, str]]:
             "type": "parquet",
             "file_path": f"{osm_data_path}/india_points_processed.parquet"
         },
-        {
-            "name": "india_lines",
-            "type": "parquet",
-            "file_path": f"{osm_data_path}/india_lines.parquet"
-        },
-        {
-            "name": "india_multipolygons",
-            "type": "parquet",
-            "file_path": f"{osm_data_path}/india_multipolygons.parquet"
-        }
+       # {
+       #     "name": "india_lines",
+        #    "type": "parquet",
+       #     "file_path": f"{osm_data_path}/india_lines.parquet"
+       # },
+       # {
+       #     "name": "india_multipolygons",
+       #     "type": "parquet",
+       #     "file_path": f"{osm_data_path}/india_multipolygons.parquet"
+       # }
     ]
 
 # Test Query Configuration

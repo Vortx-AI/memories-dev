@@ -30,91 +30,66 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None) -> D
         # Get column information
         columns = [field.name for field in schema]
         
-        # Identify location columns
-        location_columns = [col for col in columns if col.lower() in 
-                         ['geometry', 'geom', 'location', 'point', 'shape', 
-                          'latitude', 'longitude', 'lat', 'lon', 'coordinates']]
-        
-        # Get file stats
-        file_stats = file_path.stat()
-        
-        file_info = {
-            "file_name": file_path.name,
-            "file_path": str(file_path),
-            "relative_path": str(file_path.relative_to(file_path.parent)),
-            "size_bytes": file_stats.st_size,
-            "columns": columns,
-            "location_columns": location_columns,
-            "num_row_groups": parquet_file.num_row_groups,
-            "metadata": {
-                "created": datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
-                "modified": datetime.fromtimestamp(file_stats.st_mtime).isoformat(),
-                "format_version": parquet_file.metadata.format_version,
-                "num_rows": parquet_file.metadata.num_rows,
-                "num_columns": len(columns),
-                "schema_arrow": str(schema)
-            }
-        }
-        
         # If FAISS storage is provided, save column names as vectors
         if faiss_storage and 'index' in faiss_storage:
             try:
                 initial_vectors = faiss_storage['index'].ntotal
                 dimension = faiss_storage['index'].d
-                
-                # Read the actual data for the columns to create meaningful vectors
-                df = pq.read_table(str(file_path)).to_pandas()
                 vectors = []
                 
+                # Read data with proper encoding handling
+                table = pq.read_table(str(file_path))
+                df = table.to_pandas(strings_to_categorical=True)  # Convert strings to categorical
+                
+                print(f"\nProcessing columns for FAISS vectors...")
                 for column in columns:
-                    # Create a meaningful vector based on column data
-                    if column in df.columns:
-                        # Get sample data from the column
-                        sample_data = df[column].dropna().head(100).astype(str).tolist()
-                        # Create a simple frequency-based vector
-                        vector = np.zeros(dimension, dtype='float32')
-                        
-                        # Fill vector based on data characteristics
-                        if sample_data:
-                            # Use basic statistics if numerical
-                            if df[column].dtype in ['int64', 'float64']:
-                                numeric_data = pd.to_numeric(df[column], errors='coerce')
-                                vector[:4] = [
-                                    numeric_data.mean() if not pd.isna(numeric_data.mean()) else 0,
-                                    numeric_data.std() if not pd.isna(numeric_data.std()) else 0,
-                                    numeric_data.min() if not pd.isna(numeric_data.min()) else 0,
-                                    numeric_data.max() if not pd.isna(numeric_data.max()) else 0
+                    vector = np.zeros(dimension, dtype='float32')
+                    
+                    try:
+                        if column in df.columns:
+                            # Get column data
+                            col_data = df[column]
+                            
+                            # Handle different data types
+                            if pd.api.types.is_numeric_dtype(col_data):
+                                # Numeric data
+                                numeric_stats = col_data.agg(['mean', 'std', 'min', 'max']).fillna(0)
+                                vector[:4] = numeric_stats.values
+                            else:
+                                # Convert to string and get basic stats
+                                str_data = col_data.astype(str)
+                                vector[4:8] = [
+                                    str_data.str.len().mean(),
+                                    len(str_data.unique()),
+                                    str_data.str.count(r'[0-9]').mean(),
+                                    str_data.str.count(r'[A-Za-z]').mean()
                                 ]
                             
-                            # Use string characteristics if string
-                            str_data = df[column].astype(str)
-                            vector[4:8] = [
-                                str_data.str.len().mean(),
-                                len(str_data.unique()),
-                                str_data.str.count('[0-9]').mean(),
-                                str_data.str.count('[A-Za-z]').mean()
-                            ]
+                            # Fill remaining dimensions with hash of column name
+                            name_hash = np.array([hash(column) % 100 for _ in range(dimension-8)], dtype='float32')
+                            vector[8:] = name_hash
+                            
+                            # Normalize
+                            norm = np.linalg.norm(vector)
+                            if norm > 0:
+                                vector = vector / norm
                         
-                        # Normalize the vector
-                        norm = np.linalg.norm(vector)
-                        if norm > 0:
-                            vector = vector / norm
-                    else:
-                        # Fallback to random vector if column not found
-                        vector = np.random.rand(dimension).astype('float32')
+                    except Exception as col_error:
+                        print(f"Warning: Error processing column {column}: {str(col_error)}")
+                        # Use hash-based vector as fallback
+                        vector = np.array([hash(column + str(i)) % 100 for i in range(dimension)], dtype='float32')
                         vector = vector / np.linalg.norm(vector)
                     
                     vectors.append(vector)
                 
-                # Convert to numpy array and add to FAISS
+                # Add vectors to FAISS
                 vectors_array = np.array(vectors, dtype='float32')
                 faiss_storage['index'].add(vectors_array)
                 
-                # Save metadata for each column
+                # Update metadata
                 if 'metadata' not in faiss_storage:
                     faiss_storage['metadata'] = []
                 
-                # Add metadata for each column
                 for i, column in enumerate(columns):
                     vector_id = initial_vectors + i
                     faiss_storage['metadata'].append({
@@ -131,31 +106,39 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None) -> D
                 print(f"Initial vectors: {initial_vectors}")
                 print(f"Vectors added: {vectors_added}")
                 print(f"Final vectors: {final_vectors}")
-                print(f"Added columns: {', '.join(columns)}")
                 
-                # Save updated FAISS index
+                # Save FAISS index and metadata
                 if 'instance_id' in faiss_storage:
                     faiss_dir = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "faiss")
+                    os.makedirs(faiss_dir, exist_ok=True)
+                    
                     index_path = os.path.join(faiss_dir, f"index_{faiss_storage['instance_id']}.faiss")
                     faiss.write_index(faiss_storage['index'], index_path)
                     
-                    # Save metadata
                     metadata_path = os.path.join(faiss_dir, f"metadata_{faiss_storage['instance_id']}.pkl")
                     with open(metadata_path, 'wb') as f:
                         pickle.dump(faiss_storage['metadata'], f)
                     
-                    print(f"[ParquetConnector] Saved FAISS index and metadata for instance: {faiss_storage['instance_id']}")
+                    print(f"[ParquetConnector] Saved FAISS index and metadata")
                 
             except Exception as e:
                 print(f"Error saving to FAISS: {str(e)}")
+                import traceback
+                print(traceback.format_exc())
         
-        print(f"[ParquetConnector] Processed metadata for: {file_path}")
-        print(f"[ParquetConnector] Found {len(columns)} columns, {file_info['metadata']['num_rows']} rows")
-        
-        return file_info
+        # Return file info
+        return {
+            "file_name": file_path.name,
+            "file_path": str(file_path),
+            "columns": columns,
+            "num_rows": parquet_file.metadata.num_rows,
+            "num_columns": len(columns)
+        }
             
     except Exception as e:
         print(f"Error processing parquet file: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
         return {
             "file_name": Path(file_path).name,
             "file_path": str(file_path),
