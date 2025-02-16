@@ -12,7 +12,50 @@ import faiss
 from pathlib import Path
 from dotenv import load_dotenv
 from memories.core.memory import MemoryStore
-from memories.agents.agent_config import AgentConfig
+
+class AgentConfig:
+    def __init__(
+        self,
+        input: Dict[str, Any]
+    ):
+        """
+        Initialize the AgentConfig with the provided parameters.
+
+        Args:
+            input (Dict[str, Any]): Dictionary containing configuration parameters
+        """
+        self.model_provider = input["model_provider"]
+        self.deployment_type = input["deployment_type"]
+        self.model_name = input["model_name"]
+        self.use_gpu = input.get("use_gpu", True)
+        self.data_connectors = input.get("data_connectors", [])
+        self.project_root = input.get("project_root") or self._load_environment()
+        
+        # Initialize model
+        self.model = self._load_model()
+        
+        # Create necessary directories
+        self.osm_data_path = os.path.join(self.project_root, "data", "osm_data")
+        self.faiss_dir = os.path.join(self.project_root, "data", "faiss")
+        os.makedirs(self.osm_data_path, exist_ok=True)
+        os.makedirs(self.faiss_dir, exist_ok=True)
+        
+        # Initialize FAISS storage
+        self.dimension = 768  # FAISS vector dimension
+        self.faiss_storage = self._initialize_faiss_storage()
+        self.memory_store = MemoryStore()
+
+    def _load_environment(self):
+        # Implementation of _load_environment method
+        pass
+
+    def _load_model(self):
+        # Implementation of _load_model method
+        pass
+
+    def _initialize_faiss_storage(self):
+        # Implementation of _initialize_faiss_storage method
+        pass
 
 def get_model_config(
     use_gpu: Optional[bool] = True,
