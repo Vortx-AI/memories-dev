@@ -330,29 +330,21 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     if os.path.exists(parquet_file):
         print(f"\nProcessing parquet file: {parquet_file}")
         parquet_info = parquet_connector(parquet_file, faiss_storage, word_vectors)
-        #memory_store.process_metadata(parquet_info)
+        memory_store.process_metadata(parquet_info)
     
     print("\nMemories and FAISS storage created successfully")
     print(f"Instance ID: {instance_id}")
     
-    return memory_store.memories
+    # Return the instance ID and FAISS storage info instead of memories
+    return {
+        'instance_id': instance_id,
+        'faiss_storage': {
+            'dimension': dimension,
+            'total_vectors': faiss_storage['index'].ntotal,
+            'metadata_count': len(faiss_storage['metadata'])
+        }
+    }
 
-def create_faiss_storage(instance_id: str) -> bool:
-    """
-    Create FAISS storage for a specific instance ID.
-    
-    Args:
-        instance_id (str): Instance ID to create storage for
-        
-    Returns:
-        bool: True if successful, False otherwise
-    """
-    from memories.core.memory import MemoryStore
-    import faiss
-    import numpy as np
-    import os
-    
-    
 def main():
     """Main function to handle command line arguments and create memories."""
     import argparse
@@ -365,7 +357,13 @@ def main():
         instance_id = str(id(datetime.now()))
         print(f"\nCreating memories for instance ID: {instance_id}")
         model = LoadModel()
-        memories = create_memory_store(model, instance_id)
+        result = create_memory_store(model, instance_id)
+        print("\nMemory Store Creation Result:")
+        print(f"Instance ID: {result['instance_id']}")
+        print(f"FAISS Storage:")
+        print(f"  Dimension: {result['faiss_storage']['dimension']}")
+        print(f"  Total Vectors: {result['faiss_storage']['total_vectors']}")
+        print(f"  Metadata Count: {result['faiss_storage']['metadata_count']}")
 
 if __name__ == "__main__":
     main()
