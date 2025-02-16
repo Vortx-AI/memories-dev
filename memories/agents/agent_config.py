@@ -295,16 +295,7 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     memory_store = MemoryStore()
     
     # Create memories table if it doesn't exist
-    memory_store.conn.execute("""
-        CREATE TABLE IF NOT EXISTS memories (
-            instance_id VARCHAR PRIMARY KEY,
-            created_at VARCHAR,
-            start_date VARCHAR,
-            end_date VARCHAR,
-            data_connectors JSON,
-            faiss_data JSON
-        )
-    """)
+    
     
     # Get project root and data paths
     project_root = os.getenv("PROJECT_ROOT")
