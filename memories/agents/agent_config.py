@@ -442,8 +442,8 @@ class AgentConfig:
                 
                 # Process the parquet file with built-in FAISS handling
                 parquet_info = parquet_connector(
-                    connector['file_path'], 
-                    self.faiss_storage,
+                    file_path=connector['path'],  # Use the 'path' key from connector
+                    faiss_storage=self.faiss_storage,
                     model=self.model
                 )
                 
