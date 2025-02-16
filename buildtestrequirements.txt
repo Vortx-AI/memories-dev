@@ -1,5 +1,7 @@
 # Core dependencies for all Python versions
-torch>=2.2.0
+torch>=2.2.0  # Install PyTorch first
+torchvision>=0.17.0
+torchaudio>=2.2.0
 transformers>=4.30.0
 pillow>=10.0.0
 requests>=2.31.0
@@ -84,13 +86,18 @@ faiss-cpu>=1.7.4
 cupy-cuda12x>=12.0.0
 
 # PyTorch Geometric packages
-# Install after PyTorch with:
-# pip install torch-scatter torch-sparse torch-cluster torch-geometric -f https://data.pyg.org/whl/torch-2.2.0+${CUDA}.html
-# where ${CUDA} is cu118 for CUDA 11.8 or cpu for CPU-only
-torch-scatter>=2.1.2
-torch-sparse>=0.6.18
-torch-cluster>=1.6.3
-torch-geometric>=2.4.0
+# These must be installed AFTER PyTorch using:
+# CPU-only:
+#   pip install torch-scatter torch-sparse torch-cluster torch-geometric -f https://data.pyg.org/whl/torch-2.2.0+cpu.html
+# CUDA 11.8:
+#   pip install torch-scatter torch-sparse torch-cluster torch-geometric -f https://data.pyg.org/whl/torch-2.2.0+cu118.html
+# CUDA 12.1:
+#   pip install torch-scatter torch-sparse torch-cluster torch-geometric -f https://data.pyg.org/whl/torch-2.2.0+cu121.html
+# Required versions:
+#   torch-scatter>=2.1.2
+#   torch-sparse>=0.6.18
+#   torch-cluster>=1.6.3
+#   torch-geometric>=2.4.0
 
 # Test dependencies
 pytest>=8.3.4

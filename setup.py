@@ -116,7 +116,12 @@ def get_torch_packages():
     return [
         "torch>=2.2.0",
         "torchvision>=0.17.0",
-        "torchaudio>=2.2.0",
+        "torchaudio>=2.2.0"
+    ]
+
+def get_torch_geometric_packages():
+    """Get PyTorch Geometric packages - these need to be installed separately after PyTorch."""
+    return [
         "torch-scatter>=2.1.2",
         "torch-sparse>=0.6.18",
         "torch-cluster>=1.6.3",
@@ -144,6 +149,7 @@ setup(
     extras_require={
         "gpu": get_gpu_packages(),
         "torch": get_torch_packages(),
+        "torch-geometric": get_torch_geometric_packages(),  # Separate extra for PyG packages
         "dev": [
             "pytest>=8.3.4",
             "pytest-asyncio>=0.23.5",
