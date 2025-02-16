@@ -8,8 +8,10 @@ from datetime import datetime, timedelta
 from gensim.models import KeyedVectors
 import faiss
 import numpy as np
-from memories.models.load_model import LoadModel
-from memories.data_acquisition.data_connectors import get_data_connectors, parquet_connector
+from memories.core.model import LoadModel
+from memories.data_acquisition.data_connectors import parquet_connector
+import requests
+import zipfile
 
 def get_model_config(
     use_gpu: Optional[bool] = True,
@@ -222,16 +224,7 @@ def check_faiss_storage(instance_id: str):
 def download_word_vectors(model_path: str, model_type: str = 'glove') -> None:
     """
     Download word vectors model if it doesn't exist.
-    
-    Args:
-        model_path (str): Path where the model should be saved
-        model_type (str): Type of model to download ('glove' or 'fasttext')
     """
-    import os
-    import requests
-    from pathlib import Path
-    import zipfile
-    
     model_dir = Path(model_path).parent
     model_dir.mkdir(parents=True, exist_ok=True)
     
@@ -239,11 +232,9 @@ def download_word_vectors(model_path: str, model_type: str = 'glove') -> None:
         print(f"Downloading {model_type} vectors to {model_path}...")
         
         if model_type == 'glove':
-            # GloVe 100d (~150MB)
             url = "https://nlp.stanford.edu/data/glove.6B.zip"
             zip_path = model_dir / "glove.6B.zip"
         else:
-            # FastText 100d (~150MB)
             url = "https://dl.fbaipublicfiles.com/fasttext/vectors-english/wiki-news-100d-1M.vec.zip"
             zip_path = model_dir / "wiki-news-100d-1M.vec.zip"
         
@@ -260,7 +251,6 @@ def download_word_vectors(model_path: str, model_type: str = 'glove') -> None:
         print("Extracting vectors...")
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             if model_type == 'glove':
-                # Extract only the 100d vectors
                 for file in zip_ref.namelist():
                     if '100d' in file:
                         zip_ref.extract(file, model_dir)
@@ -278,44 +268,23 @@ def download_word_vectors(model_path: str, model_type: str = 'glove') -> None:
 def load_word_vectors(model_path: str, model_type: str = 'glove') -> KeyedVectors:
     """
     Load word vectors from file.
-    
-    Args:
-        model_path (str): Path to the model file
-        model_type (str): Type of model ('glove' or 'fasttext')
-        
-    Returns:
-        KeyedVectors: Loaded word vectors
     """
     from gensim.scripts.glove2word2vec import glove2word2vec
-    from gensim.models import KeyedVectors
-    import os
     
     if model_type == 'glove':
-        # Convert GloVe format to Word2Vec format if needed
         word2vec_path = model_path + '.word2vec'
         if not os.path.exists(word2vec_path):
             glove2word2vec(model_path, word2vec_path)
         return KeyedVectors.load_word2vec_format(word2vec_path)
     else:
-        # FastText is already in Word2Vec format
         return KeyedVectors.load_word2vec_format(model_path)
 
 def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     """
     Create memory store with specified configuration.
-    
-    Args:
-        model (LoadModel): Initialized model instance
-        instance_id (str): Instance ID for the model
-        
-    Returns:
-        Dict[str, Any]: Created memories data
     """
     from memories.core.memory import MemoryStore
-    import os
     from dotenv import load_dotenv
-    import faiss
-    from gensim.models import KeyedVectors
     
     # Load environment variables
     load_dotenv()
@@ -329,24 +298,17 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     faiss_dir = os.path.join(project_root, "data", "faiss")
     models_dir = os.path.join(project_root, "data", "models")
     
-    # Create directories if they don't exist
+    # Create directories
     os.makedirs(osm_data_path, exist_ok=True)
     os.makedirs(faiss_dir, exist_ok=True)
     os.makedirs(models_dir, exist_ok=True)
     
-    # Choose model type ('glove' or 'fasttext')
+    # Set up word vectors
     model_type = 'glove'
+    vectors_path = os.path.join(models_dir, "glove.6B.100d.txt")
     
-    # Load word vectors
-    print("Setting up word vectors...")
-    if model_type == 'glove':
-        vectors_path = os.path.join(models_dir, "glove.6B.100d.txt")
-    else:
-        vectors_path = os.path.join(models_dir, "wiki-news-100d-1M.vec")
-    
-    # Download model if it doesn't exist
+    # Download and load word vectors
     download_word_vectors(vectors_path, model_type)
-    
     print("Loading word vectors...")
     word_vectors = load_word_vectors(vectors_path, model_type)
     print("Word vectors loaded successfully")
@@ -363,62 +325,17 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     print(f"Vector dimension: {dimension}")
     print(f"Initial vectors: {faiss_storage['index'].ntotal}")
     
-    # Define time range (last 30 days)
-    end_time = datetime.now()
-    start_time = end_time - timedelta(days=30)
-    time_range = (start_time.isoformat(), end_time.isoformat())
+    # Process parquet file
+    parquet_file = os.path.join(osm_data_path, "india_points_processed.parquet")
+    if os.path.exists(parquet_file):
+        print(f"\nProcessing parquet file: {parquet_file}")
+        parquet_info = parquet_connector(parquet_file, faiss_storage, word_vectors)
+        memory_store.process_metadata(parquet_info)
     
-    # Define location (India bounding box)
-    location = {
-        "type": "Polygon",
-        "coordinates": [[[68.1766451354, 7.96553477623], 
-                        [97.4025614766, 7.96553477623],
-                        [97.4025614766, 35.4940095078],
-                        [68.1766451354, 35.4940095078],
-                        [68.1766451354, 7.96553477623]]]
-    }
+    print("\nMemories and FAISS storage created successfully")
+    print(f"Instance ID: {instance_id}")
     
-    # Define artifacts
-    artifacts = {
-        "osm_data": ["points_processed", "lines", "multipolygons"]
-    }
-    
-    # Get data connectors
-    data_connectors = get_data_connectors(osm_data_path)
-    
-    # Create memories with FAISS storage
-    memories = memory_store.create_memories(
-        model=model,
-        location=location,
-        time_range=time_range,
-        artifacts=artifacts,
-        data_connectors=data_connectors,
-        faiss_storage=faiss_storage
-    )
-    
-    # Process each parquet file
-    for connector in data_connectors:
-        if connector["type"] == "parquet":
-            print(f"\nProcessing {connector['name']}:")
-            print(f"Current vector count: {faiss_storage['index'].ntotal}")
-            
-            # Pass word_vectors to parquet_connector
-            parquet_info = parquet_connector(
-                connector["file_path"], 
-                faiss_storage=faiss_storage,
-                word_vectors=word_vectors
-            )
-            
-            print(f"After processing {connector['name']}:")
-            print(f"Vector count: {faiss_storage['index'].ntotal}")
-            print(f"Metadata entries: {len(faiss_storage['metadata'])}")
-    
-    print(f"\nFinal FAISS Storage Summary:")
-    print(f"Total vectors: {faiss_storage['index'].ntotal}")
-    print(f"Total metadata entries: {len(faiss_storage['metadata'])}")
-    print(f"Vector dimension: {dimension}")
-    
-    return memories
+    return memory_store.memories
 
 def create_faiss_storage(instance_id: str) -> bool:
     """
@@ -437,58 +354,18 @@ def create_faiss_storage(instance_id: str) -> bool:
     
     
 def main():
-    """Print current model instance ID when run directly."""
+    """Main function to handle command line arguments and create memories."""
     import argparse
     
-    parser = argparse.ArgumentParser(description='Check model configuration and storage')
-    parser.add_argument('--instance-id', type=str, help='Check storage for specific instance ID')
-    parser.add_argument('--list-instances', action='store_true', help='List all available instances')
-    parser.add_argument('--check-faiss', type=str, help='Check FAISS storage for specific instance ID')
-    parser.add_argument('--create-memories', action='store_true', help='Create new memories with default configuration')
-    parser.add_argument('--create-faiss', type=str, help='Create FAISS storage for specific instance ID')
-    
+    parser = argparse.ArgumentParser(description='Create or manage agent configuration')
+    parser.add_argument('--create-memories', action='store_true', help='Create new memories')
     args = parser.parse_args()
     
-    if args.create_faiss:
-        print("create faiss storage")
-        create_faiss_storage(args.create_faiss)
-    elif args.create_memories:
-        # Initialize model and create memories
-        model, instance_id = get_model_config()
+    if args.create_memories:
+        instance_id = str(id(datetime.now()))
         print(f"\nCreating memories for instance ID: {instance_id}")
+        model = LoadModel()
         memories = create_memory_store(model, instance_id)
-        
-        # Create FAISS storage for this instance
-        create_faiss_storage(instance_id)
-        
-        print(f"\nMemories and FAISS storage created successfully")
-        print(f"Instance ID: {instance_id}")
-        
-    elif args.check_faiss:
-        check_faiss_storage(args.check_faiss)
-    elif args.list_instances:
-        list_available_instances()
-    elif args.instance_id:
-        check_instance_storage(args.instance_id)
-    else:
-        # Original configuration display code...
-        print("\nTesting Model Configuration")
-        print("=" * 50)
-        
-        model, instance_id = get_model_config()
-        
-        print(f"\nModel Configuration:")
-        print(f"Provider: {model.model_provider}")
-        print(f"Model: {model.model_name}")
-        print(f"Deployment: {model.deployment_type}")
-        print(f"GPU Enabled: {model.use_gpu}")
-        print(f"\nInstance ID: {instance_id}")
-        
-        memory_config = get_memory_config()
-        print(f"\nMemory Configuration:")
-        print(f"Time Range: {memory_config['time_range'][0]} to {memory_config['time_range'][1]}")
-        print(f"Location: India Bounding Box")
-        print(f"Artifacts: {memory_config['artifacts']}")
 
 if __name__ == "__main__":
     main()
