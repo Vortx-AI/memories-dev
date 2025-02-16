@@ -211,8 +211,10 @@ def main():
     from memories.agents.agent_config import get_model_config
     
     # Get input from user
-    query = input("Enter your query: ")
-    instance_id = input("Enter FAISS instance ID (or press Enter to skip): ")
+    query = "find water tanks near 12.9093124,77.6078977"
+    #input("Enter your query: ")
+    instance_id = "123937239372432"
+    #input("Enter FAISS instance ID (or press Enter to skip): ")
     
     # Initialize model with get_model_config
     load_model, _ = get_model_config(
