@@ -7,16 +7,17 @@ import faiss
 import numpy as np
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+from gensim.models import KeyedVectors
 import pickle
-from gensim.models import Word2Vec
 
-def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None) -> Dict[str, Any]:
+def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None, word_vectors: Optional[KeyedVectors] = None) -> Dict[str, Any]:
     """
-    Read parquet file metadata and save column names as vectors in FAISS if provided.
+    Read parquet file metadata and save column names to FAISS using word embeddings.
     
     Args:
         file_path (str): Path to the parquet file
         faiss_storage (Dict, optional): Dictionary containing FAISS index and instance_id
+        word_vectors (KeyedVectors, optional): Loaded word vectors model for embeddings
         
     Returns:
         Dict[str, Any]: Metadata and schema information about the parquet file
@@ -31,78 +32,38 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None) -> D
         # Get column information
         columns = [field.name for field in schema]
         
-        # If FAISS storage is provided, save column names as vectors
-        if faiss_storage and 'index' in faiss_storage:
+        # If FAISS storage is provided, save column names using word embeddings
+        if faiss_storage and 'index' in faiss_storage and word_vectors:
             try:
                 initial_vectors = faiss_storage['index'].ntotal
+                
+                # Get dimension from FAISS index
                 dimension = faiss_storage['index'].d
+                
+                # Create word embeddings for each column name
                 vectors = []
-                
-                # Read data with proper encoding handling
-                table = pq.read_table(str(file_path))
-                df = table.to_pandas(strings_to_categorical=True)  # Convert strings to categorical
-                
-                print(f"\nProcessing columns for FAISS vectors...")
                 for column in columns:
-                    vector = np.zeros(dimension, dtype='float32')
-                    
-                    try:
-                        if column in df.columns:
-                            # Get column data
-                            col_data = df[column]
-                            
-                            # Handle different data types
-                            if pd.api.types.is_numeric_dtype(col_data):
-                                # Numeric data
-                                numeric_stats = col_data.agg(['mean', 'std', 'min', 'max']).fillna(0)
-                                vector[:4] = numeric_stats.values
-                            else:
-                                # Convert to string and get basic stats
-                                str_data = col_data.astype(str)
-                                vector[4:8] = [
-                                    str_data.str.len().mean(),
-                                    len(str_data.unique()),
-                                    str_data.str.count(r'[0-9]').mean(),
-                                    str_data.str.count(r'[A-Za-z]').mean()
-                                ]
-                            
-                            # Incorporate Word2Vec embedding
-                            word2vec_model = Word2Vec.load("path_to_pretrained_model")
-                            if column in word2vec_model.wv:
-                                embedding = word2vec_model.wv[column]
-                                vector[8:8+len(embedding)] = embedding
-                            else:
-                                # Handle out-of-vocabulary words
-                                vector[8:8+len(embedding)] = np.random.rand(len(embedding))
-                            
-                            # Normalize
-                            norm = np.linalg.norm(vector)
-                            if norm > 0:
-                                vector = vector / norm
-                        
-                    except Exception as col_error:
-                        print(f"Warning: Error processing column {column}: {str(col_error)}")
-                        # Use hash-based vector as fallback
-                        vector = np.array([hash(column + str(i)) % 100 for i in range(dimension)], dtype='float32')
-                        vector = vector / np.linalg.norm(vector)
-                    
+                    # Get word embedding for column name
+                    vector = get_word_embedding(column, word_vectors, dimension)
                     vectors.append(vector)
                 
-                # Add vectors to FAISS
-                vectors_array = np.array(vectors, dtype='float32')
-                faiss_storage['index'].add(vectors_array)
+                # Convert to numpy array
+                vectors = np.array(vectors).astype('float32')
                 
-                # Update metadata
+                # Add vectors to FAISS index
+                faiss_storage['index'].add(vectors)
+                
+                # Save metadata for each column
                 if 'metadata' not in faiss_storage:
                     faiss_storage['metadata'] = []
                 
+                # Add metadata for each column
                 for i, column in enumerate(columns):
-                    vector_id = initial_vectors + i
                     faiss_storage['metadata'].append({
                         'column_name': column,
                         'file_path': str(file_path),
                         'file_name': file_path.name,
-                        'vector_id': vector_id
+                        'vector_id': initial_vectors + i
                     })
                 
                 final_vectors = faiss_storage['index'].ntotal
@@ -112,39 +73,57 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None) -> D
                 print(f"Initial vectors: {initial_vectors}")
                 print(f"Vectors added: {vectors_added}")
                 print(f"Final vectors: {final_vectors}")
+                print(f"Added columns: {', '.join(columns)}")
                 
-                # Save FAISS index and metadata
+                # Save updated FAISS index
                 if 'instance_id' in faiss_storage:
                     faiss_dir = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "faiss")
-                    os.makedirs(faiss_dir, exist_ok=True)
-                    
                     index_path = os.path.join(faiss_dir, f"index_{faiss_storage['instance_id']}.faiss")
                     faiss.write_index(faiss_storage['index'], index_path)
                     
+                    # Save metadata
                     metadata_path = os.path.join(faiss_dir, f"metadata_{faiss_storage['instance_id']}.pkl")
                     with open(metadata_path, 'wb') as f:
                         pickle.dump(faiss_storage['metadata'], f)
                     
-                    print(f"[ParquetConnector] Saved FAISS index and metadata")
+                    print(f"[ParquetConnector] Saved FAISS index and metadata for instance: {faiss_storage['instance_id']}")
                 
             except Exception as e:
                 print(f"Error saving to FAISS: {str(e)}")
-                import traceback
-                print(traceback.format_exc())
         
-        # Return file info
-        return {
+        # Identify location columns
+        location_columns = [col for col in columns if col.lower() in 
+                         ['geometry', 'geom', 'location', 'point', 'shape', 
+                          'latitude', 'longitude', 'lat', 'lon', 'coordinates']]
+        
+        # Get file stats
+        file_stats = file_path.stat()
+        
+        file_info = {
             "file_name": file_path.name,
             "file_path": str(file_path),
+            "relative_path": str(file_path.relative_to(file_path.parent)),
+            "size_bytes": file_stats.st_size,
             "columns": columns,
-            "num_rows": parquet_file.metadata.num_rows,
-            "num_columns": len(columns)
+            "location_columns": location_columns,
+            "num_row_groups": parquet_file.num_row_groups,
+            "metadata": {
+                "created": datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
+                "modified": datetime.fromtimestamp(file_stats.st_mtime).isoformat(),
+                "format_version": parquet_file.metadata.format_version,
+                "num_rows": parquet_file.metadata.num_rows,
+                "num_columns": len(columns),
+                "schema_arrow": str(schema)
+            }
         }
+        
+        print(f"[ParquetConnector] Processed metadata for: {file_path}")
+        print(f"[ParquetConnector] Found {len(columns)} columns, {file_info['metadata']['num_rows']} rows")
+        
+        return file_info
             
     except Exception as e:
         print(f"Error processing parquet file: {str(e)}")
-        import traceback
-        print(traceback.format_exc())
         return {
             "file_name": Path(file_path).name,
             "file_path": str(file_path),
@@ -180,7 +159,7 @@ def multiple_parquet_connector(folder_path: str, faiss_storage: Optional[Dict] =
                     file_path = Path(root) / file_name
                     
                     # Get file metadata and save to FAISS if provided
-                    file_info = parquet_connector(str(file_path), faiss_storage)
+                    file_info = parquet_connector(str(file_path))
                     
                     if "error" in file_info:
                         results["error_files"].append(file_info)
@@ -201,6 +180,107 @@ def multiple_parquet_connector(folder_path: str, faiss_storage: Optional[Dict] =
     except Exception as e:
         print(f"Error in multiple_parquet_connector: {str(e)}")
         return results
+
+def get_word_embedding(word: str, word_vectors: KeyedVectors, vector_size: int = 300) -> np.ndarray:
+    """
+    Get word embedding for a single word, handling multi-word phrases by averaging.
+    
+    Args:
+        word (str): Word or phrase to get embedding for
+        word_vectors (KeyedVectors): Loaded word vectors model
+        vector_size (int): Size of the word vectors
+        
+    Returns:
+        np.ndarray: Word embedding vector
+    """
+    # Convert to lowercase and split into words
+    words = word.lower().split('_')
+    vectors = []
+    
+    for w in words:
+        try:
+            # Try to get vector for the word
+            vector = word_vectors[w]
+            vectors.append(vector)
+        except KeyError:
+            print(f"Warning: '{w}' not found in vocabulary")
+            continue
+    
+    if vectors:
+        # Average the vectors if we found any
+        avg_vector = np.mean(vectors, axis=0)
+        # Normalize the vector
+        norm = np.linalg.norm(avg_vector)
+        if norm > 0:
+            avg_vector = avg_vector / norm
+        return avg_vector
+    else:
+        # Return zero vector if no words were found
+        return np.zeros(vector_size)
+
+def create_column_embeddings(metadata: list, word_vectors: KeyedVectors) -> pd.DataFrame:
+    """
+    Create embeddings for all column names in metadata.
+    
+    Args:
+        metadata (list): List of metadata dictionaries containing column_name
+        word_vectors (KeyedVectors): Loaded word vectors model
+        
+    Returns:
+        pd.DataFrame: DataFrame with column names and their embeddings
+    """
+    # Create list to store results
+    embedding_data = []
+    
+    # Process each metadata entry
+    for meta in metadata:
+        column_name = meta.get('column_name', '')
+        if column_name:
+            # Get embedding for column name
+            vector = get_word_embedding(column_name, word_vectors)
+            
+            # Store result
+            embedding_data.append({
+                'column_name': column_name,
+                'vector': vector,
+                'file_name': meta.get('file_name', ''),
+                'file_path': meta.get('file_path', '')
+            })
+    
+    # Create DataFrame
+    df = pd.DataFrame(embedding_data)
+    return df
+
+def find_similar_columns(query_word: str, df: pd.DataFrame, word_vectors: KeyedVectors, top_k: int = 5) -> pd.DataFrame:
+    """
+    Find columns most similar to a query word.
+    
+    Args:
+        query_word (str): Word to find similar columns for
+        df (pd.DataFrame): DataFrame with column embeddings
+        word_vectors (KeyedVectors): Loaded word vectors model
+        top_k (int): Number of top similar results to return
+        
+    Returns:
+        pd.DataFrame: Top similar columns with similarity scores
+    """
+    # Get query vector
+    query_vector = get_word_embedding(query_word, word_vectors)
+    
+    # Calculate similarities
+    similarities = []
+    for vector in df['vector']:
+        similarity = np.dot(query_vector, vector)
+        similarities.append(similarity)
+    
+    # Add similarities to DataFrame
+    results_df = df.copy()
+    results_df['similarity'] = similarities
+    
+    # Sort by similarity and get top k results
+    results_df = results_df.sort_values('similarity', ascending=False).head(top_k)
+    
+    return results_df[['column_name', 'file_name', 'file_path', 'similarity']]
 
 if __name__ == "__main__":
     # Example usage for single parquet
