@@ -228,6 +228,7 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     import os
     from dotenv import load_dotenv
     import faiss
+    from gensim.models import KeyedVectors
     
     # Load environment variables
     load_dotenv()
@@ -243,6 +244,12 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     # Create directories if they don't exist
     os.makedirs(osm_data_path, exist_ok=True)
     os.makedirs(faiss_dir, exist_ok=True)
+    
+    # Load word vectors
+    print("Loading Word2Vec model...")
+    word_vectors_path = os.path.join(project_root, "data", "models", "GoogleNews-vectors-negative300.bin")
+    word_vectors = KeyedVectors.load_word2vec_format(word_vectors_path, binary=True)
+    print("Word2Vec model loaded successfully")
     
     # Create FAISS storage
     dimension = 768  # Standard embedding dimension
@@ -295,8 +302,12 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
             print(f"\nProcessing {connector['name']}:")
             print(f"Current vector count: {faiss_storage['index'].ntotal}")
             
-            # Get metadata about the parquet file
-            parquet_info = parquet_connector(connector["file_path"], faiss_storage)
+            # Pass word_vectors to parquet_connector
+            parquet_info = parquet_connector(
+                connector["file_path"], 
+                faiss_storage=faiss_storage,
+                word_vectors=word_vectors
+            )
             
             print(f"After processing {connector['name']}:")
             print(f"Vector count: {faiss_storage['index'].ntotal}")
