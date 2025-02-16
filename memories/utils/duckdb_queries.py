@@ -2,7 +2,7 @@ from typing import Dict, List, Any, Optional
 import duckdb
 from pathlib import Path
 import pandas as pd
-from memories.agents.agent_config import get_duckdb_connection
+import os
 
 class DuckDBQueryGenerator:
     def __init__(self, parquet_file: str, load_model: Any):
@@ -17,8 +17,15 @@ class DuckDBQueryGenerator:
         self.load_model = load_model
         self.table_name = Path(parquet_file).stem
         
-        # Use existing DuckDB connection with tables
-        self.conn = get_duckdb_connection()
+        # Get project root
+        self.project_root = os.getenv("PROJECT_ROOT")
+        if not self.project_root:
+            raise ValueError("PROJECT_ROOT environment variable not set")
+            
+        # Connect to the same DuckDB database
+        db_path = os.path.join(self.project_root, "data", "memory.db")
+        self.conn = duckdb.connect(db_path)
+        print(f"[DuckDBQueryGenerator] Connected to DuckDB at {db_path}")
         
     def generate_query_code(self, 
                           query: str,
@@ -39,6 +46,7 @@ class DuckDBQueryGenerator:
                 CREATE TABLE IF NOT EXISTS {self.table_name} AS 
                 SELECT * FROM parquet_scan('{self.parquet_file}')
             """)
+            print(f"[DuckDBQueryGenerator] Created table {self.table_name} from {self.parquet_file}")
         
         prompt = f"""
 Generate Python code that uses an existing DuckDB connection to perform a spatial query. The code should:
