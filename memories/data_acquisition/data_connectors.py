@@ -128,13 +128,24 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None, word
                         if 'metadata' not in faiss_storage:
                             faiss_storage['metadata'] = []
                         
+                        # Identify location columns
+                        location_columns = [col for col in columns if col.lower() in 
+                                         ['geometry', 'geom', 'location', 'point', 'shape', 
+                                          'latitude', 'longitude', 'lat', 'lon', 'coordinates']]
+                        
+                        # Get geometry column and type; here we set it explicitly
+                        geometry_column = 'geom' if 'geom' in columns else None
+                        geometry_type = 'point'  # Set default geometry type as point
+                        
                         # Add metadata for each column
                         for i, column in enumerate(valid_columns):
                             faiss_storage['metadata'].append({
                                 'column_name': column,
                                 'file_path': str(file_path),
                                 'file_name': file_path.name,
-                                'vector_id': initial_vectors + i
+                                'vector_id': initial_vectors + i,
+                                'geometry_column': geometry_column,
+                                'geometry_type': geometry_type
                             })
                         
                         final_vectors = faiss_storage['index'].ntotal
