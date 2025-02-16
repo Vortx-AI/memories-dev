@@ -417,66 +417,6 @@ class AgentConfig:
             use_gpu=self.use_gpu
         )
 
-    def _initialize_faiss_storage(self) -> Dict[str, Any]:
-        """Initialize FAISS storage if not already initialized."""
-        if self.faiss_storage is None:
-            print(f"\nInitializing FAISS storage")
-            index = faiss.IndexFlatL2(self.dimension)
-            self.faiss_storage = {
-                'index': index,
-                'metadata': [],
-                'vectors': []
-            }
-        return self.faiss_storage
-
-    def _vectorize_data(self, data: Union[Dict[str, Any], pd.DataFrame]) -> np.ndarray:
-        """
-        Vectorize the data using the loaded model.
-        
-        Args:
-            data (Union[Dict[str, Any], pd.DataFrame]): Data to vectorize
-            
-        Returns:
-            np.ndarray: Vectorized data
-        """
-        # Convert dictionary data to DataFrame if it's not already
-        if isinstance(data, dict):
-            df = pd.DataFrame(data)
-        elif isinstance(data, pd.DataFrame):
-            df = data
-        else:
-            raise ValueError(f"Unsupported data type: {type(data)}")
-
-        print(f"DataFrame shape: {df.shape}")
-        print(f"DataFrame columns: {df.columns.tolist()}")
-
-        # Convert data to text format for embedding
-        texts = []
-        for _, row in df.iterrows():
-            # Combine relevant fields into a text representation
-            text_parts = []
-            for field in ['name', 'amenity', 'shop', 'description']:
-                if field in row and pd.notna(row[field]):
-                    text_parts.append(f"{field}: {row[field]}")
-            texts.append(" | ".join(text_parts))
-
-        print(f"Generated {len(texts)} text representations")
-
-        # Get embeddings from the model
-        embeddings = []
-        batch_size = 32  # Adjust based on your memory constraints
-        
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
-            batch_embeddings = self.model.get_embeddings(batch)
-            embeddings.extend(batch_embeddings)
-            print(f"Processed batch {i//batch_size + 1}/{(len(texts)-1)//batch_size + 1}")
-
-        vectors = np.array(embeddings, dtype=np.float32)
-        print(f"Generated vectors shape: {vectors.shape}")
-        
-        return vectors
-
     def create_memory_store(self) -> str:
         """
         Process data connectors and create FAISS index.
@@ -484,33 +424,31 @@ class AgentConfig:
         Returns:
             str: The instance ID of the created memory store
         """
-        # Initialize FAISS storage if not already initialized
-        self._initialize_faiss_storage()
-        
-        instance_id = str(id(self.faiss_storage))
+        instance_id = str(id(self))
         print(f"\nCreating memory store with instance ID: {instance_id}")
+        
+        # Initialize FAISS storage
+        print(f"\nInitializing FAISS storage")
+        index = faiss.IndexFlatL2(self.dimension)
+        self.faiss_storage = {
+            'index': index,
+            'metadata': [],
+            'vectors': []
+        }
         
         for connector in self.data_connectors:
             try:
                 print(f"\nProcessing Data Connector: {connector['name']}")
-                data = parquet_connector(connector['file_path'])
                 
-                # Vectorize the data
-                vectors = self._vectorize_data(data)
-
-                # Add vectors to FAISS index
-                self.faiss_storage['index'].add(vectors)
-                self.faiss_storage['vectors'].extend(vectors.tolist())
-
-                # Update metadata
-                self.faiss_storage['metadata'].append({
-                    'name': connector['name'],
-                    'type': connector['type'],
-                    'path': connector['file_path'],
-                    'num_vectors_added': vectors.shape[0]
-                })
-
-                print(f"Added {vectors.shape[0]} vectors to FAISS index from '{connector['name']}'")
+                # Process the parquet file with built-in FAISS handling
+                parquet_info = parquet_connector(
+                    connector['file_path'], 
+                    self.faiss_storage,
+                    model=self.model
+                )
+                
+                print(f"Processed {connector['name']}:")
+                print(f"Current vector count: {self.faiss_storage['index'].ntotal}")
 
             except Exception as e:
                 print(f"Error processing {connector['name']}: {str(e)}")
@@ -532,58 +470,38 @@ class AgentConfig:
         
         return instance_id
 
-def main():
-    """Print current model instance ID when run directly."""
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='Check model configuration and storage')
-    parser.add_argument('--instance-id', type=str, help='Check storage for specific instance ID')
-    parser.add_argument('--list-instances', action='store_true', help='List all available instances')
-    parser.add_argument('--check-faiss', type=str, help='Check FAISS storage for specific instance ID')
-    parser.add_argument('--create-memories', action='store_true', help='Create new memories with default configuration')
-    parser.add_argument('--create-faiss', type=str, help='Create FAISS storage for specific instance ID')
-    
-    args = parser.parse_args()
-    
-    if args.create_faiss:
-        create_faiss_storage(args.create_faiss)
-    elif args.create_memories:
-        # Initialize model and create memories
-        model, instance_id = get_model_config()
-        print(f"\nCreating memories for instance ID: {instance_id}")
-        memories = create_memory_store(model, instance_id)
+    @staticmethod
+    def main():
+        """Command-line interface for the AgentConfig class."""
+        import argparse
         
-        # Create FAISS storage for this instance
-        create_faiss_storage(instance_id)
+        parser = argparse.ArgumentParser(description='Agent Configuration Tool')
+        parser.add_argument('--create-memories', action='store_true', help='Create memories from data connectors')
+        args = parser.parse_args()
         
-        print(f"\nMemories and FAISS storage created successfully")
-        print(f"Instance ID: {instance_id}")
-        
-    elif args.check_faiss:
-        check_faiss_storage(args.check_faiss)
-    elif args.list_instances:
-        list_available_instances()
-    elif args.instance_id:
-        check_instance_storage(args.instance_id)
-    else:
-        # Original configuration display code...
-        print("\nTesting Model Configuration")
-        print("=" * 50)
-        
-        model, instance_id = get_model_config()
-        
-        print(f"\nModel Configuration:")
-        print(f"Provider: {model.model_provider}")
-        print(f"Model: {model.model_name}")
-        print(f"Deployment: {model.deployment_type}")
-        print(f"GPU Enabled: {model.use_gpu}")
-        print(f"\nInstance ID: {instance_id}")
-        
-        memory_config = get_memory_config()
-        print(f"\nMemory Configuration:")
-        print(f"Time Range: {memory_config['time_range'][0]} to {memory_config['time_range'][1]}")
-        print(f"Location: India Bounding Box")
-        print(f"Artifacts: {memory_config['artifacts']}")
+        if args.create_memories:
+            # Default configuration
+            config = {
+                "input": {
+                    "model_provider": "deepseek-ai",
+                    "deployment_type": "deployment",
+                    "model_name": "deepseek-coder-1.3b-base",
+                    "use_gpu": True,
+                    "data_connectors": [
+                        {
+                            "type": "parquet",
+                            "path": "/home/jaya/memories-dev/data/osm_data/india_points_processed.parquet",
+                            "name": "india_points_processed"
+                        }
+                    ]
+                }
+            }
+            
+            # Create agent config and memory store
+            agent = AgentConfig(**config)
+            instance_id = agent.create_memory_store()
+            print(f"\nSuccessfully created memory store!")
+            print(f"Instance ID: {instance_id}")
 
 if __name__ == "__main__":
-    main()
+    AgentConfig.main()
