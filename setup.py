@@ -138,9 +138,16 @@ version_specific_deps = {
         "dask>=2024.1.0",
         "accelerate>=1.3.0",
         "scipy>=1.12.0",
-        "noise>=1.2.2"
+        "noise>=1.2.2",
+        "shapely>=2.0.0"  # Override the core dependency for Python 3.13
     ]
 }
+
+def get_shapely_version():
+    """Get appropriate Shapely version based on Python version."""
+    if sys.version_info >= (3, 13):
+        return "shapely>=2.0.0"  # Use newer version for Python 3.13+
+    return "shapely>=1.7.0,<2.0.0"  # Use older version for Python <3.13
 
 # Get the appropriate dependencies for the current Python version
 current_version = (python_version.major, python_version.minor)
