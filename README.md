@@ -5,7 +5,7 @@
 
 **Collective Memory for AGI**
 
-[![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://github.com/Vortx-AI/memories-dev/blob/main/memories/README.md)
+[![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://memories-dev.readthedocs.io/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
