@@ -8,7 +8,7 @@ def get_gpu_packages():
     """Get GPU packages based on CUDA version if available."""
     # Return basic GPU packages without CUDA detection during build
     return [
-        "faiss-gpu>=1.7.4",
+        "faiss-gpu>=1.7.2",
         "cupy-cuda12x>=12.0.0",  # Default to CUDA 12.x
         "cudf>=24.2.0",
         "cuspatial>=24.2.0"
