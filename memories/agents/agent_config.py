@@ -330,7 +330,7 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
                            [68.1766451354, 35.4940095078],
                            [68.1766451354, 7.96553477623]]]
         },
-        time_range=("2024-01-01", "2024-02-01"),,
+        time_range=("2024-01-01", "2024-02-01"),
         artifacts={"osm_data": ["points_processed"]},
         data_connectors=data_connectors,
         faiss_storage=faiss_storage
