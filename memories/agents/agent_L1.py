@@ -143,6 +143,9 @@ class Agent_L1:
                         "rank": i + 1,
                         "column_name": column_info['column_name'],
                         "file_name": column_info['file_name'],
+                        "file_path": column_info['file_path'],
+                        "geometry": column_info['geometry_column'],
+                        "geometry_type": column_info['geometry_type'],
                         "distance": float(distance)
                     })
             
