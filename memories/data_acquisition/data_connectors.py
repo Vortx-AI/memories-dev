@@ -24,25 +24,36 @@ def get_word_embedding(word: str, word_vectors: KeyedVectors, vector_size: int =
     Returns:
         np.ndarray: Word embedding vector
     """
-    # Convert to lowercase and split into words
-    words = word.lower().split('_')
-    vectors = []
-    
-    for w in words:
-        try:
-            vector = word_vectors[w]
-            vectors.append(vector)
-        except KeyError:
-            print(f"Warning: '{w}' not found in vocabulary")
-            continue
-    
-    if vectors:
-        avg_vector = np.mean(vectors, axis=0)
-        norm = np.linalg.norm(avg_vector)
-        if norm > 0:
-            avg_vector = avg_vector / norm
-        return avg_vector.astype('float32')
-    else:
+    try:
+        # Convert to lowercase and split into words
+        words = word.lower().split('_')
+        vectors = []
+        
+        for w in words:
+            try:
+                vector = word_vectors[w]
+                vectors.append(vector)
+            except KeyError:
+                print(f"Warning: '{w}' not found in vocabulary")
+                continue
+        
+        if vectors:
+            avg_vector = np.mean(vectors, axis=0)
+            # Pad or truncate vector to match desired size
+            if len(avg_vector) < vector_size:
+                avg_vector = np.pad(avg_vector, (0, vector_size - len(avg_vector)))
+            elif len(avg_vector) > vector_size:
+                avg_vector = avg_vector[:vector_size]
+            
+            # Normalize
+            norm = np.linalg.norm(avg_vector)
+            if norm > 0:
+                avg_vector = avg_vector / norm
+            return avg_vector.astype('float32')
+        else:
+            return np.zeros(vector_size, dtype='float32')
+    except Exception as e:
+        print(f"Error in get_word_embedding for word '{word}': {str(e)}")
         return np.zeros(vector_size, dtype='float32')
 
 def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None, word_vectors: Optional[KeyedVectors] = None) -> Dict[str, Any]:
@@ -71,55 +82,82 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None, word
                 initial_vectors = faiss_storage['index'].ntotal
                 dimension = faiss_storage['index'].d
                 
+                print(f"\nProcessing {len(columns)} columns for FAISS storage...")
+                print(f"FAISS dimension: {dimension}")
+                
                 # Create embeddings for column names
                 vectors = []
+                valid_columns = []
+                
                 for column in columns:
-                    vector = get_word_embedding(column, word_vectors, dimension)
-                    vectors.append(vector)
+                    try:
+                        vector = get_word_embedding(column, word_vectors, dimension)
+                        if not np.all(vector == 0):  # Only add non-zero vectors
+                            vectors.append(vector)
+                            valid_columns.append(column)
+                    except Exception as e:
+                        print(f"Error processing column '{column}': {str(e)}")
+                        continue
                 
-                vectors = np.array(vectors).astype('float32')
-                
-                # Add vectors to FAISS index
-                faiss_storage['index'].add(vectors)
-                
-                # Initialize metadata list if not exists
-                if 'metadata' not in faiss_storage:
-                    faiss_storage['metadata'] = []
-                
-                # Add metadata for each column
-                for i, column in enumerate(columns):
-                    faiss_storage['metadata'].append({
-                        'column_name': column,
-                        'file_path': str(file_path),
-                        'file_name': file_path.name,
-                        'vector_id': initial_vectors + i
-                    })
-                
-                final_vectors = faiss_storage['index'].ntotal
-                vectors_added = final_vectors - initial_vectors
-                
-                print(f"\n[ParquetConnector] FAISS Update for {file_path.name}:")
-                print(f"Initial vectors: {initial_vectors}")
-                print(f"Vectors added: {vectors_added}")
-                print(f"Final vectors: {final_vectors}")
-                print(f"Added columns: {', '.join(columns)}")
+                if vectors:
+                    vectors = np.array(vectors).astype('float32')
+                    print(f"Created {len(vectors)} valid vectors")
+                    
+                    # Verify vector dimensions
+                    if vectors.shape[1] != dimension:
+                        print(f"Warning: Vector dimension mismatch. Expected {dimension}, got {vectors.shape[1]}")
+                        vectors = np.pad(vectors, ((0, 0), (0, dimension - vectors.shape[1])))
+                    
+                    # Add vectors to FAISS index
+                    try:
+                        faiss_storage['index'].add(vectors)
+                        
+                        # Initialize metadata list if not exists
+                        if 'metadata' not in faiss_storage:
+                            faiss_storage['metadata'] = []
+                        
+                        # Add metadata for each column
+                        for i, column in enumerate(valid_columns):
+                            faiss_storage['metadata'].append({
+                                'column_name': column,
+                                'file_path': str(file_path),
+                                'file_name': file_path.name,
+                                'vector_id': initial_vectors + i
+                            })
+                        
+                        final_vectors = faiss_storage['index'].ntotal
+                        vectors_added = final_vectors - initial_vectors
+                        
+                        print(f"\n[ParquetConnector] FAISS Update for {file_path.name}:")
+                        print(f"Initial vectors: {initial_vectors}")
+                        print(f"Vectors added: {vectors_added}")
+                        print(f"Final vectors: {final_vectors}")
+                        print(f"Added columns: {', '.join(valid_columns)}")
+                        
+                    except Exception as e:
+                        print(f"Error adding vectors to FAISS: {str(e)}")
+                else:
+                    print("No valid vectors created for columns")
                 
                 # Save FAISS index and metadata if instance_id provided
                 if 'instance_id' in faiss_storage:
-                    faiss_dir = Path(os.getenv("PROJECT_ROOT", "")) / "data" / "faiss"
-                    faiss_dir.mkdir(parents=True, exist_ok=True)
-                    
-                    index_path = faiss_dir / f"index_{faiss_storage['instance_id']}.faiss"
-                    metadata_path = faiss_dir / f"metadata_{faiss_storage['instance_id']}.pkl"
-                    
-                    faiss.write_index(faiss_storage['index'], str(index_path))
-                    with open(metadata_path, 'wb') as f:
-                        pickle.dump(faiss_storage['metadata'], f)
-                    
-                    print(f"[ParquetConnector] Saved FAISS index and metadata for instance: {faiss_storage['instance_id']}")
+                    try:
+                        faiss_dir = Path(os.getenv("PROJECT_ROOT", "")) / "data" / "faiss"
+                        faiss_dir.mkdir(parents=True, exist_ok=True)
+                        
+                        index_path = faiss_dir / f"index_{faiss_storage['instance_id']}.faiss"
+                        metadata_path = faiss_dir / f"metadata_{faiss_storage['instance_id']}.pkl"
+                        
+                        faiss.write_index(faiss_storage['index'], str(index_path))
+                        with open(metadata_path, 'wb') as f:
+                            pickle.dump(faiss_storage['metadata'], f)
+                        
+                        print(f"[ParquetConnector] Saved FAISS index and metadata for instance: {faiss_storage['instance_id']}")
+                    except Exception as e:
+                        print(f"Error saving FAISS index and metadata: {str(e)}")
                 
             except Exception as e:
-                print(f"Error saving to FAISS: {str(e)}")
+                print(f"Error in FAISS processing: {str(e)}")
         
         # Identify location columns
         location_columns = [col for col in columns if col.lower() in 
