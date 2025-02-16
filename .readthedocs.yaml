@@ -30,11 +30,4 @@ python:
 # Generate PDF and ePub
 formats:
   - pdf
-  - epub
-
-# Explicitly set version settings
-versions:
-  default: main
-  include:
-    - main
-        
+  - epub 
