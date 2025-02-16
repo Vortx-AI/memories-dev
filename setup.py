@@ -132,7 +132,7 @@ install_requires = get_core_deps() + get_version_specific_deps()
 
 setup(
     name="memories-dev",
-    version="1.1.6",
+    version="1.1.7",
     packages=find_packages(include=['memories', 'memories.*']),
     
     author="Memories-dev",
