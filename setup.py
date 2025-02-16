@@ -66,7 +66,6 @@ core_dependencies = [
     "fsspec>=2024.2.0",
     "cryptography>=42.0.0",
     "pyjwt>=2.8.0",
-    "concurrent-futures>=3.0.5",
     "pystac-client>=1.0.0",
     "planetary-computer>=1.0.0",
     "fastapi>=0.109.0",
