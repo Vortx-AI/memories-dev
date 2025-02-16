@@ -180,6 +180,10 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None, word
                          ['geometry', 'geom', 'location', 'point', 'shape', 
                           'latitude', 'longitude', 'lat', 'lon', 'coordinates']]
         
+        # Get geometry column and type
+        geometry_column = 'geom' if 'geom' in columns else None
+        geometry_type = 'point'  # Set default geometry type as point
+        
         # Get file stats
         file_stats = file_path.stat()
         
@@ -190,6 +194,8 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None, word
             "size_bytes": file_stats.st_size,
             "columns": columns,
             "location_columns": location_columns,
+            "geometry_column": geometry_column,
+            "geometry_type": geometry_type,
             "num_row_groups": parquet_file.num_row_groups,
             "metadata": {
                 "created": datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
