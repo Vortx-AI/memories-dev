@@ -8,6 +8,7 @@ import numpy as np
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 import pickle
+from gensim.models import Word2Vec
 
 def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None) -> Dict[str, Any]:
     """
@@ -65,9 +66,14 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None) -> D
                                     str_data.str.count(r'[A-Za-z]').mean()
                                 ]
                             
-                            # Fill remaining dimensions with hash of column name
-                            name_hash = np.array([hash(column) % 100 for _ in range(dimension-8)], dtype='float32')
-                            vector[8:] = name_hash
+                            # Incorporate Word2Vec embedding
+                            word2vec_model = Word2Vec.load("path_to_pretrained_model")
+                            if column in word2vec_model.wv:
+                                embedding = word2vec_model.wv[column]
+                                vector[8:8+len(embedding)] = embedding
+                            else:
+                                # Handle out-of-vocabulary words
+                                vector[8:8+len(embedding)] = np.random.rand(len(embedding))
                             
                             # Normalize
                             norm = np.linalg.norm(vector)
