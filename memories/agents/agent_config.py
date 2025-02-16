@@ -85,9 +85,9 @@ def get_data_connectors(osm_data_path: str) -> List[Dict[str, str]]:
     """
     return [
         {
-            "name": "india_points",
+            "name": "india_points_processed",
             "type": "parquet",
-            "file_path": f"{osm_data_path}/india_points.parquet"
+            "file_path": f"{osm_data_path}/india_points_processed.parquet"
         },
         {
             "name": "india_lines",
@@ -294,27 +294,11 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     
     # Define artifacts
     artifacts = {
-        "osm_data": ["points", "lines", "multipolygons"]
+        "osm_data": ["points_processed", "lines", "multipolygons"]
     }
     
-    # Process parquet files with FAISS storage
-    data_connectors = [
-        {
-            "name": "india_points",
-            "type": "parquet",
-            "file_path": os.path.join(osm_data_path, "india_points.parquet")
-        },
-        {
-            "name": "india_lines",
-            "type": "parquet",
-            "file_path": os.path.join(osm_data_path, "india_lines.parquet")
-        },
-        {
-            "name": "india_multipolygons",
-            "type": "parquet",
-            "file_path": os.path.join(osm_data_path, "india_multipolygons.parquet")
-        }
-    ]
+    # Get data connectors
+    data_connectors = get_data_connectors(osm_data_path)
     
     # Create memories with FAISS storage
     memories = memory_store.create_memories(
@@ -323,7 +307,7 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
         time_range=time_range,
         artifacts=artifacts,
         data_connectors=data_connectors,
-        faiss_storage=faiss_storage  # Pass FAISS storage to memory creation
+        faiss_storage=faiss_storage
     )
     
     # Process each parquet file

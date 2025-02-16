@@ -7,10 +7,11 @@ import faiss
 import numpy as np
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+import pickle
 
 def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None) -> Dict[str, Any]:
     """
-    Read parquet file metadata and save column names to FAISS if provided.
+    Read parquet file metadata and save column names as vectors in FAISS if provided.
     
     Args:
         file_path (str): Path to the parquet file
@@ -55,17 +56,59 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None) -> D
             }
         }
         
-        # If FAISS storage is provided, save column names
+        # If FAISS storage is provided, save column names as vectors
         if faiss_storage and 'index' in faiss_storage:
             try:
                 initial_vectors = faiss_storage['index'].ntotal
-                
-                # Create random vectors for each column
                 dimension = faiss_storage['index'].d
-                vectors = np.random.rand(len(columns), dimension).astype('float32')
                 
-                # Add vectors to FAISS index
-                faiss_storage['index'].add(vectors)
+                # Read the actual data for the columns to create meaningful vectors
+                df = pq.read_table(str(file_path)).to_pandas()
+                vectors = []
+                
+                for column in columns:
+                    # Create a meaningful vector based on column data
+                    if column in df.columns:
+                        # Get sample data from the column
+                        sample_data = df[column].dropna().head(100).astype(str).tolist()
+                        # Create a simple frequency-based vector
+                        vector = np.zeros(dimension, dtype='float32')
+                        
+                        # Fill vector based on data characteristics
+                        if sample_data:
+                            # Use basic statistics if numerical
+                            if df[column].dtype in ['int64', 'float64']:
+                                numeric_data = pd.to_numeric(df[column], errors='coerce')
+                                vector[:4] = [
+                                    numeric_data.mean() if not pd.isna(numeric_data.mean()) else 0,
+                                    numeric_data.std() if not pd.isna(numeric_data.std()) else 0,
+                                    numeric_data.min() if not pd.isna(numeric_data.min()) else 0,
+                                    numeric_data.max() if not pd.isna(numeric_data.max()) else 0
+                                ]
+                            
+                            # Use string characteristics if string
+                            str_data = df[column].astype(str)
+                            vector[4:8] = [
+                                str_data.str.len().mean(),
+                                len(str_data.unique()),
+                                str_data.str.count('[0-9]').mean(),
+                                str_data.str.count('[A-Za-z]').mean()
+                            ]
+                        
+                        # Normalize the vector
+                        norm = np.linalg.norm(vector)
+                        if norm > 0:
+                            vector = vector / norm
+                    else:
+                        # Fallback to random vector if column not found
+                        vector = np.random.rand(dimension).astype('float32')
+                        vector = vector / np.linalg.norm(vector)
+                    
+                    vectors.append(vector)
+                
+                # Convert to numpy array and add to FAISS
+                vectors_array = np.array(vectors, dtype='float32')
+                faiss_storage['index'].add(vectors_array)
                 
                 # Save metadata for each column
                 if 'metadata' not in faiss_storage:
@@ -73,11 +116,12 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None) -> D
                 
                 # Add metadata for each column
                 for i, column in enumerate(columns):
+                    vector_id = initial_vectors + i
                     faiss_storage['metadata'].append({
                         'column_name': column,
                         'file_path': str(file_path),
                         'file_name': file_path.name,
-                        'vector_id': faiss_storage['index'].ntotal - len(columns) + i
+                        'vector_id': vector_id
                     })
                 
                 final_vectors = faiss_storage['index'].ntotal
@@ -96,7 +140,6 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None) -> D
                     faiss.write_index(faiss_storage['index'], index_path)
                     
                     # Save metadata
-                    import pickle
                     metadata_path = os.path.join(faiss_dir, f"metadata_{faiss_storage['instance_id']}.pkl")
                     with open(metadata_path, 'wb') as f:
                         pickle.dump(faiss_storage['metadata'], f)

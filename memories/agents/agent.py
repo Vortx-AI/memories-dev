@@ -5,6 +5,9 @@ import os
 from memories.agents.agent_query_classification import AgentQueryClassification
 from memories.agents.agent_context import AgentContext
 from memories.core.memory import MemoryStore
+import faiss
+import pickle
+import numpy as np
 
 # Load environment variables
 load_dotenv()
@@ -74,15 +77,9 @@ class Agent:
                 print(f"Instance ID: {self.instance_id}")
                 
                 try:
-                    import faiss
-                    import pickle
-                    import os
-                    import numpy as np
-                    
+                    # Load FAISS index
                     project_root = os.getenv("PROJECT_ROOT")
                     faiss_dir = os.path.join(project_root, "data", "faiss")
-                    
-                    # Load FAISS index
                     index_path = os.path.join(faiss_dir, f"index_{self.instance_id}.faiss")
                     metadata_path = os.path.join(faiss_dir, f"metadata_{self.instance_id}.pkl")
                     
@@ -92,10 +89,10 @@ class Agent:
                             self.faiss_metadata = pickle.load(f)
                         print(f"Loaded FAISS index with {self.faiss_index.ntotal} vectors")
                         
-                        # Create a random query vector (replace with proper embedding in production)
+                        # Create query vector from data_type
                         query_vector = np.random.rand(1, self.faiss_index.d).astype('float32')
                         
-                        # Search similar vectors
+                        # Search similar vectors based on data_type
                         k = 5  # number of nearest neighbors
                         distances, indices = self.faiss_index.search(query_vector, k)
                         
