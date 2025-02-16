@@ -72,6 +72,37 @@ class AgentConfig:
             'vectors': []
         }
 
+    def _vectorize_data(self, data: Dict[str, Any]) -> np.ndarray:
+        """
+        Vectorize the data using the loaded model.
+        
+        Args:
+            data (Dict[str, Any]): Data to vectorize
+            
+        Returns:
+            np.ndarray: Vectorized data
+        """
+        # Convert data to text format for embedding
+        texts = []
+        for _, row in data.iterrows():
+            # Combine relevant fields into a text representation
+            text_parts = []
+            for field in ['name', 'amenity', 'shop', 'description']:
+                if field in row and pd.notna(row[field]):
+                    text_parts.append(f"{field}: {row[field]}")
+            texts.append(" | ".join(text_parts))
+
+        # Get embeddings from the model
+        embeddings = []
+        batch_size = 32  # Adjust based on your memory constraints
+        
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i + batch_size]
+            batch_embeddings = self.model.get_embeddings(batch)
+            embeddings.extend(batch_embeddings)
+
+        return np.array(embeddings, dtype=np.float32)
+
     def create_memory_store(self) -> str:
         """
         Process data connectors and create FAISS index.
@@ -86,7 +117,9 @@ class AgentConfig:
             try:
                 print(f"\nProcessing Data Connector: {connector['name']}")
                 data = parquet_connector(connector['path'])
-                vectors = self.model.vectorize(data)
+                
+                # Vectorize the data
+                vectors = self._vectorize_data(data)
 
                 # Add vectors to FAISS index
                 self.faiss_storage['index'].add(vectors)
@@ -104,6 +137,8 @@ class AgentConfig:
 
             except Exception as e:
                 print(f"Error processing {connector['name']}: {str(e)}")
+                import traceback
+                print(traceback.format_exc())
                 continue
 
         # Save FAISS index and metadata
