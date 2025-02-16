@@ -309,52 +309,7 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     
     return memories
 
-def create_faiss_storage(instance_id: str) -> bool:
-    """
-    Create FAISS storage for a specific instance ID.
-    
-    Args:
-        instance_id (str): Instance ID to create storage for
-        
-    Returns:
-        bool: True if successful, False otherwise
-    """
-    from memories.core.memory import MemoryStore
-    import faiss
-    import numpy as np
-    import os
-    
-    print("\nCreating FAISS Storage")
-    print("=" * 50)
-    print(f"Instance ID: {instance_id}")
-    
-    try:
-        # Initialize memory store
-        memory_store = MemoryStore()
-        
-        # Get project root and FAISS directory
-        project_root = os.getenv("PROJECT_ROOT")
-        faiss_dir = os.path.join(project_root, "data", "faiss")
-        os.makedirs(faiss_dir, exist_ok=True)
-        
-        # Create FAISS index (using dimension 768 for example, adjust as needed)
-        dimension = 768  # Standard embedding dimension
-        index = faiss.IndexFlatL2(dimension)
-        
-        # Save empty index
-        index_path = os.path.join(faiss_dir, f"index_{instance_id}.faiss")
-        faiss.write_index(index, index_path)
-        
-        print(f"\nFAISS Storage Created:")
-        print(f"Index Path: {index_path}")
-        print(f"Vector Dimension: {dimension}")
-        print(f"Initial Size: {index.ntotal} vectors")
-        
-        return True
-        
-    except Exception as e:
-        print(f"Error creating FAISS storage: {str(e)}")
-        return False
+
 
 def main():
     """Print current model instance ID when run directly."""
@@ -380,7 +335,7 @@ def main():
         memories = create_memory_store(model, instance_id)
         
         # Create FAISS storage for this instance
-        create_faiss_storage(instance_id)
+        
         
         print(f"\nMemories and FAISS storage created successfully")
         print(f"Instance ID: {instance_id}")
