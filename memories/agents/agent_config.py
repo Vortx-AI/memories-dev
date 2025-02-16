@@ -82,9 +82,15 @@ class AgentConfig:
         Returns:
             np.ndarray: Vectorized data
         """
+        # Convert dictionary data to DataFrame if it's not already
+        if isinstance(data, dict):
+            df = pd.DataFrame(data['data'])
+        else:
+            df = data
+
         # Convert data to text format for embedding
         texts = []
-        for _, row in data.iterrows():
+        for _, row in df.iterrows():
             # Combine relevant fields into a text representation
             text_parts = []
             for field in ['name', 'amenity', 'shop', 'description']:
