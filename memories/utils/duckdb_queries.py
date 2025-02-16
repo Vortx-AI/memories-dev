@@ -2,7 +2,7 @@ from typing import Dict, List, Any, Optional
 import duckdb
 from pathlib import Path
 import pandas as pd
-from memories.agents.agent_config import get_duckdb_connection
+from memories.models.load_model import LoadModel
 
 class DuckDBQueryGenerator:
     def __init__(self, parquet_file: str, load_model: Any):
@@ -16,7 +16,15 @@ class DuckDBQueryGenerator:
         self.parquet_file = parquet_file
         self.load_model = load_model
         self.table_name = Path(parquet_file).stem
-        self.conn = get_duckdb_connection()
+        
+        # Get DuckDB connection from load_model
+        if isinstance(load_model, LoadModel):
+            self.conn = load_model.get_duckdb_connection()
+        else:
+            # Fallback to creating a new connection
+            self.conn = duckdb.connect(':memory:')
+            self.conn.execute("INSTALL spatial;")
+            self.conn.execute("LOAD spatial;")
         
     def generate_query_code(self, 
                           query: str,
