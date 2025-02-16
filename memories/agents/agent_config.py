@@ -294,6 +294,18 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
     # Initialize memory store
     memory_store = MemoryStore()
     
+    # Create memories table if it doesn't exist
+    memory_store.conn.execute("""
+        CREATE TABLE IF NOT EXISTS memories (
+            instance_id VARCHAR PRIMARY KEY,
+            created_at VARCHAR,
+            start_date VARCHAR,
+            end_date VARCHAR,
+            data_connectors JSON,
+            faiss_data JSON
+        )
+    """)
+    
     # Get project root and data paths
     project_root = os.getenv("PROJECT_ROOT")
     osm_data_path = os.path.join(project_root, "data", "osm_data")
@@ -345,27 +357,30 @@ def create_memory_store(model: LoadModel, instance_id: str) -> Dict[str, Any]:
         print(f"Saved metadata to: {metadata_path}")
         
         # Store in database
-        memory_store.conn.execute("""
-            INSERT INTO memories (
+        try:
+            memory_store.conn.execute("""
+                INSERT INTO memories (
+                    instance_id,
+                    created_at,
+                    start_date,
+                    end_date,
+                    data_connectors,
+                    faiss_data
+                ) VALUES (?, ?, ?, ?, ?, ?)
+            """, (
                 instance_id,
-                created_at,
-                start_date,
-                end_date,
-                data_connectors,
-                faiss_data
-            ) VALUES (?, ?, ?, ?, ?, ?)
-        """, (
-            instance_id,
-            datetime.now().isoformat(),
-            datetime.now().isoformat(),
-            datetime.now().isoformat(),
-            json.dumps({'parquet': parquet_file}),
-            json.dumps({
-                'index_size': faiss_storage['index'].ntotal,
-                'dimension': dimension
-            })
-        ))
-        print(f"Stored memory information in database")
+                datetime.now().isoformat(),
+                datetime.now().isoformat(),
+                datetime.now().isoformat(),
+                json.dumps({'parquet': parquet_file}),
+                json.dumps({
+                    'index_size': faiss_storage['index'].ntotal,
+                    'dimension': dimension
+                })
+            ))
+            print(f"Stored memory information in database")
+        except Exception as e:
+            print(f"Error storing in database: {str(e)}")
     
     print("\nMemories and FAISS storage created successfully")
     print(f"Instance ID: {instance_id}")
