@@ -13,6 +13,7 @@ Base Agent
 ----------
 
 .. autoclass:: memories.agents.agent.Agent
+   :noindex:
    :members:
    :undoc-members:
    :show-inheritance:

@@ -193,4 +193,10 @@ myst_enable_extensions = [
 html_extra_path = ['robots.txt']
 
 # Output file base name for HTML help builder
-htmlhelp_basename = 'memories-dev-doc' 
+htmlhelp_basename = 'memories-dev-doc'
+
+autodoc_mock_imports = [
+    "cudf", 
+    "cuspatial",
+    "faiss"
+] 
