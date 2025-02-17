@@ -179,10 +179,11 @@ def test_location():
 
 def test_store_insights(location_analyzer, test_location):
     """Test insights storage functionality."""
-    # Clear Redis before running the test
+    # Clear memory store before test
     location_analyzer.memory_store.hot_memory.clear()
+    location_analyzer.memory_store.cold_memory.clear()
     
-    # Create test insights
+    # Create test insights with high ambience score
     insights = {
         "location_id": test_location["id"],
         "timestamp": datetime.now().isoformat(),
@@ -217,7 +218,7 @@ def test_store_insights(location_analyzer, test_location):
     
     # Verify storage in hot memory (due to high ambience score)
     hot_memories = location_analyzer.memory_store.hot_memory.retrieve_all()
-    assert len(hot_memories) > 0
+    assert len(hot_memories) >= 1
     assert any(mem["location_id"] == test_location["id"] for mem in hot_memories)
     
     # Verify insights structure

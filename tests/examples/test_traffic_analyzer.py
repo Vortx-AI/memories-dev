@@ -124,29 +124,35 @@ async def test_analyze_traffic_data(traffic_analyzer, mock_data):
 
 def test_store_insights(traffic_analyzer):
     """Test insights storage logic."""
+    # Clear memory store before test
+    traffic_analyzer.memory_store.hot_memory.clear()
+    traffic_analyzer.memory_store.cold_memory.clear()
+    
     # Create test insights with high congestion
     high_congestion_insights = {
         "traffic_metrics": {
             "congestion_level": 0.9
-        }
+        },
+        "timestamp": datetime.now().isoformat()
     }
     
     # Create test insights with low congestion
     low_congestion_insights = {
         "traffic_metrics": {
             "congestion_level": 0.4
-        }
+        },
+        "timestamp": datetime.now().isoformat()
     }
     
     # Test storage of high congestion road
     traffic_analyzer._store_insights(high_congestion_insights, {"id": "TEST_1"})
     hot_memories = traffic_analyzer.memory_store.hot_memory.retrieve_all()
-    assert len(hot_memories) > 0
+    assert len(hot_memories) >= 1
     
     # Test storage of low congestion road
     traffic_analyzer._store_insights(low_congestion_insights, {"id": "TEST_2"})
     cold_memories = traffic_analyzer.memory_store.cold_memory.retrieve_all()
-    assert len(cold_memories) > 0
+    assert len(cold_memories) >= 1
 
 def test_calculate_traffic_metrics(traffic_analyzer):
     """Test traffic metrics calculations."""
