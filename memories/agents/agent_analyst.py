@@ -38,78 +38,84 @@ class AgentAnalyst:
         else:
             return "exact_match_query"
 
-    def analyze_query(self, 
-                      query: str, 
-                      lat: float, 
-                      lon: float, 
-                      data_type: str, 
-                      parquet_file: str, 
-                      extra_params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def analyze_query(self, query: str, lat: float, lon: float, data_type: str, parquet_file: str, extra_params: dict) -> dict:
         """
-        Analyze the given query by determining the appropriate DuckDB query template from
-        a knowledge base, substituting required parameters, and executing the resulting SQL code.
+        Analyze the query using the provided parameters.
+
+        This function inspects the schema of the given Parquet file. It will:
+          - Use traditional latitude/longitude columns if available.
+          - Otherwise, check for a 'geometry' column. If found, it retrieves the column type and then
+            constructs a query using spatial functions (ST_Y and ST_X) assuming the geometry column is a POINT.
+        
+        Note: Ensure the necessary spatial extension (e.g., for DuckDB) is enabled if needed.
 
         Args:
-            query (str): The user query describing what to search for.
-            lat (float): Target latitude coordinate.
-            lon (float): Target longitude coordinate.
-            data_type (str): Data type or column to be used (for example, 'amenity').
-            parquet_file (str): Full file path to the Parquet file.
-            extra_params (Optional[Dict[str, Any]]): Additional parameters (e.g., radius, value, pattern).
+            query (str): The original query.
+            lat (float): The latitude value.
+            lon (float): The longitude value.
+            data_type (str): The data type extracted from context.
+            parquet_file (str): The full Parquet file path.
+            extra_params (dict): Any additional parameters (such as a search radius).
 
         Returns:
-            Dict[str, Any]: The execution status, generated SQL query, results, and
-                            the selected function name.
+            dict: A dictionary containing the query result, generated SQL, and additional metadata.
         """
+        import duckdb
         try:
-            # Load DuckDB knowledge base from JSON.
-            kb_path = os.path.join(self.project_root, "memories", "utils", "earth", "duckdb_parquet_kb.json")
-            with open(kb_path, "r") as f:
-                kb = json.load(f)
+            # Connect to DuckDB
+            con = duckdb.connect()
+            # Retrieve the schema for the Parquet file by describing a scan of it.
+            schema_df = con.execute(f"DESCRIBE parquet_scan('{parquet_file}')").fetchdf()
+            # Ensure column names are lower-cased for uniformity.
+            columns = [str(c).lower() for c in schema_df['column_name'].to_list()]
 
-            # Use the internal function to select the correct query template.
-            chosen_function = self.select_query_function(query, lat, lon, data_type)
+            # Build SQL query based on available spatial columns
+            if 'latitude' in columns and 'longitude' in columns:
+                # Use these columns directly
+                sql_query = f"""
+                    SELECT *
+                    FROM '{parquet_file}'
+                    WHERE latitude = {lat} AND longitude = {lon};
+                """
+            elif 'lat' in columns and 'lon' in columns:
+                sql_query = f"""
+                    SELECT *
+                    FROM '{parquet_file}'
+                    WHERE lat = {lat} AND lon = {lon};
+                """
+            elif 'geometry' in columns:
+                # Retrieve the type of the geometry column for debugging/logging purposes.
+                geom_type_row = schema_df[schema_df['column_name'].str.lower() == 'geometry']
+                geom_type = geom_type_row['type'].iloc[0] if not geom_type_row.empty else "unknown"
+                # Assuming the geometry column stores spatial data that can be processed
+                # with ST_X (returning longitude) and ST_Y (returning latitude). Note that in many
+                # spatial databases, a POINT type stores coordinates as (x, y) = (lon, lat).
+                sql_query = f"""
+                    SELECT *
+                    FROM '{parquet_file}'
+                    WHERE ST_Y(geometry) = {lat} AND ST_X(geometry) = {lon};
+                """
+                # You might want to add a tolerance/tolerance_distance here if exact equality is too strict.
+            else:
+                raise ValueError("No recognizable spatial columns found in the Parquet file.")
 
-            # Find the corresponding template entry in the knowledge base.
-            func_details = next((item for item in kb["queries"] if item["function"] == chosen_function), None)
-            if func_details is None:
-                return {
-                    "status": "error",
-                    "error": f"Function '{chosen_function}' not found in the knowledge base."
-                }
-
-            # Prepare a parameters dictionary for substitution into the SQL template.
-            extra = extra_params if extra_params is not None else {}
-            params = {
-                "parquet_file": parquet_file,
-                "lat_col": extra.get("lat_col", "latitude"),
-                "lon_col": extra.get("lon_col", "longitude"),
-                "target_lat": lat,
-                "target_lon": lon,
-                "column_name": data_type,
-                "value": extra.get("value", ""),
-                "pattern": extra.get("pattern", ""),
-                "radius": extra.get("radius", 1000)  # default radius if not provided
-            }
-
-            # Generate the SQL query by filling in the template.
-            query_to_run = func_details["code_to_execute"].format(**params)
-
-            # Execute the generated query using DuckDB.
-            conn = duckdb.connect(':memory:')
-            results = conn.execute(query_to_run).fetchdf()
-
+            # Debug: Log the generated SQL query (optional)
+            print("[Agent Analyst] Generated SQL Query:")
+            print(sql_query)
+            
+            # Execute the query and fetch the results.
+            results = con.execute(sql_query).fetchall()
+            con.close()
             return {
                 "status": "success",
-                "generated_code": query_to_run,
                 "results": results,
-                "chosen_function": chosen_function
+                "generated_code": sql_query,  # For debugging purposes.
+                "chosen_function": "analyze_query"
             }
-
         except Exception as e:
             return {
                 "status": "error",
-                "error": str(e)
+                "error": f"Binder Error: {str(e)}"
             }
 
 def main():
