@@ -144,6 +144,7 @@ def main():
     }
 
     result = analyst.analyze_query(query, lat, lon, data_type, parquet_file, extra_params)
+    print(result)
     print("\nAnalysis Results:")
     print("=" * 50)
     if result["status"] == "success":
