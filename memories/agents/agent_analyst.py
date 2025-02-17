@@ -42,84 +42,87 @@ class AgentAnalyst:
         data_type: str,
         parquet_file: str,
         relevant_column: str,
-        geometry_column: str,
-        geometry_type: str,
-        extra_params: dict = {}
-    ) -> dict:
+        geometry_column: str = None,
+        geometry_type: str = None,
+        extra_params: Dict = None
+    ) -> Dict[str, Any]:
         """
-        Analyze query to identify suitable DuckDB query functions from knowledge base.
-        
-        Args:
-            query (str): User's natural language query
-            lat (float): Target latitude
-            lon (float): Target longitude
-            data_type (str): Type of data being queried
-            parquet_file (str): Path to Parquet file
-            relevant_column (str): Column name for filtering
-            geometry_column (str): Name of the geometry column
-            geometry_type (str): Type of geometry (e.g., 'POINT')
-            extra_params (dict): Additional parameters
+        Analyze the query and recommend appropriate functions with parameters.
         """
         try:
-            # Load the knowledge base
-            kb_path = os.path.join(self.project_root, "memories", "utils", "earth", "duckdb_parquet_kb.json")
-            with open(kb_path, 'r') as f:
-                knowledge_base = json.load(f)
-
             prompt = f"""
-Given the following query and data requirements, identify which function(s) from the knowledge base would be most appropriate to use.
-Provide the function name(s) and their required parameters.
+Given a spatial query and data details, recommend appropriate query functions with parameters.
 
-Query: "{query}"
-Data Requirements:
-- Data field/type: {data_type}
-- Column to query: {relevant_column}
-- Spatial components: Uses lat={lat}, lon={lon}
-- File: {parquet_file}
+Query: {query}
+Data Type: {data_type}
+Location: ({lat}, {lon})
+Parquet File: {parquet_file}
+Relevant Column: {relevant_column}
 
-Knowledge Base Functions:
-{json.dumps(knowledge_base, indent=2)}
+Available functions:
+1. nearest_query - Find nearest records (default limit: 5)
+2. within_radius_query - Find records within radius (default radius: 5km)
+3. count_within_radius_query - Count records within radius (default radius: 5km)
 
-Return a list of suitable functions with their parameter requirements in this JSON format:
+Return recommendations in this JSON format:
 {{
-    "recommended_functions": [
+    "status": "success",
+    "recommendations": [
         {{
-            "function_name": "name_of_function",
+            "function_name": "function_name",
             "parameters": {{
-                "param1": "value1",
-                "param2": "value2"
+                "parquet_file": "file_path",
+                "column_name": "column_name",
+                "value": "true/false",
+                "target_lat": latitude,
+                "target_lon": longitude,
+                "radius": number_in_km,  // for radius-based queries
+                "limit": number         // for nearest query
             }},
-            "reason": "Brief explanation of why this function is suitable"
+            "reason": "explanation"
         }}
     ]
 }}
+
+Note: All filter columns are boolean type, so value should be 'true' or 'false'.
 """
-            # Get the response from the LLM
+            # Get response from model
             response = self.load_model.get_response(prompt)
             
-            # Parse the response to get the JSON
+            # Parse the response
             try:
-                if "```json" in response:
-                    response = response.split("```json")[1].split("```")[0]
-                elif "```" in response:
-                    response = response.split("```")[1].split("```")[0]
-                
-                function_recommendations = json.loads(response.strip())
-                
-                return {
-                    "status": "success",
-                    "recommendations": function_recommendations["recommended_functions"]
-                }
+                if isinstance(response, str):
+                    if "```json" in response:
+                        response = response.split("```json")[1].split("```")[0]
+                    elif "```" in response:
+                        response = response.split("```")[1].split("```")[0]
+                    
+                    result = json.loads(response.strip())
+                    
+                    # Set default values for radius and limit if they're strings
+                    for rec in result.get('recommendations', []):
+                        params = rec.get('parameters', {})
+                        if 'radius' in params and not isinstance(params['radius'], (int, float)):
+                            params['radius'] = 5  # Default 5km radius
+                        if 'limit' in params and not isinstance(params['limit'], (int, float)):
+                            params['limit'] = 5   # Default 5 results
+                        # Ensure value is boolean string
+                        if 'value' in params:
+                            params['value'] = 'true'  # Default to true for boolean columns
+                    
+                    return result
+                    
             except json.JSONDecodeError as e:
                 return {
-                    "status": "error",
-                    "error": f"Failed to parse LLM response: {str(e)}"
+                    'status': 'error',
+                    'error': f'Failed to parse response: {str(e)}',
+                    'response': response
                 }
                 
         except Exception as e:
             return {
-                "status": "error",
-                "error": f"Analysis Error: {str(e)}"
+                'status': 'error',
+                'error': str(e)
             }
 
 def main():
