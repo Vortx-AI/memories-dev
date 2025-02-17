@@ -148,7 +148,7 @@ class Agent_L1:
                         "geometry_type": column_info['geometry_type'],
                         
                         "distance": float(distance),
-                         "data_type": column_info['data_type'],
+                         #"data_type": column_info['data_type'],
                     })
             
             return results
