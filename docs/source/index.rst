@@ -1,27 +1,40 @@
 Welcome to Memories-Dev's documentation!
 =====================================
 
-Memories-Dev is a powerful Python framework for managing and processing earth observation data. It provides a flexible and efficient system for handling various types of geospatial data, with a focus on satellite imagery and vector data.
+Memories-Dev is a powerful Python framework for Earth Memory Synthesis, designed to capture, process, and understand the evolving story of our planet through data. It provides a sophisticated system for synthesizing and managing Earth observations across multiple temporal and spatial scales.
 
 Version: 1.1.9
 
 Key Features
 -----------
 
-- Multi-tiered memory system (Hot, Warm, Cold)
-- Satellite imagery processing
-- Vector data analysis
-- Intelligent data management
-- Specialized analysis agents
-- Example applications for various use cases
+- Multi-tiered Memory Architecture
+  - Hot Memory: Real-time, high-priority Earth observations
+  - Warm Memory: Recent historical data and frequently accessed patterns
+  - Cold Memory: Long-term Earth observation archives
+  - Glacier Memory: Deep historical records and baseline data
+
+- Earth Memory Synthesis
+  - Temporal Pattern Recognition
+  - Spatial Relationship Analysis
+  - Multi-source Data Integration
+  - Contextual Understanding
+  - Adaptive Learning from Historical Patterns
+
+- Specialized Analysis Agents
+  - Property Analysis: Understanding urban development patterns
+  - Location Ambience: Environmental and social context synthesis
+  - Traffic Patterns: Transportation network evolution
+  - Water Bodies: Hydrological system monitoring
+  - Custom Agent Framework for specialized applications
 
 Example Applications
 ------------------
 
-- Property Analyzer: Real estate analysis using satellite data
-- Location Ambience: Environmental and urban characteristic analysis
-- Traffic Analyzer: Traffic patterns and road conditions monitoring
-- Water Bodies Monitor: Water body change detection and analysis
+- Property Analyzer: Synthesize property evolution patterns
+- Location Ambience: Environmental and urban characteristic synthesis
+- Traffic Analyzer: Transportation network memory patterns
+- Water Bodies Monitor: Hydrological system memory synthesis
 
 .. toctree::
    :maxdepth: 2
@@ -54,17 +67,23 @@ Basic Usage
     
     # Initialize memory store
     config = Config(
-        storage_path="./data",
-        hot_memory_size=50,
-        warm_memory_size=200,
-        cold_memory_size=1000
+        storage_path="./earth_memories",
+        hot_memory_size=50,  # Recent observations
+        warm_memory_size=200,  # Historical patterns
+        cold_memory_size=1000  # Long-term records
     )
     memory_store = MemoryStore(config)
     
-    # Store data
+    # Store Earth observation data
     memory_store.store({
         "timestamp": "2024-02-17T12:00:00",
-        "data": {"key": "value"}
+        "location": {"lat": 40.7128, "lon": -74.0060},
+        "observation_type": "environmental",
+        "data": {
+            "temperature": 25.5,
+            "vegetation_index": 0.68,
+            "urban_density": 0.85
+        }
     })
 
 For more detailed information, check out the :doc:`quickstart` guide.
