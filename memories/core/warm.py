@@ -1,221 +1,111 @@
-import sqlite3
-from typing import Any, Optional, List, Dict, Union
+"""
+Warm memory implementation using file-based storage.
+"""
+
 import json
 import logging
-from datetime import datetime
-import os
-import uuid
-import numpy as np
-import pandas as pd
+from typing import Dict, Any, Optional, List
 from pathlib import Path
+import shutil
+
+logger = logging.getLogger(__name__)
 
 class WarmMemory:
-    """
-    Warm memory implementation using SQLite for persistent memory operations.
-    """
+    """Warm memory layer using file-based storage."""
     
-    def __init__(self, db_path: Optional[str] = None):
-        """
-        Initialize SQLite connection and create necessary tables.
+    def __init__(self, storage_path: Path, max_size: int):
+        """Initialize warm memory.
         
         Args:
-            db_path (Optional[str]): Path to SQLite database file. If None, uses default path.
+            storage_path: Path to store data files
+            max_size: Maximum number of items to store
         """
-        if db_path is None:
-            db_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'warm_memory.db')
-            
-        self.db_path = db_path
-        self.logger = logging.getLogger(__name__)
-        self.instance_id = str(uuid.uuid4())
+        self.storage_path = storage_path
+        self.max_size = max_size
         
-        # Ensure directory exists
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        # Create storage directory
+        self.storage_path.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Initialized warm memory at {storage_path}")
+    
+    def store(self, data: Dict[str, Any]) -> None:
+        """Store data in a file.
         
-        # Initialize database and create tables
+        Args:
+            data: Data to store
+        """
         try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                # Main storage table
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS warm_memory (
-                        key TEXT PRIMARY KEY,
-                        value TEXT NOT NULL,
-                        expiry INTEGER,
-                        created_at INTEGER NOT NULL,
-                        updated_at INTEGER NOT NULL,
-                        metadata TEXT
-                    )
-                ''')
-                # Metadata table for instance tracking
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS instances (
-                        instance_id TEXT PRIMARY KEY,
-                        created_at INTEGER NOT NULL,
-                        last_active INTEGER NOT NULL
-                    )
-                ''')
-                # Insert instance record
-                cursor.execute('''
-                    INSERT INTO instances (instance_id, created_at, last_active)
-                    VALUES (?, ?, ?)
-                ''', (self.instance_id, int(datetime.now().timestamp()), int(datetime.now().timestamp())))
-                conn.commit()
+            # Use timestamp as filename
+            timestamp = data.get("timestamp", "")
+            if not timestamp:
+                logger.error("Data must have a timestamp")
+                return
+            
+            filename = self.storage_path / f"{timestamp}.json"
+            
+            # Store as JSON
+            with open(filename, "w") as f:
+                json.dump(data, f, indent=2)
+            
+            # Maintain max size by removing oldest files
+            files = list(self.storage_path.glob("*.json"))
+            if len(files) > self.max_size:
+                # Sort by modification time and remove oldest
+                files.sort(key=lambda x: x.stat().st_mtime)
+                for old_file in files[:-self.max_size]:
+                    old_file.unlink()
         except Exception as e:
-            self.logger.error(f"Error initializing database: {str(e)}")
-            raise
-
-    def _get_connection(self) -> sqlite3.Connection:
-        """Get a database connection with proper configuration."""
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
-
-    def create(self, key: str, value: Any, expiry: Optional[int] = None, metadata: Optional[Dict] = None) -> bool:
-        """
-        Create a new key-value pair in warm memory.
+            logger.error(f"Failed to store data in file: {e}")
+    
+    def retrieve(self, query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Retrieve data from files.
         
         Args:
-            key (str): The key to store the value under
-            value (Any): The value to store (will be JSON serialized)
-            expiry (Optional[int]): Time in seconds until the key expires
-            metadata (Optional[Dict]): Additional metadata to store with the value
+            query: Query to match against stored data
             
         Returns:
-            bool: True if successful, False otherwise
+            Retrieved data or None if not found
         """
         try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                now = int(datetime.now().timestamp())
-                expiry_time = now + expiry if expiry else None
-                cursor.execute('''
-                    INSERT OR REPLACE INTO warm_memory 
-                    (key, value, expiry, created_at, updated_at, metadata)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ''', (
-                    key,
-                    json.dumps(value),
-                    expiry_time,
-                    now,
-                    now,
-                    json.dumps(metadata) if metadata else None
-                ))
-                conn.commit()
-                return True
-        except Exception as e:
-            self.logger.error(f"Error creating key {key}: {str(e)}")
-            return False
-
-    def read(self, key: str) -> Optional[Any]:
-        """
-        Read a value from warm memory.
-        
-        Args:
-            key (str): The key to read
+            # Use timestamp as filename if provided
+            if "timestamp" in query:
+                filename = self.storage_path / f"{query['timestamp']}.json"
+                if filename.exists():
+                    with open(filename) as f:
+                        return json.load(f)
             
-        Returns:
-            Optional[Any]: The deserialized value if found and not expired, None otherwise
-        """
-        try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                now = int(datetime.now().timestamp())
-                cursor.execute('''
-                    SELECT value, expiry, metadata FROM warm_memory 
-                    WHERE key = ? AND (expiry IS NULL OR expiry > ?)
-                ''', (key, now))
-                row = cursor.fetchone()
-                
-                if row:
-                    result = {
-                        'value': json.loads(row['value']),
-                        'metadata': json.loads(row['metadata']) if row['metadata'] else None
-                    }
-                    return result
-                return None
-        except Exception as e:
-            self.logger.error(f"Error reading key {key}: {str(e)}")
+            # Otherwise, search through all files
+            for file in self.storage_path.glob("*.json"):
+                with open(file) as f:
+                    data = json.load(f)
+                    # Check if all query items match
+                    if all(data.get(k) == v for k, v in query.items()):
+                        return data
+            
             return None
-
-    def delete(self, key: str) -> bool:
-        """
-        Delete a key from warm memory.
+        except Exception as e:
+            logger.error(f"Failed to retrieve data from file: {e}")
+            return None
+    
+    def retrieve_all(self) -> List[Dict[str, Any]]:
+        """Retrieve all data from files.
         
-        Args:
-            key (str): The key to delete
-            
         Returns:
-            bool: True if successful, False otherwise
+            List of all stored data
         """
         try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute('DELETE FROM warm_memory WHERE key = ?', (key,))
-                conn.commit()
-                return cursor.rowcount > 0
+            result = []
+            for file in self.storage_path.glob("*.json"):
+                with open(file) as f:
+                    result.append(json.load(f))
+            return result
         except Exception as e:
-            self.logger.error(f"Error deleting key {key}: {str(e)}")
-            return False
-
-    def list_keys(self, pattern: str = "*") -> List[str]:
-        """
-        List all keys matching a pattern.
-        
-        Args:
-            pattern (str): SQL LIKE pattern to match keys against
-            
-        Returns:
-            List[str]: List of matching keys
-        """
-        try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                now = int(datetime.now().timestamp())
-                # Convert glob pattern to SQL LIKE pattern
-                sql_pattern = pattern.replace('*', '%').replace('?', '_')
-                cursor.execute('''
-                    SELECT key FROM warm_memory 
-                    WHERE key LIKE ? AND (expiry IS NULL OR expiry > ?)
-                ''', (sql_pattern, now))
-                return [row['key'] for row in cursor.fetchall()]
-        except Exception as e:
-            self.logger.error(f"Error listing keys with pattern {pattern}: {str(e)}")
+            logger.error(f"Failed to retrieve all data from files: {e}")
             return []
-
-    def cleanup_expired(self) -> int:
-        """
-        Remove expired entries from warm memory.
-        
-        Returns:
-            int: Number of entries removed
-        """
+    
+    def clear(self) -> None:
+        """Clear all data files."""
         try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                now = int(datetime.now().timestamp())
-                cursor.execute('DELETE FROM warm_memory WHERE expiry < ?', (now,))
-                conn.commit()
-                return cursor.rowcount
+            shutil.rmtree(self.storage_path)
+            self.storage_path.mkdir(parents=True, exist_ok=True)
         except Exception as e:
-            self.logger.error(f"Error cleaning up expired entries: {str(e)}")
-            return 0
-
-    def cleanup(self):
-        """Clean up resources."""
-        try:
-            # Update last active timestamp
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                now = int(datetime.now().timestamp())
-                cursor.execute('''
-                    UPDATE instances 
-                    SET last_active = ? 
-                    WHERE instance_id = ?
-                ''', (now, self.instance_id))
-                conn.commit()
-        except Exception as e:
-            self.logger.error(f"Error updating instance activity: {str(e)}")
-
-    def __del__(self):
-        """Destructor to ensure cleanup is performed."""
-        self.cleanup()
+            logger.error(f"Failed to clear files: {e}")

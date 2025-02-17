@@ -18,6 +18,8 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 import subprocess
+import gzip
+import shutil
 
 # Initialize GPU support flags
 HAS_GPU_SUPPORT = False
@@ -145,130 +147,110 @@ class Config:
 logger = logging.getLogger(__name__)
 
 class ColdMemory:
-    """Cold memory implementation using DuckDB and optional GPU acceleration."""
+    """Cold memory layer using compressed file-based storage."""
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        """Initialize cold memory with configuration."""
-        self.config = config or {}
-        self.logger = logging.getLogger(__name__)
-        self.instance_id = str(uuid.uuid4())
-        
-        # Initialize storage
-        self.db = self._init_database()
-        
-    def _init_database(self) -> duckdb.DuckDBPyConnection:
-        """Initialize DuckDB database."""
-        db_path = self.config.get('db_path', ':memory:')
-        return duckdb.connect(db_path)
-    
-    def store(self, data: Union[pd.DataFrame, 'cudf.DataFrame'], table_name: str) -> None:
-        """Store data in cold memory."""
-        if HAS_CUDF and isinstance(data, cudf.DataFrame):
-            # Convert cudf DataFrame to pandas for storage
-            self.logger.debug("Converting cudf DataFrame to pandas for storage")
-            data = data.to_pandas()
-        elif not isinstance(data, pd.DataFrame):
-            raise TypeError("Data must be a pandas DataFrame or cudf DataFrame")
-
-        # Store the data using DuckDB
-        self.db.register("temp_data", data)
-        self.db.execute(f"CREATE TABLE IF NOT EXISTS {table_name} AS SELECT * FROM temp_data")
-        self.db.unregister("temp_data")
-        self.logger.debug(f"Successfully stored data in table {table_name}")
-    
-    def retrieve(self, table_name: str, use_gpu: bool = False) -> Union[pd.DataFrame, 'cudf.DataFrame']:
-        """Retrieve data from cold memory.
+    def __init__(self, storage_path: Path, max_size: int):
+        """Initialize cold memory.
         
         Args:
-            table_name: Name of the table to retrieve data from
-            use_gpu: Whether to return data as a GPU DataFrame (if GPU support is available)
+            storage_path: Path to store data files
+            max_size: Maximum number of items to store
+        """
+        self.storage_path = storage_path
+        self.max_size = max_size
+        
+        # Create storage directory
+        self.storage_path.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Initialized cold memory at {storage_path}")
+    
+    def store(self, data: Dict[str, Any]) -> None:
+        """Store data in a compressed file.
+        
+        Args:
+            data: Data to store
+        """
+        try:
+            # Use timestamp as filename
+            timestamp = data.get("timestamp", "")
+            if not timestamp:
+                logger.error("Data must have a timestamp")
+                return
+            
+            filename = self.storage_path / f"{timestamp}.json.gz"
+            
+            # Store as compressed JSON
+            with gzip.open(filename, "wt") as f:
+                json.dump(data, f, indent=2)
+            
+            # Maintain max size by removing oldest files
+            files = list(self.storage_path.glob("*.json.gz"))
+            if len(files) > self.max_size:
+                # Sort by modification time and remove oldest
+                files.sort(key=lambda x: x.stat().st_mtime)
+                for old_file in files[:-self.max_size]:
+                    old_file.unlink()
+        except Exception as e:
+            logger.error(f"Failed to store data in file: {e}")
+    
+    def retrieve(self, query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Retrieve data from compressed files.
+        
+        Args:
+            query: Query to match against stored data
             
         Returns:
-            DataFrame either as pandas DataFrame or cudf DataFrame based on use_gpu flag
+            Retrieved data or None if not found
         """
-        query = f"SELECT * FROM {table_name}"
-        result = self.db.execute(query).fetchdf()
+        try:
+            # Use timestamp as filename if provided
+            if "timestamp" in query:
+                filename = self.storage_path / f"{query['timestamp']}.json.gz"
+                if filename.exists():
+                    with gzip.open(filename, "rt") as f:
+                        return json.load(f)
+            
+            # Otherwise, search through all files
+            for file in self.storage_path.glob("*.json.gz"):
+                with gzip.open(file, "rt") as f:
+                    data = json.load(f)
+                    # Check if all query items match
+                    if all(data.get(k) == v for k, v in query.items()):
+                        return data
+            
+            return None
+        except Exception as e:
+            logger.error(f"Failed to retrieve data from file: {e}")
+            return None
+    
+    def retrieve_all(self) -> List[Dict[str, Any]]:
+        """Retrieve all data from compressed files.
         
-        if use_gpu:
-            if not HAS_CUDF:
-                self.logger.warning("GPU acceleration requested but cudf is not available")
-                return result
-            try:
-                self.logger.debug("Converting pandas DataFrame to cudf")
-                return cudf.from_pandas(result)
-            except Exception as e:
-                self.logger.warning(f"Failed to convert to GPU DataFrame: {e}")
-                return result
-        return result
-    
-    def _store_metadata(self, storage_id: str, metadata: Dict[str, Any]):
-        """Store metadata for the given storage ID."""
+        Returns:
+            List of all stored data
+        """
         try:
-            self.db.execute("""
-                CREATE TABLE IF NOT EXISTS metadata (
-                    storage_id VARCHAR PRIMARY KEY,
-                    metadata JSON,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            self.db.execute("""
-                INSERT INTO metadata (storage_id, metadata)
-                VALUES (?, ?)
-                ON CONFLICT (storage_id) DO UPDATE SET
-                    metadata = excluded.metadata
-            """, (storage_id, json.dumps(metadata)))
-            
+            result = []
+            for file in self.storage_path.glob("*.json.gz"):
+                with gzip.open(file, "rt") as f:
+                    result.append(json.load(f))
+            return result
         except Exception as e:
-            self.logger.error(f"Error storing metadata: {str(e)}")
-            raise
+            logger.error(f"Failed to retrieve all data from files: {e}")
+            return []
     
-    def _retrieve_metadata(self, storage_id: str) -> Optional[Dict[str, Any]]:
-        """Retrieve metadata for the given storage ID."""
+    def clear(self) -> None:
+        """Clear all data files."""
         try:
-            result = self.db.execute("""
-                SELECT metadata FROM metadata WHERE storage_id = ?
-            """, (storage_id,)).fetchone()
-            
-            if result:
-                return json.loads(result[0])
-            return None
-            
+            shutil.rmtree(self.storage_path)
+            self.storage_path.mkdir(parents=True, exist_ok=True)
         except Exception as e:
-            self.logger.error(f"Error retrieving metadata: {str(e)}")
-            return None
-    
-    def delete(self, storage_id: str) -> bool:
-        """Delete data from cold memory."""
-        try:
-            # Drop table if exists
-            self.db.execute(f"DROP TABLE IF EXISTS {storage_id}")
-            
-            # Delete metadata
-            self.db.execute("""
-                DELETE FROM metadata WHERE storage_id = ?
-            """, (storage_id,))
-            
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Error deleting data: {str(e)}")
-            return False
-    
-    def cleanup(self):
-        """Clean up resources."""
-        if hasattr(self, 'db'):
-            self.db.close()
-
-    def __del__(self):
-        """Destructor to ensure cleanup is performed."""
-        self.cleanup()
+            logger.error(f"Failed to clear files: {e}")
 
 # Test code with more verbose output
 if __name__ == "__main__":
     try:
         print("Initializing ColdMemory...")
-        cold_memory = ColdMemory()
+        cold_memory = ColdMemory(Path(os.getenv('GEO_MEMORIES')), 100)
         
         # Test coordinates (Bangalore, India)
         test_lat, test_lon = 12.9095706, 77.6085865
@@ -276,16 +258,16 @@ if __name__ == "__main__":
         
         # Basic query with debug info
         print("\n1. Executing basic query...")
-        results = cold_memory.query_by_point(
-            lat=test_lat,
-            lon=test_lon,
-            limit=5
-        )
+        results = cold_memory.retrieve({
+            "latitude": test_lat,
+            "longitude": test_lon,
+            "limit": 5
+        })
         print(f"Query returned {len(results)} results")
         
-        if not results.empty:
+        if results:
             print("\nAll columns in results:")
-            print("Available columns:", list(results.columns))
+            print("Available columns:", list(results.keys()))
             print("\nComplete results:")
             # Set pandas to show all columns and rows without truncation
             pd.set_option('display.max_columns', None)  # Show all columns
@@ -297,27 +279,26 @@ if __name__ == "__main__":
             print("\nNo results found. Checking data in the Parquet files...")
             
             # Show sample of available data with all columns
-            geo_memories_path = os.getenv('GEO_MEMORIES')
             print("\nSample of available data:")
-            sample_query = f"""
-                SELECT *
-                FROM read_parquet('{geo_memories_path}/*.parquet', union_by_name=True)
-                LIMIT 1;
-            """
+            sample_query = {
+                "latitude": 12.9095706,
+                "longitude": 77.6085865,
+                "limit": 1
+            }
             print(f"Executing sample query: {sample_query}")
-            sample_df = cold_memory.conn.execute(sample_query).df()
-            print("\nAvailable columns:", list(sample_df.columns))
-            print("\nComplete sample row:")
-            pd.set_option('display.max_columns', None)
-            pd.set_option('display.max_rows', None)
-            pd.set_option('display.width', None)
-            pd.set_option('display.max_colwidth', None)
-            print(sample_df)
+            sample_data = cold_memory.retrieve(sample_query)
+            if sample_data:
+                print("\nAvailable columns:", list(sample_data.keys()))
+                print("\nComplete sample row:")
+                pd.set_option('display.max_columns', None)
+                pd.set_option('display.max_rows', None)
+                pd.set_option('display.width', None)
+                pd.set_option('display.max_colwidth', None)
+                print(sample_data)
 
     except Exception as e:
         print(f"An error occurred during testing: {str(e)}")
     finally:
         if 'cold_memory' in locals():
-            cold_memory.conn.close()
-            print("\nClosed DuckDB connection.")
+            print("\nClosed ColdMemory.")
     

@@ -4,11 +4,12 @@ Text processing utilities using NLTK.
 
 import nltk
 import os
-from typing import List, Tuple, NamedTuple
+from typing import List, Tuple, NamedTuple, Dict, Any
 from nltk.tokenize import PunktSentenceTokenizer, TreebankWordTokenizer, word_tokenize
 from nltk.tag import pos_tag, RegexpTagger
 from nltk.chunk import ne_chunk
 from nltk.tree import Tree
+import re
 
 class Entity(NamedTuple):
     """Named entity with text and label."""
@@ -138,4 +139,42 @@ class TextProcessor:
         
         # Return top N keywords with their frequencies
         total = sum(counts.values())
-        return [(word, count/total) for word, count in counts.most_common(top_n)] 
+        return [(word, count/total) for word, count in counts.most_common(top_n)]
+
+    def format_insights(self, insights: Dict[str, Any]) -> str:
+        """Format insights into a readable string.
+        
+        Args:
+            insights: Dictionary containing analysis insights
+            
+        Returns:
+            Formatted string representation
+        """
+        lines = []
+        for key, value in insights.items():
+            if isinstance(value, dict):
+                lines.append(f"{key.replace('_', ' ').title()}:")
+                for subkey, subvalue in value.items():
+                    if subvalue is not None:
+                        lines.append(f"  - {subkey}: {subvalue:.2f}")
+            elif value is not None:
+                if isinstance(value, float):
+                    lines.append(f"{key.replace('_', ' ').title()}: {value:.2f}")
+                else:
+                    lines.append(f"{key.replace('_', ' ').title()}: {value}")
+        return "\n".join(lines)
+    
+    def parse_location(self, location_str: str) -> List[float]:
+        """Parse location string into coordinates.
+        
+        Args:
+            location_str: String containing location information (e.g., "Bbox: [1.0, 2.0, 3.0, 4.0]")
+            
+        Returns:
+            List of coordinates [min_x, min_y, max_x, max_y]
+        """
+        match = re.search(r"\[([\d\.\-\s,]+)\]", location_str)
+        if match:
+            coords = [float(x.strip()) for x in match.group(1).split(",")]
+            return coords
+        raise ValueError(f"Could not parse location string: {location_str}") 

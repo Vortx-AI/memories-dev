@@ -1,41 +1,179 @@
 """
-Landsat API data source for satellite imagery.
+Landsat API data source for satellite imagery using Planetary Computer.
 """
 
 import os
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, Any
 from datetime import datetime
+import planetary_computer as pc
+import pystac_client
 import rasterio
 import numpy as np
 from shapely.geometry import box, Polygon, mapping
-import landsatxplore.api
-import landsatxplore.earthexplorer as ee
 from rasterio.warp import transform_bounds
+import logging
+from pathlib import Path
+from .base import DataSource
 
-class LandsatAPI:
-    """Interface for accessing data from USGS Earth Explorer."""
+class LandsatAPI(DataSource):
+    """Interface for Landsat data access through Planetary Computer."""
     
-    def __init__(
-        self,
-        username: Optional[str] = None,
-        password: Optional[str] = None
-    ):
+    def __init__(self, token: Optional[str] = None, cache_dir: Optional[str] = None):
         """
-        Initialize Landsat API client.
+        Initialize Landsat interface.
         
         Args:
-            username: USGS Earth Explorer username
-            password: USGS Earth Explorer password
+            token: Planetary Computer API token
+            cache_dir: Optional directory for caching data
         """
-        self.username = username or os.getenv("USGS_USERNAME")
-        self.password = password or os.getenv("USGS_PASSWORD")
+        super().__init__(cache_dir)
+        self.token = token or os.getenv("PLANETARY_COMPUTER_API_KEY")
+        if self.token:
+            pc.settings.set_subscription_key(self.token)
         
-        if not (self.username and self.password):
-            raise ValueError("USGS credentials required")
-        
-        self.api = landsatxplore.api.API(self.username, self.password)
-        self.ee = ee.EarthExplorer(self.username, self.password)
+        self.logger = logging.getLogger(__name__)
+        self.catalog = pystac_client.Client.open(
+            "https://planetarycomputer.microsoft.com/api/stac/v1",
+            modifier=pc.sign_inplace
+        )
     
+    async def search(self,
+                    bbox: List[float],
+                    start_date: str,
+                    end_date: str,
+                    collection: str = "landsat-8-c2-l2",
+                    cloud_cover: float = 20.0,
+                    limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Search for Landsat scenes.
+        
+        Args:
+            bbox: Bounding box coordinates [west, south, east, north]
+            start_date: Start date in ISO format
+            end_date: End date in ISO format
+            collection: Collection ID (e.g., "landsat-8-c2-l2")
+            cloud_cover: Maximum cloud cover percentage
+            limit: Maximum number of results
+            
+        Returns:
+            List of scene metadata
+        """
+        self.validate_bbox(bbox)
+        
+        search = self.catalog.search(
+            collections=[collection],
+            bbox=bbox,
+            datetime=f"{start_date}/{end_date}",
+            query={"eo:cloud_cover": {"lt": cloud_cover}},
+            limit=limit
+        )
+        
+        items = list(search.get_items())
+        self.logger.info(f"Found {len(items)} items matching criteria")
+        return items
+    
+    async def download(self,
+                      item_id: str,
+                      output_dir: Path,
+                      bands: List[str] = ["SR_B2", "SR_B3", "SR_B4", "SR_B5"]) -> Path:
+        """
+        Download Landsat scene.
+        
+        Args:
+            item_id: Item identifier or STAC item
+            output_dir: Directory to save output
+            bands: List of bands to download
+            
+        Returns:
+            Path to downloaded file
+        """
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Check cache
+        cache_path = self.get_cache_path(f"{item_id}.tif")
+        if cache_path and cache_path.exists():
+            self.logger.info(f"Using cached file: {cache_path}")
+            return cache_path
+        
+        # Get item if ID was provided
+        if isinstance(item_id, str):
+            search = self.catalog.search(
+                collections=["landsat-8-c2-l2"],
+                ids=[item_id]
+            )
+            items = list(search.get_items())
+            if not items:
+                raise ValueError(f"Item {item_id} not found")
+            item = items[0]
+        else:
+            item = item_id
+        
+        # Download and merge bands
+        band_arrays = []
+        for band in bands:
+            if band not in item.assets:
+                raise ValueError(f"Band {band} not found in item assets")
+                
+            href = item.assets[band].href
+            signed_href = pc.sign(href)
+            
+            with rasterio.open(signed_href) as src:
+                band_arrays.append(src.read(1))
+                profile = src.profile
+        
+        # Create multi-band image
+        output_path = output_dir / f"{item.id}.tif"
+        profile.update(count=len(bands))
+        with rasterio.open(output_path, 'w', **profile) as dst:
+            for i, array in enumerate(band_arrays, 1):
+                dst.write(array, i)
+        
+        # Cache the result if caching is enabled
+        if cache_path:
+            output_path.rename(cache_path)
+            output_path = cache_path
+        
+        self.logger.info(f"Saved image to {output_path}")
+        return output_path
+    
+    def get_metadata(self, item_id: str) -> Dict[str, Any]:
+        """
+        Get detailed information about a scene.
+        
+        Args:
+            item_id: Item identifier
+            
+        Returns:
+            Dictionary containing scene information
+        """
+        search = self.catalog.search(
+            collections=["landsat-8-c2-l2"],
+            ids=[item_id]
+        )
+        items = list(search.get_items())
+        if not items:
+            raise ValueError(f"Item {item_id} not found")
+        
+        item = items[0]
+        return {
+            "id": item.id,
+            "datetime": item.datetime.strftime("%Y-%m-%d"),
+            "cloud_cover": float(item.properties.get("eo:cloud_cover", 0)),
+            "platform": item.properties.get("platform", ""),
+            "instrument": item.properties.get("instruments", []),
+            "bands": list(item.assets.keys()),
+            "bbox": item.bbox,
+            "collection": item.collection_id,
+            "path": item.properties.get("landsat:path", ""),
+            "row": item.properties.get("landsat:row", "")
+        }
+    
+    def get_available_collections(self) -> List[str]:
+        """Get list of available Landsat collections."""
+        collections = self.catalog.get_collections()
+        return [c.id for c in collections if c.id.startswith("landsat-")]
+
     def search_and_download(
         self,
         bbox: Union[Tuple[float, float, float, float], Polygon],
@@ -65,27 +203,26 @@ class LandsatAPI:
                 minx, miny, maxx, maxy = bbox.bounds
             
             # Search for scenes
-            scenes = self.api.search(
-                dataset=dataset,
+            scenes = self.catalog.search(
+                collections=[dataset],
                 bbox=(minx, miny, maxx, maxy),
-                start_date=start_date,
-                end_date=end_date,
-                max_cloud_cover=cloud_cover
+                datetime=f"{start_date}/{end_date}",
+                query={"eo:cloud_cover": {"lt": cloud_cover}}
             )
             
             if not scenes:
                 return {}
             
             # Sort by cloud cover and get best scene
-            scenes = sorted(scenes, key=lambda x: float(x["cloud_cover"]))
+            scenes = sorted(scenes.get_items(), key=lambda x: float(x.properties.get("eo:cloud_cover", 100)))
             best_scene = scenes[0]
             
             # Download scene
-            scene_id = best_scene["entity_id"]
-            download_path = os.path.join("temp_downloads", f"{scene_id}.tar.gz")
+            scene_id = best_scene.id
+            download_path = os.path.join("temp_downloads", f"{scene_id}.tif")
             os.makedirs("temp_downloads", exist_ok=True)
             
-            self.ee.download(scene_id, output_dir="temp_downloads")
+            self.download(scene_id, "temp_downloads")
             
             # Process downloaded data
             result = self._process_landsat(
@@ -104,10 +241,6 @@ class LandsatAPI:
             if os.path.exists(download_path):
                 os.remove(download_path)
             return {}
-        
-        finally:
-            # Logout from Earth Explorer
-            self.ee.logout()
     
     def _process_landsat(
         self,
@@ -161,34 +294,17 @@ class LandsatAPI:
             return {
                 "data": stacked_data,
                 "metadata": {
-                    "datetime": scene_info["acquisition_date"],
-                    "cloud_cover": float(scene_info["cloud_cover"]),
+                    "datetime": scene_info.datetime.strftime("%Y-%m-%d"),
+                    "cloud_cover": float(scene_info.properties.get("eo:cloud_cover", 0)),
                     "bands": bands,
                     "resolution": 30.0,
                     "crs": "EPSG:32633",  # UTM zone for the data
                     "bounds": bbox.bounds,
-                    "scene_id": scene_info["entity_id"]
+                    "scene_id": scene_info.id
                 }
             }
             
         finally:
             # Cleanup extracted files
             import shutil
-            shutil.rmtree(extract_path)
-    
-    def get_datasets(self) -> List[Dict]:
-        """Get list of available Landsat datasets."""
-        return self.api.get_datasets()
-    
-    def get_scene_info(self, scene_id: str, dataset: str) -> Dict:
-        """Get detailed information about a scene."""
-        return self.api.get_scene_info(scene_id, dataset)
-    
-    def __del__(self):
-        """Cleanup on deletion."""
-        try:
-            self.api.logout()
-            if hasattr(self, "ee"):
-                self.ee.logout()
-        except:
-            pass 
+            shutil.rmtree(extract_path) 

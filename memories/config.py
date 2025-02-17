@@ -37,4 +37,4 @@ class Config:
         if self.hot_memory_size > self.warm_memory_size:
             raise ValueError("hot_memory_size must be less than or equal to warm_memory_size")
         if self.warm_memory_size > self.cold_memory_size:
-            raise ValueError("warm_memory_size must be less than or equal to cold_memory_size")
+            raise ValueError("warm_memory_size must be less than or equal to cold_memory_size") 

@@ -1,180 +1,173 @@
 """
-Sentinel API data source for satellite imagery.
+Sentinel API data source for satellite imagery using Planetary Computer.
 """
 
 import os
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, Any
 from datetime import datetime
+import planetary_computer as pc
+import pystac_client
 import rasterio
 import numpy as np
 from shapely.geometry import box, Polygon, mapping
-from sentinelsat.sentinel import SentinelAPI  # Direct import from sentinel module
 from rasterio.warp import transform_bounds
-import json
+import logging
+from pathlib import Path
+from .base import DataSource
 
-class CustomSentinelAPI:
-    """Interface for accessing data from Copernicus Open Access Hub."""
+class SentinelAPI(DataSource):
+    """Interface for Sentinel data access through Planetary Computer."""
     
-    def __init__(
-        self,
-        user: Optional[str] = None,
-        password: Optional[str] = None,
-        api_url: str = "https://scihub.copernicus.eu/dhus"
-    ):
+    def __init__(self, token: Optional[str] = None, cache_dir: Optional[str] = None):
         """
-        Initialize Sentinel API client.
+        Initialize Sentinel interface.
         
         Args:
-            user: Copernicus Hub username
-            password: Copernicus Hub password
-            api_url: API endpoint URL
+            token: Planetary Computer API token
+            cache_dir: Optional directory for caching data
         """
-        self.user = user or os.getenv("COPERNICUS_USER")
-        self.password = password or os.getenv("COPERNICUS_PASSWORD")
+        super().__init__(cache_dir)
+        self.token = token or os.getenv("PLANETARY_COMPUTER_API_KEY")
+        if self.token:
+            pc.settings.set_subscription_key(self.token)
         
-        if not (self.user and self.password):
-            raise ValueError("Copernicus credentials required")
-        
-        # Create API instance using direct import
-        self._api = SentinelAPI(
-            self.user,
-            self.password,
-            api_url
+        self.logger = logging.getLogger(__name__)
+        self.catalog = pystac_client.Client.open(
+            "https://planetarycomputer.microsoft.com/api/stac/v1",
+            modifier=pc.sign_inplace
         )
-        
-    @property
-    def api(self):
-        """Access the underlying API instance"""
-        return self._api
     
-    def search_and_download(
-        self,
-        bbox: Union[Tuple[float, float, float, float], Polygon],
-        start_date: str,
-        end_date: str,
-        cloud_cover: float = 20.0,
-        product_type: str = "S2MSI2A"  # Sentinel-2 L2A
-    ) -> Dict:
+    async def search(self,
+                    bbox: List[float],
+                    start_date: str,
+                    end_date: str,
+                    collection: str = "sentinel-2-l2a",
+                    cloud_cover: float = 20.0,
+                    limit: int = 10) -> Dict[str, Any]:
         """
-        Search and download Sentinel imagery.
+        Search for Sentinel imagery.
         
         Args:
-            bbox: Bounding box or Polygon
-            start_date: Start date (YYYY-MM-DD)
-            end_date: End date (YYYY-MM-DD)
+            bbox: Bounding box coordinates [west, south, east, north]
+            start_date: Start date in ISO format
+            end_date: End date in ISO format
+            collection: Collection ID (e.g., "sentinel-2-l2a")
             cloud_cover: Maximum cloud cover percentage
-            product_type: Sentinel product type
+            limit: Maximum number of results
             
         Returns:
-            Dictionary containing downloaded data and metadata
+            Dictionary of products
         """
-        # Convert bbox to WKT
-        if isinstance(bbox, tuple):
-            footprint = box(*bbox)
+        self.validate_bbox(bbox)
+        
+        search = self.catalog.search(
+            collections=[collection],
+            bbox=bbox,
+            datetime=f"{start_date}/{end_date}",
+            query={"eo:cloud_cover": {"lt": cloud_cover}},
+            limit=limit
+        )
+        
+        items = list(search.get_items())
+        self.logger.info(f"Found {len(items)} items matching criteria")
+        return {"items": items}
+    
+    async def download(self,
+                      item_id: str,
+                      output_dir: Path,
+                      bands: List[str] = ["B02", "B03", "B04", "B08"]) -> Path:
+        """
+        Download Sentinel product.
+        
+        Args:
+            item_id: Item identifier or STAC item
+            output_dir: Directory to save output
+            bands: List of bands to download
+            
+        Returns:
+            Path to downloaded file
+        """
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Check cache
+        cache_path = self.get_cache_path(f"{item_id}.tif")
+        if cache_path and cache_path.exists():
+            self.logger.info(f"Using cached file: {cache_path}")
+            return cache_path
+        
+        # Get item if ID was provided
+        if isinstance(item_id, str):
+            search = self.catalog.search(
+                collections=["sentinel-2-l2a"],
+                ids=[item_id]
+            )
+            items = list(search.get_items())
+            if not items:
+                raise ValueError(f"Item {item_id} not found")
+            item = items[0]
         else:
-            footprint = bbox
-        area_wkt = footprint.wkt
+            item = item_id
         
-        # Search for products
-        products = self.api.query(
-            area=area_wkt,
-            date=(start_date, end_date),
-            platformname="Sentinel-2",
-            producttype=product_type,
-            cloudcoverpercentage=(0, cloud_cover)
-        )
-        
-        if not products:
-            return {}
-        
-        # Sort by cloud cover and get best scene
-        products_df = self.api.to_dataframe(products)
-        products_df = products_df.sort_values("cloudcoverpercentage")
-        best_product = products_df.iloc[0]
-        
-        # Download product
-        product_info = self.api.download(
-            best_product.uuid,
-            directory_path="temp_downloads"
-        )
-        
-        try:
-            # Process downloaded data
-            result = self._process_sentinel2(
-                product_info["path"],
-                bbox,
-                best_product
-            )
-            
-            # Cleanup
-            os.remove(product_info["path"])
-            
-            return result
-            
-        except Exception as e:
-            print(f"Error processing Sentinel data: {e}")
-            if os.path.exists(product_info["path"]):
-                os.remove(product_info["path"])
-            return {}
-    
-    def _process_sentinel2(
-        self,
-        product_path: str,
-        bbox: Union[Polygon, box],
-        product_info: Dict
-    ) -> Dict:
-        """Process Sentinel-2 data."""
-        # Get required bands (B2, B3, B4, B8)
-        bands = ["B02", "B03", "B04", "B08"]
-        data_arrays = []
-        
-        with rasterio.open(product_path) as src:
-            # Reproject bbox if needed
-            bounds = transform_bounds(
-                "EPSG:4326",
-                src.crs,
-                *bbox.bounds
-            )
-            
-            for band in bands:
-                # Find band index
-                band_idx = [i for i, desc in enumerate(src.descriptions)
-                          if band in desc][0] + 1
+        # Download and merge bands
+        band_arrays = []
+        for band in bands:
+            if band not in item.assets:
+                raise ValueError(f"Band {band} not found in item assets")
                 
-                # Read data
-                window = src.window(*bounds)
-                data = src.read(band_idx, window=window)
-                data_arrays.append(data)
+            href = item.assets[band].href
+            signed_href = pc.sign(href)
+            
+            with rasterio.open(signed_href) as src:
+                band_arrays.append(src.read(1))
+                profile = src.profile
         
-        # Stack bands
-        stacked_data = np.stack(data_arrays)
+        # Create multi-band image
+        output_path = output_dir / f"{item.id}.tif"
+        profile.update(count=len(bands))
+        with rasterio.open(output_path, 'w', **profile) as dst:
+            for i, array in enumerate(band_arrays, 1):
+                dst.write(array, i)
         
+        # Cache the result if caching is enabled
+        if cache_path:
+            output_path.rename(cache_path)
+            output_path = cache_path
+        
+        self.logger.info(f"Saved image to {output_path}")
+        return output_path
+    
+    def get_metadata(self, item_id: str) -> Dict[str, Any]:
+        """
+        Get detailed information about a product.
+        
+        Args:
+            item_id: Item identifier
+            
+        Returns:
+            Dictionary containing product information
+        """
+        search = self.catalog.search(
+            collections=["sentinel-2-l2a"],
+            ids=[item_id]
+        )
+        items = list(search.get_items())
+        if not items:
+            raise ValueError(f"Item {item_id} not found")
+        
+        item = items[0]
         return {
-            "data": stacked_data,
-            "metadata": {
-                "datetime": product_info.beginposition.strftime("%Y-%m-%d"),
-                "cloud_cover": float(product_info.cloudcoverpercentage),
-                "bands": bands,
-                "resolution": 10.0,
-                "crs": "EPSG:32632",  # UTM zone for the data
-                "bounds": bbox.bounds,
-                "product_id": product_info.uuid
-            }
+            "id": item.id,
+            "datetime": item.datetime.strftime("%Y-%m-%d"),
+            "cloud_cover": float(item.properties.get("eo:cloud_cover", 0)),
+            "platform": item.properties.get("platform", ""),
+            "instrument": item.properties.get("instruments", []),
+            "bands": list(item.assets.keys()),
+            "bbox": item.bbox,
+            "collection": item.collection_id
         }
     
-    def get_product_info(self, product_id: str) -> Dict:
-        """Get detailed information about a product."""
-        product = self.api.get_product_odata(product_id)
-        return {
-            "id": product["id"],
-            "title": product["title"],
-            "size": product["size"],
-            "footprint": product["footprint"],
-            "date": product["beginposition"],
-            "cloud_cover": product["cloudcoverpercentage"],
-            "product_type": product["producttype"]
-        }
-    
-    def get_download_progress(self, product_id: str) -> Dict:
-        """Get download progress for a product."""
-        return self.api.get_download_progress(product_id) 
+    def get_available_collections(self) -> List[str]:
+        """Get list of available Sentinel collections."""
+        collections = self.catalog.get_collections()
+        return [c.id for c in collections if c.id.startswith("sentinel-")]
