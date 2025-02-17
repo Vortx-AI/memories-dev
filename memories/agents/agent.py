@@ -71,7 +71,7 @@ class Agent:
             result = classification_result
             
             # Step 2: Context Agent (for both L1 and L1_2)
-            if result.get('classification') in ['L1', 'L1_2']:
+            if result.get('classification') in ['L1', 'L1_2','L2']:
                 print("\n[Invoking Context Agent]")
                 print("-"*50)
                 context_agent = AgentContext(query, self.load_model)
@@ -91,12 +91,14 @@ class Agent:
                 if isinstance(location_info, dict):
                     normalized = location_info.get('normalized', {})
                     coordinates = normalized.get('coordinates', {})
+                    location_type = normalized.get('type', {})
                     if isinstance(coordinates, dict):
                         lat_val = coordinates.get('lat', 0.0)
                         lon_val = coordinates.get('lon', 0.0)
                 
                 print(f"• Latitude: {lat_val}")
                 print(f"• Longitude: {lon_val}")
+                print(f"• Location type: {location_type}")
                 
                 result.update({
                     'data_type': context_result.get('data_type'),
