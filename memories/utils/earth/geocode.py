@@ -9,6 +9,97 @@ from typing import List, Dict, Any, Optional
 # Import the embedding function from our data connectors module.
 from memories.data_acquisition.data_connectors import get_word_embedding
 
+def create_point_geometry(lat: float, lon: float) -> str:
+    """
+    Create a WKT point geometry string with SRID 4326 (WGS84).
+    
+    Args:
+        lat (float): Latitude
+        lon (float): Longitude
+        
+    Returns:
+        str: WKT point geometry string
+    """
+    return f"ST_SetSRID(ST_Point({lon}, {lat}), 4326)"
+
+def transform_geometry(geom_expr: str, source_srid: int = 4326, target_srid: int = 3857) -> str:
+    """
+    Transform geometry from one coordinate system to another.
+    
+    Args:
+        geom_expr (str): Geometry expression or column name
+        source_srid (int): Source coordinate system SRID (default: 4326 WGS84)
+        target_srid (int): Target coordinate system SRID (default: 3857 Web Mercator)
+        
+    Returns:
+        str: SQL expression for transformed geometry
+    """
+    if source_srid == target_srid:
+        return geom_expr
+    return f"ST_Transform(ST_SetSRID({geom_expr}, {source_srid}), {target_srid})"
+
+def compute_spatial_distance(geom1: str, geom2: str, source_srid: int = 4326, target_srid: int = 3857) -> str:
+    """
+    Compute distance between two geometries, transforming to a projected coordinate system if needed.
+    
+    Args:
+        geom1 (str): First geometry expression
+        geom2 (str): Second geometry expression
+        source_srid (int): Source coordinate system SRID (default: 4326 WGS84)
+        target_srid (int): Target coordinate system SRID (default: 3857 Web Mercator)
+        
+    Returns:
+        str: SQL expression for distance calculation
+    """
+    if source_srid != target_srid:
+        geom1 = transform_geometry(geom1, source_srid, target_srid)
+        geom2 = transform_geometry(geom2, source_srid, target_srid)
+    return f"ST_Distance({geom1}, {geom2})"
+
+def create_spatial_query(
+    parquet_file: str,
+    column_name: str,
+    value: str,
+    geometry_column: str,
+    target_lat: float,
+    target_lon: float,
+    radius: float,
+    source_srid: int = 4326,
+    target_srid: int = 3857
+) -> str:
+    """
+    Create a spatial query with proper coordinate system transformations.
+    
+    Args:
+        parquet_file (str): Path to the parquet file
+        column_name (str): Name of the column to filter
+        value (str): Value to match in the column
+        geometry_column (str): Name of the geometry column
+        target_lat (float): Target latitude
+        target_lon (float): Target longitude
+        radius (float): Search radius in meters
+        source_srid (int): Source coordinate system SRID (default: 4326 WGS84)
+        target_srid (int): Target coordinate system SRID (default: 3857 Web Mercator)
+        
+    Returns:
+        str: Complete SQL query string
+    """
+    # Create point geometry for target location
+    target_point = create_point_geometry(target_lat, target_lon)
+    
+    # Build the distance calculation expression
+    distance_expr = compute_spatial_distance(geometry_column, target_point, source_srid, target_srid)
+    
+    # Construct the complete query
+    query = f"""
+    SELECT *
+    FROM parquet_scan('{parquet_file}')
+    WHERE {column_name} = '{value}' 
+    AND {distance_expr} <= {radius};
+    """
+    
+    return query
+
 def compute_similarity(a: str, b: str) -> float:
     """
     Compute a similarity score between two strings using difflib.
@@ -138,6 +229,24 @@ def geocode_address(faiss_storage: Dict[str, Any], address: str, word_vectors: O
             "centroid": {"lat": centroid_lat, "lon": centroid_lon}
         }
         matches.append(match_info)
+
+        # Example of using the spatial query in the geocode function:
+        try:
+            # Create spatial query if coordinates are available
+            if centroid_lat is not None and centroid_lon is not None:
+                spatial_query = create_spatial_query(
+                    parquet_file=file_path,
+                    column_name=candidate_meta['column_name'],
+                    value=best_address_value,
+                    geometry_column=geom_col,
+                    target_lat=centroid_lat,
+                    target_lon=centroid_lon,
+                    radius=1000  # Example radius in meters
+                )
+                # Use the spatial query as needed...
+        except Exception as e:
+            print(f"Error creating spatial query: {e}")
+            continue
 
     # Sort all matches by descending similarity and return the top 5.
     matches_sorted = sorted(matches, key=lambda x: x["similarity"], reverse=True)

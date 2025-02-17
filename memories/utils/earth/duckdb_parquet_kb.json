@@ -167,6 +167,52 @@
       },
       "example": "exact_match_query('data.parquet', 'geometry', 'POINT', 'amenity', 'restaurant')"
     },
+    "create_point_geometry": {
+      "description": "Create a WKT point geometry string with SRID 4326 (WGS84)",
+      "parameters": {
+        "lat": "Latitude value",
+        "lon": "Longitude value"
+      },
+      "example": "create_point_geometry(12.9716, 77.5946)",
+      "returns": "ST_SetSRID(ST_Point(lon, lat), 4326)"
+    },
+    "transform_geometry": {
+      "description": "Transform geometry from one coordinate system to another",
+      "parameters": {
+        "geom_expr": "Geometry expression or column name",
+        "source_srid": "Source coordinate system SRID (default: 4326 WGS84)",
+        "target_srid": "Target coordinate system SRID (default: 3857 Web Mercator)"
+      },
+      "example": "transform_geometry('geometry', 4326, 3857)",
+      "returns": "ST_Transform(ST_SetSRID(geom_expr, source_srid), target_srid)"
+    },
+    "compute_spatial_distance": {
+      "description": "Compute distance between two geometries with coordinate system transformation",
+      "parameters": {
+        "geom1": "First geometry expression",
+        "geom2": "Second geometry expression",
+        "source_srid": "Source coordinate system SRID (default: 4326 WGS84)",
+        "target_srid": "Target coordinate system SRID (default: 3857 Web Mercator)"
+      },
+      "example": "compute_spatial_distance('geometry', 'ST_Point(77.5946, 12.9716)', 4326, 3857)",
+      "returns": "ST_Distance(transformed_geom1, transformed_geom2)"
+    },
+    "create_spatial_query": {
+      "description": "Create a spatial query with proper coordinate system transformations",
+      "parameters": {
+        "parquet_file": "Path to the parquet file",
+        "column_name": "Name of the column to filter",
+        "value": "Value to match in the column",
+        "geometry_column": "Name of the geometry column",
+        "target_lat": "Target latitude",
+        "target_lon": "Target longitude",
+        "radius": "Search radius in meters",
+        "source_srid": "Source coordinate system SRID (default: 4326 WGS84)",
+        "target_srid": "Target coordinate system SRID (default: 3857 Web Mercator)"
+      },
+      "example": "create_spatial_query('data.parquet', 'amenity', 'restaurant', 'geometry', 12.9716, 77.5946, 1000)",
+      "returns": "SQL query with spatial distance calculation and filtering"
+    },
     "like_query": {
       "description": "Find records that match a pattern in a specific column and have valid geometry",
       "parameters": {
@@ -291,6 +337,40 @@
         "value": "Value to match in filter column"
       },
       "example": "range_query('data.parquet', 'geometry', 'POINT', 'rating', 4, 5, 'amenity', 'restaurant')"
+    }
+  },
+  "spatial_functions": {
+    "ST_SetSRID": {
+      "description": "Set the SRID (Spatial Reference System Identifier) for a geometry",
+      "example": "ST_SetSRID(ST_Point(lon, lat), 4326)"
+    },
+    "ST_Transform": {
+      "description": "Transform geometry from one coordinate system to another",
+      "example": "ST_Transform(ST_SetSRID(geometry, 4326), 3857)"
+    },
+    "ST_Distance": {
+      "description": "Calculate the distance between two geometries",
+      "example": "ST_Distance(geom1, geom2)"
+    },
+    "ST_Point": {
+      "description": "Create a point geometry from coordinates",
+      "example": "ST_Point(longitude, latitude)"
+    },
+    "ST_DWithin": {
+      "description": "Test if geometries are within a specified distance",
+      "example": "ST_DWithin(geom1, geom2, distance)"
+    }
+  },
+  "coordinate_systems": {
+    "4326": {
+      "name": "WGS84",
+      "description": "World Geodetic System 1984, used for GPS coordinates",
+      "units": "degrees"
+    },
+    "3857": {
+      "name": "Web Mercator",
+      "description": "Projection used for web mapping applications",
+      "units": "meters"
     }
   }
 }

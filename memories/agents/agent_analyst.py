@@ -67,7 +67,7 @@ class AgentAnalyst:
                 knowledge_base = json.load(f)
 
             prompt = f"""
-Generate executable Python code using the query functions from the knowledge base.
+Generate executable Python code using the query function/functions only from the knowledge base.
 
 Parameters:
 - Parquet file: '{parquet_file}'
