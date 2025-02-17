@@ -219,13 +219,14 @@ class Agent:
                                 # Generate natural language response
                                 print("\n[Generating Response]")
                                 print("-" * 50)
-                                response_result = self.response_agent.process_results(query, final_results)
+                                response_result = self.response_agent.process_results(query, [final_results])
                                 if response_result['status'] == 'success':
                                     result['response'] = response_result['response']
                                     print("\nResponse:")
                                     print(response_result['response'])
                                 else:
                                     print(f"Error generating response: {response_result.get('error')}")
+                                    result['response'] = "Error generating natural language response."
                             else:
                                 result['query_results'] = pd.DataFrame()
                                 result['response'] = "No results found matching your query."
@@ -238,7 +239,8 @@ class Agent:
             return {
                 "query": query,
                 "classification": "ERROR",
-                "explanation": f"Error: {str(e)}"
+                "explanation": f"Error: {str(e)}",
+                "response": f"An error occurred while processing your query: {str(e)}"
             }
 
     def run(self, query: str = None) -> Dict[str, Any]:
