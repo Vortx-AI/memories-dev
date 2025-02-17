@@ -172,6 +172,8 @@ class Agent:
                                     'data_type': data_type
                                 }
                             )
+
+                            print( execution_result)
                             
                             # Update the result dictionary with execution results
                             result.update({
