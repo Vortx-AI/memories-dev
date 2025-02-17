@@ -12,9 +12,9 @@ def test_spatial_query():
         print("Loading spatial extension...")
         conn.execute("LOAD spatial;")
         
-        # Verify spatial functions are available
+        # Verify spatial functions are available by testing a basic spatial function
         print("Verifying spatial functions...")
-        conn.execute("SELECT spatial_version();")
+        test_point = conn.execute("SELECT ST_GeomFromText('POINT(0 0)');").fetchone()[0]
         print("Spatial extension ready!")
 
         # Create WKT point geometry string
