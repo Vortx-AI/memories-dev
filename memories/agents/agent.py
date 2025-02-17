@@ -10,7 +10,7 @@ from memories.core.memory import MemoryStore
 from memories.utils.duckdb_queries import DuckDBQueryGenerator
 import pandas as pd
 from memories.agents.agent_code_executor import AgentCodeExecutor
-from memories.utils.run_kb_functions import execute_kb_function, validate_function_inputs
+from memories.utils.earth.run_kb_functions import execute_kb_function, validate_function_inputs
 
 # Load environment variables
 load_dotenv()

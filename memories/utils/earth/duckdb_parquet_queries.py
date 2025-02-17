@@ -4,7 +4,12 @@ def exact_match_query(parquet_file, column_name, value, lat=None, lon=None):
     Assumes column_name is a Boolean column.
     """
     bool_value = str(value).lower() == 'true'
-    base_query = f"SELECT * FROM '{parquet_file}' WHERE {column_name} = {bool_value}"
+    base_query = (
+        f"SELECT *, "
+        f"ST_X(geom) as longitude, "
+        f"ST_Y(geom) as latitude "
+        f"FROM '{parquet_file}' WHERE {column_name} = {bool_value}"
+    )
     
     if lat is not None and lon is not None:
         point = f"ST_Point({lon}, {lat})"
@@ -45,6 +50,8 @@ def within_radius_query(parquet_file, column_name, value, target_lat, target_lon
     target_point = f"ST_Point({target_lon}, {target_lat})"
     return (
         f"SELECT *, "
+        f"ST_X(geom) as longitude, "
+        f"ST_Y(geom) as latitude, "
         f"ST_Distance(geom, {target_point}) as distance_km "
         f"FROM '{parquet_file}' "
         f"WHERE {column_name} = {bool_value} "
@@ -61,6 +68,8 @@ def nearest_query(parquet_file, column_name, value, target_lat, target_lon, limi
     target_point = f"ST_Point({target_lon}, {target_lat})"
     return (
         f"SELECT *, "
+        f"ST_X(geom) as longitude, "
+        f"ST_Y(geom) as latitude, "
         f"ST_Distance(geom, {target_point}) as distance_km "
         f"FROM '{parquet_file}' "
         f"WHERE {column_name} = {bool_value} "
@@ -100,6 +109,8 @@ def count_within_radius_query(parquet_file, column_name, value, target_lat, targ
     return (
         f"WITH distances AS ("
         f"  SELECT *, "
+        f"  ST_X(geom) as longitude, "
+        f"  ST_Y(geom) as latitude, "
         f"  ST_Distance(geom, {target_point}) as distance_km "
         f"  FROM '{parquet_file}' "
         f"  WHERE {column_name} = {bool_value}"
@@ -121,6 +132,8 @@ def aggregate_query(parquet_file, group_column, filter_column, value, target_lat
     return (
         f"WITH distances AS ("
         f"  SELECT *, "
+        f"  ST_X(geom) as longitude, "
+        f"  ST_Y(geom) as latitude, "
         f"  ST_Distance(geom, {target_point}) as distance_km "
         f"  FROM '{parquet_file}' "
         f"  WHERE {filter_column} = {bool_value}"
@@ -144,6 +157,8 @@ def combined_filters_query(parquet_file, column_name, value, pattern_column, pat
     target_point = f"ST_Point({target_lon}, {target_lat})"
     return (
         f"SELECT *, "
+        f"ST_X(geom) as longitude, "
+        f"ST_Y(geom) as latitude, "
         f"ST_Distance(geom, {target_point}) as distance_km "
         f"FROM '{parquet_file}' "
         f"WHERE {column_name} = {bool_value} "
@@ -159,7 +174,9 @@ def range_query(parquet_file, range_column, min_value, max_value, filter_column,
     """
     bool_value = str(value).lower() == 'true'
     base_query = (
-        f"SELECT * "
+        f"SELECT *, "
+        f"ST_X(geom) as longitude, "
+        f"ST_Y(geom) as latitude "
         f"FROM '{parquet_file}' "
         f"WHERE {range_column} BETWEEN {min_value} AND {max_value} "
         f"AND {filter_column} = {bool_value}"
