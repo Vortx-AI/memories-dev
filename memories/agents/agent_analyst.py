@@ -41,14 +41,24 @@ class AgentAnalyst:
         lon: float,
         data_type: str,
         parquet_file: str,
-        relevant_column: str = None,
-        geometry: Optional[str] = None,
-        geometry_type: Optional[str] = None,
+        relevant_column: str,
+        geometry_column: str,
+        geometry_type: str,
         extra_params: dict = {}
     ) -> dict:
         """
-        Uses an LLM with the duckdb_parquet_kb.json knowledgebase to generate Python code that queries
-        the provided Parquet file using the appropriate query function based on the data type and context.
+        Generate DuckDB query code based on the input parameters.
+        
+        Args:
+            query (str): User's query
+            lat (float): Target latitude
+            lon (float): Target longitude
+            data_type (str): Type of data being queried
+            parquet_file (str): Path to Parquet file
+            relevant_column (str): Column name for filtering
+            geometry_column (str): Name of the geometry column
+            geometry_type (str): Type of geometry (e.g., 'POINT')
+            extra_params (dict): Additional parameters
         """
         try:
             # Load the knowledge base from the correct path
@@ -57,47 +67,40 @@ class AgentAnalyst:
                 knowledge_base = json.load(f)
 
             prompt = f"""
-Generate executable Python code that uses the query functions defined in the knowledge base to fetch data from a Parquet file.
+Generate executable Python code using the query functions from the knowledge base.
 
-Context:
-- User Query: "{query}"
-- Data Type: "{data_type}"
-- Relevant Column: "{relevant_column}"
-- Coordinates: ({lat}, {lon})
-- Parquet File: "{parquet_file}"
+Parameters:
+- Parquet file: '{parquet_file}'
+- Target coordinates: lat={lat}, lon={lon}
+- Data type: '{data_type}'
+- Column to filter: '{relevant_column}'
+- Geometry column: '{geometry_column}'
+- Geometry type: '{geometry_type}'
 
-Requirements:
-1. Use ONLY the query functions defined in the knowledge base
-2. Choose the most appropriate function based on the query context
-3. The code must store results in a variable named 'results'
-4. Use the relevant column for filtering data
-5. Consider the data type when constructing the query
-6. Include spatial functions if needed (geometry column: {geometry}, type: {geometry_type})
-7. Use proper string escaping for file paths in SQL queries
-
-Example structure:
+Required code structure:
 import duckdb
 
-def within_radius_query(conn, parquet_file, target_lat, target_lon, radius_meters):
-    query = f'''
-        SELECT *
-        FROM read_parquet({{parquet_file}})
-        WHERE ST_DWithin(
-            ST_Point(longitude, latitude),
-            ST_Point({target_lon}, {target_lat}),
-            {radius_meters}
-        )
-    '''
-    return conn.execute(query).fetchall()
-
+# Initialize connection
 conn = duckdb.connect()
 conn.execute("LOAD spatial;")
-results = within_radius_query(conn, '{parquet_file}', {lat}, {lon}, 5000)
 
-Knowledge Base (contains available functions and their usage):
+# Execute query using one of the predefined functions
+results = [CHOSEN_FUNCTION](
+    conn,
+    parquet_file='{parquet_file}',
+    geometry_column='{geometry_column}',
+    geometry_type='{geometry_type}',
+    column_name='{relevant_column}',
+    value='{data_type}',
+    target_lat={lat},
+    target_lon={lon},
+    radius=1000  # Example radius in meters
+)
+
+Knowledge Base:
 {json.dumps(knowledge_base, indent=2)}
 
-Return only the executable Python code without any explanations or markdown.
+Return only executable Python code without explanations or markdown.
 """
             # Get the response and clean it
             generated_code = self.load_model.get_response(prompt)
@@ -128,13 +131,16 @@ def main():
     lon = 77.5946
     data_type = "amenity"
     parquet_file = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "example.parquet")
+    relevant_column = "amenity"
+    geometry_column = "geometry"
+    geometry_type = "POINT"
     extra_params = {
         "radius": 5000,           # used by spatial queries like within_radius_query
         "value": "restaurant",    # used by exact_match_query if needed
         "pattern": "%restaurant%"  # used by like_query if needed
     }
 
-    result = analyst.analyze_query(query, lat, lon, data_type, parquet_file, extra_params)
+    result = analyst.analyze_query(query, lat, lon, data_type, parquet_file, relevant_column, geometry_column, geometry_type, extra_params)
     print(result)
     print("\nAnalysis Results:")
     print("=" * 50)

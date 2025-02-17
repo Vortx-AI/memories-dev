@@ -141,19 +141,24 @@ class Agent:
                         else:
                             parquet_file_path = raw_file_path
     
-                        print("\n[Invoking Agent Analyst]")
-                        print("-" * 50)
-                        analyst = AgentAnalyst(self.load_model)
-                        analyst_result = analyst.analyze_query(
+                        # Get the relevant column from the column matching logic
+                        relevant_column = best_column.get('column_name', '')
+    
+                        # Get the analyst results with all required parameters
+                        analyst_result = self.analyst.analyze_query(
                             query=query,
                             lat=lat_val,
                             lon=lon_val,
                             data_type=data_type,
-                            parquet_file=parquet_file_path,  # using the full file path from the L1 agent response
-                            extra_params={"radius": 5000}  # Adjust extra parameters as needed.
+                            parquet_file=parquet_file_path,
+                            relevant_column=relevant_column,
+                            geometry_column='geometry',
+                            geometry_type='POINT',
+                            extra_params={}
                         )
-                        print(analyst_result)
     
+                        print("\n[Invoking Agent Analyst]")
+                        print("-" * 50)
                         if analyst_result["status"] == "success":
                             print("Generated Code from Agent Analyst:")
                             print("-" * 30)
@@ -163,10 +168,8 @@ class Agent:
                             print("\n[Invoking Code Executor Agent]")
                             print("-" * 50)
                             
-                            # Create an instance of the Code Executor Agent
+                            # Execute the generated code
                             code_executor = AgentCodeExecutor()
-                            
-                            # Execute the generated code with context data
                             execution_result = code_executor.execute_query(
                                 code=analyst_result['generated_code'],
                                 data={
@@ -174,11 +177,13 @@ class Agent:
                                     'parquet_file': parquet_file_path,
                                     'lat': lat_val,
                                     'lon': lon_val,
-                                    'data_type': data_type
+                                    'data_type': data_type,
+                                    'geometry_column': 'geometry',
+                                    'geometry_type': 'POINT'
                                 }
                             )
                             
-                            # Update the result dictionary with execution results
+                            # Update result dictionary
                             result.update({
                                 'generated_code': analyst_result['generated_code'],
                                 'query_results': execution_result,
