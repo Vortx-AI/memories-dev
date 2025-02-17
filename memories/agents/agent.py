@@ -75,6 +75,7 @@ class Agent:
                 context_result = context_agent.process_query()
                 
                 print("Context Agent Response:")
+                print(context_result)
                 print(f"• Data Type: {context_result.get('data_type', '')}")
                 
                 # Extract latitude and longitude from the 'location_info' output.
