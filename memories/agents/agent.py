@@ -156,74 +156,12 @@ class Agent:
                             geometry_type='POINT',
                             extra_params={}
                         )
+
+                        print(analyst_result)
     
-                        print("\n[Invoking Agent Analyst]")
-                        print("-" * 50)
-                        if analyst_result["status"] == "success":
-                            print("Generated Code from Agent Analyst:")
-                            print("-" * 30)
-                            print(analyst_result['generated_code'])
-                            print("-" * 30)
-                            
-                            print("\n[Invoking Code Executor Agent]")
-                            print("-" * 50)
-                            
-                            # Create an instance of the Code Executor Agent
-                            code_executor = AgentCodeExecutor()
-                            execution_result = code_executor.execute_query(
-                                code=analyst_result['generated_code'],
-                                data={
-                                    'query': query,
-                                    'parquet_file': parquet_file_path,
-                                    'lat': lat_val,
-                                    'lon': lon_val,
-                                    'data_type': data_type,
-                                    'geometry_column': 'geometry',
-                                    'geometry_type': 'POINT'
-                                }
-                            )
-                            
-                            # Update result dictionary
-                            result.update({
-                                'generated_code': analyst_result['generated_code'],
-                                'query_results': execution_result,
-                                'chosen_function': analyst_result['chosen_function']
-                            })
-                            
-                            print("\nCode Executor Agent Results:")
-                            print("-" * 30)
-                            print(execution_result)
-                            print("-" * 30)
-                        else:
-                            print(f"• Error in Analyst: {analyst_result.get('error', 'Unknown error')}")
-                    else:
-                        print(f"• Error in L1: {l1_result.get('error', 'Unknown error')}")
+                        
             
-            print("\n" + "="*80)
-            print("FINAL PROCESSING RESULT")
-            print("="*80)
-            print(f"• Query: {result.get('query', '')}")
-            print(f"• Classification: {result.get('classification', '')}")
-            print(f"• Explanation: {result.get('explanation', '')}")
-            
-            if 'data_type' in result:
-                print(f"\n• Data Type: {result['data_type']}")
-                print(f"• Latitude: {result.get('latitude', '')}")
-                print(f"• Longitude: {result.get('longitude', '')}")
-            
-            if 'similar_columns' in result:
-                print("\n• Similar Columns:")
-                for col in result['similar_columns']:
-                    print(f"  - {col['column_name']} ({col['file_name']})")
-            
-            if 'query_results' in result:
-                print("\n• Query Results:")
-                print(result['query_results'])
-                print(f"\n• Total Rows: {result.get('row_count', 'N/A')}")
-            
-            print("="*80)
-            
-            return result
+            return analyst_result
             
         except Exception as e:
             self.logger.error(f"Error in process_query: {str(e)}")
