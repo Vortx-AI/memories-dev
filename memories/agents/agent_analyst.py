@@ -50,7 +50,7 @@ class AgentAnalyst:
         extra_params: dict = {}
     ) -> dict:
         """
-        Uses an LLM with the duck_parquet_kb knowledgebase to generate Python code that queries
+        Uses an LLM with the duckdb_parquet_kb.json knowledgebase to generate Python code that queries
         the provided Parquet file. The generated code will filter records based on the provided
         latitude and longitude. If columns named 'latitude'/'longitude' or 'lat'/'lon' exist, they should be used.
         Otherwise, if a geometry column is provided (with its type), generate code that uses spatial functions
@@ -60,6 +60,11 @@ class AgentAnalyst:
             A dictionary with the status and the generated Python code.
         """
         try:
+            # Load the knowledge base
+            kb_path = os.path.join(self.project_root, "knowledge_base", "duckdb_parquet_kb.json")
+            with open(kb_path, 'r') as f:
+                knowledge_base = json.load(f)
+
             prompt = f"""
 Generate a Python code snippet that queries a Parquet file using DuckDB.
 The Parquet file is located at '{parquet_file}'.
@@ -74,10 +79,13 @@ The code should follow this logic:
    and its type: {geometry_type if geometry_type else "N/A"}.
    In that case, generate code that applies spatial functions (for example, ST_Y and ST_X)
    to extract the latitude and longitude from the geometry column.
-Utilize the duck_parquet_kb knowledgebase for guidance.
+
+Knowledge Base Context:
+{json.dumps(knowledge_base, indent=2)}
+
 Return only the Python code snippet.
             """
-            generated_code = self.load_model.get_response(prompt, knowledgebase="duck_parquet_kb")
+            generated_code = self.load_model.get_response(prompt)
             return {
                 "status": "success",
                 "generated_code": generated_code,
