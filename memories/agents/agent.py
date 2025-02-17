@@ -141,11 +141,11 @@ class Agent:
                         else:
                             parquet_file_path = raw_file_path
     
-                        # Get the relevant column from the column matching logic
+                        print("\n[Invoking Agent Analyst]")
+                        print("-" * 50)
+                        analyst = AgentAnalyst(self.load_model)
                         relevant_column = best_column.get('column_name', '')
-    
-                        # Get the analyst results with all required parameters
-                        analyst_result = self.analyst.analyze_query(
+                        analyst_result = analyst.analyze_query(
                             query=query,
                             lat=lat_val,
                             lon=lon_val,
@@ -168,7 +168,7 @@ class Agent:
                             print("\n[Invoking Code Executor Agent]")
                             print("-" * 50)
                             
-                            # Execute the generated code
+                            # Create an instance of the Code Executor Agent
                             code_executor = AgentCodeExecutor()
                             execution_result = code_executor.execute_query(
                                 code=analyst_result['generated_code'],
