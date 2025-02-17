@@ -122,6 +122,7 @@ class Agent:
                             print(f"\n  Column: {col['column_name']}")
                             print(f"  File: {col['file_name']}")
                             print(f"  File Path: {col['file_path']}")
+                            print(f"  Geometry Type: {col['geometry_type']}")
                             print(f"  Distance: {col['distance']:.4f}")
                         
                         # Use the extracted latitude and longitude from the Context Agent.
