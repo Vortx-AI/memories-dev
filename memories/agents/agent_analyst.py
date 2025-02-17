@@ -47,10 +47,10 @@ class AgentAnalyst:
         extra_params: dict = {}
     ) -> dict:
         """
-        Generate DuckDB query code based on the input parameters.
+        Analyze query to identify suitable DuckDB query functions from knowledge base.
         
         Args:
-            query (str): User's query
+            query (str): User's natural language query
             lat (float): Target latitude
             lon (float): Target longitude
             data_type (str): Type of data being queried
@@ -61,60 +61,65 @@ class AgentAnalyst:
             extra_params (dict): Additional parameters
         """
         try:
-            # Load the knowledge base from the correct path
+            # Load the knowledge base
             kb_path = os.path.join(self.project_root, "memories", "utils", "earth", "duckdb_parquet_kb.json")
             with open(kb_path, 'r') as f:
                 knowledge_base = json.load(f)
 
             prompt = f"""
-Generate executable Python code using the query function/functions from the knowledge base.
+Given the following query and data requirements, identify which function(s) from the knowledge base would be most appropriate to use.
+Provide the function name(s) and their required parameters.
 
-Parameters:
-- Parquet file: '{parquet_file}'
-- Target coordinates: lat={lat}, lon={lon}
-- Data type: '{data_type}'
-- Column to filter: '{relevant_column}'
-- Geometry column: '{geometry_column}'
-- Geometry type: '{geometry_type}'
+Query: "{query}"
+Data Requirements:
+- Data field/type: {data_type}
+- Column to query: {relevant_column}
+- Spatial components: Uses lat={lat}, lon={lon}
+- File: {parquet_file}
 
-Required code structure:
-import duckdb
-
-# Initialize connection
-conn = duckdb.connect()
-conn.execute("LOAD spatial;")
-
-# Execute query using one of the predefined functions
-results = [CHOSEN_FUNCTION](
-    conn,
-    parquet_file='{parquet_file}',
-    geometry_column='{geometry_column}',
-    geometry_type='{geometry_type}',
-    column_name='{relevant_column}',
-    value='{data_type}',
-    target_lat={lat},
-    target_lon={lon},
-    radius=1000  # Example radius in meters
-)
-
-Knowledge Base:
+Knowledge Base Functions:
 {json.dumps(knowledge_base, indent=2)}
 
-Return only executable Python code without explanations or markdown.
+Return a list of suitable functions with their parameter requirements in this JSON format:
+{{
+    "recommended_functions": [
+        {{
+            "function_name": "name_of_function",
+            "parameters": {{
+                "param1": "value1",
+                "param2": "value2"
+            }},
+            "reason": "Brief explanation of why this function is suitable"
+        }}
+    ]
+}}
 """
-            # Get the response and clean it
-            generated_code = self.load_model.get_response(prompt)
-            clean_code = self.clean_generated_code(generated_code)
+            # Get the response from the LLM
+            response = self.load_model.get_response(prompt)
             
-            return {
-                "status": "success",
-                "generated_code": clean_code,
-                "chosen_function": "analyze_query"
-            }
+            # Parse the response to get the JSON
+            try:
+                if "```json" in response:
+                    response = response.split("```json")[1].split("```")[0]
+                elif "```" in response:
+                    response = response.split("```")[1].split("```")[0]
+                
+                function_recommendations = json.loads(response.strip())
+                
+                return {
+                    "status": "success",
+                    "recommendations": function_recommendations["recommended_functions"]
+                }
+            except json.JSONDecodeError as e:
+                return {
+                    "status": "error",
+                    "error": f"Failed to parse LLM response: {str(e)}"
+                }
+                
         except Exception as e:
             return {
                 "status": "error",
-                "error": f"Binder Error: {str(e)}"
+                "error": f"Analysis Error: {str(e)}"
             }
 
 def main():
@@ -145,8 +150,11 @@ def main():
     print("\nAnalysis Results:")
     print("=" * 50)
     if result["status"] == "success":
-        print(f"\nChosen Function: {result['chosen_function']}")
-        print(f"\nGenerated Code:\n{result['generated_code']}")
+        print(f"\nRecommended Functions:")
+        for function in result["recommendations"]:
+            print(f"Function: {function['function_name']}")
+            print(f"Parameters: {function['parameters']}")
+            print(f"Reason: {function['reason']}")
     else:
         print(f"Error: {result['error']}")
 
