@@ -1,17 +1,26 @@
 import duckdb
+import time
 
 def test_spatial_query():
     # Initialize connection
     conn = duckdb.connect()
     
     try:
-        # Load spatial extension first
+        # Install and load spatial extension with verification
+        print("Installing spatial extension...")
         conn.execute("INSTALL spatial;")
+        print("Loading spatial extension...")
         conn.execute("LOAD spatial;")
+        
+        # Verify spatial functions are available
+        print("Verifying spatial functions...")
+        conn.execute("SELECT spatial_version();")
+        print("Spatial extension ready!")
 
         # Create WKT point geometry string
+        print("\nCreating target geometry...")
         target_geometry = conn.execute("""
-            SELECT ST_SetSRID(ST_Point(77.6078977, 12.9093124), 4326);
+            SELECT ST_GeomFromText('POINT(77.6078977 12.9093124)');
         """).fetchone()[0]
 
         print(f"Created target geometry: {target_geometry}")
@@ -22,7 +31,7 @@ def test_spatial_query():
             FROM read_parquet('/home/jaya/memories-dev/data/osm_data/india_points_processed.parquet')
             WHERE communications_dish = 'water tanks'
             AND ST_Distance(
-                ST_Transform(ST_SetSRID(geometry, 4326), 3857),
+                ST_Transform(geometry, 3857),
                 ST_Transform('{target_geometry}', 3857)
             ) <= 1000;
         """
