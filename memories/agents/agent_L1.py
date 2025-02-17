@@ -146,6 +146,7 @@ class Agent_L1:
                         "file_path": column_info['file_path'],
                         "geometry": column_info['geometry_column'],
                         "geometry_type": column_info['geometry_type'],
+                        "data_type": column_info['data_type'],
                         "distance": float(distance)
                     })
             
