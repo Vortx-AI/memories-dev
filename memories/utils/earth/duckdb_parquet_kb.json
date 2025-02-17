@@ -18,6 +18,7 @@
         )
         
         results = execute_duckdb_spatial_query(query)
+        return results
       """,
       "inputs_required": {
         "parquet_file": "Path to the GeoParquet file",
@@ -46,6 +47,7 @@
         )
         
         results = execute_duckdb_spatial_query(query)
+        return results
       """,
       "inputs_required": {
         "parquet_file": "Path to the GeoParquet file",
@@ -73,6 +75,7 @@
         )
         
         results = execute_duckdb_spatial_query(query)
+        return results
       """
     },
     {
@@ -390,152 +393,6 @@
         )
       """
     }
-  
-    {
-      "name": "Create Point Geometry",
-      "function": "create_duckdb_point_geometry",
-      "code_to_execute": """
-        from memories.utils.earth.geocode import create_duckdb_point_geometry
-        
-        point_geometry = create_duckdb_point_geometry(
-            lat={target_lat},
-            lon={target_lon}
-        )
-      """,
-      "example": """
-        point_geometry = create_duckdb_point_geometry(
-            lat=12.9716,
-            lon=77.5946
-        )
-      """,
-      "inputs_required": {
-        "lat": "Latitude value",
-        "lon": "Longitude value"
-      },
-      "output_expected": "DuckDB-compatible WKT point geometry string"
-    },
-    {
-      "name": "Transform Geometry",
-      "function": "transform_duckdb_geometry",
-      "code_to_execute": """
-        from memories.utils.earth.geocode import transform_duckdb_geometry
-        
-        transformed_geom = transform_duckdb_geometry(
-            geom_expr='{geometry_column}',
-            source_srid={source_srid},
-            target_srid={target_srid}
-        )
-      """,
-      "example": """
-        transformed_geom = transform_duckdb_geometry(
-            geom_expr='geometry',
-            source_srid=4326,
-            target_srid=3857
-        )
-      """,
-      "inputs_required": {
-        "geom_expr": "Geometry expression or column name",
-        "source_srid": "Source coordinate system SRID (default: 4326 WGS84)",
-        "target_srid": "Target coordinate system SRID (default: 3857 Web Mercator)"
-      }
-    },
-    {
-      "name": "Compute Spatial Distance",
-      "function": "compute_duckdb_spatial_distance",
-      "code_to_execute": """
-        from memories.utils.earth.geocode import compute_duckdb_spatial_distance
-        
-        distance_expr = compute_duckdb_spatial_distance(
-            geom1='{geometry_column}',
-            geom2='{target_geometry}',
-            source_srid={source_srid},
-            target_srid={target_srid}
-        )
-      """,
-      "example": """
-        distance_expr = compute_duckdb_spatial_distance(
-            geom1='geometry',
-            geom2='ST_Point(77.5946, 12.9716)',
-            source_srid=4326,
-            target_srid=3857
-        )
-      """
-    },
-    {
-      "name": "Create Spatial Query",
-      "function": "create_duckdb_spatial_query",
-      "code_to_execute": """
-        from memories.utils.earth.geocode import create_duckdb_spatial_query
-        
-        query = create_duckdb_spatial_query(
-            parquet_file='{parquet_file}',
-            column_name='{column_name}',
-            value='{value}',
-            geometry_column='{geometry_column}',
-            target_lat={target_lat},
-            target_lon={target_lon},
-            radius={radius},
-            source_srid={source_srid},
-            target_srid={target_srid}
-        )
-      """,
-      "example": """
-        query = create_duckdb_spatial_query(
-            parquet_file='data.parquet',
-            column_name='amenity',
-            value='restaurant',
-            geometry_column='geometry',
-            target_lat=12.9716,
-            target_lon=77.5946,
-            radius=1000,
-            source_srid=4326,
-            target_srid=3857
-        )
-      """
-    },
-    {
-      "name": "Execute Spatial Query",
-      "function": "execute_duckdb_spatial_query",
-      "code_to_execute": """
-        from memories.utils.earth.geocode import execute_duckdb_spatial_query
-        
-        results = execute_duckdb_spatial_query(query)
-      """,
-      "example": """
-        # After creating a query using any of the query functions
-        results = execute_duckdb_spatial_query(query)
-      """,
-      "inputs_required": {
-        "query": "DuckDB spatial SQL query string"
-      },
-      "output_expected": "pandas DataFrame containing query results"
-    },
-    {
-      "name": "Geocode Address",
-      "function": "geocode_address",
-      "code_to_execute": """
-        from memories.utils.earth.geocode import geocode_address
-        
-        matches = geocode_address(
-            faiss_storage={faiss_storage},
-            address='{address}',
-            word_vectors={word_vectors}
-        )
-      """,
-      "example": """
-        matches = geocode_address(
-            faiss_storage=faiss_index_data,
-            address='Restaurant in Bangalore',
-            word_vectors=None  # Optional
-        )
-      """,
-      "inputs_required": {
-        "faiss_storage": "Dictionary containing FAISS index and metadata",
-        "address": "Address string to geocode",
-        "word_vectors": "Optional word embedding model"
-      },
-      "output_expected": "List of matching location dictionaries"
-    }
   ],
   "initialization": {
     "required_imports": [
@@ -571,5 +428,158 @@
           column_name='amenity'
         )
       """
-    },]
+    },
+    "create_duckdb_point_geometry": {
+      "name": "Create Point Geometry",
+      "function": "create_duckdb_point_geometry",
+      "code_to_execute": """
+        from memories.utils.earth.geocode import create_duckdb_point_geometry
+        
+        point_geometry = create_duckdb_point_geometry(
+            lat={target_lat},
+            lon={target_lon}
+        )
+        return point_geometry
+      """,
+      "example": """
+        point_geometry = create_duckdb_point_geometry(
+            lat=12.9716,
+            lon=77.5946
+        )
+      """,
+      "inputs_required": {
+        "lat": "Latitude value",
+        "lon": "Longitude value"
+      },
+      "output_expected": "DuckDB-compatible WKT point geometry string"
+    },
+    "transform_duckdb_geometry": {
+      "name": "Transform Geometry",
+      "function": "transform_duckdb_geometry",
+      "code_to_execute": """
+        from memories.utils.earth.geocode import transform_duckdb_geometry
+        
+        transformed_geom = transform_duckdb_geometry(
+            geom_expr='{geometry_column}',
+            source_srid={source_srid},
+            target_srid={target_srid}
+        )
+        return transformed_geom
+      """,
+      "example": """
+        transformed_geom = transform_duckdb_geometry(
+            geom_expr='geometry',
+            source_srid=4326,
+            target_srid=3857
+        )
+      """,
+      "inputs_required": {
+        "geom_expr": "Geometry expression or column name",
+        "source_srid": "Source coordinate system SRID (default: 4326 WGS84)",
+        "target_srid": "Target coordinate system SRID (default: 3857 Web Mercator)"
+      }
+    },
+    "compute_duckdb_spatial_distance": {
+      "name": "Compute Spatial Distance",
+      "function": "compute_duckdb_spatial_distance",
+      "code_to_execute": """
+        from memories.utils.earth.geocode import compute_duckdb_spatial_distance
+        
+        distance_expr = compute_duckdb_spatial_distance(
+            geom1='{geometry_column}',
+            geom2='{target_geometry}',
+            source_srid={source_srid},
+            target_srid={target_srid}
+        )
+        return distance_expr
+      """,
+      "example": """
+        distance_expr = compute_duckdb_spatial_distance(
+            geom1='geometry',
+            geom2='ST_Point(77.5946, 12.9716)',
+            source_srid=4326,
+            target_srid=3857
+        )
+      """
+    },
+    "create_duckdb_spatial_query": {
+      "name": "Create Spatial Query",
+      "function": "create_duckdb_spatial_query",
+      "code_to_execute": """
+        from memories.utils.earth.geocode import create_duckdb_spatial_query
+        
+        query = create_duckdb_spatial_query(
+            parquet_file='{parquet_file}',
+            column_name='{column_name}',
+            value='{value}',
+            geometry_column='{geometry_column}',
+            target_lat={target_lat},
+            target_lon={target_lon},
+            radius={radius},
+            source_srid={source_srid},
+            target_srid={target_srid}
+        )
+        return query
+      """,
+      "example": """
+        query = create_duckdb_spatial_query(
+            parquet_file='data.parquet',
+            column_name='amenity',
+            value='restaurant',
+            geometry_column='geometry',
+            target_lat=12.9716,
+            target_lon=77.5946,
+            radius=1000,
+            source_srid=4326,
+            target_srid=3857
+        )
+      """
+    },
+    "execute_duckdb_spatial_query": {
+      "name": "Execute Spatial Query",
+      "function": "execute_duckdb_spatial_query",
+      "code_to_execute": """
+        from memories.utils.earth.geocode import execute_duckdb_spatial_query
+        
+        results = execute_duckdb_spatial_query(query)
+        return results
+      """,
+      "example": """
+        # After creating a query using any of the query functions
+        results = execute_duckdb_spatial_query(query)
+      """,
+      "inputs_required": {
+        "query": "DuckDB spatial SQL query string"
+      },
+      "output_expected": "pandas DataFrame containing query results"
+    },
+    "geocode_address": {
+      "name": "Geocode Address",
+      "function": "geocode_address",
+      "code_to_execute": """
+        from memories.utils.earth.geocode import geocode_address
+        
+        matches = geocode_address(
+            faiss_storage={faiss_storage},
+            address='{address}',
+            word_vectors={word_vectors}
+        )
+        return matches
+      """,
+      "example": """
+        matches = geocode_address(
+            faiss_storage=faiss_index_data,
+            address='Restaurant in Bangalore',
+            word_vectors=None  # Optional
+        )
+      """,
+      "inputs_required": {
+        "faiss_storage": "Dictionary containing FAISS index and metadata",
+        "address": "Address string to geocode",
+        "word_vectors": "Optional word embedding model"
+      },
+      "output_expected": "List of matching location dictionaries"
+    }
+  }
+}
    
