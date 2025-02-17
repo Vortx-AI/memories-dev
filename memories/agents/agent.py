@@ -91,7 +91,8 @@ class Agent:
                 if isinstance(location_info, dict):
                     normalized = location_info.get('normalized', {})
                     coordinates = normalized.get('coordinates', {})
-                    location_type = normalized.get('type', {})
+                    location_type = normalized.get('location_type', {})
+                    location = normalized.get('location', {})
                     if isinstance(coordinates, dict):
                         lat_val = coordinates.get('lat', 0.0)
                         lon_val = coordinates.get('lon', 0.0)
@@ -99,7 +100,7 @@ class Agent:
                 print(f"• Latitude: {lat_val}")
                 print(f"• Longitude: {lon_val}")
                 print(f"• Location type: {location_type}")
-                
+                print(f"• Location: {location}")
                 result.update({
                     'data_type': context_result.get('data_type'),
                     'latitude': lat_val,    # extracted from nested "location_info"
