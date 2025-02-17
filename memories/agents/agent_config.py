@@ -16,11 +16,11 @@ import pickle
 from dotenv import load_dotenv
 
 def get_model_config(
-    use_gpu: bool,
-    model_provider: str,
-    deployment_type: str,
-    model_name: str
-) -> Tuple[LoadModel, dict]:
+    use_gpu: Optional[bool] = True,
+    model_provider: Optional[str] = "deepseek-ai",
+    deployment_type: Optional[str] = "deployment",
+    model_name: Optional[str] = "deepseek-coder-1.3b-base"
+) -> Tuple[LoadModel, str]:
     """
     Get the model configuration.
     
@@ -49,15 +49,6 @@ def get_model_config(
         "api_key": openai_key,
         "use_gpu": use_gpu
     }
-    
-    print("\n[Model Configuration]")
-    print("-" * 50)
-    print(f"Provider: {model_provider}")
-    print(f"Model: {model_name}")
-    print(f"Deployment Type: {deployment_type}")
-    print(f"GPU Enabled: {use_gpu}")
-    print(f"API Key: {openai_key[:6]}...{openai_key[-4:]}")  # Show partial key for verification
-    print("-" * 50)
     
     # Initialize the model
     load_model = LoadModel(model_config)
