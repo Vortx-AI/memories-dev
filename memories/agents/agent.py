@@ -74,14 +74,11 @@ class Agent:
                 
                 print("Context Agent Response:")
                 print(f"• Data Type: {context_result.get('data_type', '')}")
-                print(f"• Latitude: {context_result.get('latitude', context_result.get('lat', ''))}")
-                print(f"• Longitude: {context_result.get('longitude', context_result.get('lon', ''))}")
+                print(f"• Location Info: {context_result.get('location_info', '')}")
                 
-                # Update the result dictionary with latitude and longitude extracted from context agent's output.
                 result.update({
                     'data_type': context_result.get('data_type'),
-                    'latitude': context_result.get('latitude') or context_result.get('lat'),
-                    'longitude': context_result.get('longitude') or context_result.get('lon')
+                    'location_details': context_result.get('location_info')
                 })
             
             # Step 3: L1 Agent (if classification is L1)
@@ -108,24 +105,29 @@ class Agent:
                             print(f"  File Path: {col['file_path']}")
                             print(f"  Distance: {col['distance']:.4f}")
                         
-                        # Use extracted latitude and longitude from the context agent.
-                        lat_val = result.get('latitude', 0.0)
-                        lon_val = result.get('longitude', 0.0)
-    
+                        # Extract latitude and longitude from location_details (assumed to be a dict).
+                        location_details = result.get('location_details', {})
+                        if isinstance(location_details, dict):
+                            lat_val = location_details.get('lat') or location_details.get('latitude')
+                            lon_val = location_details.get('lon') or location_details.get('longitude')
+                        else:
+                            # Fallback values if location details are missing or not a dict.
+                            lat_val, lon_val = 0.0, 0.0
+                        
                         # Use the previously retrieved data_type.
                         data_type = result.get('data_type', '')
-    
+
                         # Get the Parquet file information from the best matching column.
                         best_column = similar_columns[0]
                         raw_file_path = best_column.get('file_path', '')
-    
+
                         # Construct the full Parquet file path if the provided file_path is not absolute.
                         if not os.path.isabs(raw_file_path):
                             project_root = os.getenv("PROJECT_ROOT", "")
                             parquet_file_path = os.path.join(project_root, "data", "parquet", raw_file_path)
                         else:
                             parquet_file_path = raw_file_path
-    
+
                         print("\n[Invoking Agent Analyst]")
                         print("-" * 50)
                         analyst = AgentAnalyst(self.load_model)
@@ -137,7 +139,7 @@ class Agent:
                             parquet_file=parquet_file_path,  # now using the full file path from the L1 agent response
                             extra_params={"radius": 5000}  # Adjust extra parameters as needed.
                         )
-        
+    
                         if analyst_result["status"] == "success":
                             result.update({
                                 'generated_code': analyst_result['generated_code'],
@@ -161,9 +163,7 @@ class Agent:
             
             if 'data_type' in result:
                 print(f"\n• Data Type: {result['data_type']}")
-                # Optionally, you can also print the latitude and longitude.
-                print(f"• Latitude: {result.get('latitude', '')}")
-                print(f"• Longitude: {result.get('longitude', '')}")
+                print(f"• Location Details: {result.get('location_details', '')}")
             
             if 'similar_columns' in result:
                 print("\n• Similar Columns:")
