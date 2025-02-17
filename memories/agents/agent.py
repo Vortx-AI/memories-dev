@@ -151,6 +151,7 @@ class Agent:
                             parquet_file=parquet_file_path,  # using the full file path from the L1 agent response
                             extra_params={"radius": 5000}  # Adjust extra parameters as needed.
                         )
+                        print(analyst_result)
     
                         if analyst_result["status"] == "success":
                             result.update({
