@@ -155,6 +155,11 @@ class Agent:
                         print(analyst_result)
     
                         if analyst_result["status"] == "success":
+                            print("Generated Code from Agent Analyst:")
+                            print("-" * 30)
+                            print(analyst_result['generated_code'])
+                            print("-" * 30)
+                            
                             print("\n[Invoking Code Executor Agent]")
                             print("-" * 50)
                             
@@ -172,8 +177,6 @@ class Agent:
                                     'data_type': data_type
                                 }
                             )
-
-                            print( execution_result)
                             
                             # Update the result dictionary with execution results
                             result.update({
@@ -182,9 +185,10 @@ class Agent:
                                 'chosen_function': analyst_result['chosen_function']
                             })
                             
-                            print("\nCode Executor Agent Response:")
-                            print(f"• Generated Code:\n{analyst_result['generated_code']}")
-                            print(f"• Execution Results:\n{execution_result}")
+                            print("\nCode Executor Agent Results:")
+                            print("-" * 30)
+                            print(execution_result)
+                            print("-" * 30)
                         else:
                             print(f"• Error in Analyst: {analyst_result.get('error', 'Unknown error')}")
                     else:
