@@ -7,8 +7,8 @@ sys.path.insert(0, os.path.abspath('../..'))
 project = 'memories-dev'
 copyright = '2024, Memories-dev'
 author = 'Memories-dev'
-version = '1.1.8'
-release = '1.1.8'
+version = '1.1.9'
+release = '1.1.9'
 
 # Add any Sphinx extension module names here
 extensions = [

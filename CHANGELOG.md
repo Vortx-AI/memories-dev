@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.9] - 2024-02-17
+
+### Added
+- New example applications: Location Ambience Analyzer and Traffic Analyzer
+- Enhanced documentation with detailed examples and usage patterns
+- Added new utility processors for image and vector data
+
+### Fixed
+- Improved Redis data handling in hot memory implementation
+- Fixed data structure validation in memory storage
+- Enhanced error handling and logging in data retrieval operations
+
+### Changed
+- Updated test suite with comprehensive coverage for new features
+- Improved memory cleanup in test environments
+- Enhanced data validation in memory storage operations
+
 ## [1.1.8] - 2025-02-16
 
 ### Changed

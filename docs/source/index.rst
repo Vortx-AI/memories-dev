@@ -1,23 +1,27 @@
-Welcome to memories-dev's documentation!
+Welcome to Memories-Dev's documentation!
 =====================================
 
-.. image:: https://img.shields.io/badge/version-1.1.8-blue.svg
-   :target: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.8
-   :alt: Version
+Memories-Dev is a powerful Python framework for managing and processing earth observation data. It provides a flexible and efficient system for handling various types of geospatial data, with a focus on satellite imagery and vector data.
 
-.. image:: https://img.shields.io/badge/python-3.9+-blue.svg
-   :target: https://www.python.org/downloads/
-   :alt: Python 3.9+
+Version: 1.1.9
 
-.. image:: https://img.shields.io/badge/license-Apache%202.0-blue.svg
-   :target: https://opensource.org/licenses/Apache-2.0
-   :alt: License: Apache-2.0
+Key Features
+-----------
 
-.. image:: https://img.shields.io/discord/1339432819784683522?color=7289da&label=Discord&logo=discord&logoColor=white
-   :target: https://discord.com/invite/7qAFEekp
-   :alt: Discord
+- Multi-tiered memory system (Hot, Warm, Cold)
+- Satellite imagery processing
+- Vector data analysis
+- Intelligent data management
+- Specialized analysis agents
+- Example applications for various use cases
 
-memories.dev is a memory infrastructure for providing real-world context to AI models during inference. It processes, indexes, and serves location-tagged intelligence ("memories") from multiple data sources including satellite imagery, climate sensors, and urban development metrics.
+Example Applications
+------------------
+
+- Property Analyzer: Real estate analysis using satellite data
+- Location Ambience: Environmental and urban characteristic analysis
+- Traffic Analyzer: Traffic patterns and road conditions monitoring
+- Water Bodies Monitor: Water body change detection and analysis
 
 .. toctree::
    :maxdepth: 2
@@ -27,30 +31,43 @@ memories.dev is a memory infrastructure for providing real-world context to AI m
    quickstart
    user_guide/index
    api_reference/index
-   architecture
+   examples/index
    contributing
    changelog
 
-Features
---------
+Getting Started
+-------------
 
-* Real-time memory formation and updates
-* Advanced spatial and temporal querying
-* Multi-agent collaboration
-* Context-aware memory retrieval
-* Cross-modal memory linking
-* High-performance vector storage
-* Secure memory management
-* Advanced data fusion algorithms
-* Multi-modal data support
-* Real-time stream processing
+Installation
+^^^^^^^^^^^
 
-Quick Links
-----------
+.. code-block:: bash
 
-* `GitHub Repository <https://github.com/Vortx-AI/memories-dev>`_
-* `Issue Tracker <https://github.com/Vortx-AI/memories-dev/issues>`_
-* `Discord Community <https://discord.com/invite/7qAFEekp>`_
+    pip install memories-dev
+
+Basic Usage
+^^^^^^^^^^
+
+.. code-block:: python
+
+    from memories import MemoryStore, Config
+    
+    # Initialize memory store
+    config = Config(
+        storage_path="./data",
+        hot_memory_size=50,
+        warm_memory_size=200,
+        cold_memory_size=1000
+    )
+    memory_store = MemoryStore(config)
+    
+    # Store data
+    memory_store.store({
+        "timestamp": "2024-02-17T12:00:00",
+        "data": {"key": "value"}
+    })
+
+For more detailed information, check out the :doc:`quickstart` guide.
 
 Indices and tables
 ==================
