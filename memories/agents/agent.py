@@ -10,6 +10,7 @@ from memories.core.memory import MemoryStore
 from memories.utils.duckdb_queries import DuckDBQueryGenerator
 import pandas as pd
 from memories.agents.agent_code_executor import AgentCodeExecutor
+from memories.utils.run_kb_functions import execute_kb_function, validate_function_inputs
 
 # Load environment variables
 load_dotenv()
@@ -158,10 +159,61 @@ class Agent:
                         )
 
                         print(analyst_result)
-    
                         
+                        # Execute recommended functions
+                        if analyst_result.get('status') == 'success':
+                            print("\n[Executing Recommended Functions]")
+                            print("-" * 50)
+                            
+                            combined_results = []
+                            for recommendation in analyst_result.get('recommendations', []):
+                                function_name = recommendation.get('function_name')
+                                parameters = recommendation.get('parameters', {})
+                                
+                                # Set a default radius if not specified
+                                if 'radius' in parameters and parameters['radius'] == 'specify_radius':
+                                    parameters['radius'] = 1000  # Default 1km radius
+                                
+                                # Convert lat/lon to float if they're strings
+                                if 'target_lat' in parameters:
+                                    parameters['target_lat'] = float(parameters['target_lat'])
+                                if 'target_lon' in parameters:
+                                    parameters['target_lon'] = float(parameters['target_lon'])
+                                
+                                print(f"\nExecuting {function_name}:")
+                                print(f"Parameters: {parameters}")
+                                
+                                try:
+                                    # Validate inputs first
+                                    validation = validate_function_inputs(function_name, parameters)
+                                    if validation["is_valid"]:
+                                        # Execute the function
+                                        results = execute_kb_function(function_name, parameters)
+                                        if isinstance(results, pd.DataFrame):
+                                            # Add a column to indicate which function produced these results
+                                            results['source_function'] = function_name
+                                            combined_results.append(results)
+                                            print(f"Found {len(results)} results")
+                                        else:
+                                            print(f"Unexpected result type: {type(results)}")
+                                    else:
+                                        print(f"Invalid inputs for {function_name}:")
+                                        print(f"Missing parameters: {validation['missing_params']}")
+                                        print(f"Extra parameters: {validation['extra_params']}")
+                                except Exception as e:
+                                    print(f"Error executing {function_name}: {str(e)}")
+                            
+                            # Combine all results into a single DataFrame
+                            if combined_results:
+                                final_results = pd.concat(combined_results, ignore_index=True)
+                                result['query_results'] = final_results
+                                print("\nFinal Results:")
+                                print(f"Total records found: {len(final_results)}")
+                            else:
+                                result['query_results'] = pd.DataFrame()
+                                print("\nNo results found from any function")
             
-            return analyst_result
+            return result
             
         except Exception as e:
             self.logger.error(f"Error in process_query: {str(e)}")
