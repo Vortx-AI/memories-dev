@@ -392,7 +392,7 @@
 <span class="sd">Real Estate Property Analyzer Example</span>
 <span class="sd">----------------------------------</span>
 <span class="sd">This example demonstrates using the Memories-Dev framework to analyze</span>
-<span class="sd">real estate properties and store insights about their potential.</span>
+<span class="sd">real estate properties using Overture Maps data.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
@@ -400,13 +400,13 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">memories</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryStore</span><span class="p">,</span> <span class="n">Config</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">memories.agents</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseAgent</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">memories.utils.text</span><span class="w"> </span><span class="kn">import</span> <span class="n">TextProcessor</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">memories.data_acquisition.data_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.data_acquisition.sources.overture_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">OvertureAPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.data_acquisition</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataManager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">memories.utils.processors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ImageProcessor</span><span class="p">,</span> <span class="n">VectorProcessor</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
@@ -423,16 +423,16 @@
 <div class="viewcode-block" id="PropertyAgent">
 <a class="viewcode-back" href="../../api_reference/agents.html#examples.property_analyzer.PropertyAgent">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">PropertyAgent</span><span class="p">(</span><span class="n">BaseAgent</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Agent specialized in real estate analysis.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Agent specialized in real estate analysis using Overture Maps data.&quot;&quot;&quot;</span>
     
 <div class="viewcode-block" id="PropertyAgent.__init__">
 <a class="viewcode-back" href="../../api_reference/agents.html#examples.property_analyzer.PropertyAgent.__init__">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memory_store</span><span class="p">:</span> <span class="n">MemoryStore</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">memory_store</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">text_processor</span> <span class="o">=</span> <span class="n">TextProcessor</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data_manager</span> <span class="o">=</span> <span class="n">DataManager</span><span class="p">(</span>
-            <span class="n">cache_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;.memories&quot;</span> <span class="o">/</span> <span class="s2">&quot;cache&quot;</span><span class="p">),</span>
-            <span class="n">pc_token</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;PLANETARY_COMPUTER_API_KEY&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">overture_api</span> <span class="o">=</span> <span class="n">OvertureAPI</span><span class="p">(</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OVERTURE_API_KEY&quot;</span><span class="p">),</span>
+            <span class="n">cache_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;.memories&quot;</span> <span class="o">/</span> <span class="s2">&quot;cache&quot;</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">image_processor</span> <span class="o">=</span> <span class="n">ImageProcessor</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">vector_processor</span> <span class="o">=</span> <span class="n">VectorProcessor</span><span class="p">()</span></div>
@@ -441,202 +441,238 @@
 <div class="viewcode-block" id="PropertyAgent.process">
 <a class="viewcode-back" href="../../api_reference/agents.html#examples.property_analyzer.PropertyAgent.process">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">property_data</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process property data.</span>
-<span class="sd">        </span>
-<span class="sd">        This is the main processing method required by BaseAgent.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process property data.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">analyze_property</span><span class="p">(</span><span class="n">property_data</span><span class="p">)</span></div>
 
     
 <div class="viewcode-block" id="PropertyAgent.analyze_property">
 <a class="viewcode-back" href="../../api_reference/agents.html#examples.property_analyzer.PropertyAgent.analyze_property">[docs]</a>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">analyze_property</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> 
-        <span class="n">property_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze a property using satellite imagery and local context.</span>
-<span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            property_data: Property metadata and characteristics</span>
-<span class="sd">            </span>
-<span class="sd">        Returns:</span>
-<span class="sd">            Dictionary containing property analysis insights</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Use provided bbox or default to San Francisco area</span>
-        <span class="n">bbox_coords</span> <span class="o">=</span> <span class="n">property_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;bbox&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mf">122.5</span><span class="p">,</span> <span class="mf">37.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">122.0</span><span class="p">,</span> <span class="mf">38.0</span><span class="p">])</span>
-        <span class="n">bbox</span> <span class="o">=</span> <span class="n">box</span><span class="p">(</span><span class="o">*</span><span class="n">bbox_coords</span><span class="p">)</span>
-        
-        <span class="c1"># Prepare training data</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_manager</span><span class="o">.</span><span class="n">prepare_training_data</span><span class="p">(</span>
-            <span class="n">bbox</span><span class="o">=</span><span class="n">bbox</span><span class="p">,</span>
-            <span class="n">start_date</span><span class="o">=</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">))</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">),</span>
-            <span class="n">end_date</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">),</span>
-            <span class="n">satellite_collections</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sentinel-2-l2a&quot;</span><span class="p">],</span>
-            <span class="n">vector_layers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;buildings&quot;</span><span class="p">,</span> <span class="s2">&quot;roads&quot;</span><span class="p">,</span> <span class="s2">&quot;landuse&quot;</span><span class="p">]</span>
-        <span class="p">)</span>
-        
-        <span class="c1"># Analyze property data</span>
-        <span class="n">insights</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_property_data</span><span class="p">(</span><span class="n">property_data</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
-        
-        <span class="c1"># Store insights</span>
-        <span class="k">if</span> <span class="n">insights</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_store_insights</span><span class="p">(</span><span class="n">insights</span><span class="p">,</span> <span class="n">property_data</span><span class="p">)</span>
-        
-        <span class="k">return</span> <span class="n">insights</span></div>
-
-    
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_analyze_property_data</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> 
-        <span class="n">property_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
-        <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze property data and generate insights.</span>
-<span class="sd">        </span>
-<span class="sd">        Args:</span>
-<span class="sd">            property_data: Property metadata and characteristics</span>
-<span class="sd">            data: Raw data from satellite imagery and local context</span>
-<span class="sd">            </span>
-<span class="sd">        Returns:</span>
-<span class="sd">            Dictionary containing property analysis insights</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Generate unique ID and timestamp</span>
-        <span class="n">property_id</span> <span class="o">=</span> <span class="n">property_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()))</span>
-        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
-        
-        <span class="c1"># Calculate property analysis scores</span>
-        <span class="n">condition_score</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">)</span>  <span class="c1"># Mock score based on year_built and condition</span>
-        <span class="n">location_score</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">)</span>   <span class="c1"># Mock score based on amenities and transportation</span>
-        <span class="n">market_score</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">)</span>     <span class="c1"># Mock score based on price history</span>
-        <span class="n">investment_potential</span> <span class="o">=</span> <span class="p">(</span><span class="n">condition_score</span> <span class="o">+</span> <span class="n">location_score</span> <span class="o">+</span> <span class="n">market_score</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3</span>
-        
-        <span class="c1"># Generate satellite features</span>
-        <span class="n">satellite_features</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;ndwi&quot;</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">),</span>
-            <span class="s2">&quot;greenery_index&quot;</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">),</span>
-            <span class="s2">&quot;built_up_index&quot;</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">)</span>
-        <span class="p">}</span>
-        
-        <span class="c1"># Generate recommendations</span>
-        <span class="n">recommendations</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="s2">&quot;Consider property value appreciation potential in this area&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;Evaluate local development plans for future impact&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;Monitor market trends in similar properties&quot;</span>
-        <span class="p">]</span>
-        
-        <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">&quot;property_id&quot;</span><span class="p">:</span> <span class="n">property_id</span><span class="p">,</span>
-            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">timestamp</span><span class="p">,</span>
-            <span class="s2">&quot;property_analysis&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">analyze_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">property_data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze a property and generate insights.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">property_data</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">property_data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid property data format&quot;</span><span class="p">)</span>
+                
+            <span class="k">if</span> <span class="s2">&quot;location&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">property_data</span> <span class="ow">or</span> <span class="s2">&quot;bbox&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">property_data</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Missing location or bbox data&quot;</span><span class="p">)</span>
+            
+            <span class="n">buildings_data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">overture_api</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+                <span class="n">layer</span><span class="o">=</span><span class="s2">&quot;buildings&quot;</span><span class="p">,</span>
+                <span class="n">bbox</span><span class="o">=</span><span class="n">property_data</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">][</span><span class="s2">&quot;bbox&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+            
+            <span class="c1"># Calculate all scores</span>
+            <span class="n">condition_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_condition_score</span><span class="p">(</span><span class="n">property_data</span><span class="p">)</span>
+            <span class="n">location_score</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_location_score</span><span class="p">(</span><span class="n">property_data</span><span class="p">,</span> <span class="n">buildings_data</span><span class="p">)</span>
+            <span class="n">market_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_market_score</span><span class="p">(</span><span class="n">property_data</span><span class="p">)</span>
+            <span class="n">investment_potential</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_investment_potential</span><span class="p">(</span><span class="n">property_data</span><span class="p">)</span>
+            <span class="n">building_density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_building_density</span><span class="p">(</span><span class="n">buildings_data</span><span class="p">)</span>
+            <span class="n">amenity_score</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_amenity_score</span><span class="p">(</span><span class="n">property_data</span><span class="p">)</span>
+            <span class="n">nearby_amenities</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_nearby_amenities</span><span class="p">(</span><span class="n">property_data</span><span class="p">)</span>
+            
+            <span class="n">analysis</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s2">&quot;condition_score&quot;</span><span class="p">:</span> <span class="n">condition_score</span><span class="p">,</span>
                 <span class="s2">&quot;location_score&quot;</span><span class="p">:</span> <span class="n">location_score</span><span class="p">,</span>
                 <span class="s2">&quot;market_score&quot;</span><span class="p">:</span> <span class="n">market_score</span><span class="p">,</span>
                 <span class="s2">&quot;investment_potential&quot;</span><span class="p">:</span> <span class="n">investment_potential</span><span class="p">,</span>
-                <span class="s2">&quot;satellite_features&quot;</span><span class="p">:</span> <span class="n">satellite_features</span>
-            <span class="p">},</span>
-            <span class="s2">&quot;recommendations&quot;</span><span class="p">:</span> <span class="n">recommendations</span>
+                <span class="s2">&quot;building_density&quot;</span><span class="p">:</span> <span class="n">building_density</span><span class="p">,</span>
+                <span class="s2">&quot;amenity_score&quot;</span><span class="p">:</span> <span class="n">amenity_score</span>
+            <span class="p">}</span>
+            
+            <span class="c1"># Generate recommendations</span>
+            <span class="n">recommendations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_recommendations</span><span class="p">(</span><span class="n">analysis</span><span class="p">,</span> <span class="n">property_data</span><span class="p">)</span>
+            
+            <span class="c1"># Prepare insights</span>
+            <span class="n">insights</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;property_id&quot;</span><span class="p">:</span> <span class="n">property_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())),</span>
+                <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                <span class="s2">&quot;property_analysis&quot;</span><span class="p">:</span> <span class="n">analysis</span><span class="p">,</span>
+                <span class="s2">&quot;context&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;nearby_amenities&quot;</span><span class="p">:</span> <span class="n">nearby_amenities</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;recommendations&quot;</span><span class="p">:</span> <span class="n">recommendations</span>
+            <span class="p">}</span>
+            
+            <span class="c1"># Store insights</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_store_insights</span><span class="p">(</span><span class="n">property_data</span><span class="p">,</span> <span class="n">insights</span><span class="p">)</span>
+            
+            <span class="k">return</span> <span class="n">insights</span>
+            
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error analyzing property: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;property_id&quot;</span><span class="p">:</span> <span class="n">property_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())),</span>
+                <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="p">}</span></div>
+
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_condition_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">property_data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate property condition score.&quot;&quot;&quot;</span>
+        <span class="n">condition</span> <span class="o">=</span> <span class="n">property_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;condition&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">condition_scores</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;excellent&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="s2">&quot;good&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>
+            <span class="s2">&quot;fair&quot;</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">,</span>
+            <span class="s2">&quot;poor&quot;</span><span class="p">:</span> <span class="mf">0.4</span><span class="p">,</span>
+            <span class="s2">&quot;unknown&quot;</span><span class="p">:</span> <span class="mf">0.5</span>
         <span class="p">}</span>
+        <span class="k">return</span> <span class="n">condition_scores</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
     
-    <span class="k">def</span><span class="w"> </span><span class="nf">_store_insights</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> 
-        <span class="n">insights</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> 
-        <span class="n">property_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store property insights in appropriate memory tier based on potential.&quot;&quot;&quot;</span>
-        <span class="n">investment_potential</span> <span class="o">=</span> <span class="n">insights</span><span class="p">[</span><span class="s2">&quot;property_analysis&quot;</span><span class="p">][</span><span class="s2">&quot;investment_potential&quot;</span><span class="p">]</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_location_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">property_data</span><span class="p">,</span> <span class="n">buildings_data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate location score based on surroundings.&quot;&quot;&quot;</span>
+        <span class="c1"># Extract building types</span>
+        <span class="n">building_types</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;properties&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">buildings_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;features&quot;</span><span class="p">,</span> <span class="p">[])]</span>
         
-        <span class="c1"># Add property ID to insights</span>
-        <span class="n">insights</span><span class="p">[</span><span class="s2">&quot;property_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">property_data</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span>
+        <span class="c1"># Calculate scores for different factors</span>
+        <span class="n">residential_ratio</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">building_types</span> <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;residential&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">building_types</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">commercial_ratio</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">building_types</span> <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="s2">&quot;commercial&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">building_types</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
         
-        <span class="k">if</span> <span class="n">investment_potential</span> <span class="o">&gt;=</span> <span class="mf">0.8</span><span class="p">:</span>
-            <span class="c1"># High-potential properties go to hot memory for quick access</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">memory_store</span><span class="o">.</span><span class="n">hot_memory</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">insights</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">investment_potential</span> <span class="o">&gt;=</span> <span class="mf">0.6</span><span class="p">:</span>
-            <span class="c1"># Medium-potential properties go to warm memory</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">memory_store</span><span class="o">.</span><span class="n">warm_memory</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">insights</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Low-potential properties go to cold memory</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">memory_store</span><span class="o">.</span><span class="n">cold_memory</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">insights</span><span class="p">)</span>
-    
-    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_investment_potential</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">condition_score</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-        <span class="n">location_score</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-        <span class="n">market_score</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate investment potential based on various factors.&quot;&quot;&quot;</span>
-        <span class="c1"># Combine factors with weights</span>
-        <span class="n">potential</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="mf">0.3</span> <span class="o">*</span> <span class="n">condition_score</span> <span class="o">+</span>
-            <span class="mf">0.3</span> <span class="o">*</span> <span class="n">location_score</span> <span class="o">+</span>
-            <span class="mf">0.2</span> <span class="o">*</span> <span class="n">market_score</span> <span class="o">+</span>
-            <span class="mf">0.2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">market_score</span><span class="p">)</span>
+        <span class="c1"># Weight the factors</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;residential&quot;</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">,</span>
+            <span class="s2">&quot;commercial&quot;</span><span class="p">:</span> <span class="mf">0.4</span>
+        <span class="p">}</span>
+        
+        <span class="n">score</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">weights</span><span class="p">[</span><span class="s2">&quot;residential&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">residential_ratio</span> <span class="o">+</span>
+            <span class="n">weights</span><span class="p">[</span><span class="s2">&quot;commercial&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">commercial_ratio</span>
         <span class="p">)</span>
         
-        <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="n">potential</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
     
-    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_condition_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">satellite_features</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate property condition score based on satellite features.&quot;&quot;&quot;</span>
-        <span class="c1"># Implement your logic to calculate condition score based on satellite features</span>
-        <span class="c1"># This is a placeholder and should be replaced with actual implementation</span>
-        <span class="k">return</span> <span class="mf">0.7</span>  <span class="c1"># Placeholder value</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_market_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">property_data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate market performance score.&quot;&quot;&quot;</span>
+        <span class="c1"># Check price history</span>
+        <span class="n">price_history</span> <span class="o">=</span> <span class="n">property_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;price_history&quot;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">price_history</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">price_history</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.5</span>  <span class="c1"># Default score for insufficient data</span>
+        
+        <span class="c1"># Calculate price trends</span>
+        <span class="n">price_changes</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">price_history</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">price_history</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="n">price_history</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">price_history</span><span class="p">))</span>
+        <span class="p">]</span>
+        
+        <span class="n">avg_change</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">price_changes</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">price_changes</span><span class="p">)</span>
+        
+        <span class="c1"># Normalize to 0-1 score</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">max</span><span class="p">((</span><span class="n">avg_change</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">)</span> <span class="o">/</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
     
-    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_location_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">local_context</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate location score based on local context.&quot;&quot;&quot;</span>
-        <span class="c1"># Implement your logic to calculate location score based on local context</span>
-        <span class="c1"># This is a placeholder and should be replaced with actual implementation</span>
-        <span class="k">return</span> <span class="mf">0.7</span>  <span class="c1"># Placeholder value</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_investment_potential</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">property_data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate investment potential score.&quot;&quot;&quot;</span>
+        <span class="c1"># Combine various factors</span>
+        <span class="n">condition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_condition_score</span><span class="p">(</span><span class="n">property_data</span><span class="p">)</span>
+        <span class="n">market</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_market_score</span><span class="p">(</span><span class="n">property_data</span><span class="p">)</span>
+        
+        <span class="c1"># Weight the factors</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;condition&quot;</span><span class="p">:</span> <span class="mf">0.4</span><span class="p">,</span>
+            <span class="s2">&quot;market&quot;</span><span class="p">:</span> <span class="mf">0.6</span>
+        <span class="p">}</span>
+        
+        <span class="n">score</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">weights</span><span class="p">[</span><span class="s2">&quot;condition&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">condition</span> <span class="o">+</span>
+            <span class="n">weights</span><span class="p">[</span><span class="s2">&quot;market&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">market</span>
+        <span class="p">)</span>
+        
+        <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
     
-    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_market_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">price_history</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate market score based on price history.&quot;&quot;&quot;</span>
-        <span class="c1"># Implement your logic to calculate market score based on price history</span>
-        <span class="c1"># This is a placeholder and should be replaced with actual implementation</span>
-        <span class="k">return</span> <span class="mf">0.7</span>  <span class="c1"># Placeholder value</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_building_density</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buildings_data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate building density score.&quot;&quot;&quot;</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="n">buildings_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;features&quot;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">features</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100</span>  <span class="c1"># Normalize per 100 square units</span>
+        <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">density</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
     
-    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_recommendations</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">condition_score</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-        <span class="n">location_score</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-        <span class="n">market_score</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-        <span class="n">investment_potential</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate property-specific recommendations.&quot;&quot;&quot;</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_amenity_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">property_data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate amenity score based on nearby facilities.&quot;&quot;&quot;</span>
+        <span class="n">amenities</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_nearby_amenities</span><span class="p">(</span><span class="n">property_data</span><span class="p">)</span>
+        
+        <span class="c1"># Weight different amenity types</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;schools&quot;</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>
+            <span class="s2">&quot;parks&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
+            <span class="s2">&quot;shopping&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
+            <span class="s2">&quot;restaurants&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
+            <span class="s2">&quot;public_transport&quot;</span><span class="p">:</span> <span class="mf">0.15</span>
+        <span class="p">}</span>
+        
+        <span class="c1"># Calculate weighted score</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">weights</span><span class="p">[</span><span class="n">amenity</span><span class="p">]</span> <span class="k">for</span> <span class="n">amenity</span> <span class="ow">in</span> <span class="n">amenities</span> <span class="k">if</span> <span class="n">amenity</span> <span class="ow">in</span> <span class="n">weights</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_extract_building_types</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buildings_data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract building types.&quot;&quot;&quot;</span>
+        <span class="n">buildings</span> <span class="o">=</span> <span class="n">buildings_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;features&quot;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="n">b</span><span class="p">[</span><span class="s2">&quot;properties&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">buildings</span> <span class="k">if</span> <span class="s2">&quot;type&quot;</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;properties&quot;</span><span class="p">,</span> <span class="p">{})]))</span>
+    
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_extract_amenities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buildings_data</span><span class="p">,</span> <span class="n">property_data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract amenities.&quot;&quot;&quot;</span>
+        <span class="n">places_data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">overture_api</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+            <span class="n">bbox</span><span class="o">=</span><span class="n">property_data</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">][</span><span class="s2">&quot;bbox&quot;</span><span class="p">],</span>
+            <span class="n">layer</span><span class="o">=</span><span class="s2">&quot;places&quot;</span><span class="p">,</span>
+            <span class="n">limit</span><span class="o">=</span><span class="mi">1000</span>
+        <span class="p">)</span>
+        <span class="n">amenities</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;properties&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">places_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;features&quot;</span><span class="p">,</span> <span class="p">[])</span> <span class="k">if</span> <span class="s2">&quot;class&quot;</span> <span class="ow">in</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;properties&quot;</span><span class="p">,</span> <span class="p">{})]</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">amenities</span><span class="p">))</span>
+    
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_extract_road_types</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buildings_data</span><span class="p">,</span> <span class="n">property_data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract road types.&quot;&quot;&quot;</span>
+        <span class="n">roads_data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">overture_api</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+            <span class="n">bbox</span><span class="o">=</span><span class="n">property_data</span><span class="p">[</span><span class="s2">&quot;location&quot;</span><span class="p">][</span><span class="s2">&quot;bbox&quot;</span><span class="p">],</span>
+            <span class="n">layer</span><span class="o">=</span><span class="s2">&quot;roads&quot;</span><span class="p">,</span>
+            <span class="n">limit</span><span class="o">=</span><span class="mi">1000</span>
+        <span class="p">)</span>
+        <span class="n">road_types</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;properties&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;class&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">roads_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;features&quot;</span><span class="p">,</span> <span class="p">[])</span> <span class="k">if</span> <span class="s2">&quot;class&quot;</span> <span class="ow">in</span> <span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;properties&quot;</span><span class="p">,</span> <span class="p">{})]</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">road_types</span><span class="p">))</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_recommendations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">analysis</span><span class="p">,</span> <span class="n">property_data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate property recommendations.&quot;&quot;&quot;</span>
         <span class="n">recommendations</span> <span class="o">=</span> <span class="p">[]</span>
         
-        <span class="c1"># Location-based recommendations</span>
-        <span class="k">if</span> <span class="n">location_score</span> <span class="o">&gt;=</span> <span class="mf">0.8</span><span class="p">:</span>
-            <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="s2">&quot;Premium location with excellent amenities and environment.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="n">location_score</span> <span class="o">&lt;=</span> <span class="mf">0.4</span><span class="p">:</span>
-            <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="s2">&quot;Consider location limitations in investment decision.&quot;</span>
-            <span class="p">)</span>
+        <span class="c1"># Add condition-based recommendations</span>
+        <span class="k">if</span> <span class="n">analysis</span><span class="p">[</span><span class="s2">&quot;condition_score&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">0.6</span><span class="p">:</span>
+            <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Improve property condition to increase value.&quot;</span><span class="p">)</span>
         
-        <span class="c1"># Condition-based recommendations</span>
-        <span class="k">if</span> <span class="n">condition_score</span> <span class="o">&lt;=</span> <span class="mf">0.6</span><span class="p">:</span>
-            <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="s2">&quot;Property requires renovation to improve value potential.&quot;</span>
-            <span class="p">)</span>
+        <span class="c1"># Add location-based recommendations</span>
+        <span class="k">if</span> <span class="n">analysis</span><span class="p">[</span><span class="s2">&quot;location_score&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">:</span>
+            <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Consider location limitations in investment decision.&quot;</span><span class="p">)</span>
         
-        <span class="c1"># Investment recommendations</span>
-        <span class="k">if</span> <span class="n">investment_potential</span> <span class="o">&gt;=</span> <span class="mf">0.8</span> <span class="ow">and</span> <span class="n">market_score</span> <span class="o">&gt;=</span> <span class="mf">0.8</span><span class="p">:</span>
-            <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="s2">&quot;Strong investment opportunity with high potential returns.&quot;</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="n">investment_potential</span> <span class="o">&lt;=</span> <span class="mf">0.4</span> <span class="ow">and</span> <span class="n">market_score</span> <span class="o">&lt;=</span> <span class="mf">0.4</span><span class="p">:</span>
-            <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="s2">&quot;High risk investment in current market conditions.&quot;</span>
-            <span class="p">)</span>
+        <span class="c1"># Add market-based recommendations</span>
+        <span class="k">if</span> <span class="n">analysis</span><span class="p">[</span><span class="s2">&quot;market_score&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.7</span><span class="p">:</span>
+            <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Strong market performance indicates good investment timing.&quot;</span><span class="p">)</span>
         
-        <span class="k">return</span> <span class="n">recommendations</span></div>
+        <span class="c1"># Add investment recommendations</span>
+        <span class="k">if</span> <span class="n">analysis</span><span class="p">[</span><span class="s2">&quot;investment_potential&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.6</span><span class="p">:</span>
+            <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Property shows strong potential for value appreciation.&quot;</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">recommendations</span>
+    
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_store_insights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">property_data</span><span class="p">,</span> <span class="n">insights</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store property analysis insights.&quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;property_id&quot;</span><span class="p">:</span> <span class="n">property_data</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+            <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">property_data</span><span class="p">,</span>
+            <span class="s2">&quot;insights&quot;</span><span class="p">:</span> <span class="n">insights</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">memory_store</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span>
+    
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_get_nearby_amenities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">property_data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get list of nearby amenities.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="s2">&quot;schools&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;parks&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;shopping&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;restaurants&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;public_transport&quot;</span>
+        <span class="p">]</span></div>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">simulate_property_data</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate random property data for testing.</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        Dictionary containing simulated property data</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate random property data for testing.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="p">{</span>
         <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()),</span>
         <span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">200000</span><span class="p">,</span> <span class="mi">2000000</span><span class="p">),</span>
@@ -646,14 +682,18 @@
         <span class="s2">&quot;price_history&quot;</span><span class="p">:</span> <span class="p">[</span>
             <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">200000</span><span class="p">,</span> <span class="mi">2000000</span><span class="p">)</span> 
             <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
-        <span class="p">]</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">122.5</span><span class="p">,</span> <span class="mf">37.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">122.0</span><span class="p">,</span> <span class="mf">38.0</span><span class="p">],</span>  <span class="c1"># San Francisco area</span>
+        <span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">122.5</span><span class="p">,</span> <span class="mf">37.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">122.0</span><span class="p">,</span> <span class="mf">38.0</span><span class="p">]</span>
+        <span class="p">}</span>
     <span class="p">}</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run the property analyzer example.&quot;&quot;&quot;</span>
     <span class="c1"># Initialize memory store</span>
     <span class="n">config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span>
-        <span class="n">storage_path</span><span class="o">=</span><span class="s2">&quot;./property_data&quot;</span><span class="p">,</span>
+        <span class="n">storage_path</span><span class="o">=</span><span class="s2">&quot;./examples/data/property_data&quot;</span><span class="p">,</span>
         <span class="n">hot_memory_size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
         <span class="n">warm_memory_size</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
         <span class="n">cold_memory_size</span><span class="o">=</span><span class="mi">1000</span>
@@ -663,26 +703,24 @@
     <span class="c1"># Create property agent</span>
     <span class="n">agent</span> <span class="o">=</span> <span class="n">PropertyAgent</span><span class="p">(</span><span class="n">memory_store</span><span class="p">)</span>
     
-    <span class="c1"># Analyze multiple properties</span>
-    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
-        <span class="n">property_data</span> <span class="o">=</span> <span class="n">simulate_property_data</span><span class="p">()</span>
-        <span class="n">insights</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">analyze_property</span><span class="p">(</span><span class="n">property_data</span><span class="p">)</span>
-        
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Analysis for Property </span><span class="si">{</span><span class="n">property_data</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Type: </span><span class="si">{</span><span class="n">property_data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Size: </span><span class="si">{</span><span class="n">property_data</span><span class="p">[</span><span class="s1">&#39;size_sqft&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> sq ft&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Price: $</span><span class="si">{</span><span class="n">property_data</span><span class="p">[</span><span class="s1">&#39;price&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Insights:&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Condition Score: </span><span class="si">{</span><span class="n">insights</span><span class="p">[</span><span class="s1">&#39;property_analysis&#39;</span><span class="p">][</span><span class="s1">&#39;condition_score&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Location Score: </span><span class="si">{</span><span class="n">insights</span><span class="p">[</span><span class="s1">&#39;property_analysis&#39;</span><span class="p">][</span><span class="s1">&#39;location_score&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Market Score: </span><span class="si">{</span><span class="n">insights</span><span class="p">[</span><span class="s1">&#39;property_analysis&#39;</span><span class="p">][</span><span class="s1">&#39;market_score&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Investment Potential: </span><span class="si">{</span><span class="n">insights</span><span class="p">[</span><span class="s1">&#39;property_analysis&#39;</span><span class="p">][</span><span class="s1">&#39;investment_potential&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Recommendations:&quot;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="n">insights</span><span class="p">[</span><span class="s2">&quot;recommendations&quot;</span><span class="p">]:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">rec</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Nearby Amenities:&quot;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">amenity</span> <span class="ow">in</span> <span class="n">insights</span><span class="p">[</span><span class="s2">&quot;amenities&quot;</span><span class="p">]:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">amenity</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">title</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">amenity</span><span class="p">[</span><span class="s1">&#39;distance&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">km away&quot;</span><span class="p">)</span>
+    <span class="c1"># Analyze a simulated property</span>
+    <span class="n">property_data</span> <span class="o">=</span> <span class="n">simulate_property_data</span><span class="p">()</span>
+    <span class="n">insights</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">analyze_property</span><span class="p">(</span><span class="n">property_data</span><span class="p">)</span>
+    
+    <span class="c1"># Print results</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Property Analysis Results:&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">50</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Property ID: </span><span class="si">{</span><span class="n">insights</span><span class="p">[</span><span class="s1">&#39;property_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analysis Timestamp: </span><span class="si">{</span><span class="n">insights</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Scores:&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">insights</span><span class="p">[</span><span class="s1">&#39;property_analysis&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">title</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Context:&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">insights</span><span class="p">[</span><span class="s1">&#39;context&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">title</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Recommendations:&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="n">insights</span><span class="p">[</span><span class="s1">&#39;recommendations&#39;</span><span class="p">]:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">rec</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
     <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span> 

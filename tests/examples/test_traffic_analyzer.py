@@ -1,179 +1,278 @@
 """
-Test traffic pattern analyzer example functionality.
+Test traffic analyzer example functionality with Overture Maps data.
 """
 
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
-from datetime import datetime
+from datetime import datetime, timedelta
 import numpy as np
-from examples.traffic_analyzer import TrafficAnalyzer, simulate_road_segment
+from pathlib import Path
+from examples.traffic_analyzer import TrafficAnalyzer
 from memories.config import Config
 from memories import MemoryStore
+from memories.data_acquisition import DataManager
 
 @pytest.fixture
 def memory_store():
     """Create a memory store for testing."""
     config = Config(
-        storage_path="./test_traffic_data",
-        hot_memory_size=10,
-        warm_memory_size=100,
+        storage_path="test_traffic_data",
+        hot_memory_size=50,
+        warm_memory_size=200,
         cold_memory_size=1000
     )
     return MemoryStore(config)
 
 @pytest.fixture
-def traffic_analyzer(memory_store):
-    """Create a traffic analyzer for testing."""
-    return TrafficAnalyzer(memory_store)
+def data_manager():
+    """Create a data manager for testing."""
+    return DataManager(cache_dir="test_cache")
 
 @pytest.fixture
-def mock_data():
-    """Create mock data for testing."""
+def traffic_analyzer(memory_store, data_manager):
+    """Create a traffic analyzer for testing."""
+    return TrafficAnalyzer(memory_store, data_manager)
+
+@pytest.fixture
+def mock_overture_data():
+    """Create mock Overture Maps data for testing."""
     return {
-        "id": "123",
-        "road_type": "highway",
-        "satellite_data": {
-            "pc": {
-                "sentinel-2-l2a": [{
-                    "data": np.random.random((4, 100, 100)),
-                    "metadata": {
-                        "datetime": datetime.now().isoformat(),
-                        "cloud_cover": 5.0
+        "roads": {
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "class": "motorway",
+                        "lanes": 4,
+                        "surface": "paved",
+                        "speed_limit": 65,
+                        "toll": False
                     }
-                }]
-            }
+                },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "class": "primary",
+                        "lanes": 3,
+                        "surface": "paved",
+                        "speed_limit": 45,
+                        "toll": False
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "class": "residential",
+                        "lanes": 2,
+                        "surface": "paved",
+                        "speed_limit": 25,
+                        "toll": False
+                    }
+                }
+            ]
         },
+        "buildings": {
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "type": "commercial",
+                        "height": 20
+                    }
+                }
+            ]
+        },
+        "places": {
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "class": "parking",
+                        "name": "Test Parking"
+                    }
+                }
+            ]
+        },
+        "bbox": [-122.5, 37.5, -122.0, 38.0]
+    }
+
+@pytest.fixture
+def road_segment():
+    """Create test road segment data."""
+    return {
+        "id": "road-123",
+        "name": "Test Highway",
+        "type": "motorway",
+        "bbox": [-122.5, 37.5, -122.0, 38.0],
+        "lanes": 4,
+        "speed_limit": 65,
+        "surface": "paved",
         "sensor_data": {
-            "speed": [45.0, 50.0, 48.0],
-            "volume": [100, 120, 110],
-            "density": [0.5, 0.6, 0.55]
+            "traffic_counts": [100, 150, 200, 250, 300],
+            "average_speed": [60, 55, 45, 40, 35],
+            "timestamps": [
+                (datetime.now() - timedelta(hours=i)).isoformat()
+                for i in range(5, 0, -1)
+            ]
         }
     }
 
 @pytest.mark.asyncio
-async def test_analyze_traffic(mock_data, memory_store):
-    analyzer = TrafficAnalyzer(memory_store)
-    insights = await analyzer._analyze_traffic_data(mock_data, mock_data)
+async def test_analyze_traffic(traffic_analyzer, road_segment, mock_overture_data):
+    """Test traffic analysis functionality using Overture data."""
+    # Mock the Overture API search method
+    traffic_analyzer.overture_api.search = AsyncMock(return_value=mock_overture_data)
     
+    # Test analysis
+    insights = await traffic_analyzer.analyze_traffic(road_segment)
+    
+    # Verify results structure
+    assert "road_id" in insights
     assert "timestamp" in insights
     assert "traffic_metrics" in insights
     assert "recommendations" in insights
-    assert "road_conditions" in insights
-    assert "congestion_patterns" in insights
-    assert "predictions" in insights
-    assert "road_id" in insights
+    
+    # Verify traffic metrics
+    metrics = insights["traffic_metrics"]
+    assert "congestion_level" in metrics
+    assert "average_speed" in metrics
+    assert "volume" in metrics
+    assert "peak_hours" in metrics
+    
+    # Verify score ranges
+    assert 0 <= metrics["congestion_level"] <= 1
+    assert metrics["average_speed"] >= 0
+    assert metrics["volume"] >= 0
+    
+    # Verify recommendations
+    assert isinstance(insights["recommendations"], list)
+    assert len(insights["recommendations"]) > 0
+    assert all(isinstance(rec, str) for rec in insights["recommendations"])
 
 @pytest.mark.asyncio
-async def test_analyze_traffic_data(mock_data, memory_store):
-    analyzer = TrafficAnalyzer(memory_store)
-    insights = await analyzer._analyze_traffic_data(mock_data, mock_data)
-    
-    assert "timestamp" in insights
-    assert "traffic_metrics" in insights
-    assert "recommendations" in insights
-    assert "road_conditions" in insights
-    assert "congestion_patterns" in insights
-    assert "predictions" in insights
-    assert "road_id" in insights
+async def test_analyze_traffic_data(traffic_analyzer, road_segment, mock_overture_data):
+    """Test traffic data analysis using Overture data."""
+    insights = await traffic_analyzer._analyze_traffic_data(road_segment, mock_overture_data)
     
     # Verify traffic metrics structure
     metrics = insights["traffic_metrics"]
+    assert "congestion_level" in metrics
     assert "average_speed" in metrics
     assert "volume" in metrics
-    assert "density" in metrics
-    assert "congestion_level" in metrics
-    assert "thresholds" in metrics
+    assert "peak_hours" in metrics
+    
+    # Verify road conditions
+    assert "road_conditions" in insights
+    assert "surface_quality" in insights["road_conditions"]
+    assert "maintenance_status" in insights["road_conditions"]
 
 def test_calculate_traffic_metrics(traffic_analyzer):
-    """Test traffic metrics calculations."""
-    # Test highway metrics
-    highway_metrics = traffic_analyzer._calculate_traffic_metrics(
-        {"average_speed": 60, "volume": 180},
-        "highway"
-    )
-    assert 45 <= highway_metrics["average_speed"] <= 65
-    assert highway_metrics["volume"] > 0
-    assert highway_metrics["density"] > 0
+    """Test traffic metrics calculation."""
+    sensor_data = {
+        "traffic_counts": [100, 150, 200, 250, 300],
+        "average_speed": [60, 55, 45, 40, 35],
+        "timestamps": [
+            (datetime.now() - timedelta(hours=i)).isoformat()
+            for i in range(5, 0, -1)
+        ]
+    }
     
-    # Test local road metrics
-    local_metrics = traffic_analyzer._calculate_traffic_metrics(
-        {"average_speed": 20, "volume": 80},
-        "local"
-    )
-    assert 15 <= local_metrics["average_speed"] <= 25
-    assert local_metrics["volume"] > 0
-    assert local_metrics["density"] > 0
+    metrics = traffic_analyzer._calculate_traffic_metrics(sensor_data, "motorway")
+    
+    # Verify metrics structure
+    assert "congestion_level" in metrics
+    assert "average_speed" in metrics
+    assert "volume" in metrics
+    assert "peak_hours" in metrics
+    
+    # Verify metric ranges
+    assert 0 <= metrics["congestion_level"] <= 1
+    assert metrics["average_speed"] > 0
+    assert metrics["volume"] > 0
+    assert isinstance(metrics["peak_hours"], list)
 
 def test_analyze_road_conditions(traffic_analyzer):
     """Test road conditions analysis."""
     satellite_features = {
-        "surface_index": np.array([0.7, 0.8, 0.9])
+        "surface_type": "paved",
+        "maintenance_history": ["2023-01", "2023-06", "2023-12"],
+        "condition_score": 0.85
     }
     
-    road_data = simulate_road_segment()
-    conditions = traffic_analyzer._analyze_road_conditions(satellite_features, road_data)
+    road_segment = {
+        "type": "motorway",
+        "surface": "paved",
+        "lanes": 4
+    }
     
+    conditions = traffic_analyzer._analyze_road_conditions(satellite_features, road_segment)
+    
+    # Verify conditions structure
     assert "surface_quality" in conditions
-    assert "weather_impact" in conditions
-    assert "maintenance_score" in conditions
-    assert "hazards" in conditions
+    assert "maintenance_status" in conditions
+    assert "risk_factors" in conditions
     
+    # Verify condition scores
     assert 0 <= conditions["surface_quality"] <= 1
-    assert 0 <= conditions["weather_impact"] <= 0.3
-    assert 0 <= conditions["maintenance_score"] <= 1
-    assert isinstance(conditions["hazards"], list)
+    assert isinstance(conditions["maintenance_status"], str)
+    assert isinstance(conditions["risk_factors"], list)
 
 def test_analyze_congestion_patterns(traffic_analyzer):
     """Test congestion pattern analysis."""
     traffic_metrics = {
-        "congestion_level": 0.8,
-        "average_speed": 35
+        "congestion_level": 0.75,
+        "average_speed": 35,
+        "volume": 250,
+        "peak_hours": ["08:00", "17:00"]
     }
     
-    patterns = traffic_analyzer._analyze_congestion_patterns(traffic_metrics, "highway")
+    patterns = traffic_analyzer._analyze_congestion_patterns(traffic_metrics, "motorway")
     
-    assert "peak_hours" in patterns
+    # Verify patterns structure
+    assert "daily_pattern" in patterns
     assert "severity" in patterns
-    assert "expected_duration" in patterns
-    assert "recurring" in patterns
+    assert "bottleneck_risk" in patterns
     
-    assert patterns["severity"] in ["high", "moderate", "low"]
-    assert isinstance(patterns["peak_hours"], list)
-    assert 30 <= patterns["expected_duration"] <= 180
-    assert isinstance(patterns["recurring"], bool)
+    # Verify pattern analysis
+    assert isinstance(patterns["daily_pattern"], list)
+    assert 0 <= patterns["severity"] <= 1
+    assert 0 <= patterns["bottleneck_risk"] <= 1
 
 def test_detect_road_hazards(traffic_analyzer):
     """Test road hazard detection."""
     satellite_features = {
-        "surface_index": np.random.random((100, 100))
+        "surface_condition": "fair",
+        "weather_impact": "moderate",
+        "visibility": "good"
     }
     
     hazards = traffic_analyzer._detect_road_hazards(satellite_features)
     
+    # Verify hazard detection
     assert isinstance(hazards, list)
-    for hazard in hazards:
-        assert "type" in hazard
-        assert "severity" in hazard
-        assert "location" in hazard
-        assert 0.3 <= hazard["severity"] <= 0.9
-        assert hazard["type"] in ["pothole", "construction", "debris", "water accumulation"]
+    assert all(isinstance(h, dict) for h in hazards)
+    assert all("type" in h and "severity" in h for h in hazards)
+    assert all(0 <= h["severity"] <= 1 for h in hazards)
 
 def test_generate_predictions(traffic_analyzer):
     """Test traffic prediction generation."""
     traffic_metrics = {
-        "congestion_level": 0.7,
-        "average_speed": 40
+        "congestion_level": 0.75,
+        "average_speed": 35,
+        "volume": 250,
+        "peak_hours": ["08:00", "17:00"]
     }
     
     congestion_patterns = {
-        "peak_hours": ["07:00-09:00", "16:00-18:00"],
-        "expected_duration": 90,
-        "severity": "moderate"
+        "daily_pattern": ["morning_peak", "evening_peak"],
+        "severity": 0.8,
+        "bottleneck_risk": 0.6
     }
     
     road_conditions = {
-        "maintenance_score": 0.8,
-        "hazards": []
+        "surface_quality": 0.85,
+        "maintenance_status": "good",
+        "risk_factors": ["weather", "volume"]
     }
     
     predictions = traffic_analyzer._generate_predictions(
@@ -182,76 +281,102 @@ def test_generate_predictions(traffic_analyzer):
         road_conditions
     )
     
-    assert "clearance_time" in predictions
-    assert "next_peak" in predictions
-    assert "confidence" in predictions
+    # Verify predictions structure
+    assert "short_term" in predictions
+    assert "long_term" in predictions
+    assert "risk_assessment" in predictions
     
-    assert predictions["clearance_time"] > 0
-    assert 0.7 <= predictions["confidence"] <= 0.9
+    # Verify prediction content
+    assert isinstance(predictions["short_term"], dict)
+    assert isinstance(predictions["long_term"], dict)
+    assert isinstance(predictions["risk_assessment"], dict)
+    assert all(0 <= score <= 1 for score in predictions["risk_assessment"].values())
 
-def test_generate_recommendations(traffic_analyzer):
-    """Test recommendation generation."""
-    traffic_metrics = {
-        "congestion_level": 0.9,
-        "average_speed": 25
+@pytest.mark.asyncio
+async def test_traffic_analysis_with_invalid_data(traffic_analyzer):
+    """Test traffic analysis with invalid or missing data."""
+    invalid_road = {
+        "id": "invalid-123",
+        "name": "Invalid Road"
+        # Missing required fields
     }
     
-    congestion_patterns = {
-        "peak_hours": ["07:00-09:00"],
-        "severity": "high",
-        "recurring": True
-    }
-    
-    road_conditions = {
-        "maintenance_score": 0.5,
-        "hazards": [{
-            "type": "pothole",
-            "severity": 0.8,
-            "location": "mile_marker_5"
-        }]
-    }
-    
-    predictions = {
-        "clearance_time": 120,
-        "next_peak": "16:00-18:00"
-    }
-    
-    recommendations = traffic_analyzer._generate_recommendations(
-        traffic_metrics,
-        congestion_patterns,
-        road_conditions,
-        predictions
-    )
-    
-    assert isinstance(recommendations, list)
-    assert len(recommendations) > 0
-    assert any("congestion" in rec.lower() for rec in recommendations)
-    assert any("road conditions" in rec.lower() for rec in recommendations)
-    assert any("pothole" in rec.lower() for rec in recommendations)
+    with pytest.raises(ValueError):
+        await traffic_analyzer.analyze_traffic(invalid_road)
 
-def test_simulated_data():
-    """Test road segment data simulation."""
-    data = simulate_road_segment()
+@pytest.mark.asyncio
+async def test_traffic_analysis_with_empty_data(traffic_analyzer, road_segment):
+    """Test traffic analysis with empty Overture data."""
+    empty_data = {
+        "roads": {"features": []},
+        "buildings": {"features": []},
+        "places": {"features": []},
+        "bbox": road_segment["bbox"]
+    }
     
-    # Verify required fields
-    assert "id" in data
-    assert "name" in data
-    assert "road_type" in data
-    assert "coordinates" in data
-    assert "bbox" in data
+    traffic_analyzer.overture_api.search = AsyncMock(return_value=empty_data)
     
-    # Check road type
-    assert data["road_type"] in ["highway", "arterial", "local"]
+    insights = await traffic_analyzer.analyze_traffic(road_segment)
     
-    # Check coordinates
-    coords = data["coordinates"]
-    assert "start" in coords
-    assert "end" in coords
-    assert "lat" in coords["start"]
-    assert "lon" in coords["start"]
-    assert 37.7 <= coords["start"]["lat"] <= 37.8
-    assert -122.5 <= coords["start"]["lon"] <= -122.4
+    # Verify that the analysis handles empty data gracefully
+    assert insights["traffic_metrics"]["congestion_level"] == 0
+    assert len(insights["recommendations"]) > 0
+
+def test_memory_storage_integration(traffic_analyzer, road_segment, mock_overture_data):
+    """Test integration with memory store."""
+    # Store test data
+    traffic_analyzer.memory_store.store({
+        "road_id": road_segment["id"],
+        "timestamp": datetime.now().isoformat(),
+        "data": mock_overture_data
+    })
     
-    # Verify bbox format
-    assert len(data["bbox"]) == 4
-    assert all(isinstance(x, float) for x in data["bbox"]) 
+    # Verify data retrieval
+    stored_data = traffic_analyzer.memory_store.retrieve({
+        "road_id": road_segment["id"]
+    })
+    
+    assert stored_data is not None
+    assert "road_id" in stored_data
+    assert "data" in stored_data
+
+def test_traffic_pattern_analysis(traffic_analyzer):
+    """Test traffic pattern analysis functionality."""
+    # Test with various traffic patterns
+    normal_pattern = {
+        "traffic_counts": [100, 200, 300, 200, 100],
+        "average_speed": [60, 45, 30, 45, 60],
+        "timestamps": [
+            (datetime.now() - timedelta(hours=i)).isoformat()
+            for i in range(5, 0, -1)
+        ]
+    }
+    
+    congested_pattern = {
+        "traffic_counts": [200, 400, 600, 400, 200],
+        "average_speed": [40, 25, 15, 25, 40],
+        "timestamps": [
+            (datetime.now() - timedelta(hours=i)).isoformat()
+            for i in range(5, 0, -1)
+        ]
+    }
+    
+    off_peak_pattern = {
+        "traffic_counts": [50, 75, 100, 75, 50],
+        "average_speed": [65, 60, 55, 60, 65],
+        "timestamps": [
+            (datetime.now() - timedelta(hours=i)).isoformat()
+            for i in range(5, 0, -1)
+        ]
+    }
+    
+    # Calculate metrics for each pattern
+    normal_metrics = traffic_analyzer._calculate_traffic_metrics(normal_pattern, "motorway")
+    congested_metrics = traffic_analyzer._calculate_traffic_metrics(congested_pattern, "motorway")
+    off_peak_metrics = traffic_analyzer._calculate_traffic_metrics(off_peak_pattern, "motorway")
+    
+    # Verify pattern relationships
+    assert congested_metrics["congestion_level"] > normal_metrics["congestion_level"]
+    assert normal_metrics["congestion_level"] > off_peak_metrics["congestion_level"]
+    assert off_peak_metrics["average_speed"] > normal_metrics["average_speed"]
+    assert normal_metrics["average_speed"] > congested_metrics["average_speed"] 

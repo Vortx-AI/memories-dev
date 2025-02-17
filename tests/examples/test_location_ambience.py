@@ -1,307 +1,292 @@
 """
-Test location ambience analyzer example functionality.
+Test location ambience analyzer example functionality with Overture Maps data.
 """
 
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
-from datetime import datetime
+from datetime import datetime, timedelta
 import numpy as np
+from pathlib import Path
 from examples.location_ambience import LocationAnalyzer, simulate_location_data
 from memories.config import Config
 from memories import MemoryStore
+from memories.data_acquisition import DataManager
 
 @pytest.fixture
 def memory_store():
     """Create a memory store for testing."""
     config = Config(
-        storage_path="./test_location_data",
+        storage_path="test_location_data",
         hot_memory_size=10,
-        warm_memory_size=100,
-        cold_memory_size=1000
+        warm_memory_size=20,
+        cold_memory_size=50
     )
     return MemoryStore(config)
 
 @pytest.fixture
-def location_analyzer(memory_store):
-    """Create a location analyzer for testing."""
-    return LocationAnalyzer(memory_store)
+def data_manager():
+    """Create a data manager for testing."""
+    return DataManager(cache_dir="test_location_data")
 
 @pytest.fixture
-def mock_data():
-    """Create mock satellite and environmental data."""
+def location_analyzer(data_manager, memory_store):
+    """Create a location analyzer for testing."""
+    return LocationAnalyzer(data_manager, memory_store)
+
+@pytest.fixture
+def mock_satellite_data():
+    # Create mock satellite data with NDVI bands
+    red_band = np.random.random((100, 100))  # B04
+    nir_band = np.random.random((100, 100))  # B08
+    
+    # Ensure some areas have vegetation (NDVI > 0.3)
+    ndvi = (nir_band - red_band) / (nir_band + red_band)
+    nir_band[ndvi < 0.3] *= 2  # Increase NIR values to create vegetation
+    
     return {
-        "satellite_data": {
-            "pc": {
-                "sentinel-2-l2a": [{
-                    "data": np.random.random((4, 100, 100)),  # Mock satellite bands
-                    "metadata": {
-                        "datetime": datetime.now().isoformat(),
-                        "cloud_cover": 5.0
-                    }
-                }]
-            }
-        },
-        "air_quality": {
-            "aqi": 75.0,
-            "pollutants": {
-                "pm25": 15.0,
-                "pm10": 30.0,
-                "no2": 40.0
-            }
-        },
-        "vector_data": {
-            "osm": {
-                "amenities": [
-                    {
-                        "type": "Feature",
-                        "properties": {
-                            "type": "parks",
-                            "name": "Central Park",
-                            "rating": 4.5
-                        }
-                    },
-                    {
-                        "type": "Feature",
-                        "properties": {
-                            "type": "restaurants",
-                            "name": "Fine Dining",
-                            "rating": 4.8
-                        }
-                    },
-                    {
-                        "type": "Feature",
-                        "properties": {
-                            "type": "cafes",
-                            "name": "Coffee House",
-                            "rating": 4.2
-                        }
-                    }
-                ]
+        "sentinel-2-l2a": {
+            "data": [
+                np.random.random((100, 100)),  # B02
+                np.random.random((100, 100)),  # B03
+                red_band,  # B04
+                nir_band   # B08
+            ],
+            "metadata": {
+                "datetime": datetime.now().isoformat(),
+                "cloud_cover": 10.0,
+                "bands": ["B02", "B03", "B04", "B08"],
+                "resolution": 10.0
             }
         }
     }
 
-@pytest.mark.asyncio
-async def test_analyze_location(location_analyzer, mock_data):
-    """Test location analysis functionality."""
-    # Mock the data manager's prepare_training_data method
-    location_analyzer.data_manager.prepare_training_data = AsyncMock(return_value=mock_data)
-    
-    # Create test location data
-    location_data = {
-        "id": "TEST_LOC_1",
-        "name": "Test Location",
-        "coordinates": [40.7128, -74.0060],
-        "bbox": [40.7, -74.1, 40.8, -73.9]
-    }
-    
-    # Test analysis
-    insights = await location_analyzer.analyze_location(location_data)
-    
-    # Verify results structure
-    assert "location_id" in insights
-    assert "timestamp" in insights
-    assert "location_analysis" in insights
-    assert "recommendations" in insights
-    
-    # Check location analysis structure
-    location_analysis = insights["location_analysis"]
-    assert "environmental_scores" in location_analysis
-    assert "urban_features" in location_analysis
-    assert "noise_levels" in location_analysis
-    assert "ambience_score" in location_analysis
-    
-    # Check environmental scores
-    env_scores = location_analysis["environmental_scores"]
-    assert "greenery" in env_scores
-    assert "water_bodies" in env_scores
-    assert "air_quality" in env_scores
-    assert "urban_density" in env_scores
-    
-    # Verify score ranges
-    assert 0 <= env_scores["greenery"] <= 1
-    assert 0 <= env_scores["water_bodies"] <= 1
-    assert 0 <= env_scores["air_quality"] <= 1
-    assert 0 <= env_scores["urban_density"] <= 1
-    
-    # Check urban features
-    urban_features = location_analysis["urban_features"]
-    assert "parks" in urban_features
-    assert "cafes" in urban_features
-    assert "restaurants" in urban_features
-    assert "cultural_venues" in urban_features
-    
-    # Check noise levels
-    noise_levels = location_analysis["noise_levels"]
-    assert "average_db" in noise_levels
-    assert "peak_hours" in noise_levels
-    assert "quiet_hours" in noise_levels
-    assert 40 <= noise_levels["average_db"] <= 70
-
-@pytest.mark.asyncio
-async def test_analyze_location_data(location_analyzer, mock_data):
-    """Test location data analysis."""
-    location_data = simulate_location_data()
-    
-    # Test analysis
-    insights = await location_analyzer._analyze_location_data(location_data, mock_data)
-    
-    # Verify structure and content
-    assert isinstance(insights, dict)
-    assert insights["location_id"] == location_data["id"]
-    assert isinstance(insights["timestamp"], str)
-    assert len(insights["recommendations"]) > 0
-
 @pytest.fixture
-def mock_memory_store():
-    """Create a mock memory store for testing."""
-    return Mock()
+def mock_overture_data():
+    return {
+        "buildings": [{"id": f"b{i}"} for i in range(50)],
+        "roads": [{"id": f"r{i}"} for i in range(30)],
+        "amenities": [{"id": f"a{i}"} for i in range(10)]
+    }
 
 @pytest.fixture
 def test_location():
     """Create test location data."""
     return {
-        "id": "123",
-        "coordinates": {"lat": 40.7128, "lon": -74.0060},
-        "timestamp": datetime.now().isoformat()
+        "id": "test-123",
+        "name": "Test Location",
+        "bbox": [-122.5, 37.5, -122.0, 38.0],
+        "type": "residential"
     }
 
-def test_calculate_environmental_scores(location_analyzer):
-    """Test environmental score calculations."""
-    satellite_features = {
-        "greenery_index": np.array([0.7, 0.8, 0.9]),
-        "water_index": np.array([0.2, 0.3, 0.4]),
-        "built_up_index": np.array([0.5, 0.6, 0.7])
-    }
+@pytest.mark.asyncio
+async def test_analyze_location(location_analyzer, test_location, mock_overture_data, mock_satellite_data):
+    """Test location analysis functionality using Overture data."""
+    # Mock the API calls
+    location_analyzer.overture_api.search = AsyncMock(return_value=mock_overture_data)
+    location_analyzer.pc_api.search_and_download = AsyncMock(return_value=mock_satellite_data)
     
-    air_quality = {
-        "aqi": 75.0
-    }
+    # Test analysis
+    insights = await location_analyzer.analyze_location(test_location)
     
-    scores = location_analyzer._calculate_environmental_scores(satellite_features, air_quality)
+    # Verify results structure
+    assert "location_id" in insights
+    assert "timestamp" in insights
+    assert "ambience_analysis" in insights
     
-    assert "greenery" in scores
-    assert "water_bodies" in scores
+    # Verify analysis components
+    analysis = insights["ambience_analysis"]
+    assert "environmental_scores" in analysis
+    assert "urban_features" in analysis
+    assert "noise_levels" in analysis
+    assert "recommendations" in analysis
+    assert "satellite_metadata" in analysis
+
+@pytest.mark.asyncio
+async def test_analyze_location_data(location_analyzer, test_location, mock_overture_data, mock_satellite_data):
+    """Test the internal location data analysis method."""
+    insights = await location_analyzer._analyze_location_data(test_location, mock_overture_data, mock_satellite_data)
+    
+    assert "scores" in insights
+    assert "urban_features" in insights
+    assert "environmental_scores" in insights
+    assert "noise_levels" in insights
+    assert "recommendations" in insights
+    assert isinstance(insights["scores"], float)
+
+@pytest.mark.asyncio
+async def test_analyze_urban_features(location_analyzer, mock_overture_data):
+    """Test urban features analysis."""
+    features = await location_analyzer._analyze_urban_features(mock_overture_data)
+    
+    assert "building_characteristics" in features
+    assert "road_characteristics" in features
+    assert "amenity_characteristics" in features
+    
+    assert "count" in features["building_characteristics"]
+    assert "density" in features["building_characteristics"]
+    assert "types" in features["building_characteristics"]
+
+@pytest.mark.asyncio
+async def test_calculate_environmental_scores(location_analyzer, mock_overture_data, mock_satellite_data):
+    """Test environmental scores calculation."""
+    urban_features = await location_analyzer._analyze_urban_features(mock_overture_data)
+    scores = await location_analyzer._calculate_environmental_scores(urban_features, mock_satellite_data)
+    
+    assert "green_space" in scores
     assert "air_quality" in scores
+    assert "water_bodies" in scores
     assert "urban_density" in scores
     
-    assert 0 <= scores["greenery"] <= 1
-    assert 0 <= scores["water_bodies"] <= 1
+    assert 0 <= scores["green_space"] <= 1
     assert 0 <= scores["air_quality"] <= 1
     assert 0 <= scores["urban_density"] <= 1
 
-def test_analyze_urban_features(location_analyzer, mock_data):
-    """Test urban features analysis."""
-    features = location_analyzer._analyze_urban_features(mock_data)
-    
-    # Verify feature categories
-    assert "parks" in features
-    assert "cafes" in features
-    assert "restaurants" in features
-    assert "cultural_venues" in features
-    
-    # Check venue data structure
-    for category, venues in features.items():
-        for venue in venues:
-            assert "name" in venue
-            assert "distance" in venue
-            assert "rating" in venue
-            assert 0 < venue["distance"] < 5
-            assert 0 <= venue["rating"] <= 5
-
-def test_estimate_noise_levels(location_analyzer):
+@pytest.mark.asyncio
+async def test_estimate_noise_levels(location_analyzer, mock_overture_data):
     """Test noise level estimation."""
-    urban_features = {
-        "parks": [{"name": "Park 1"}, {"name": "Park 2"}],
-        "restaurants": [{"name": "Restaurant 1"}],
-        "cafes": [{"name": "Cafe 1"}, {"name": "Cafe 2"}]
-    }
+    urban_features = await location_analyzer._analyze_urban_features(mock_overture_data)
+    noise_levels = await location_analyzer._estimate_noise_levels(urban_features)
     
-    noise_levels = location_analyzer._estimate_noise_levels(urban_features)
+    assert "average" in noise_levels
+    assert "peak" in noise_levels
+    assert "variability" in noise_levels
     
-    assert "average_db" in noise_levels
-    assert "peak_hours" in noise_levels
-    assert "quiet_hours" in noise_levels
-    
-    assert 40 <= noise_levels["average_db"] <= 70
-    assert isinstance(noise_levels["peak_hours"], list)
-    assert isinstance(noise_levels["quiet_hours"], list)
+    assert noise_levels["peak"] >= noise_levels["average"]
+    assert noise_levels["variability"] >= 0
 
-def test_calculate_ambience_score(location_analyzer):
+@pytest.mark.asyncio
+async def test_calculate_ambience_score(location_analyzer, mock_overture_data, mock_satellite_data):
     """Test ambience score calculation."""
-    env_scores = {
-        "greenery": 0.8,
-        "air_quality": 0.7,
-        "urban_density": 0.6
-    }
+    urban_features = await location_analyzer._analyze_urban_features(mock_overture_data)
+    env_scores = await location_analyzer._calculate_environmental_scores(urban_features, mock_satellite_data)
+    noise_levels = await location_analyzer._estimate_noise_levels(urban_features)
     
-    urban_features = {
-        "parks": [{"name": "Park 1"}],
-        "restaurants": [{"name": "Restaurant 1"}, {"name": "Restaurant 2"}],
-        "cafes": [{"name": "Cafe 1"}]
-    }
-    
-    noise_levels = {
-        "average_db": 55.0
-    }
-    
-    score = location_analyzer._calculate_ambience_score(
-        env_scores,
-        urban_features,
-        noise_levels
-    )
+    score = await location_analyzer._calculate_ambience_score(env_scores, urban_features, noise_levels)
     
     assert isinstance(score, float)
     assert 0 <= score <= 1
 
-def test_generate_recommendations(location_analyzer):
-    """Test recommendation generation."""
-    env_scores = {
-        "greenery": 0.8,
-        "air_quality": 0.4,
-        "urban_density": 0.7
-    }
+@pytest.mark.asyncio
+async def test_generate_recommendations(location_analyzer, mock_overture_data, mock_satellite_data):
+    """Test recommendations generation."""
+    urban_features = await location_analyzer._analyze_urban_features(mock_overture_data)
+    env_scores = await location_analyzer._calculate_environmental_scores(urban_features, mock_satellite_data)
+    noise_levels = await location_analyzer._estimate_noise_levels(urban_features)
+    ambience_score = await location_analyzer._calculate_ambience_score(env_scores, urban_features, noise_levels)
     
-    urban_features = {
-        "parks": [{"name": "Park 1"}, {"name": "Park 2"}],
-        "restaurants": [{"name": "Restaurant 1"}],
-        "cafes": []
-    }
-    
-    noise_levels = {
-        "average_db": 68.0
-    }
-    
-    recommendations = location_analyzer._generate_recommendations(
-        env_scores,
-        urban_features,
-        noise_levels,
-        0.7
+    recommendations = await location_analyzer._generate_recommendations(
+        env_scores=env_scores,
+        urban_features=urban_features,
+        noise_levels=noise_levels,
+        ambience_score=ambience_score
     )
     
     assert isinstance(recommendations, list)
-    assert len(recommendations) > 0
-    assert any("green spaces" in rec.lower() for rec in recommendations)
-    assert any("air quality" in rec.lower() for rec in recommendations)
-    assert any("noise levels" in rec.lower() for rec in recommendations)
+    assert all(isinstance(r, str) for r in recommendations)
 
-def test_simulated_data():
-    """Test location data simulation."""
-    data = simulate_location_data()
+@pytest.mark.asyncio
+async def test_location_analysis_with_invalid_data(location_analyzer):
+    """Test location analysis with invalid data."""
+    invalid_data = {"name": "Invalid Location"}  # Missing bbox
+    insights = await location_analyzer.analyze_location(invalid_data)
+    assert "error" in insights
+    assert insights["error"] == "Missing bbox data"
+
+@pytest.mark.asyncio
+async def test_location_analysis_with_empty_data(location_analyzer):
+    """Test location analysis with empty data."""
+    empty_data = None
+    insights = await location_analyzer.analyze_location(empty_data)
+    assert "error" in insights
+    assert insights["error"] == "Missing bbox data"
+
+@pytest.mark.asyncio
+async def test_memory_storage_integration(location_analyzer, test_location, mock_overture_data, mock_satellite_data):
+    """Test memory storage integration."""
+    # Mock API calls
+    location_analyzer.overture_api.search = AsyncMock(return_value=mock_overture_data)
+    location_analyzer.pc_api.search_and_download = AsyncMock(return_value=mock_satellite_data)
     
-    # Verify required fields
-    assert "id" in data
-    assert "name" in data
-    assert "coordinates" in data
-    assert "bbox" in data
+    # Analyze location
+    insights = await location_analyzer.analyze_location(test_location)
     
-    # Check coordinates
-    coords = data["coordinates"]
-    assert "lat" in coords
-    assert "lon" in coords
-    assert 37.7 <= coords["lat"] <= 37.8
-    assert -122.5 <= coords["lon"] <= -122.4
+    # Store data
+    stored_key = f"location_analysis_{test_location['id']}"
+    memory_data = {
+        "key": stored_key,
+        "type": "location_analysis",
+        "data": insights,
+        "timestamp": datetime.now().isoformat(),
+        "metadata": {
+            "source": "location_analyzer"
+        }
+    }
+    location_analyzer.memory_store.store(memory_data, memory_type="warm")
     
-    # Verify bbox format
-    assert len(data["bbox"]) == 4
-    assert all(isinstance(x, float) for x in data["bbox"]) 
+    # Verify storage
+    stored_data = location_analyzer.memory_store.retrieve({"key": stored_key}, memory_type="warm")
+    
+    assert stored_data is not None
+    assert "data" in stored_data
+    assert "ambience_analysis" in stored_data["data"]
+
+@pytest.mark.asyncio
+async def test_analyze_location_with_satellite(location_analyzer, mock_satellite_data, mock_overture_data):
+    """Test location analysis with satellite data."""
+    test_location = {
+        "id": "test-sat-123",
+        "bbox": [-122.5, 37.5, -122.0, 38.0]
+    }
+    
+    # Mock API calls
+    location_analyzer.overture_api.search = AsyncMock(return_value=mock_overture_data)
+    location_analyzer.pc_api.search_and_download = AsyncMock(return_value=mock_satellite_data)
+    
+    insights = await location_analyzer.analyze_location(test_location)
+    analysis = insights["ambience_analysis"]
+    
+    assert "satellite_metadata" in analysis
+    assert analysis["satellite_metadata"]["bands"] == ["B02", "B03", "B04", "B08"]
+    assert "cloud_cover" in analysis["satellite_metadata"]
+
+@pytest.mark.asyncio
+async def test_environmental_scores_calculation(location_analyzer, mock_satellite_data):
+    """Test environmental scores calculation with satellite data."""
+    urban_features = {
+        "building_characteristics": {"density": 5.0},
+        "road_characteristics": {"density": 3.0},
+        "amenity_characteristics": {"density": 2.0}
+    }
+    
+    scores = await location_analyzer._calculate_environmental_scores(urban_features, mock_satellite_data)
+    assert scores["green_space"] > 0
+    assert scores["air_quality"] > 0
+    assert scores["urban_density"] > 0
+
+@pytest.mark.asyncio
+async def test_environmental_scores_no_satellite_data(location_analyzer):
+    """Test environmental scores calculation without satellite data."""
+    urban_features = {
+        "building_characteristics": {"density": 5.0},
+        "road_characteristics": {"density": 3.0},
+        "amenity_characteristics": {"density": 2.0}
+    }
+    
+    scores = await location_analyzer._calculate_environmental_scores(urban_features)
+    assert scores["green_space"] == 0
+    assert scores["air_quality"] == 0
+    assert scores["urban_density"] > 0
+
+@pytest.mark.asyncio
+async def test_noise_levels_with_urban_features(location_analyzer):
+    """Test noise level estimation with urban features."""
+    urban_features = {
+        "building_characteristics": {"density": 5.0},
+        "road_characteristics": {"density": 3.0},
+        "amenity_characteristics": {"density": 2.0}
+    }
+    
+    noise_levels = await location_analyzer._estimate_noise_levels(urban_features)
+    assert noise_levels["average"] > 0
+    assert noise_levels["peak"] >= noise_levels["average"]
+    assert noise_levels["variability"] >= 0 
