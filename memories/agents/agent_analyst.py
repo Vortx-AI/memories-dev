@@ -9,7 +9,7 @@ class AgentAnalyst:
         Initialize Agent Analyst.
 
         Args:
-            load_model: Model or other component (not used for query selection anymore)
+            load_model: An LLM instance or similar component used for generating code.
         """
         self.load_model = load_model
         self.project_root = os.getenv("PROJECT_ROOT", "")
@@ -38,83 +38,49 @@ class AgentAnalyst:
         else:
             return "exact_match_query"
 
-    def analyze_query(self, query: str, lat: float, lon: float, data_type: str, parquet_file: str, extra_params: dict) -> dict:
+    def analyze_query(
+        self,
+        query: str,
+        lat: float,
+        lon: float,
+        data_type: str,
+        parquet_file: str,
+        geometry: Optional[str] = None,
+        geometry_type: Optional[str] = None,
+        extra_params: dict = {}
+    ) -> dict:
         """
-        Analyze the query using the provided parameters.
-
-        This function inspects the schema of the given Parquet file. It will:
-          - Use traditional latitude/longitude columns if available.
-          - Otherwise, check for a 'geometry' column. If found, it retrieves the column type and then
-            constructs a query using spatial functions (ST_Y and ST_X) assuming the geometry column is a POINT.
-        
-        Note: Ensure the necessary spatial extension (e.g., for DuckDB) is enabled.
-
-        Args:
-            query (str): The original query.
-            lat (float): The latitude value.
-            lon (float): The longitude value.
-            data_type (str): The data type extracted from context.
-            parquet_file (str): The full Parquet file path.
-            extra_params (dict): Any additional parameters (such as a search radius).
+        Uses an LLM with the duck_parquet_kb knowledgebase to generate Python code that queries
+        the provided Parquet file. The generated code will filter records based on the provided
+        latitude and longitude. If columns named 'latitude'/'longitude' or 'lat'/'lon' exist, they should be used.
+        Otherwise, if a geometry column is provided (with its type), generate code that uses spatial functions
+        (like ST_Y and ST_X) on the geometry column.
 
         Returns:
-            dict: A dictionary containing the query result, generated SQL, and additional metadata.
+            A dictionary with the status and the generated Python code.
         """
-        import duckdb
         try:
-            # Connect to DuckDB and load the spatial extension.
-            con = duckdb.connect()
-            try:
-                con.execute("LOAD spatial;")
-            except Exception as spatial_error:
-                print("[Agent Analyst] Warning: Failed to load spatial extension. Spatial functions might not work.", spatial_error)
-            
-            # Retrieve the schema for the Parquet file by describing a scan of it.
-            schema_df = con.execute(f"DESCRIBE parquet_scan('{parquet_file}')").fetchdf()
-            # Ensure column names are lower-cased for uniformity.
-            columns = [str(c).lower() for c in schema_df['column_name'].to_list()]
-
-            # Build SQL query based on available spatial columns
-            if 'latitude' in columns and 'longitude' in columns:
-                # Use these columns directly
-                sql_query = f"""
-                    SELECT *
-                    FROM '{parquet_file}'
-                    WHERE latitude = {lat} AND longitude = {lon};
-                """
-            elif 'lat' in columns and 'lon' in columns:
-                sql_query = f"""
-                    SELECT *
-                    FROM '{parquet_file}'
-                    WHERE lat = {lat} AND lon = {lon};
-                """
-            elif 'geometry' in columns:
-                # Retrieve the type of the geometry column for debugging/logging purposes.
-                geom_type_row = schema_df[schema_df['column_name'].str.lower() == 'geometry']
-                geom_type = geom_type_row['type'].iloc[0] if not geom_type_row.empty else "unknown"
-                # Assuming the geometry column stores spatial data that can be processed
-                # with ST_X (returning longitude) and ST_Y (returning latitude). Note that in many
-                # spatial databases, a POINT type stores coordinates as (x, y) = (lon, lat).
-                sql_query = f"""
-                    SELECT *
-                    FROM '{parquet_file}'
-                    WHERE ST_Y(geometry) = {lat} AND ST_X(geometry) = {lon};
-                """
-                # Consider adding tolerance values if exact equality is too strict.
-            else:
-                raise ValueError("No recognizable spatial columns found in the Parquet file.")
-
-            # Debug: Log the generated SQL query (optional)
-            print("[Agent Analyst] Generated SQL Query:")
-            print(sql_query)
-            
-            # Execute the query and fetch the results.
-            results = con.execute(sql_query).fetchall()
-            con.close()
+            prompt = f"""
+Generate a Python code snippet that queries a Parquet file using DuckDB.
+The Parquet file is located at '{parquet_file}'.
+The target coordinates to filter are:
+    latitude: {lat}
+    longitude: {lon}
+The code should follow this logic:
+1. If the file contains columns named 'latitude' and 'longitude', filter using these.
+2. If not, but it contains 'lat' and 'lon', filter using those columns.
+3. Otherwise, if a geometry column is present, use the provided geometry column name:
+      geometry column: {geometry if geometry else "N/A"}
+   and its type: {geometry_type if geometry_type else "N/A"}.
+   In that case, generate code that applies spatial functions (for example, ST_Y and ST_X)
+   to extract the latitude and longitude from the geometry column.
+Utilize the duck_parquet_kb knowledgebase for guidance.
+Return only the Python code snippet.
+            """
+            generated_code = self.load_model.generate_code(prompt, knowledgebase="duck_parquet_kb")
             return {
                 "status": "success",
-                "results": results,
-                "generated_code": sql_query,  # For debugging purposes.
+                "generated_code": generated_code,
                 "chosen_function": "analyze_query"
             }
         except Exception as e:
@@ -150,7 +116,6 @@ def main():
     if result["status"] == "success":
         print(f"\nChosen Function: {result['chosen_function']}")
         print(f"\nGenerated Code:\n{result['generated_code']}")
-        print(f"\nResults DataFrame:\n{result['results']}")
     else:
         print(f"Error: {result['error']}")
 
