@@ -154,5 +154,143 @@
       "explanation": "Selects rows whose values in a specified column are within a given range.",
       "details": "Typically used for filtering numeric or date ranges."
     }
-  ]
+  ],
+  "query_functions": {
+    "exact_match_query": {
+      "description": "Find records that exactly match a value in a specific column and have valid geometry",
+      "parameters": {
+        "parquet_file": "Path to the Parquet file",
+        "geometry_column": "Name of the geometry column",
+        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
+        "column_name": "Name of the column to filter",
+        "value": "Value to match exactly"
+      },
+      "example": "exact_match_query('data.parquet', 'geometry', 'POINT', 'amenity', 'restaurant')"
+    },
+    "like_query": {
+      "description": "Find records that match a pattern in a specific column and have valid geometry",
+      "parameters": {
+        "parquet_file": "Path to the Parquet file",
+        "geometry_column": "Name of the geometry column",
+        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
+        "column_name": "Name of the column to filter",
+        "pattern": "SQL LIKE pattern to match"
+      },
+      "example": "like_query('data.parquet', 'geometry', 'POINT', 'name', '%restaurant%')"
+    },
+    "at_coordinates_query": {
+      "description": "Find records at specific coordinates that match a column value",
+      "parameters": {
+        "parquet_file": "Path to the Parquet file",
+        "geometry_column": "Name of the geometry column",
+        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
+        "column_name": "Name of the column to filter",
+        "value": "Value to match in the column",
+        "target_lat": "Target latitude",
+        "target_lon": "Target longitude"
+      },
+      "example": "at_coordinates_query('data.parquet', 'geometry', 'POINT', 'amenity', 'restaurant', 12.9716, 77.5946)"
+    },
+    "within_radius_query": {
+      "description": "Find records within a radius that match a column value",
+      "parameters": {
+        "parquet_file": "Path to the Parquet file",
+        "geometry_column": "Name of the geometry column",
+        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
+        "column_name": "Name of the column to filter",
+        "value": "Value to match in the column",
+        "target_lat": "Center latitude",
+        "target_lon": "Center longitude",
+        "radius": "Search radius in meters"
+      },
+      "example": "within_radius_query('data.parquet', 'geometry', 'POINT', 'amenity', 'restaurant', 12.9716, 77.5946, 1000)"
+    },
+    "nearest_query": {
+      "description": "Find the nearest record matching a column value",
+      "parameters": {
+        "parquet_file": "Path to the Parquet file",
+        "geometry_column": "Name of the geometry column",
+        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
+        "column_name": "Name of the column to filter",
+        "value": "Value to match in the column",
+        "target_lat": "Reference latitude",
+        "target_lon": "Reference longitude"
+      },
+      "example": "nearest_query('data.parquet', 'geometry', 'POINT', 'amenity', 'restaurant', 12.9716, 77.5946)"
+    },
+    "bounding_box_query": {
+      "description": "Find records within a bounding box that match a column value",
+      "parameters": {
+        "parquet_file": "Path to the Parquet file",
+        "geometry_column": "Name of the geometry column",
+        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
+        "column_name": "Name of the column to filter",
+        "value": "Value to match in the column",
+        "min_lat": "Minimum latitude",
+        "max_lat": "Maximum latitude",
+        "min_lon": "Minimum longitude",
+        "max_lon": "Maximum longitude"
+      },
+      "example": "bounding_box_query('data.parquet', 'geometry', 'POINT', 'amenity', 'restaurant', 12.9, 13.0, 77.5, 77.6)"
+    },
+    "count_within_radius_query": {
+      "description": "Count records within a radius that match a column value",
+      "parameters": {
+        "parquet_file": "Path to the Parquet file",
+        "geometry_column": "Name of the geometry column",
+        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
+        "column_name": "Name of the column to filter",
+        "value": "Value to match in the column",
+        "target_lat": "Center latitude",
+        "target_lon": "Center longitude",
+        "radius": "Search radius in meters"
+      },
+      "example": "count_within_radius_query('data.parquet', 'geometry', 'POINT', 'amenity', 'restaurant', 12.9716, 77.5946, 1000)"
+    },
+    "aggregate_query": {
+      "description": "Group and count records within radius that match a column value",
+      "parameters": {
+        "parquet_file": "Path to the Parquet file",
+        "geometry_column": "Name of the geometry column",
+        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
+        "group_column": "Column to group by",
+        "filter_column": "Column to filter on",
+        "value": "Value to match in filter column",
+        "target_lat": "Center latitude",
+        "target_lon": "Center longitude",
+        "radius": "Search radius in meters"
+      },
+      "example": "aggregate_query('data.parquet', 'geometry', 'POINT', 'cuisine', 'amenity', 'restaurant', 12.9716, 77.5946, 1000)"
+    },
+    "combined_filters_query": {
+      "description": "Find records matching multiple conditions including spatial and pattern filters",
+      "parameters": {
+        "parquet_file": "Path to the Parquet file",
+        "geometry_column": "Name of the geometry column",
+        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
+        "column_name": "Primary column to filter",
+        "value": "Value to match exactly",
+        "pattern_column": "Column to apply pattern matching",
+        "pattern": "Pattern to match",
+        "target_lat": "Center latitude",
+        "target_lon": "Center longitude",
+        "radius": "Search radius in meters"
+      },
+      "example": "combined_filters_query('data.parquet', 'geometry', 'POINT', 'amenity', 'restaurant', 'name', '%pizza%', 12.9716, 77.5946, 1000)"
+    },
+    "range_query": {
+      "description": "Find records within a numeric range that match a column value",
+      "parameters": {
+        "parquet_file": "Path to the Parquet file",
+        "geometry_column": "Name of the geometry column",
+        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
+        "range_column": "Column for range check",
+        "min_value": "Minimum value in range",
+        "max_value": "Maximum value in range",
+        "filter_column": "Column to filter on",
+        "value": "Value to match in filter column"
+      },
+      "example": "range_query('data.parquet', 'geometry', 'POINT', 'rating', 4, 5, 'amenity', 'restaurant')"
+    }
+  }
 }
