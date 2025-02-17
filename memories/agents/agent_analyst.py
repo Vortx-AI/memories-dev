@@ -77,7 +77,7 @@ The code should follow this logic:
 Utilize the duck_parquet_kb knowledgebase for guidance.
 Return only the Python code snippet.
             """
-            generated_code = self.load_model.generate_code(prompt, knowledgebase="duck_parquet_kb")
+            generated_code = self.load_model.get_response(prompt, knowledgebase="duck_parquet_kb")
             return {
                 "status": "success",
                 "generated_code": generated_code,
