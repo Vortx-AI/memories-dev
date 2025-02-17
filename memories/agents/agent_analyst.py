@@ -48,45 +48,36 @@ class AgentAnalyst:
     ) -> dict:
         """
         Generate DuckDB query code based on the input parameters.
-        
-        Args:
-            query (str): User's query
-            lat (float): Target latitude
-            lon (float): Target longitude
-            data_type (str): Type of data being queried
-            parquet_file (str): Path to Parquet file
-            relevant_column (str): Column name for filtering
-            geometry_column (str): Name of the geometry column
-            geometry_type (str): Type of geometry (e.g., 'POINT')
-            extra_params (dict): Additional parameters
         """
         try:
-            # Load the knowledge base from the correct path
+            # Load the knowledge base
             kb_path = os.path.join(self.project_root, "memories", "utils", "earth", "duckdb_parquet_kb.json")
             with open(kb_path, 'r') as f:
                 knowledge_base = json.load(f)
 
-            prompt = f"""
-Generate executable Python code using the query function/functions only from the knowledge base.
+            prompt = f"""Based on the following query and parameters, generate executable Python code using ONLY the functions from the provided knowledge base. The code should return results from the parquet file.
+
+User Query: {query}
 
 Parameters:
-- Parquet file: '{parquet_file}'
+- Parquet file: {parquet_file}
 - Target coordinates: lat={lat}, lon={lon}
-- Data type: '{data_type}'
-- Column to filter: '{relevant_column}'
-- Geometry column: '{geometry_column}'
-- Geometry type: '{geometry_type}'
+- Data type: {data_type}
+- Column to filter: {relevant_column}
+- Geometry column: {geometry_column}
+- Geometry type: {geometry_type}
 
-Required code structure:
-import duckdb
+Choose the most appropriate function from these options:
+1. within_radius_query - for finding items within a radius
+2. exact_match_query - for exact matches
+3. like_query - for pattern matching
+4. nearest_query - for finding closest items
+5. count_within_radius_query - for counting items within radius
 
-# Initialize connection
-conn = duckdb.connect()
-conn.execute("LOAD spatial;")
+Generate ONLY the code to execute, following this structure:
+from memories.utils.earth.duckdb_parquet_queries import [chosen_function], execute_duckdb_spatial_query
 
-# Execute query using one of the predefined functions
-results = [CHOSEN_FUNCTION](
-    conn,
+query = [chosen_function](
     parquet_file='{parquet_file}',
     geometry_column='{geometry_column}',
     geometry_type='{geometry_type}',
@@ -94,13 +85,13 @@ results = [CHOSEN_FUNCTION](
     value='{data_type}',
     target_lat={lat},
     target_lon={lon},
-    radius=1000  # Example radius in meters
+    radius=1000
 )
 
-Knowledge Base:
-{json.dumps(knowledge_base, indent=2)}
+results = execute_duckdb_spatial_query(query)
+return results
 
-Return only executable Python code without explanations or markdown.
+Do not include any explanations or markdown formatting. Return only the executable Python code.
 """
             # Get the response and clean it
             generated_code = self.load_model.get_response(prompt)
@@ -114,7 +105,7 @@ Return only executable Python code without explanations or markdown.
         except Exception as e:
             return {
                 "status": "error",
-                "error": f"Binder Error: {str(e)}"
+                "error": f"Analysis Error: {str(e)}"
             }
 
 def main():
