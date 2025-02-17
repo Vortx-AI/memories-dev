@@ -81,18 +81,18 @@ class Agent:
                 print(context_result)
                 print(f"• Data Type: {context_result.get('data_type', '')}")
                 
-                # Extract latitude and longitude from the 'location_info' output.
-                # Expected format:
-                # {'location': '12.9093124,77.6078977', 'location_type': 'coordinates', 
-                #  'normalized': {'original': '12.9093124,77.6078977', 'type': 'coordinates', 
-                #                 'coordinates': {'lat': 12.9093124, 'lon': 77.6078977}}}
+                # Extract latitude and longitude from the 'location_info' output
                 location_info = context_result.get('location_info', {})
                 lat_val, lon_val = 0.0, 0.0
+                location_type = 'unknown'
+                location = 'unknown'
+                
                 if isinstance(location_info, dict):
                     normalized = location_info.get('normalized', {})
                     coordinates = normalized.get('coordinates', {})
-                    location_type = normalized.get('location_type', {})
-                    location = normalized.get('location', {})
+                    location_type = normalized.get('type', 'unknown')
+                    location = normalized.get('location', 'unknown')
+                    
                     if isinstance(coordinates, dict):
                         lat_val = coordinates.get('lat', 0.0)
                         lon_val = coordinates.get('lon', 0.0)
@@ -101,10 +101,13 @@ class Agent:
                 print(f"• Longitude: {lon_val}")
                 print(f"• Location type: {location_type}")
                 print(f"• Location: {location}")
+                
                 result.update({
-                    'data_type': context_result.get('data_type'),
-                    'latitude': lat_val,    # extracted from nested "location_info"
-                    'longitude': lon_val    # extracted from nested "location_info"
+                    'data_type': context_result.get('data_type', ''),
+                    'latitude': lat_val,
+                    'longitude': lon_val,
+                    'location_type': location_type,
+                    'location': location
                 })
             
             # Step 3: L1 Agent (if classification is L1)
