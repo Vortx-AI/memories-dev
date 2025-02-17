@@ -47,7 +47,7 @@ class AgentAnalyst:
           - Otherwise, check for a 'geometry' column. If found, it retrieves the column type and then
             constructs a query using spatial functions (ST_Y and ST_X) assuming the geometry column is a POINT.
         
-        Note: Ensure the necessary spatial extension (e.g., for DuckDB) is enabled if needed.
+        Note: Ensure the necessary spatial extension (e.g., for DuckDB) is enabled.
 
         Args:
             query (str): The original query.
@@ -62,8 +62,13 @@ class AgentAnalyst:
         """
         import duckdb
         try:
-            # Connect to DuckDB
+            # Connect to DuckDB and load the spatial extension.
             con = duckdb.connect()
+            try:
+                con.execute("LOAD spatial;")
+            except Exception as spatial_error:
+                print("[Agent Analyst] Warning: Failed to load spatial extension. Spatial functions might not work.", spatial_error)
+            
             # Retrieve the schema for the Parquet file by describing a scan of it.
             schema_df = con.execute(f"DESCRIBE parquet_scan('{parquet_file}')").fetchdf()
             # Ensure column names are lower-cased for uniformity.
@@ -95,7 +100,7 @@ class AgentAnalyst:
                     FROM '{parquet_file}'
                     WHERE ST_Y(geometry) = {lat} AND ST_X(geometry) = {lon};
                 """
-                # You might want to add a tolerance/tolerance_distance here if exact equality is too strict.
+                # Consider adding tolerance values if exact equality is too strict.
             else:
                 raise ValueError("No recognizable spatial columns found in the Parquet file.")
 
