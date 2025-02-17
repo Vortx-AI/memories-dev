@@ -78,11 +78,7 @@ class Agent:
                 print(context_result)
                 print(f"• Data Type: {context_result.get('data_type', '')}")
                 
-                # Extract latitude and longitude from the 'location_info' output.
-                # Expected format:
-                # {'location': '12.9093124,77.6078977', 'location_type': 'coordinates', 
-                #  'normalized': {'original': '12.9093124,77.6078977', 'type': 'coordinates', 
-                #                 'coordinates': {'lat': 12.9093124, 'lon': 77.6078977}}}
+                # Extract location info
                 location_info = context_result.get('location_info', {})
                 lat_val, lon_val = 0.0, 0.0
                 if isinstance(location_info, dict):
@@ -97,8 +93,8 @@ class Agent:
                 
                 result.update({
                     'data_type': context_result.get('data_type'),
-                    'latitude': lat_val,    # extracted from nested "location_info"
-                    'longitude': lon_val    # extracted from nested "location_info"
+                    'latitude': lat_val,
+                    'longitude': lon_val
                 })
             
             # Step 3: L1 Agent (if classification is L1)
@@ -113,109 +109,88 @@ class Agent:
                     l1_result = l1_agent.process()
                     
                     print("L1 Agent Response:")
+                    print(f"\n• Searching columns for data type: {search_term}")
+                    
                     if l1_result["status"] == "success":
-                        similar_columns = l1_result["similar_columns"]
+                        similar_columns = l1_result.get("similar_columns", [])
                         result['similar_columns'] = similar_columns
                         
-                        print(f"\n• Searching columns for data type: {search_term}")
-                        print("\n• Similar columns found:")
-                        for col in similar_columns:
-                            print(f"\n  Column: {col['column_name']}")
-                            print(f"  File: {col['file_name']}")
-                            print(f"  File Path: {col['file_path']}")
-                            print(f"  Geometry Type: {col['geometry_type']}")
+                        if similar_columns:
+                            print("\n• Similar columns found:")
+                            for col in similar_columns:
+                                print(f"\n  Column: {col['column_name']}")
+                                print(f"  File: {col['file_name']}")
+                                print(f"  File Path: {col['file_path']}")
+                                print(f"  Geometry Type: {col['geometry_type']}")
+                                print(f"  Data Type: {col['data_type']}")
+                                print(f"  Distance: {col['distance']:.4f}")
                             
-                            print(f"  Distance: {col['distance']:.4f}")
-                        
-                        # Use the extracted latitude and longitude from the Context Agent.
-                        lat_val = result.get('latitude', 0.0)
-                        lon_val = result.get('longitude', 0.0)
-    
-                        # Use the previously retrieved data_type.
-                        data_type = result.get('data_type', '')
-    
-                        # Get the Parquet file information from the best matching column.
-                        best_column = similar_columns[0]
-                        raw_file_path = best_column.get('file_path', '')
-    
-                        # Construct the full Parquet file path if the provided file_path is not absolute.
-                        if not os.path.isabs(raw_file_path):
-                            project_root = os.getenv("PROJECT_ROOT", "")
-                            parquet_file_path = os.path.join(project_root, "data", "parquet", raw_file_path)
-                        else:
-                            parquet_file_path = raw_file_path
-    
-                        print("\n[Invoking Agent Analyst]")
-                        print("-" * 50)
-                        analyst = AgentAnalyst(self.load_model)
-                        relevant_column = best_column.get('column_name', '')
-                        analyst_result = analyst.analyze_query(
-                            query=query,
-                            lat=lat_val,
-                            lon=lon_val,
-                            data_type=data_type,
-                            parquet_file=parquet_file_path,
-                            relevant_column=relevant_column,
-                            geometry_column='geometry',
-                            geometry_type='POINT',
-                            extra_params={}
-                        )
-
-                        print(analyst_result)
-                        
-                        # Execute recommended functions
-                        if analyst_result.get('status') == 'success':
-                            print("\n[Executing Recommended Functions]")
-                            print("-" * 50)
+                            # Only proceed with query generation if we found similar columns
+                            best_column = similar_columns[0]  # Get the most similar column
+                            parquet_file_path = best_column['file_path']
                             
-                            combined_results = []
-                            for recommendation in analyst_result.get('recommendations', []):
-                                function_name = recommendation.get('function_name')
-                                parameters = recommendation.get('parameters', {})
+                            # Generate and execute queries
+                            if lat_val and lon_val:
+                                print("\n[Generating and Executing Queries]")
+                                print("-" * 50)
                                 
-                                # Set a default radius if not specified
-                                if 'radius' in parameters and parameters['radius'] == 'specify_radius':
-                                    parameters['radius'] = 1000  # Default 1km radius
+                                # Create query generator
+                                query_generator = DuckDBQueryGenerator(
+                                    parquet_file=parquet_file_path,
+                                    column_name=best_column['column_name'],
+                                    target_lat=lat_val,
+                                    target_lon=lon_val
+                                )
                                 
-                                # Convert lat/lon to float if they're strings
-                                if 'target_lat' in parameters:
-                                    parameters['target_lat'] = float(parameters['target_lat'])
-                                if 'target_lon' in parameters:
-                                    parameters['target_lon'] = float(parameters['target_lon'])
+                                # Get recommended queries
+                                recommended_queries = query_generator.get_recommended_queries()
+                                result['recommended_queries'] = recommended_queries
                                 
-                                print(f"\nExecuting {function_name}:")
-                                print(f"Parameters: {parameters}")
+                                # Execute queries and combine results
+                                combined_results = []
                                 
-                                try:
-                                    # Validate inputs first
-                                    validation = validate_function_inputs(function_name, parameters)
-                                    if validation["is_valid"]:
-                                        # Execute the function
-                                        results = execute_kb_function(function_name, parameters)
-                                        if isinstance(results, pd.DataFrame):
-                                            # Add a column to indicate which function produced these results
-                                            results['source_function'] = function_name
-                                            combined_results.append(results)
-                                            print(f"Found {len(results)} results")
+                                for function_name, parameters in recommended_queries.items():
+                                    # Convert string coordinates to float if needed
+                                    if 'target_lat' in parameters:
+                                        parameters['target_lat'] = float(parameters['target_lat'])
+                                    if 'target_lon' in parameters:
+                                        parameters['target_lon'] = float(parameters['target_lon'])
+                                    
+                                    print(f"\nExecuting {function_name}:")
+                                    print(f"Parameters: {parameters}")
+                                    
+                                    try:
+                                        validation = validate_function_inputs(function_name, parameters)
+                                        if validation["is_valid"]:
+                                            results = execute_kb_function(function_name, parameters)
+                                            if isinstance(results, pd.DataFrame):
+                                                results['source_function'] = function_name
+                                                combined_results.append(results)
+                                                print(f"Found {len(results)} results")
+                                            else:
+                                                print(f"Unexpected result type: {type(results)}")
                                         else:
-                                            print(f"Unexpected result type: {type(results)}")
-                                    else:
-                                        print(f"Invalid inputs for {function_name}:")
-                                        print(f"Missing parameters: {validation['missing_params']}")
-                                        print(f"Extra parameters: {validation['extra_params']}")
-                                except Exception as e:
-                                    print(f"Error executing {function_name}: {str(e)}")
-                            
-                            # Combine all results into a single DataFrame
-                            if combined_results:
-                                final_results = pd.concat(combined_results, ignore_index=True)
-                                result['query_results'] = final_results
-                                print("\nFinal Results:")
-                                print(f"Total records found: {len(final_results)}")
-                            else:
-                                result['query_results'] = pd.DataFrame()
-                                print("\nNo results found from any function")
-            
+                                            print(f"Invalid inputs for {function_name}:")
+                                            print(f"Missing parameters: {validation['missing_params']}")
+                                            print(f"Extra parameters: {validation['extra_params']}")
+                                    except Exception as e:
+                                        print(f"Error executing {function_name}: {str(e)}")
+                                
+                                if combined_results:
+                                    final_results = pd.concat(combined_results, ignore_index=True)
+                                    result['query_results'] = final_results
+                                    print("\nFinal Results:")
+                                    print(f"Total records found: {len(final_results)}")
+                                else:
+                                    result['query_results'] = pd.DataFrame()
+                                    print("\nNo results found from any function")
+                        else:
+                            print(f"\n• {l1_result.get('message', 'No similar columns found')}")
+                            result['query_results'] = pd.DataFrame()
+                    else:
+                        print(f"\n• Error: {l1_result.get('error', 'Unknown error in L1 Agent')}")
+                        result['query_results'] = pd.DataFrame()
+                
             return result
             
         except Exception as e:
