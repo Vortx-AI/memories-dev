@@ -162,49 +162,40 @@ class PlanetaryCompute(DataSource):
         collections: List[str] = ["sentinel-2-l2a"],
         cloud_cover: float = 20.0
     ) -> Dict:
-        """
-        Search and download satellite imagery.
+        """Search and download data from Planetary Computer.
         
         Args:
-            bbox: Bounding box or Polygon
-            start_date: Start date (YYYY-MM-DD)
-            end_date: End date (YYYY-MM-DD)
+            bbox: Bounding box coordinates [west, south, east, north] or Polygon
+            start_date: Start date in ISO format
+            end_date: End date in ISO format
             collections: List of collections to search
             cloud_cover: Maximum cloud cover percentage
             
         Returns:
-            Dictionary containing downloaded data and metadata
+            Dictionary of downloaded data by collection
         """
-        # Convert bbox to polygon if needed
-        if isinstance(bbox, tuple):
+        # Convert bbox to shapely box if it's a list/tuple
+        if isinstance(bbox, (list, tuple)):
             bbox = box(*bbox)
-        
-        # Prepare search parameters
-        search_params = {
-            "collections": collections,
-            "intersects": mapping(bbox),
-            "datetime": f"{start_date}/{end_date}",
-            "query": {
-                "eo:cloud_cover": {"lt": cloud_cover}
-            }
-        }
-        
-        # Search for items
-        search = self.catalog.search(**search_params)
-        items = list(search.get_items())
-        
-        if not items:
-            return {}
         
         results = {}
         for collection in collections:
-            collection_items = [item for item in items if item.collection_id == collection]
-            if collection_items:
-                results[collection] = await self._process_collection(
-                    collection_items,
-                    bbox,
-                    collection
-                )
+            search = self.catalog.search(
+                collections=[collection],
+                intersects=mapping(bbox),
+                datetime=f"{start_date}/{end_date}",
+                query={"eo:cloud_cover": {"lt": cloud_cover}}
+            )
+            items = list(search.get_items())
+            
+            if not items:
+                continue
+            
+            results[collection] = await self._process_collection(
+                items,
+                bbox,
+                collection
+            )
         
         return results
     

@@ -13,6 +13,49 @@ import cv2
 class ImageProcessor:
     """Processor for satellite imagery."""
     
+    def calculate_ndwi(self, data: np.ndarray, green_band: int = 1, nir_band: int = 2) -> np.ndarray:
+        """Calculate Normalized Difference Water Index (NDWI).
+        
+        Args:
+            data: Multi-band image data with shape (bands, height, width)
+            green_band: Index of the green band (default: 1)
+            nir_band: Index of the near-infrared band (default: 2)
+            
+        Returns:
+            NDWI array with shape (height, width)
+        """
+        green = data[green_band]
+        nir = data[nir_band]
+        
+        # Avoid division by zero
+        denominator = green + nir
+        denominator[denominator == 0] = 1e-10
+        
+        ndwi = (green - nir) / denominator
+        return ndwi
+    
+    def extract_features(self, data: np.ndarray) -> Dict[str, np.ndarray]:
+        """Extract features from satellite imagery.
+        
+        Args:
+            data: Multi-band image data with shape (bands, height, width)
+            
+        Returns:
+            Dictionary of extracted features
+        """
+        # Calculate various indices
+        ndwi = self.calculate_ndwi(data)
+        
+        # Calculate other features
+        greenery_index = (data[1] - data[0]) / (data[1] + data[0] + 1e-10)  # Normalized difference vegetation index
+        built_up_index = (data[2] - data[1]) / (data[2] + data[1] + 1e-10)  # Built-up index
+        
+        return {
+            "ndwi": ndwi,
+            "greenery_index": greenery_index,
+            "built_up_index": built_up_index
+        }
+    
     def process_satellite_data(
         self,
         data: Dict,

@@ -1,6 +1,23 @@
 import duckdb
 import os
 from dotenv import load_dotenv
+from typing import List
+
+def list_parquet_files(directory: str) -> List[str]:
+    """List all Parquet files in a directory.
+    
+    Args:
+        directory: Path to directory to search for Parquet files
+        
+    Returns:
+        List of paths to Parquet files
+    """
+    parquet_files = []
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if file.endswith('.parquet'):
+                parquet_files.append(os.path.join(root, file))
+    return parquet_files
 
 def query_multiple_parquet(output_query="SELECT * FROM combined_data"):
     """

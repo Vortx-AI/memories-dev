@@ -1,106 +1,109 @@
 # Memories-Dev Examples
 
-This directory contains real-world examples demonstrating the capabilities of the Memories-Dev framework. Each example showcases different aspects of the system and provides practical use cases.
+This directory contains example applications built using the Memories-Dev framework. Each example demonstrates different aspects of the framework's capabilities.
 
-## Examples Overview
+## Available Examples
 
-1. **Global Water Bodies Monitor** (`water_bodies_monitor.py`)
-   - Monitors changes in global water bodies using satellite data
-   - Demonstrates long-term memory storage and temporal analysis
-   - Uses multi-agent collaboration for data verification
+### 1. Property Analyzer (`property_analyzer.py`)
+Analyzes real estate properties using satellite imagery and local context.
 
-```mermaid
-graph TD
-    A[Satellite Data Input] --> B[Data Processing Agent]
-    B --> C[Analysis Agent]
-    C --> D[Memory Storage]
-    D --> E[Alert Agent]
-    E --> F[Report Generation]
-    B --> G[Historical Comparison]
-    G --> C
+```bash
+# Set up environment variables
+export PLANETARY_COMPUTER_API_KEY=your_api_key
+
+# Run the example
+python property_analyzer.py
 ```
 
-2. **Real Estate Intelligence** (`property_analyzer.py`)
-   - Analyzes property details and market trends
-   - Showcases memory-based pattern recognition
-   - Implements multi-source data integration
+### 2. Water Bodies Monitor (`water_bodies_monitor.py`)
+Monitors and analyzes changes in global water bodies using satellite data.
 
-```mermaid
-graph LR
-    A[Property Data] --> B[Market Analysis Agent]
-    C[Historical Data] --> B
-    B --> D[Memory System]
-    D --> E[Insight Generator]
-    E --> F[Recommendation Engine]
+```bash
+# Set up environment variables
+export PLANETARY_COMPUTER_API_KEY=your_api_key
+
+# Run the example
+python water_bodies_monitor.py
 ```
 
-3. **Food and Restaurant Analysis** (`food_analyzer.py`)
-   - Processes restaurant reviews and food trends
-   - Demonstrates sentiment analysis capabilities
-   - Shows temporal pattern recognition
+### 3. Location Ambience (`location_ambience.py`)
+Analyzes the ambience and environmental characteristics of locations.
 
-```mermaid
-graph TD
-    A[Review Data] --> B[Text Processing]
-    B --> C[Sentiment Analysis]
-    C --> D[Memory Storage]
-    D --> E[Trend Analysis]
-    E --> F[Recommendation System]
+```bash
+# Set up environment variables
+export PLANETARY_COMPUTER_API_KEY=your_api_key
+
+# Run the example
+python location_ambience.py
 ```
 
-4. **Location Ambience Analyzer** (`ambience_analyzer.py`)
-   - Analyzes location characteristics and atmosphere
-   - Uses multi-modal data processing
-   - Implements context-aware memory storage
+### 4. Traffic Analyzer (`traffic_analyzer.py`)
+Analyzes traffic patterns and road conditions using satellite imagery.
 
-```mermaid
-graph LR
-    A[Location Data] --> B[Context Processor]
-    C[Social Media Data] --> B
-    D[Weather Data] --> B
-    B --> E[Memory System]
-    E --> F[Ambience Analysis]
-    F --> G[Location Profile]
+```bash
+# Set up environment variables
+export PLANETARY_COMPUTER_API_KEY=your_api_key
+
+# Run the example
+python traffic_analyzer.py
 ```
 
-## Getting Started
+## Requirements
 
-1. Install required dependencies:
+All examples require the following:
+
+1. Python 3.8 or higher
+2. Memories-Dev framework installed
+3. Required environment variables set (see each example's documentation)
+4. Dependencies installed from `requirements.txt`
+
+Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Set up your environment variables:
-```bash
-export MEMORIES_API_KEY=your_api_key
-export OPENAI_API_KEY=your_openai_key  # If using OpenAI integration
+## Common Usage Pattern
+
+All examples follow a similar pattern:
+
+1. Initialize a memory store
+2. Create a specialized agent
+3. Process data and generate insights
+4. Store results in appropriate memory tiers
+
+Example:
+```python
+from memories import MemoryStore, Config
+from examples.property_analyzer import PropertyAgent
+
+# Initialize memory store
+config = Config(
+    storage_path="./data",
+    hot_memory_size=50,
+    warm_memory_size=200,
+    cold_memory_size=1000
+)
+memory_store = MemoryStore(config)
+
+# Create agent
+agent = PropertyAgent(memory_store)
+
+# Process data
+insights = await agent.analyze_property(property_data)
 ```
 
-3. Run any example:
-```bash
-python examples/water_bodies_monitor.py
-```
+## Data Storage
 
-## Example Structure
-
-Each example follows a consistent structure:
-- Configuration setup
-- Agent initialization
-- Memory system integration
-- Data processing pipeline
-- Result visualization/reporting
+Each example stores its data in a different directory structure:
+- Property Analyzer: `./property_data/`
+- Water Bodies Monitor: `./water_bodies_data/`
+- Location Ambience: `./location_data/`
+- Traffic Analyzer: `./traffic_data/`
 
 ## Contributing
 
-Feel free to contribute your own examples by following these guidelines:
+Feel free to contribute your own examples! Follow these guidelines:
 1. Create a new Python file in the examples directory
-2. Add appropriate documentation and comments
-3. Include a section in this README
-4. Create a pull request
-
-## Notes
-
-- Examples use simulated data where real-time data is not available
-- API keys and sensitive data should be stored in environment variables
-- Each example can be run independently
-- Memory persistence is enabled by default 
+2. Add corresponding tests in `tests/examples/`
+3. Update this README with information about your example
+4. Ensure all tests pass before submitting a pull request 

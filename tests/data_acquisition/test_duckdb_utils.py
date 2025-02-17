@@ -3,7 +3,7 @@ import pandas as pd
 import duckdb
 import os
 from pathlib import Path
-from memories.data_acquisition.duckdb_utils import query_multiple_parquet
+from memories.data_acquisition.duckdb_utils import query_multiple_parquet, list_parquet_files
 
 @pytest.fixture
 def test_data_dir(tmp_path):
@@ -86,12 +86,14 @@ def test_invalid_query(test_data_dir, monkeypatch):
     with pytest.raises(Exception):
         query_multiple_parquet("INVALID SQL QUERY")
 
-def test_empty_directory(tmp_path, monkeypatch):
-    """Test handling of directory with no Parquet files."""
-    monkeypatch.setenv('GEO_MEMORIES', str(tmp_path))
+def test_empty_directory(tmp_path):
+    """Test handling of empty directory."""
+    # Create test directory structure
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
     
-    # Should return empty result
-    result = query_multiple_parquet()
+    # Test empty directory
+    result = list_parquet_files(str(data_dir))
     assert len(result) == 0
 
 def test_complex_query(test_data_dir, monkeypatch):

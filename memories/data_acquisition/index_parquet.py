@@ -16,13 +16,19 @@ def analyze_parquet_files(base_path: str = "parquet folder path",
         
     Returns:
         Dict[str, List[str]]: Dictionary containing processed files and errors
+        
+    Raises:
+        ValueError: If base_path does not exist or is not a directory
     """
+    base_path = Path(base_path)
+    if not base_path.exists() or not base_path.is_dir():
+        raise ValueError(f"Base path '{base_path}' does not exist or is not a directory")
+    
     results = {
         'processed_files': [],
         'error_files': []
     }
     
-    base_path = Path(base_path)
     output_dir = Path(output_dir)
     
     # Create output directory if it doesn't exist
@@ -55,10 +61,3 @@ def analyze_parquet_files(base_path: str = "parquet folder path",
     print(f"\nAnalysis saved to: {output_path}")
     
     return results
-
-# Run the analysis with current directory as output location
-error_details = analyze_parquet_files(output_dir="./")
-
-# Print summary
-print("\nSummary:")
-print(f"Total error files: {len(error_details['error_files'])}")

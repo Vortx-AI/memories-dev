@@ -91,6 +91,11 @@ class DataManager:
         """Get satellite imagery data."""
         bbox_coords = self._get_bbox_polygon(bbox)
         
+        # Convert shapely box to coordinates for APIs that need them
+        if isinstance(bbox_coords, Polygon):
+            bounds = bbox_coords.bounds
+            bbox_coords = [bounds[0], bounds[1], bounds[2], bounds[3]]
+        
         results = {}
         
         # Get Planetary Computer data

@@ -51,11 +51,16 @@ class HotMemory:
                 logger.error("Data must have a timestamp")
                 return
             
+            # Ensure data is a dictionary before storing
+            if not isinstance(data, dict):
+                logger.error("Data must be a dictionary")
+                return
+            
             # Store as JSON
             self.redis_client.set(key, json.dumps(data))
             
             # Maintain max size by removing oldest entries
-            keys = self.redis_client.keys("*")
+            keys = [k.decode('utf-8') for k in self.redis_client.keys("*")]
             if len(keys) > self.max_size:
                 # Sort by timestamp and remove oldest
                 sorted_keys = sorted(keys)
@@ -83,14 +88,29 @@ class HotMemory:
                 key = query["timestamp"]
                 data = self.redis_client.get(key)
                 if data:
-                    return json.loads(data)
+                    try:
+                        decoded_data = json.loads(data.decode('utf-8'))
+                        if isinstance(decoded_data, dict):
+                            return decoded_data
+                        else:
+                            logger.error(f"Invalid data structure for key {key}: not a dictionary")
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to decode JSON for key {key}")
+                        return None
             
             # Otherwise, search through all keys
             for key in self.redis_client.keys("*"):
-                data = json.loads(self.redis_client.get(key))
-                # Check if all query items match
-                if all(data.get(k) == v for k, v in query.items()):
-                    return data
+                data = self.redis_client.get(key)
+                if data:
+                    try:
+                        decoded_data = json.loads(data.decode('utf-8'))
+                        if isinstance(decoded_data, dict):
+                            # Check if all query items match
+                            if all(decoded_data.get(k) == v for k, v in query.items()):
+                                return decoded_data
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to decode JSON for key {key}")
+                        continue
             
             return None
         except Exception as e:
@@ -109,10 +129,23 @@ class HotMemory:
         
         try:
             result = []
-            for key in self.redis_client.keys("*"):
+            # Get all keys and decode them from bytes
+            keys = [k.decode('utf-8') for k in self.redis_client.keys("*")]
+            
+            # Get data for each key
+            for key in keys:
                 data = self.redis_client.get(key)
                 if data:
-                    result.append(json.loads(data))
+                    try:
+                        # Decode bytes to string and parse JSON
+                        decoded_data = json.loads(data.decode('utf-8'))
+                        if isinstance(decoded_data, dict):
+                            result.append(decoded_data)
+                        else:
+                            logger.error(f"Invalid data structure for key {key}: not a dictionary")
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to decode JSON for key {key}")
+                        continue
             return result
         except Exception as e:
             logger.error(f"Failed to retrieve all data from Redis: {e}")

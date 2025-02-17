@@ -28,6 +28,28 @@ class ImageProcessor:
         
         ndwi = (green - nir) / denominator
         return ndwi
+    
+    def extract_features(self, data: np.ndarray) -> Dict[str, np.ndarray]:
+        """Extract features from satellite imagery.
+        
+        Args:
+            data: Multi-band image data with shape (bands, height, width)
+            
+        Returns:
+            Dictionary of extracted features
+        """
+        # Calculate various indices
+        ndwi = self.calculate_ndwi(data)
+        
+        # Calculate other features
+        greenery_index = (data[1] - data[0]) / (data[1] + data[0] + 1e-10)  # Normalized difference vegetation index
+        built_up_index = (data[2] - data[1]) / (data[2] + data[1] + 1e-10)  # Built-up index
+        
+        return {
+            "ndwi": ndwi,
+            "greenery_index": greenery_index,
+            "built_up_index": built_up_index
+        }
 
 class VectorProcessor:
     """Processor for vector data (GeoJSON, shapefiles, etc.)."""

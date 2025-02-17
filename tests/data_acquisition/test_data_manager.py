@@ -10,9 +10,9 @@ from shapely.geometry import box
 from shapely.geometry import Polygon
 
 @pytest.fixture
-def data_manager():
+def data_manager(tmp_path):
     """Create a data manager instance for testing."""
-    return DataManager()
+    return DataManager(cache_dir=str(tmp_path / "cache"))
 
 @pytest.fixture
 def bbox():
