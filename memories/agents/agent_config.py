@@ -13,6 +13,7 @@ from memories.data_acquisition.data_connectors import parquet_connector
 import requests
 import zipfile
 import pickle
+from dotenv import load_dotenv
 
 def get_model_config(
     use_gpu: Optional[bool] = True,
@@ -21,31 +22,38 @@ def get_model_config(
     model_name: Optional[str] = "deepseek-coder-1.3b-base"
 ) -> Tuple[LoadModel, str]:
     """
-    Get model configuration and initialize the model.
+    Get the model configuration.
     
     Args:
-        use_gpu (bool, optional): Whether to use GPU. Defaults to True.
-        model_provider (str, optional): The model provider. Defaults to "deepseek-ai".
-        deployment_type (str, optional): Type of deployment. Defaults to "deployment".
-        model_name (str, optional): Name of the model. Defaults to "deepseek-coder-1.3b-base".
-    
+        use_gpu (bool): Whether to use GPU
+        model_provider (str): The model provider (e.g., "openai")
+        deployment_type (str): The deployment type
+        model_name (str): The model name to use
+        
     Returns:
-        Tuple[LoadModel, str]: Initialized model instance and its instance ID
+        Tuple[LoadModel, dict]: The LoadModel instance and its configuration
     """
-    config = {
-        "use_gpu": use_gpu,
+    # Load environment variables
+    load_dotenv()
+    
+    # Get OpenAI API key from environment
+    openai_key = os.getenv("OPENAI_KEY")
+    if not openai_key:
+        raise ValueError("OPENAI_KEY not found in environment variables")
+    
+    # Configure model settings
+    model_config = {
         "model_provider": model_provider,
         "deployment_type": deployment_type,
-        "model_name": model_name
+        "model_name": model_name,
+        "api_key": openai_key,
+        "use_gpu": use_gpu
     }
     
     # Initialize the model
-    model = LoadModel(**config)
+    load_model = LoadModel(model_config)
     
-    # Get the instance ID
-    instance_id = str(id(model))
-    
-    return model, instance_id
+    return load_model, model_config
 
 # Memory Configuration
 def get_memory_config() -> Dict[str, Any]:

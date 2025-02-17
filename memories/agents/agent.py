@@ -267,19 +267,17 @@ def main():
     
     # Get input from user
     query = "find water tanks near 12.9093124,77.6078977"
-    #input("Enter your query: ")
     instance_id = "123937239372432"
-    #input("Enter FAISS instance ID (or press Enter to skip): ")
     
-    # Initialize model with get_model_config
+    # Initialize model with get_model_config using GPT-4
     load_model, _ = get_model_config(
         use_gpu=True,
-        model_provider="deepseek-ai",
+        model_provider="openai",
         deployment_type="deployment",
-        model_name="deepseek-coder-1.3b-base"
+        model_name="gpt-4"
     )
     
-    print(f"[Agent] Model initialized")
+    print(f"[Agent] Model initialized (GPT-4)")
     
     # Initialize memory store
     memory_store = MemoryStore()
