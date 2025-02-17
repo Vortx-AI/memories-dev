@@ -123,7 +123,7 @@ def main():
     """
     Example usage of the Query Classification Agent
     """
-    from memories_dev.models.load_model import LoadModel
+    from memories.models.load_model import LoadModel
     
     # Initialize the model
     load_model = LoadModel(
