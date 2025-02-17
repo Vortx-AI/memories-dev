@@ -183,8 +183,20 @@
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">API Reference</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="memory_store.html">MemoryStore</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="memory_store.html#core-memory-management">Core Memory Management</a></li>
-<li class="toctree-l3"><a class="reference internal" href="memory_store.html#memorystore-class">MemoryStore Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="memory_store.html#core-memory-management">Core Memory Management</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="memory_store.html#memories.core.memory.NumpyEncoder"><code class="docutils literal notranslate"><span class="pre">NumpyEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="memory_store.html#memories.core.memory.MemorySystem"><code class="docutils literal notranslate"><span class="pre">MemorySystem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="memory_store.html#memories.core.memory.MemoryEncoder"><code class="docutils literal notranslate"><span class="pre">MemoryEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="memory_store.html#memories.core.memory.MemoryStore"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="memory_store.html#memories.core.memory.encode_geospatial_data"><code class="docutils literal notranslate"><span class="pre">encode_geospatial_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="memory_store.html#memories.core.memory.create_faiss_storage"><code class="docutils literal notranslate"><span class="pre">create_faiss_storage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="memory_store.html#memories.core.memory.create_memories"><code class="docutils literal notranslate"><span class="pre">create_memories()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="memory_store.html#memorystore-class">MemoryStore Class</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="memory_store.html#id0"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="memory_store.html#memory-tiers">Memory Tiers</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="memory_store.html#hot-memory">Hot Memory</a></li>
 <li class="toctree-l4"><a class="reference internal" href="memory_store.html#warm-memory">Warm Memory</a></li>
@@ -197,7 +209,11 @@
 </ul>
 </li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Agents</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#agent-system">Agent System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#agent-system">Agent System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#memories.agents.agent.Agent"><code class="docutils literal notranslate"><span class="pre">Agent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#memories.agents.agent.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#base-agent">Base Agent</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#agent-types">Agent Types</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#memory-agent">Memory Agent</a></li>
@@ -205,16 +221,31 @@
 <li class="toctree-l4"><a class="reference internal" href="#task-agent">Task Agent</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#property-agent">Property Agent</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#location-ambience-agent">Location Ambience Agent</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#traffic-agent">Traffic Agent</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#water-body-agent">Water Body Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#property-agent">Property Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#examples.property_analyzer.PropertyAgent"><code class="docutils literal notranslate"><span class="pre">PropertyAgent</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#location-ambience-agent">Location Ambience Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#examples.location_ambience.LocationAnalyzer"><code class="docutils literal notranslate"><span class="pre">LocationAnalyzer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#traffic-agent">Traffic Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#examples.traffic_analyzer.TrafficAnalyzer"><code class="docutils literal notranslate"><span class="pre">TrafficAnalyzer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#water-body-agent">Water Body Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#examples.water_bodies_monitor.WaterBodyAgent"><code class="docutils literal notranslate"><span class="pre">WaterBodyAgent</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#common-agent-patterns">Common Agent Patterns</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#example-usage">Example Usage</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="models.html">Models</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="models.html#model-loading">Model Loading</a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#model-loading">Model Loading</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="models.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="models.html#model-types">Model Types</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="models.html#base-model">Base Model</a></li>
 <li class="toctree-l4"><a class="reference internal" href="models.html#embedding-model">Embedding Model</a></li>
@@ -224,8 +255,14 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="load_model.html">LoadModel</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="load_model.html#model-loading-system">Model Loading System</a></li>
-<li class="toctree-l3"><a class="reference internal" href="load_model.html#loadmodel-class">LoadModel Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="load_model.html#model-loading-system">Model Loading System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="load_model.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="load_model.html#loadmodel-class">LoadModel Class</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="load_model.html#id0"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="load_model.html#model-types">Model Types</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="load_model.html#base-model">Base Model</a></li>
 <li class="toctree-l4"><a class="reference internal" href="load_model.html#embedding-model">Embedding Model</a></li>
@@ -236,29 +273,64 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="gpu_utils.html">GPU Utilities</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="gpu_utils.html#gpu-statistics">GPU Statistics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gpu_utils.html#gpu-stat-function">gpu_stat Function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gpu_utils.html#gpu-statistics">GPU Statistics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gpu_utils.html#memories.utils.processors.VectorProcessor"><code class="docutils literal notranslate"><span class="pre">VectorProcessor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gpu_utils.html#memories.utils.processors.ImageProcessor"><code class="docutils literal notranslate"><span class="pre">ImageProcessor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gpu_utils.html#memories.utils.processors.DataFusion"><code class="docutils literal notranslate"><span class="pre">DataFusion</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gpu_utils.html#gpu-stat-function">gpu_stat Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gpu_utils.html#memories.utils.processors.gpu_stat"><code class="docutils literal notranslate"><span class="pre">gpu_stat()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="gpu_utils.html#example-usage">Example Usage</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="data_utils.html">Data Utilities</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="data_utils.html#duckdb-query-utilities">DuckDB Query Utilities</a></li>
-<li class="toctree-l3"><a class="reference internal" href="data_utils.html#query-multiple-parquet-function">query_multiple_parquet Function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="data_utils.html#duckdb-query-utilities">DuckDB Query Utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="data_utils.html#memories.utils.duckdb_utils.query_multiple_parquet"><code class="docutils literal notranslate"><span class="pre">query_multiple_parquet()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="data_utils.html#memories.utils.duckdb_utils.list_parquet_files"><code class="docutils literal notranslate"><span class="pre">list_parquet_files()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="data_utils.html#query-multiple-parquet-function">query_multiple_parquet Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="data_utils.html#id0"><code class="docutils literal notranslate"><span class="pre">query_multiple_parquet()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="data_utils.html#example-usage">Example Usage</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="utils.html">Utilities</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="utils.html#general-utilities">General Utilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="utils.html#data-processing">Data Processing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="utils.html#text-processing">Text Processing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="utils.html#text-processing">Text Processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="utils.html#memories.utils.text.Entity"><code class="docutils literal notranslate"><span class="pre">Entity</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="utils.html#memories.utils.text.TextProcessor"><code class="docutils literal notranslate"><span class="pre">TextProcessor</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="utils.html#file-operations">File Operations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="utils.html#configuration">Configuration</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="index.html#core-components">Core Components</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="index.html#memory-system">Memory System</a></li>
-<li class="toctree-l3"><a class="reference internal" href="index.html#agent-system">Agent System</a></li>
-<li class="toctree-l3"><a class="reference internal" href="index.html#models">Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="index.html#memory-system">Memory System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.core.memory.NumpyEncoder"><code class="docutils literal notranslate"><span class="pre">NumpyEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.core.memory.MemorySystem"><code class="docutils literal notranslate"><span class="pre">MemorySystem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.core.memory.MemoryEncoder"><code class="docutils literal notranslate"><span class="pre">MemoryEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.core.memory.MemoryStore"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.core.memory.encode_geospatial_data"><code class="docutils literal notranslate"><span class="pre">encode_geospatial_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.core.memory.create_faiss_storage"><code class="docutils literal notranslate"><span class="pre">create_faiss_storage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.core.memory.create_memories"><code class="docutils literal notranslate"><span class="pre">create_memories()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="index.html#agent-system">Agent System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.agents.agent.Agent"><code class="docutils literal notranslate"><span class="pre">Agent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.agents.agent.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="index.html#models">Models</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="index.html#utilities">Utilities</a></li>
 </ul>
 </li>
@@ -325,9 +397,138 @@
 <h1>Agents<a class="headerlink" href="#agents" title="Link to this heading"></a></h1>
 <section id="agent-system">
 <h2>Agent System<a class="headerlink" href="#agent-system" title="Link to this heading"></a></h2>
+<dl class="py class" id="module-memories.agents.agent">
+<dt class="sig sig-object py" id="memories.agents.agent.Agent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">memories.agents.agent.</span></span><span class="sig-name descname"><span class="pre">Agent</span></span><a class="reference internal" href="../_modules/memories/agents/agent.html#Agent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#memories.agents.agent.Agent" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="memories.agents.agent.Agent.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">modalities</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/memories/agents/agent.html#Agent.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#memories.agents.agent.Agent.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize the Multi-Agent system with all required agents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>modalities</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>]</em><em>]</em><em>]</em>) – Nested memories structured as {modality: {table: [columns]}}</p></li>
+<li><p><strong>query</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>optional</em>) – The user’s query.</p></li>
+<li><p><strong>memories</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>Any</em><em>]</em><em>, </em><em>optional</em>) – Memory data.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="memories.agents.agent.Agent.process_query">
+<span class="sig-name descname"><span class="pre">process_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memories</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/memories/agents/agent.html#Agent.process_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#memories.agents.agent.Agent.process_query" title="Link to this definition"></a></dt>
+<dd><p>Process a query using the agents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>query</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The user’s query.</p></li>
+<li><p><strong>memories</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Memory data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The response containing fields, code, execution result, and final response.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a>, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="memories.agents.agent.Agent.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/memories/agents/agent.html#Agent.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#memories.agents.agent.Agent.run" title="Link to this definition"></a></dt>
+<dd><p>Run the multi-agent system.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>query</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>optional</em>) – Query string. If None, will prompt for input.</p></li>
+<li><p><strong>memories</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>Any</em><em>]</em><em>, </em><em>optional</em>) – Dictionary containing memory data from EarthMemoryStore.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary containing the final response.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a>, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="memories.agents.agent.main">
+<span class="sig-prename descclassname"><span class="pre">memories.agents.agent.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/memories/agents/agent.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#memories.agents.agent.main" title="Link to this definition"></a></dt>
+<dd><p>Main function to run the agent directly.
+Example usage: python3 agent.py</p>
+</dd></dl>
+
 </section>
 <section id="base-agent">
 <h2>Base Agent<a class="headerlink" href="#base-agent" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">memories.agents.agent.</span></span><span class="sig-name descname"><span class="pre">Agent</span></span><a class="reference internal" href="../_modules/memories/agents/agent.html#Agent"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">modalities</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/memories/agents/agent.html#Agent.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Initialize the Multi-Agent system with all required agents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>modalities</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>]</em><em>]</em><em>]</em>) – Nested memories structured as {modality: {table: [columns]}}</p></li>
+<li><p><strong>query</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>optional</em>) – The user’s query.</p></li>
+<li><p><strong>memories</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>Any</em><em>]</em><em>, </em><em>optional</em>) – Memory data.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">process_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memories</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/memories/agents/agent.html#Agent.process_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Process a query using the agents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>query</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – The user’s query.</p></li>
+<li><p><strong>memories</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – Memory data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The response containing fields, code, execution result, and final response.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a>, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memories</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/memories/agents/agent.html#Agent.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Run the multi-agent system.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>query</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>optional</em>) – Query string. If None, will prompt for input.</p></li>
+<li><p><strong>memories</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>Any</em><em>]</em><em>, </em><em>optional</em>) – Dictionary containing memory data from EarthMemoryStore.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary containing the final response.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a>, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="agent-types">
 <h2>Agent Types<a class="headerlink" href="#agent-types" title="Link to this heading"></a></h2>
@@ -343,15 +544,166 @@
 </section>
 <section id="property-agent">
 <h2>Property Agent<a class="headerlink" href="#property-agent" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="examples.property_analyzer.PropertyAgent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">examples.property_analyzer.</span></span><span class="sig-name descname"><span class="pre">PropertyAgent</span></span><a class="reference internal" href="../_modules/examples/property_analyzer.html#PropertyAgent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#examples.property_analyzer.PropertyAgent" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseAgent</span></code></p>
+<p>Agent specialized in real estate analysis.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="examples.property_analyzer.PropertyAgent.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">memory_store</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/examples/property_analyzer.html#PropertyAgent.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#examples.property_analyzer.PropertyAgent.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize the base agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>memory_store</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="memory.html#memories.core.memory.MemoryStore" title="memories.core.memory.MemoryStore"><code class="xref py py-class docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></span>) – The memory store to use for this agent.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="examples.property_analyzer.PropertyAgent.process">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">property_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/examples/property_analyzer.html#PropertyAgent.process"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#examples.property_analyzer.PropertyAgent.process" title="Link to this definition"></a></dt>
+<dd><p>Process property data.</p>
+<p>This is the main processing method required by BaseAgent.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="examples.property_analyzer.PropertyAgent.analyze_property">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">analyze_property</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">property_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/examples/property_analyzer.html#PropertyAgent.analyze_property"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#examples.property_analyzer.PropertyAgent.analyze_property" title="Link to this definition"></a></dt>
+<dd><p>Analyze a property using satellite imagery and local context.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>property_data</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>) – Property metadata and characteristics</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary containing property analysis insights</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="location-ambience-agent">
 <h2>Location Ambience Agent<a class="headerlink" href="#location-ambience-agent" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="examples.location_ambience.LocationAnalyzer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">examples.location_ambience.</span></span><span class="sig-name descname"><span class="pre">LocationAnalyzer</span></span><a class="reference internal" href="../_modules/examples/location_ambience.html#LocationAnalyzer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#examples.location_ambience.LocationAnalyzer" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Analyze location characteristics and ambience using satellite imagery and local context.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="examples.location_ambience.LocationAnalyzer.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">memory_store</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/examples/location_ambience.html#LocationAnalyzer.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#examples.location_ambience.LocationAnalyzer.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize the location analyzer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>memory_store</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="memory.html#memories.core.memory.MemoryStore" title="memories.core.memory.MemoryStore"><code class="xref py py-class docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></span>) – Memory store for caching and storing insights</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="examples.location_ambience.LocationAnalyzer.analyze_location">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">analyze_location</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">location</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/examples/location_ambience.html#LocationAnalyzer.analyze_location"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#examples.location_ambience.LocationAnalyzer.analyze_location" title="Link to this definition"></a></dt>
+<dd><p>Analyze location ambience using satellite and environmental data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>location</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>) – Dictionary containing location information
+Required fields: id, name, coordinates, bbox</p></li>
+<li><p><strong>time_window</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of days to analyze (default: 7)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary containing location analysis insights</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="traffic-agent">
 <h2>Traffic Agent<a class="headerlink" href="#traffic-agent" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="examples.traffic_analyzer.TrafficAnalyzer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">examples.traffic_analyzer.</span></span><span class="sig-name descname"><span class="pre">TrafficAnalyzer</span></span><a class="reference internal" href="../_modules/examples/traffic_analyzer.html#TrafficAnalyzer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#examples.traffic_analyzer.TrafficAnalyzer" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Analyze traffic patterns and congestion using satellite imagery and sensor data.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="examples.traffic_analyzer.TrafficAnalyzer.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">memory_store</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/examples/traffic_analyzer.html#TrafficAnalyzer.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#examples.traffic_analyzer.TrafficAnalyzer.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize the traffic analyzer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>memory_store</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="memory.html#memories.core.memory.MemoryStore" title="memories.core.memory.MemoryStore"><code class="xref py py-class docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></span>) – Memory store for caching and storing insights</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="examples.traffic_analyzer.TrafficAnalyzer.analyze_traffic">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">analyze_traffic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">road_segment</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/examples/traffic_analyzer.html#TrafficAnalyzer.analyze_traffic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#examples.traffic_analyzer.TrafficAnalyzer.analyze_traffic" title="Link to this definition"></a></dt>
+<dd><p>Analyze traffic patterns for a road segment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>road_segment</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>) – Dictionary containing road information
+Required fields: id, name, coordinates, bbox, road_type</p></li>
+<li><p><strong>time_window</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Hours of historical data to analyze (default: 24)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary containing traffic analysis insights</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="water-body-agent">
 <h2>Water Body Agent<a class="headerlink" href="#water-body-agent" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="examples.water_bodies_monitor.WaterBodyAgent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">examples.water_bodies_monitor.</span></span><span class="sig-name descname"><span class="pre">WaterBodyAgent</span></span><a class="reference internal" href="../_modules/examples/water_bodies_monitor.html#WaterBodyAgent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#examples.water_bodies_monitor.WaterBodyAgent" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseAgent</span></code></p>
+<p>Agent specialized in water body analysis.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="examples.water_bodies_monitor.WaterBodyAgent.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">memory_store</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/examples/water_bodies_monitor.html#WaterBodyAgent.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#examples.water_bodies_monitor.WaterBodyAgent.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize the base agent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>memory_store</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="memory.html#memories.core.memory.MemoryStore" title="memories.core.memory.MemoryStore"><code class="xref py py-class docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></span>) – The memory store to use for this agent.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="examples.water_bodies_monitor.WaterBodyAgent.process">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bbox</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/examples/water_bodies_monitor.html#WaterBodyAgent.process"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#examples.water_bodies_monitor.WaterBodyAgent.process" title="Link to this definition"></a></dt>
+<dd><p>Process water body data.</p>
+<p>This is the main processing method required by BaseAgent.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="examples.water_bodies_monitor.WaterBodyAgent.analyze_water_body">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">analyze_water_body</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bbox</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_date</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_date</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/examples/water_bodies_monitor.html#WaterBodyAgent.analyze_water_body"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#examples.water_bodies_monitor.WaterBodyAgent.analyze_water_body" title="Link to this definition"></a></dt>
+<dd><p>Analyze water body data and store insights.</p>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="common-agent-patterns">
 <h2>Common Agent Patterns<a class="headerlink" href="#common-agent-patterns" title="Link to this heading"></a></h2>

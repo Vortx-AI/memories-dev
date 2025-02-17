@@ -1,0 +1,678 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>memories.agents.agent &mdash; memories-dev 1.1.9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=fe9a5ec8" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=7b68ca77"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=30646c52"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script src="https://buttons.github.io/buttons.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            memories-dev
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#basic-installation">Basic Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#python-version-compatibility">Python Version Compatibility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#installation-options">Installation Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#cpu-only-installation-default">1. CPU-only Installation (Default)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#gpu-support-installation">2. GPU Support Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#development-installation">3. Development Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#documentation-tools">4. Documentation Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#detailed-installation-steps">Detailed Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#create-and-activate-virtual-environment">1. Create and Activate Virtual Environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#install-core-package">2. Install Core Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#install-documentation-dependencies">3. Install Documentation Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#common-issues-and-solutions">Common Issues and Solutions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#version-specific-dependencies">Version-specific Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#working-examples">Working Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#basic-usage-example">Basic Usage Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#gpu-support-example">GPU Support Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#documentation-build-example">Documentation Build Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#testing-example">Testing Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#basic-usage">Basic Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#key-features">Key Features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#memory-formation">1. Memory Formation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#memory-querying">2. Memory Querying</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#agent-integration">3. Agent Integration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide/index.html">User Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../user_guide/memory_system.html">Memory System</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/memory_system.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/memory_system.html#memory-tiers">Memory Tiers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/memory_system.html#hot-memory">Hot Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/memory_system.html#warm-memory">Warm Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/memory_system.html#cold-memory">Cold Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/memory_system.html#glacier-memory">Glacier Memory</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/memory_system.html#usage-examples">Usage Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/memory_system.html#basic-memory-operations">Basic Memory Operations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/memory_system.html#advanced-features">Advanced Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/memory_system.html#memory-persistence">Memory Persistence</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/memory_system.html#memory-updates">Memory Updates</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/memory_system.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../user_guide/agents.html">Agents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/agents.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/agents.html#agent-types">Agent Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/agents.html#memory-agent">Memory Agent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/agents.html#conversation-agent">Conversation Agent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/agents.html#task-agent">Task Agent</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/agents.html#usage-examples">Usage Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/agents.html#basic-agent-operations">Basic Agent Operations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/agents.html#advanced-features">Advanced Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/agents.html#custom-agents">Custom Agents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/agents.html#multi-agent-collaboration">Multi-Agent Collaboration</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/agents.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../user_guide/data_sources.html">Data Sources</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/data_sources.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/data_sources.html#supported-data-sources">Supported Data Sources</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/data_sources.html#satellite-data">Satellite Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/data_sources.html#sensor-data">Sensor Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/data_sources.html#real-time-streams">Real-time Streams</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/data_sources.html#usage-examples">Usage Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/data_sources.html#satellite-data-access">Satellite Data Access</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/data_sources.html#sensor-data-integration">Sensor Data Integration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/data_sources.html#real-time-stream-processing">Real-time Stream Processing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/data_sources.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../user_guide/advanced_features.html">Advanced Features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/advanced_features.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/advanced_features.html#custom-memory-stores">Custom Memory Stores</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#creating-custom-stores">Creating Custom Stores</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/advanced_features.html#advanced-querying">Advanced Querying</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#spatial-queries">Spatial Queries</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#temporal-queries">Temporal Queries</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#semantic-queries">Semantic Queries</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/advanced_features.html#performance-optimization">Performance Optimization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#caching-strategies">Caching Strategies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#batch-operations">Batch Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#distributed-processing">Distributed Processing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/advanced_features.html#security-features">Security Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#encryption">Encryption</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#access-control">Access Control</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/advanced_features.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../user_guide/index.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../user_guide/index.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../user_guide/index.html#core-concepts">Core Concepts</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_reference/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api_reference/memory_store.html">MemoryStore</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/memory_store.html#core-memory-management">Core Memory Management</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/memory_store.html#memories.core.memory.NumpyEncoder"><code class="docutils literal notranslate"><span class="pre">NumpyEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/memory_store.html#memories.core.memory.MemorySystem"><code class="docutils literal notranslate"><span class="pre">MemorySystem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/memory_store.html#memories.core.memory.MemoryEncoder"><code class="docutils literal notranslate"><span class="pre">MemoryEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/memory_store.html#memories.core.memory.MemoryStore"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/memory_store.html#memories.core.memory.encode_geospatial_data"><code class="docutils literal notranslate"><span class="pre">encode_geospatial_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/memory_store.html#memories.core.memory.create_faiss_storage"><code class="docutils literal notranslate"><span class="pre">create_faiss_storage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/memory_store.html#memories.core.memory.create_memories"><code class="docutils literal notranslate"><span class="pre">create_memories()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/memory_store.html#memorystore-class">MemoryStore Class</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/memory_store.html#id0"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/memory_store.html#memory-tiers">Memory Tiers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/memory_store.html#hot-memory">Hot Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/memory_store.html#warm-memory">Warm Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/memory_store.html#cold-memory">Cold Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/memory_store.html#glacier-memory">Glacier Memory</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/memory_store.html#example-usage">Example Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/memory_store.html#configuration-options">Configuration Options</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api_reference/agents.html">Agents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#agent-system">Agent System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/agents.html#memories.agents.agent.Agent"><code class="docutils literal notranslate"><span class="pre">Agent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/agents.html#memories.agents.agent.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#base-agent">Base Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#agent-types">Agent Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/agents.html#memory-agent">Memory Agent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/agents.html#conversation-agent">Conversation Agent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/agents.html#task-agent">Task Agent</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#property-agent">Property Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/agents.html#examples.property_analyzer.PropertyAgent"><code class="docutils literal notranslate"><span class="pre">PropertyAgent</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#location-ambience-agent">Location Ambience Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/agents.html#examples.location_ambience.LocationAnalyzer"><code class="docutils literal notranslate"><span class="pre">LocationAnalyzer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#traffic-agent">Traffic Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/agents.html#examples.traffic_analyzer.TrafficAnalyzer"><code class="docutils literal notranslate"><span class="pre">TrafficAnalyzer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#water-body-agent">Water Body Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/agents.html#examples.water_bodies_monitor.WaterBodyAgent"><code class="docutils literal notranslate"><span class="pre">WaterBodyAgent</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#common-agent-patterns">Common Agent Patterns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#example-usage">Example Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api_reference/models.html">Models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/models.html#model-loading">Model Loading</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/models.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/models.html#model-types">Model Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/models.html#base-model">Base Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/models.html#embedding-model">Embedding Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/models.html#language-model">Language Model</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api_reference/load_model.html">LoadModel</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/load_model.html#model-loading-system">Model Loading System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/load_model.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/load_model.html#loadmodel-class">LoadModel Class</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/load_model.html#id0"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/load_model.html#model-types">Model Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/load_model.html#base-model">Base Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/load_model.html#embedding-model">Embedding Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/load_model.html#language-model">Language Model</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/load_model.html#example-usage">Example Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api_reference/gpu_utils.html">GPU Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/gpu_utils.html#gpu-statistics">GPU Statistics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/gpu_utils.html#memories.utils.processors.VectorProcessor"><code class="docutils literal notranslate"><span class="pre">VectorProcessor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/gpu_utils.html#memories.utils.processors.ImageProcessor"><code class="docutils literal notranslate"><span class="pre">ImageProcessor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/gpu_utils.html#memories.utils.processors.DataFusion"><code class="docutils literal notranslate"><span class="pre">DataFusion</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/gpu_utils.html#gpu-stat-function">gpu_stat Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/gpu_utils.html#memories.utils.processors.gpu_stat"><code class="docutils literal notranslate"><span class="pre">gpu_stat()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/gpu_utils.html#example-usage">Example Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api_reference/data_utils.html">Data Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/data_utils.html#duckdb-query-utilities">DuckDB Query Utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/data_utils.html#memories.utils.duckdb_utils.query_multiple_parquet"><code class="docutils literal notranslate"><span class="pre">query_multiple_parquet()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/data_utils.html#memories.utils.duckdb_utils.list_parquet_files"><code class="docutils literal notranslate"><span class="pre">list_parquet_files()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/data_utils.html#query-multiple-parquet-function">query_multiple_parquet Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/data_utils.html#id0"><code class="docutils literal notranslate"><span class="pre">query_multiple_parquet()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/data_utils.html#example-usage">Example Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api_reference/utils.html">Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/utils.html#general-utilities">General Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/utils.html#data-processing">Data Processing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/utils.html#text-processing">Text Processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/utils.html#memories.utils.text.Entity"><code class="docutils literal notranslate"><span class="pre">Entity</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/utils.html#memories.utils.text.TextProcessor"><code class="docutils literal notranslate"><span class="pre">TextProcessor</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/utils.html#file-operations">File Operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/utils.html#configuration">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api_reference/index.html#core-components">Core Components</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/index.html#memory-system">Memory System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/index.html#memories.core.memory.NumpyEncoder"><code class="docutils literal notranslate"><span class="pre">NumpyEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/index.html#memories.core.memory.MemorySystem"><code class="docutils literal notranslate"><span class="pre">MemorySystem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/index.html#memories.core.memory.MemoryEncoder"><code class="docutils literal notranslate"><span class="pre">MemoryEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/index.html#memories.core.memory.MemoryStore"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/index.html#memories.core.memory.encode_geospatial_data"><code class="docutils literal notranslate"><span class="pre">encode_geospatial_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/index.html#memories.core.memory.create_faiss_storage"><code class="docutils literal notranslate"><span class="pre">create_faiss_storage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/index.html#memories.core.memory.create_memories"><code class="docutils literal notranslate"><span class="pre">create_memories()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/index.html#agent-system">Agent System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/index.html#memories.agents.agent.Agent"><code class="docutils literal notranslate"><span class="pre">Agent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/index.html#memories.agents.agent.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/index.html#models">Models</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/index.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/index.html#utilities">Utilities</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../contributing.html#development-process">Development Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../contributing.html#pull-request-process">Pull Request Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../contributing.html#any-contributions-you-make-will-be-under-the-apache-license-2-0">Any contributions you make will be under the Apache License 2.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../contributing.html#report-bugs-using-github-s-issue-tracker-https-github-com-vortx-ai-memories-dev-issues">Report bugs using GitHub’s [issue tracker](https://github.com/Vortx-AI/memories-dev/issues)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../contributing.html#write-bug-reports-with-detail-background-and-sample-code">Write bug reports with detail, background, and sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../contributing.html#license">License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#id1">[1.1.8] - 2025-02-16</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../changelog.html#changed">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#id2">[1.1.7] - 2025-02-16</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../changelog.html#added">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../changelog.html#fixed">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#id3">[1.1.6] - 2025-02-16</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../changelog.html#id4">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../changelog.html#id5">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../changelog.html#id6">Fixed</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">memories-dev</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">memories.agents.agent</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for memories.agents.agent</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.agents.agent_query_context</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocationExtractor</span><span class="p">,</span> <span class="n">QueryContext</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.agents.location_filter_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocationFilterAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.core.memories_index</span><span class="w"> </span><span class="kn">import</span> <span class="n">FAISSStorage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.agents.agent_coder</span><span class="w"> </span><span class="kn">import</span> <span class="n">CodeGenerator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.agents.agent_code_executor</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentCodeExecutor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.agents.response_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResponseAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.agents.agent_geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentGeometry</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gc</span>
+
+<span class="c1"># Load environment variables</span>
+<span class="n">load_dotenv</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Agent">
+<a class="viewcode-back" href="../../../api_reference/index.html#memories.agents.agent.Agent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Agent</span><span class="p">:</span>
+<div class="viewcode-block" id="Agent.__init__">
+<a class="viewcode-back" href="../../../api_reference/index.html#memories.agents.agent.Agent.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">modalities</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]],</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">memories</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the Multi-Agent system with all required agents.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            modalities (Dict[str, Dict[str, List[str]]]): Nested memories structured as {modality: {table: [columns]}}</span>
+<span class="sd">            query (str, optional): The user&#39;s query.</span>
+<span class="sd">            memories (Dict[str, Any], optional): Memory data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+            <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(name)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">modalities</span> <span class="o">=</span> <span class="n">modalities</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">query</span> <span class="o">=</span> <span class="n">query</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">memories</span> <span class="o">=</span> <span class="n">memories</span> <span class="ow">or</span> <span class="p">{}</span>
+        
+        <span class="c1"># Retrieve PROJECT_ROOT from environment variables</span>
+        <span class="n">project_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;PROJECT_ROOT&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">project_root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;PROJECT_ROOT environment variable is not set&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Define the offload_folder path (handled internally in CodeGenerator)</span>
+        <span class="c1"># Hence, no need to define it here unless other agents require it</span>
+        
+        <span class="c1"># Initialize agents</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">agents</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;context&quot;</span><span class="p">:</span> <span class="n">LocationExtractor</span><span class="p">(),</span>
+            <span class="s2">&quot;filter&quot;</span><span class="p">:</span> <span class="n">LocationFilterAgent</span><span class="p">(),</span>
+            <span class="s2">&quot;coder&quot;</span><span class="p">:</span> <span class="n">CodeGenerator</span><span class="p">(),</span>  <span class="c1"># No parameters passed</span>
+            <span class="s2">&quot;executor&quot;</span><span class="p">:</span> <span class="n">AgentCodeExecutor</span><span class="p">(),</span>
+            <span class="s2">&quot;response&quot;</span><span class="p">:</span> <span class="n">ResponseAgent</span><span class="p">(),</span>
+            <span class="s2">&quot;query_context&quot;</span><span class="p">:</span> <span class="n">QueryContext</span><span class="p">(),</span>
+            <span class="s2">&quot;geometry_agent&quot;</span><span class="p">:</span> <span class="n">AgentGeometry</span><span class="p">()</span>
+        <span class="p">}</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cleanup_memory</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clean up GPU and CPU memory after model execution.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Clear PyTorch&#39;s CUDA cache</span>
+            <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">empty_cache</span><span class="p">()</span>
+            
+            <span class="c1"># Force garbage collection</span>
+            <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Memory cleanup completed&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Memory cleanup warning: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="Agent.process_query">
+<a class="viewcode-back" href="../../../api_reference/index.html#memories.agents.agent.Agent.process_query">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">process_query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">memories</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Process a query using the agents.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            query (str): The user&#39;s query.</span>
+<span class="sd">            memories (Dict[str, Any]): Memory data.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict[str, Any]: The response containing fields, code, execution result, and final response.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting query processing: </span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+            
+            <span class="c1"># Step 1: Extract location using LocationExtractor with up to 5 attempts.</span>
+            <span class="n">max_attempts</span> <span class="o">=</span> <span class="mi">5</span>
+            <span class="n">attempt</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">location</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">location_type</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">while</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="n">max_attempts</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">🔍 INVOKING LOCATION EXTRACTOR, Attempt </span><span class="si">{</span><span class="n">attempt</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">location_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">process_query</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Extracted Location Info: </span><span class="si">{</span><span class="n">location_info</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">location</span><span class="p">,</span> <span class="n">location_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_location_info</span><span class="p">(</span><span class="n">location_info</span><span class="p">)</span>
+                
+                <span class="k">if</span> <span class="n">location</span><span class="p">:</span>  <span class="c1"># Successfully extracted location</span>
+                    <span class="k">break</span>
+                <span class="n">attempt</span> <span class="o">+=</span> <span class="mi">1</span>
+            
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">location</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No location found after 5 attempts.&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="p">{</span>
+                    <span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                    <span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;execution_result&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="s2">&quot;response&quot;</span><span class="p">:</span> <span class="s2">&quot;No location found&quot;</span>
+                <span class="p">}</span>
+            
+            <span class="c1"># Step 2: Get geometries using AgentGeometry</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">🌍 INVOKING GEOMETRY AGENT&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;---------------------------&quot;</span><span class="p">)</span>
+            <span class="n">geometry_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">&quot;geometry_agent&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">process_location</span><span class="p">(</span><span class="n">location_info</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">geometry_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;features&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">[]))</span><span class="si">}</span><span class="s2"> geometries&quot;</span><span class="p">)</span>
+            
+            <span class="c1"># Step 3: Generate code using CodeGenerator</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">🔍 INVOKING CODE GENERATOR&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;---------------------------&quot;</span><span class="p">)</span>
+            <span class="n">generated_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">&quot;coder&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">process_query</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">memories</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generated Code:</span><span class="se">\n</span><span class="si">{</span><span class="n">generated_code</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="c1"># Step 4: Execute the generated code</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">🔍 EXECUTING GENERATED CODE&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;---------------------------&quot;</span><span class="p">)</span>
+            <span class="n">execution_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">&quot;executor&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">execute_code</span><span class="p">(</span><span class="n">generated_code</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Execution Result: </span><span class="si">{</span><span class="n">execution_result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="c1"># Step 5: Format the final response using ResponseAgent</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">🔍 FORMATTING RESPONSE&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;---------------------------&quot;</span><span class="p">)</span>
+            <span class="n">final_response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">&quot;response&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">format_response</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">execution_result</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Final Response: </span><span class="si">{</span><span class="n">final_response</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="n">response</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">,</span>
+                <span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="n">location_info</span><span class="p">,</span>
+                <span class="s2">&quot;geometry&quot;</span><span class="p">:</span> <span class="n">geometry_info</span><span class="p">,</span>
+                <span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="n">generated_code</span><span class="p">,</span>
+                <span class="s2">&quot;execution_result&quot;</span><span class="p">:</span> <span class="n">execution_result</span><span class="p">,</span>
+                <span class="s2">&quot;response&quot;</span><span class="p">:</span> <span class="n">final_response</span>
+            <span class="p">}</span>
+            
+            <span class="k">return</span> <span class="n">response</span>
+            
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error in process_query: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                <span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;execution_result&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;response&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">}</span></div>
+
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_location_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">location_info</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Parse the location information dictionary.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">location</span> <span class="o">=</span> <span class="n">location_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;location&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">location_type</span> <span class="o">=</span> <span class="n">location_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;location_type&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">location</span><span class="p">,</span> <span class="n">location_type</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error parsing location info: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span>
+
+<div class="viewcode-block" id="Agent.run">
+<a class="viewcode-back" href="../../../api_reference/index.html#memories.agents.agent.Agent.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">memories</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run the multi-agent system.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            query (str, optional): Query string. If None, will prompt for input.</span>
+<span class="sd">            memories (Dict[str, Any], optional): Dictionary containing memory data from EarthMemoryStore.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict[str, Any]: Dictionary containing the final response.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">query</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">query</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Query: &quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">memories</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">memories</span> <span class="o">=</span> <span class="p">{}</span>
+            
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_query</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">memories</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error in run: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;execution_result&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;response&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">}</span></div>
+</div>
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../api_reference/index.html#memories.agents.agent.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main function to run the agent directly.</span>
+<span class="sd">    Example usage: python3 agent.py</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Load environment variables</span>
+    <span class="n">load_dotenv</span><span class="p">()</span>
+    
+    <span class="c1"># Define memories configuration</span>
+    <span class="n">memories</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;landuse&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;india_landuse&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;landuse&#39;</span><span class="p">,</span> <span class="s1">&#39;geometry&#39;</span><span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    
+    <span class="c1"># Define the query</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;Find parks near 12.911935, 77.611699&quot;</span>
+    
+    <span class="c1"># Initialize and run the agent</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span>
+        <span class="n">modalities</span><span class="o">=</span><span class="n">memories</span><span class="p">,</span>
+        <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
+        <span class="n">memories</span><span class="o">=</span><span class="n">memories</span>
+    <span class="p">)</span>
+    
+    <span class="n">insights</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">process_query</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">memories</span><span class="o">=</span><span class="n">memories</span><span class="p">)</span>
+    
+    <span class="c1"># Print insights</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Query Results:&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Fields: </span><span class="si">{</span><span class="n">insights</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;fields&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">[])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Generated Code:&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">insights</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;code&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Execution Result:&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">insights</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;execution_result&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Final Response:&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">insights</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;response&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Memories-dev.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+    <!-- Theme Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-XXXXXXXX-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-XXXXXXXX-1', {
+          'anonymize_ip': false,
+      });
+    </script> 
+
+</body>
+</html>

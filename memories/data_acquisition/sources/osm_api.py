@@ -1,212 +1,130 @@
 """
-OpenStreetMap data source for vector data.
+OpenStreetMap data source for vector data using Overpass API.
 """
 
 import os
 from typing import Dict, List, Optional, Tuple, Union, Any
 from pathlib import Path
 import aiohttp
+import requests
 import geopandas as gpd
 from shapely.geometry import box, Polygon, mapping
 import json
 import logging
-import osmium
 from .base import DataSource
 
-class OSMHandler(osmium.SimpleHandler):
-    """Custom handler for processing OSM data."""
-    
-    def __init__(self, tags: List[str]):
-        super().__init__()
-        self.tags = tags
-        self.features = {
-            'buildings': [],
-            'highways': [],
-            'landuse': [],
-            'waterways': [],
-            'other': []
-        }
-    
-    def way(self, w):
-        """Process OSM way elements."""
-        tags = dict(w.tags)
-        coords = [(n.lon, n.lat) for n in w.nodes]
-        
-        if 'building' in tags:
-            self.features['buildings'].append({
-                'type': 'Feature',
-                'geometry': {
-                    'type': 'Polygon',
-                    'coordinates': [coords]
-                },
-                'properties': tags
-            })
-        elif 'highway' in tags:
-            self.features['highways'].append({
-                'type': 'Feature',
-                'geometry': {
-                    'type': 'LineString',
-                    'coordinates': coords
-                },
-                'properties': tags
-            })
-        elif 'landuse' in tags:
-            self.features['landuse'].append({
-                'type': 'Feature',
-                'geometry': {
-                    'type': 'Polygon',
-                    'coordinates': [coords]
-                },
-                'properties': tags
-            })
-        elif 'waterway' in tags:
-            self.features['waterways'].append({
-                'type': 'Feature',
-                'geometry': {
-                    'type': 'LineString',
-                    'coordinates': coords
-                },
-                'properties': tags
-            })
-        else:
-            for tag in self.tags:
-                if tag in tags:
-                    self.features['other'].append({
-                        'type': 'Feature',
-                        'geometry': {
-                            'type': 'Polygon' if w.is_closed() else 'LineString',
-                            'coordinates': [coords] if w.is_closed() else coords
-                        },
-                        'properties': tags
-                    })
-                    break
 
 class OSMDataAPI(DataSource):
-    """Interface for accessing data from OpenStreetMap."""
-    
+    """Interface for accessing data from OpenStreetMap using Overpass API."""
+
     def __init__(self, cache_dir: Optional[str] = None):
         """
-        Initialize OSM data client.
-        
+        Initialize OpenStreetMap interface.
+
         Args:
-            cache_dir: Directory for caching downloaded data
+            cache_dir: Optional directory for caching data
         """
         super().__init__(cache_dir)
         self.base_url = "https://overpass-api.de/api/interpreter"
         self.logger = logging.getLogger(__name__)
-        
-        # Define available layers and their OSM tags
-        self.layers = {
-            "buildings": {
-                "tags": {"building": True},
-                "geometry_type": "polygon"
-            },
-            "roads": {
-                "tags": {"highway": True},
-                "geometry_type": "line"
-            },
-            "landuse": {
-                "tags": {"landuse": True},
-                "geometry_type": "polygon"
-            },
-            "water": {
-                "tags": {"water": True, "waterway": True},
-                "geometry_type": "polygon"
-            },
-            "natural": {
-                "tags": {"natural": True},
-                "geometry_type": "polygon"
-            }
+
+        # Define available feature types and their tags
+        self.feature_types = {
+            'buildings': ['building'],
+            'highways': ['highway'],
+            'landuse': ['landuse'],
+            'waterways': ['waterway', 'water', 'natural=water'],
+            'other': []
         }
-    
-    def _build_query(self, bbox: Union[Tuple[float, float, float, float], List[float], Polygon], tag: str) -> str:
+
+    def _build_query(
+        self,
+        bbox: Union[Tuple[float, float, float, float], List[float], Polygon],
+        tag: str
+    ) -> str:
         """
         Build Overpass QL query.
-        
+
         Args:
             bbox: Bounding box coordinates [west, south, east, north] or Polygon
             tag: OSM tag to query
-            
+
         Returns:
-            str: Overpass QL query
+            Overpass QL query string
         """
         if isinstance(bbox, Polygon):
-            west, south, east, north = bbox.bounds
-        elif isinstance(bbox, (tuple, list)) and len(bbox) == 4:
-            west, south, east, north = bbox
+            minx, miny, maxx, maxy = bbox.bounds
         else:
-            raise ValueError("Invalid bbox format. Must be [west, south, east, north] or Polygon")
-        
-        # Handle special cases for common tags
-        if tag == "building":
-            tag_filter = '[building]'
-        elif tag == "highway":
-            tag_filter = '[highway]'
-        elif tag == "landuse":
-            tag_filter = '[landuse]'
+            minx, miny, maxx, maxy = bbox
+
+        # Handle different tag formats
+        if '=' in tag:
+            key, value = tag.split('=')
+            tag_filter = f'["{key}"="{value}"]'
         else:
             tag_filter = f'["{tag}"]'
-        
+
         return f"""
             [out:json][timeout:25];
             (
-                way{tag_filter}({south},{west},{north},{east});
-                >;
+                way{tag_filter}({miny},{minx},{maxy},{maxx});
+                relation{tag_filter}({miny},{minx},{maxy},{maxx});
             );
             out body;
+            >;
+            out skel qt;
         """
-    
-    async def search(self,
-                    bbox: Union[Tuple[float, float, float, float], List[float], Polygon],
-                    tags: List[str] = ["building", "highway"],
-                    timeout: int = 25) -> Dict[str, Any]:
+
+    async def search(
+        self,
+        bbox: Union[Tuple[float, float, float, float], List[float], Polygon],
+        tags: List[str] = ["building", "highway"],
+        timeout: int = 25
+    ) -> Dict[str, Any]:
         """
         Search for OSM features.
-        
+
         Args:
             bbox: Bounding box coordinates [west, south, east, north] or Polygon
-            tags: OSM tags to search for
+            tags: List of OSM tags to query
             timeout: Query timeout in seconds
-            
+
         Returns:
-            Dictionary containing features by category
+            Dictionary containing features by type
         """
-        if not tags:
-            return {}
+        results = {'features': []}
+
+        for tag in tags:
+            query = self._build_query(bbox, tag)
             
-        query = self._build_query(bbox, tags[0])  # Use first tag for now
-        
-        async with aiohttp.ClientSession() as session:
-            response = await session.post(
-                self.base_url,
-                data={"data": query},
-                timeout=timeout
-            )
-            await response.raise_for_status()
-            content = await response.read()
-            
-            # Process OSM data
-            handler = OSMHandler(tags)
-            handler.apply_buffer(content)  # Remove "osm" parameter as it's not needed
-            
-            # Initialize empty result with all possible categories
-            result = {
-                'buildings': [],
-                'highways': [],
-                'landuse': [],
-                'waterways': [],
-                'other': []
-            }
-            
-            # Update with actual features
-            for category, features in handler.features.items():
-                if features:  # Only include non-empty feature lists
-                    result[category] = features
-            
-            feature_counts = {k: len(v) for k, v in result.items() if v}
-            self.logger.info(f"Found features: {', '.join(f'{k}: {count}' for k, count in feature_counts.items())}")
-            return result
-    
+            try:
+                async with aiohttp.ClientSession() as session:
+                    response = await session.post(
+                        self.base_url,
+                        data={'data': query},
+                        timeout=timeout
+                    )
+                    async with response:
+                        if response.status == 200:
+                            data = await response.json()
+                            if 'elements' in data:
+                                # Convert OSM elements to GeoJSON features
+                                for element in data['elements']:
+                                    if 'type' in element and element['type'] in ['way', 'relation']:
+                                        feature = {
+                                            'type': 'Feature',
+                                            'geometry': {
+                                                'type': 'Polygon',
+                                                'coordinates': [[[node['lon'], node['lat']] for node in element['nodes']]]
+                                            },
+                                            'properties': element.get('tags', {})
+                                        }
+                                        results['features'].append(feature)
+            except Exception as e:
+                self.logger.error(f"Error querying OSM data: {str(e)}")
+
+        return results
+
     async def download(self,
                       bbox: Union[Tuple[float, float, float, float], List[float], Polygon],
                       tags: List[str],
@@ -279,13 +197,13 @@ class OSMDataAPI(DataSource):
         Returns:
             Dictionary containing layer metadata
         """
-        if layer not in self.layers:
+        if layer not in self.feature_types:
             raise ValueError(f"Layer {layer} not available")
         
         return {
             "name": layer,
-            "tags": self.layers[layer]["tags"],
-            "geometry_type": self.layers[layer]["geometry_type"],
+            "tags": self.feature_types[layer],
+            "geometry_type": "polygon",
             "source": "OpenStreetMap",
             "license": "ODbL",
             "description": f"OpenStreetMap {layer} features"
@@ -293,13 +211,13 @@ class OSMDataAPI(DataSource):
     
     def get_available_layers(self) -> List[str]:
         """Get list of available layers."""
-        return list(self.layers.keys())
+        return list(self.feature_types.keys())
     
     def get_layer_tags(self, layer: str) -> Dict:
         """Get OSM tags for a layer."""
-        if layer not in self.layers:
+        if layer not in self.feature_types:
             raise ValueError(f"Layer {layer} not available")
-        return self.layers[layer]["tags"]
+        return self.feature_types[layer]
     
     async def get_features(
         self,
@@ -319,7 +237,7 @@ class OSMDataAPI(DataSource):
         results = {}
         
         for layer in layers:
-            if layer not in self.layers:
+            if layer not in self.feature_types:
                 print(f"Warning: Layer {layer} not available")
                 continue
             

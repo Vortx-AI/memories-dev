@@ -53,9 +53,4 @@ search:
     # Boost the importance of certain pages in search results
     api_reference/*: 2
     user_guide/*: 3
-    examples/*: 4
-
-# Additional settings for Earth Memory Synthesis documentation
-build_extra:
-  - command: make html
-    cwd: docs 
+    examples/*: 4 

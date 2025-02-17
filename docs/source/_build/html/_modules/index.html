@@ -180,8 +180,20 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../api_reference/index.html">API Reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../api_reference/memory_store.html">MemoryStore</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../api_reference/memory_store.html#core-memory-management">Core Memory Management</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../api_reference/memory_store.html#memorystore-class">MemoryStore Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/memory_store.html#core-memory-management">Core Memory Management</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/memory_store.html#memories.core.memory.NumpyEncoder"><code class="docutils literal notranslate"><span class="pre">NumpyEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/memory_store.html#memories.core.memory.MemorySystem"><code class="docutils literal notranslate"><span class="pre">MemorySystem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/memory_store.html#memories.core.memory.MemoryEncoder"><code class="docutils literal notranslate"><span class="pre">MemoryEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/memory_store.html#memories.core.memory.MemoryStore"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/memory_store.html#memories.core.memory.encode_geospatial_data"><code class="docutils literal notranslate"><span class="pre">encode_geospatial_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/memory_store.html#memories.core.memory.create_faiss_storage"><code class="docutils literal notranslate"><span class="pre">create_faiss_storage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/memory_store.html#memories.core.memory.create_memories"><code class="docutils literal notranslate"><span class="pre">create_memories()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/memory_store.html#memorystore-class">MemoryStore Class</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/memory_store.html#id0"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="../api_reference/memory_store.html#memory-tiers">Memory Tiers</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../api_reference/memory_store.html#hot-memory">Hot Memory</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../api_reference/memory_store.html#warm-memory">Warm Memory</a></li>
@@ -194,7 +206,11 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../api_reference/agents.html">Agents</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../api_reference/agents.html#agent-system">Agent System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/agents.html#agent-system">Agent System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/agents.html#memories.agents.agent.Agent"><code class="docutils literal notranslate"><span class="pre">Agent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/agents.html#memories.agents.agent.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="../api_reference/agents.html#base-agent">Base Agent</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api_reference/agents.html#agent-types">Agent Types</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../api_reference/agents.html#memory-agent">Memory Agent</a></li>
@@ -202,16 +218,31 @@
 <li class="toctree-l4"><a class="reference internal" href="../api_reference/agents.html#task-agent">Task Agent</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../api_reference/agents.html#property-agent">Property Agent</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../api_reference/agents.html#location-ambience-agent">Location Ambience Agent</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../api_reference/agents.html#traffic-agent">Traffic Agent</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../api_reference/agents.html#water-body-agent">Water Body Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/agents.html#property-agent">Property Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/agents.html#examples.property_analyzer.PropertyAgent"><code class="docutils literal notranslate"><span class="pre">PropertyAgent</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/agents.html#location-ambience-agent">Location Ambience Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/agents.html#examples.location_ambience.LocationAnalyzer"><code class="docutils literal notranslate"><span class="pre">LocationAnalyzer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/agents.html#traffic-agent">Traffic Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/agents.html#examples.traffic_analyzer.TrafficAnalyzer"><code class="docutils literal notranslate"><span class="pre">TrafficAnalyzer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/agents.html#water-body-agent">Water Body Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/agents.html#examples.water_bodies_monitor.WaterBodyAgent"><code class="docutils literal notranslate"><span class="pre">WaterBodyAgent</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="../api_reference/agents.html#common-agent-patterns">Common Agent Patterns</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api_reference/agents.html#example-usage">Example Usage</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../api_reference/models.html">Models</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../api_reference/models.html#model-loading">Model Loading</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/models.html#model-loading">Model Loading</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/models.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="../api_reference/models.html#model-types">Model Types</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../api_reference/models.html#base-model">Base Model</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../api_reference/models.html#embedding-model">Embedding Model</a></li>
@@ -220,18 +251,83 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="../api_reference/load_model.html">LoadModel</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/load_model.html#model-loading-system">Model Loading System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/load_model.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/load_model.html#loadmodel-class">LoadModel Class</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/load_model.html#id0"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/load_model.html#model-types">Model Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/load_model.html#base-model">Base Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/load_model.html#embedding-model">Embedding Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/load_model.html#language-model">Language Model</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/load_model.html#example-usage">Example Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api_reference/gpu_utils.html">GPU Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/gpu_utils.html#gpu-statistics">GPU Statistics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/gpu_utils.html#memories.utils.processors.VectorProcessor"><code class="docutils literal notranslate"><span class="pre">VectorProcessor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/gpu_utils.html#memories.utils.processors.ImageProcessor"><code class="docutils literal notranslate"><span class="pre">ImageProcessor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/gpu_utils.html#memories.utils.processors.DataFusion"><code class="docutils literal notranslate"><span class="pre">DataFusion</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/gpu_utils.html#gpu-stat-function">gpu_stat Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/gpu_utils.html#memories.utils.processors.gpu_stat"><code class="docutils literal notranslate"><span class="pre">gpu_stat()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/gpu_utils.html#example-usage">Example Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api_reference/data_utils.html">Data Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/data_utils.html#duckdb-query-utilities">DuckDB Query Utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/data_utils.html#memories.utils.duckdb_utils.query_multiple_parquet"><code class="docutils literal notranslate"><span class="pre">query_multiple_parquet()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/data_utils.html#memories.utils.duckdb_utils.list_parquet_files"><code class="docutils literal notranslate"><span class="pre">list_parquet_files()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/data_utils.html#query-multiple-parquet-function">query_multiple_parquet Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/data_utils.html#id0"><code class="docutils literal notranslate"><span class="pre">query_multiple_parquet()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/data_utils.html#example-usage">Example Usage</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../api_reference/utils.html">Utilities</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../api_reference/utils.html#general-utilities">General Utilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api_reference/utils.html#data-processing">Data Processing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../api_reference/utils.html#text-processing">Text Processing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/utils.html#text-processing">Text Processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/utils.html#memories.utils.text.Entity"><code class="docutils literal notranslate"><span class="pre">Entity</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/utils.html#memories.utils.text.TextProcessor"><code class="docutils literal notranslate"><span class="pre">TextProcessor</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="../api_reference/utils.html#file-operations">File Operations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../api_reference/utils.html#configuration">Configuration</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../api_reference/index.html#core-components">Core Components</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../api_reference/index.html#memory-system">Memory System</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../api_reference/index.html#agent-system">Agent System</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../api_reference/index.html#models">Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/index.html#memory-system">Memory System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/index.html#memories.core.memory.NumpyEncoder"><code class="docutils literal notranslate"><span class="pre">NumpyEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/index.html#memories.core.memory.MemorySystem"><code class="docutils literal notranslate"><span class="pre">MemorySystem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/index.html#memories.core.memory.MemoryEncoder"><code class="docutils literal notranslate"><span class="pre">MemoryEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/index.html#memories.core.memory.MemoryStore"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/index.html#memories.core.memory.encode_geospatial_data"><code class="docutils literal notranslate"><span class="pre">encode_geospatial_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/index.html#memories.core.memory.create_faiss_storage"><code class="docutils literal notranslate"><span class="pre">create_faiss_storage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/index.html#memories.core.memory.create_memories"><code class="docutils literal notranslate"><span class="pre">create_memories()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/index.html#agent-system">Agent System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/index.html#memories.agents.agent.Agent"><code class="docutils literal notranslate"><span class="pre">Agent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/index.html#memories.agents.agent.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../api_reference/index.html#models">Models</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_reference/index.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="../api_reference/index.html#utilities">Utilities</a></li>
 </ul>
 </li>
@@ -290,10 +386,22 @@
            <div itemprop="articleBody">
              
   <h1>All modules for which code is available</h1>
-<ul><li><a href="memories/core/cold.html">memories.core.cold</a></li>
+<ul><li><a href="examples/location_ambience.html">examples.location_ambience</a></li>
+<li><a href="examples/property_analyzer.html">examples.property_analyzer</a></li>
+<li><a href="examples/traffic_analyzer.html">examples.traffic_analyzer</a></li>
+<li><a href="examples/water_bodies_monitor.html">examples.water_bodies_monitor</a></li>
+<li><a href="memories/agents/agent.html">memories.agents.agent</a></li>
+<li><a href="memories/core/cold.html">memories.core.cold</a></li>
 <li><a href="memories/core/glacier.html">memories.core.glacier</a></li>
 <li><a href="memories/core/hot.html">memories.core.hot</a></li>
+<li><a href="memories/core/memory.html">memories.core.memory</a></li>
 <li><a href="memories/core/warm.html">memories.core.warm</a></li>
+<li><a href="memories/models/load_model.html">memories.models.load_model</a></li>
+<li><a href="memories/utils/duckdb_utils.html">memories.utils.duckdb_utils</a></li>
+<li><a href="memories/utils/processors/data_fusion.html">memories.utils.processors.data_fusion</a></li>
+<li><a href="memories/utils/processors/image_processor.html">memories.utils.processors.image_processor</a></li>
+<li><a href="memories/utils/processors/vector_processor.html">memories.utils.processors.vector_processor</a></li>
+<li><a href="memories/utils/text.html">memories.utils.text</a></li>
 </ul>
 
            </div>

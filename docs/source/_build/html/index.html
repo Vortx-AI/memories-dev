@@ -182,8 +182,20 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="api_reference/index.html">API Reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="api_reference/memory_store.html">MemoryStore</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/memory_store.html#core-memory-management">Core Memory Management</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/memory_store.html#memorystore-class">MemoryStore Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/memory_store.html#core-memory-management">Core Memory Management</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/memory_store.html#memories.core.memory.NumpyEncoder"><code class="docutils literal notranslate"><span class="pre">NumpyEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/memory_store.html#memories.core.memory.MemorySystem"><code class="docutils literal notranslate"><span class="pre">MemorySystem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/memory_store.html#memories.core.memory.MemoryEncoder"><code class="docutils literal notranslate"><span class="pre">MemoryEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/memory_store.html#memories.core.memory.MemoryStore"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/memory_store.html#memories.core.memory.encode_geospatial_data"><code class="docutils literal notranslate"><span class="pre">encode_geospatial_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/memory_store.html#memories.core.memory.create_faiss_storage"><code class="docutils literal notranslate"><span class="pre">create_faiss_storage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/memory_store.html#memories.core.memory.create_memories"><code class="docutils literal notranslate"><span class="pre">create_memories()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/memory_store.html#memorystore-class">MemoryStore Class</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/memory_store.html#id0"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="api_reference/memory_store.html#memory-tiers">Memory Tiers</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="api_reference/memory_store.html#hot-memory">Hot Memory</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api_reference/memory_store.html#warm-memory">Warm Memory</a></li>
@@ -196,7 +208,11 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="api_reference/agents.html">Agents</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#agent-system">Agent System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#agent-system">Agent System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/agents.html#memories.agents.agent.Agent"><code class="docutils literal notranslate"><span class="pre">Agent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/agents.html#memories.agents.agent.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#base-agent">Base Agent</a></li>
 <li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#agent-types">Agent Types</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="api_reference/agents.html#memory-agent">Memory Agent</a></li>
@@ -204,16 +220,31 @@
 <li class="toctree-l4"><a class="reference internal" href="api_reference/agents.html#task-agent">Task Agent</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#property-agent">Property Agent</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#location-ambience-agent">Location Ambience Agent</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#traffic-agent">Traffic Agent</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#water-body-agent">Water Body Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#property-agent">Property Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/agents.html#examples.property_analyzer.PropertyAgent"><code class="docutils literal notranslate"><span class="pre">PropertyAgent</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#location-ambience-agent">Location Ambience Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/agents.html#examples.location_ambience.LocationAnalyzer"><code class="docutils literal notranslate"><span class="pre">LocationAnalyzer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#traffic-agent">Traffic Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/agents.html#examples.traffic_analyzer.TrafficAnalyzer"><code class="docutils literal notranslate"><span class="pre">TrafficAnalyzer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#water-body-agent">Water Body Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/agents.html#examples.water_bodies_monitor.WaterBodyAgent"><code class="docutils literal notranslate"><span class="pre">WaterBodyAgent</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#common-agent-patterns">Common Agent Patterns</a></li>
 <li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#example-usage">Example Usage</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="api_reference/models.html">Models</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/models.html#model-loading">Model Loading</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/models.html#model-loading">Model Loading</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/models.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="api_reference/models.html#model-types">Model Types</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="api_reference/models.html#base-model">Base Model</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api_reference/models.html#embedding-model">Embedding Model</a></li>
@@ -223,8 +254,14 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="api_reference/load_model.html">LoadModel</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/load_model.html#model-loading-system">Model Loading System</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/load_model.html#loadmodel-class">LoadModel Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/load_model.html#model-loading-system">Model Loading System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/load_model.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/load_model.html#loadmodel-class">LoadModel Class</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/load_model.html#id0"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="api_reference/load_model.html#model-types">Model Types</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="api_reference/load_model.html#base-model">Base Model</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api_reference/load_model.html#embedding-model">Embedding Model</a></li>
@@ -235,29 +272,64 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="api_reference/gpu_utils.html">GPU Utilities</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/gpu_utils.html#gpu-statistics">GPU Statistics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/gpu_utils.html#gpu-stat-function">gpu_stat Function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/gpu_utils.html#gpu-statistics">GPU Statistics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/gpu_utils.html#memories.utils.processors.VectorProcessor"><code class="docutils literal notranslate"><span class="pre">VectorProcessor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/gpu_utils.html#memories.utils.processors.ImageProcessor"><code class="docutils literal notranslate"><span class="pre">ImageProcessor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/gpu_utils.html#memories.utils.processors.DataFusion"><code class="docutils literal notranslate"><span class="pre">DataFusion</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/gpu_utils.html#gpu-stat-function">gpu_stat Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/gpu_utils.html#memories.utils.processors.gpu_stat"><code class="docutils literal notranslate"><span class="pre">gpu_stat()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="api_reference/gpu_utils.html#example-usage">Example Usage</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="api_reference/data_utils.html">Data Utilities</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/data_utils.html#duckdb-query-utilities">DuckDB Query Utilities</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/data_utils.html#query-multiple-parquet-function">query_multiple_parquet Function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/data_utils.html#duckdb-query-utilities">DuckDB Query Utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/data_utils.html#memories.utils.duckdb_utils.query_multiple_parquet"><code class="docutils literal notranslate"><span class="pre">query_multiple_parquet()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/data_utils.html#memories.utils.duckdb_utils.list_parquet_files"><code class="docutils literal notranslate"><span class="pre">list_parquet_files()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/data_utils.html#query-multiple-parquet-function">query_multiple_parquet Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/data_utils.html#id0"><code class="docutils literal notranslate"><span class="pre">query_multiple_parquet()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="api_reference/data_utils.html#example-usage">Example Usage</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="api_reference/utils.html">Utilities</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="api_reference/utils.html#general-utilities">General Utilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="api_reference/utils.html#data-processing">Data Processing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/utils.html#text-processing">Text Processing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/utils.html#text-processing">Text Processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/utils.html#memories.utils.text.Entity"><code class="docutils literal notranslate"><span class="pre">Entity</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/utils.html#memories.utils.text.TextProcessor"><code class="docutils literal notranslate"><span class="pre">TextProcessor</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="api_reference/utils.html#file-operations">File Operations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="api_reference/utils.html#configuration">Configuration</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="api_reference/index.html#core-components">Core Components</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/index.html#memory-system">Memory System</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/index.html#agent-system">Agent System</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api_reference/index.html#models">Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/index.html#memory-system">Memory System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/index.html#memories.core.memory.NumpyEncoder"><code class="docutils literal notranslate"><span class="pre">NumpyEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/index.html#memories.core.memory.MemorySystem"><code class="docutils literal notranslate"><span class="pre">MemorySystem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/index.html#memories.core.memory.MemoryEncoder"><code class="docutils literal notranslate"><span class="pre">MemoryEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/index.html#memories.core.memory.MemoryStore"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/index.html#memories.core.memory.encode_geospatial_data"><code class="docutils literal notranslate"><span class="pre">encode_geospatial_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/index.html#memories.core.memory.create_faiss_storage"><code class="docutils literal notranslate"><span class="pre">create_faiss_storage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/index.html#memories.core.memory.create_memories"><code class="docutils literal notranslate"><span class="pre">create_memories()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/index.html#agent-system">Agent System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/index.html#memories.agents.agent.Agent"><code class="docutils literal notranslate"><span class="pre">Agent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/index.html#memories.agents.agent.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/index.html#models">Models</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/index.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="api_reference/index.html#utilities">Utilities</a></li>
 </ul>
 </li>
@@ -320,26 +392,37 @@
              
   <section id="welcome-to-memories-dev-s-documentation">
 <h1>Welcome to Memories-Dev’s documentation!<a class="headerlink" href="#welcome-to-memories-dev-s-documentation" title="Link to this heading"></a></h1>
-<p>Memories-Dev is a powerful Python framework for managing and processing earth observation data. It provides a flexible and efficient system for handling various types of geospatial data, with a focus on satellite imagery and vector data.</p>
+<p>Memories-Dev is a powerful Python framework for Earth Memory Synthesis, designed to capture, process, and understand the evolving story of our planet through data. It provides a sophisticated system for synthesizing and managing Earth observations across multiple temporal and spatial scales.</p>
 <p>Version: 1.1.9</p>
 <section id="key-features">
 <h2>Key Features<a class="headerlink" href="#key-features" title="Link to this heading"></a></h2>
 <ul class="simple">
-<li><p>Multi-tiered memory system (Hot, Warm, Cold)</p></li>
-<li><p>Satellite imagery processing</p></li>
-<li><p>Vector data analysis</p></li>
-<li><p>Intelligent data management</p></li>
-<li><p>Specialized analysis agents</p></li>
-<li><p>Example applications for various use cases</p></li>
+<li><p>Multi-tiered Memory Architecture
+- Hot Memory: Real-time, high-priority Earth observations
+- Warm Memory: Recent historical data and frequently accessed patterns
+- Cold Memory: Long-term Earth observation archives
+- Glacier Memory: Deep historical records and baseline data</p></li>
+<li><p>Earth Memory Synthesis
+- Temporal Pattern Recognition
+- Spatial Relationship Analysis
+- Multi-source Data Integration
+- Contextual Understanding
+- Adaptive Learning from Historical Patterns</p></li>
+<li><p>Specialized Analysis Agents
+- Property Analysis: Understanding urban development patterns
+- Location Ambience: Environmental and social context synthesis
+- Traffic Patterns: Transportation network evolution
+- Water Bodies: Hydrological system monitoring
+- Custom Agent Framework for specialized applications</p></li>
 </ul>
 </section>
 <section id="example-applications">
 <h2>Example Applications<a class="headerlink" href="#example-applications" title="Link to this heading"></a></h2>
 <ul class="simple">
-<li><p>Property Analyzer: Real estate analysis using satellite data</p></li>
-<li><p>Location Ambience: Environmental and urban characteristic analysis</p></li>
-<li><p>Traffic Analyzer: Traffic patterns and road conditions monitoring</p></li>
-<li><p>Water Bodies Monitor: Water body change detection and analysis</p></li>
+<li><p>Property Analyzer: Synthesize property evolution patterns</p></li>
+<li><p>Location Ambience: Environmental and urban characteristic synthesis</p></li>
+<li><p>Traffic Analyzer: Transportation network memory patterns</p></li>
+<li><p>Water Bodies Monitor: Hydrological system memory synthesis</p></li>
 </ul>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
@@ -412,17 +495,23 @@
 
 <span class="c1"># Initialize memory store</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span>
-    <span class="n">storage_path</span><span class="o">=</span><span class="s2">&quot;./data&quot;</span><span class="p">,</span>
-    <span class="n">hot_memory_size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
-    <span class="n">warm_memory_size</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
-    <span class="n">cold_memory_size</span><span class="o">=</span><span class="mi">1000</span>
+    <span class="n">storage_path</span><span class="o">=</span><span class="s2">&quot;./earth_memories&quot;</span><span class="p">,</span>
+    <span class="n">hot_memory_size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>  <span class="c1"># Recent observations</span>
+    <span class="n">warm_memory_size</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>  <span class="c1"># Historical patterns</span>
+    <span class="n">cold_memory_size</span><span class="o">=</span><span class="mi">1000</span>  <span class="c1"># Long-term records</span>
 <span class="p">)</span>
 <span class="n">memory_store</span> <span class="o">=</span> <span class="n">MemoryStore</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 
-<span class="c1"># Store data</span>
+<span class="c1"># Store Earth observation data</span>
 <span class="n">memory_store</span><span class="o">.</span><span class="n">store</span><span class="p">({</span>
     <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="s2">&quot;2024-02-17T12:00:00&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;value&quot;</span><span class="p">}</span>
+    <span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;lat&quot;</span><span class="p">:</span> <span class="mf">40.7128</span><span class="p">,</span> <span class="s2">&quot;lon&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">74.0060</span><span class="p">},</span>
+    <span class="s2">&quot;observation_type&quot;</span><span class="p">:</span> <span class="s2">&quot;environmental&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="mf">25.5</span><span class="p">,</span>
+        <span class="s2">&quot;vegetation_index&quot;</span><span class="p">:</span> <span class="mf">0.68</span><span class="p">,</span>
+        <span class="s2">&quot;urban_density&quot;</span><span class="p">:</span> <span class="mf">0.85</span>
+    <span class="p">}</span>
 <span class="p">})</span>
 </pre></div>
 </div>

@@ -183,8 +183,20 @@
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">API Reference</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="memory_store.html">MemoryStore</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="memory_store.html#core-memory-management">Core Memory Management</a></li>
-<li class="toctree-l3"><a class="reference internal" href="memory_store.html#memorystore-class">MemoryStore Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="memory_store.html#core-memory-management">Core Memory Management</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="memory_store.html#memories.core.memory.NumpyEncoder"><code class="docutils literal notranslate"><span class="pre">NumpyEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="memory_store.html#memories.core.memory.MemorySystem"><code class="docutils literal notranslate"><span class="pre">MemorySystem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="memory_store.html#memories.core.memory.MemoryEncoder"><code class="docutils literal notranslate"><span class="pre">MemoryEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="memory_store.html#memories.core.memory.MemoryStore"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="memory_store.html#memories.core.memory.encode_geospatial_data"><code class="docutils literal notranslate"><span class="pre">encode_geospatial_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="memory_store.html#memories.core.memory.create_faiss_storage"><code class="docutils literal notranslate"><span class="pre">create_faiss_storage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="memory_store.html#memories.core.memory.create_memories"><code class="docutils literal notranslate"><span class="pre">create_memories()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="memory_store.html#memorystore-class">MemoryStore Class</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="memory_store.html#id0"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="memory_store.html#memory-tiers">Memory Tiers</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="memory_store.html#hot-memory">Hot Memory</a></li>
 <li class="toctree-l4"><a class="reference internal" href="memory_store.html#warm-memory">Warm Memory</a></li>
@@ -197,7 +209,11 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="agents.html">Agents</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="agents.html#agent-system">Agent System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="agents.html#agent-system">Agent System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="agents.html#memories.agents.agent.Agent"><code class="docutils literal notranslate"><span class="pre">Agent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="agents.html#memories.agents.agent.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="agents.html#base-agent">Base Agent</a></li>
 <li class="toctree-l3"><a class="reference internal" href="agents.html#agent-types">Agent Types</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="agents.html#memory-agent">Memory Agent</a></li>
@@ -205,16 +221,31 @@
 <li class="toctree-l4"><a class="reference internal" href="agents.html#task-agent">Task Agent</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="agents.html#property-agent">Property Agent</a></li>
-<li class="toctree-l3"><a class="reference internal" href="agents.html#location-ambience-agent">Location Ambience Agent</a></li>
-<li class="toctree-l3"><a class="reference internal" href="agents.html#traffic-agent">Traffic Agent</a></li>
-<li class="toctree-l3"><a class="reference internal" href="agents.html#water-body-agent">Water Body Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="agents.html#property-agent">Property Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="agents.html#examples.property_analyzer.PropertyAgent"><code class="docutils literal notranslate"><span class="pre">PropertyAgent</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="agents.html#location-ambience-agent">Location Ambience Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="agents.html#examples.location_ambience.LocationAnalyzer"><code class="docutils literal notranslate"><span class="pre">LocationAnalyzer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="agents.html#traffic-agent">Traffic Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="agents.html#examples.traffic_analyzer.TrafficAnalyzer"><code class="docutils literal notranslate"><span class="pre">TrafficAnalyzer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="agents.html#water-body-agent">Water Body Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="agents.html#examples.water_bodies_monitor.WaterBodyAgent"><code class="docutils literal notranslate"><span class="pre">WaterBodyAgent</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="agents.html#common-agent-patterns">Common Agent Patterns</a></li>
 <li class="toctree-l3"><a class="reference internal" href="agents.html#example-usage">Example Usage</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="models.html">Models</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="models.html#model-loading">Model Loading</a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#model-loading">Model Loading</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="models.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="models.html#model-types">Model Types</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="models.html#base-model">Base Model</a></li>
 <li class="toctree-l4"><a class="reference internal" href="models.html#embedding-model">Embedding Model</a></li>
@@ -224,8 +255,14 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="load_model.html">LoadModel</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="load_model.html#model-loading-system">Model Loading System</a></li>
-<li class="toctree-l3"><a class="reference internal" href="load_model.html#loadmodel-class">LoadModel Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="load_model.html#model-loading-system">Model Loading System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="load_model.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="load_model.html#loadmodel-class">LoadModel Class</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="load_model.html#id0"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="load_model.html#model-types">Model Types</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="load_model.html#base-model">Base Model</a></li>
 <li class="toctree-l4"><a class="reference internal" href="load_model.html#embedding-model">Embedding Model</a></li>
@@ -236,29 +273,64 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="gpu_utils.html">GPU Utilities</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="gpu_utils.html#gpu-statistics">GPU Statistics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gpu_utils.html#gpu-stat-function">gpu_stat Function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gpu_utils.html#gpu-statistics">GPU Statistics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gpu_utils.html#memories.utils.processors.VectorProcessor"><code class="docutils literal notranslate"><span class="pre">VectorProcessor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gpu_utils.html#memories.utils.processors.ImageProcessor"><code class="docutils literal notranslate"><span class="pre">ImageProcessor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="gpu_utils.html#memories.utils.processors.DataFusion"><code class="docutils literal notranslate"><span class="pre">DataFusion</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="gpu_utils.html#gpu-stat-function">gpu_stat Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="gpu_utils.html#memories.utils.processors.gpu_stat"><code class="docutils literal notranslate"><span class="pre">gpu_stat()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="gpu_utils.html#example-usage">Example Usage</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="data_utils.html">Data Utilities</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="data_utils.html#duckdb-query-utilities">DuckDB Query Utilities</a></li>
-<li class="toctree-l3"><a class="reference internal" href="data_utils.html#query-multiple-parquet-function">query_multiple_parquet Function</a></li>
+<li class="toctree-l3"><a class="reference internal" href="data_utils.html#duckdb-query-utilities">DuckDB Query Utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="data_utils.html#memories.utils.duckdb_utils.query_multiple_parquet"><code class="docutils literal notranslate"><span class="pre">query_multiple_parquet()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="data_utils.html#memories.utils.duckdb_utils.list_parquet_files"><code class="docutils literal notranslate"><span class="pre">list_parquet_files()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="data_utils.html#query-multiple-parquet-function">query_multiple_parquet Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="data_utils.html#id0"><code class="docutils literal notranslate"><span class="pre">query_multiple_parquet()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="data_utils.html#example-usage">Example Usage</a></li>
 </ul>
 </li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Utilities</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#general-utilities">General Utilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#data-processing">Data Processing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#text-processing">Text Processing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#text-processing">Text Processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#memories.utils.text.Entity"><code class="docutils literal notranslate"><span class="pre">Entity</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#memories.utils.text.TextProcessor"><code class="docutils literal notranslate"><span class="pre">TextProcessor</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#file-operations">File Operations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="index.html#core-components">Core Components</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="index.html#memory-system">Memory System</a></li>
-<li class="toctree-l3"><a class="reference internal" href="index.html#agent-system">Agent System</a></li>
-<li class="toctree-l3"><a class="reference internal" href="index.html#models">Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="index.html#memory-system">Memory System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.core.memory.NumpyEncoder"><code class="docutils literal notranslate"><span class="pre">NumpyEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.core.memory.MemorySystem"><code class="docutils literal notranslate"><span class="pre">MemorySystem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.core.memory.MemoryEncoder"><code class="docutils literal notranslate"><span class="pre">MemoryEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.core.memory.MemoryStore"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.core.memory.encode_geospatial_data"><code class="docutils literal notranslate"><span class="pre">encode_geospatial_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.core.memory.create_faiss_storage"><code class="docutils literal notranslate"><span class="pre">create_faiss_storage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.core.memory.create_memories"><code class="docutils literal notranslate"><span class="pre">create_memories()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="index.html#agent-system">Agent System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.agents.agent.Agent"><code class="docutils literal notranslate"><span class="pre">Agent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.agents.agent.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="index.html#models">Models</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="index.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="index.html#utilities">Utilities</a></li>
 </ul>
 </li>
@@ -327,10 +399,177 @@
 <h2>General Utilities<a class="headerlink" href="#general-utilities" title="Link to this heading"></a></h2>
 </section>
 <section id="data-processing">
-<h2>Data Processing<a class="headerlink" href="#data-processing" title="Link to this heading"></a></h2>
+<span id="module-memories.utils"></span><h2>Data Processing<a class="headerlink" href="#data-processing" title="Link to this heading"></a></h2>
 </section>
 <section id="text-processing">
 <h2>Text Processing<a class="headerlink" href="#text-processing" title="Link to this heading"></a></h2>
+<p id="module-memories.utils.text">Text processing utilities using NLTK.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="memories.utils.text.Entity">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">memories.utils.text.</span></span><span class="sig-name descname"><span class="pre">Entity</span></span><a class="reference internal" href="../_modules/memories/utils/text.html#Entity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#memories.utils.text.Entity" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.NamedTuple" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></a></p>
+<p>Named entity with text and label.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="memories.utils.text.Entity.text">
+<span class="sig-name descname"><span class="pre">text</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></em><a class="headerlink" href="#memories.utils.text.Entity.text" title="Link to this definition"></a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="memories.utils.text.Entity.label">
+<span class="sig-name descname"><span class="pre">label</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></em><a class="headerlink" href="#memories.utils.text.Entity.label" title="Link to this definition"></a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="memories.utils.text.Entity.count">
+<span class="sig-name descname"><span class="pre">count</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#memories.utils.text.Entity.count" title="Link to this definition"></a></dt>
+<dd><p>Return number of occurrences of value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="memories.utils.text.Entity.index">
+<span class="sig-name descname"><span class="pre">index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9223372036854775807</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#memories.utils.text.Entity.index" title="Link to this definition"></a></dt>
+<dd><p>Return first index of value.</p>
+<p>Raises ValueError if the value is not present.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="memories.utils.text.TextProcessor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">memories.utils.text.</span></span><span class="sig-name descname"><span class="pre">TextProcessor</span></span><a class="reference internal" href="../_modules/memories/utils/text.html#TextProcessor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#memories.utils.text.TextProcessor" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Text processing utilities using NLTK.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="memories.utils.text.TextProcessor.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/memories/utils/text.html#TextProcessor.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#memories.utils.text.TextProcessor.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize the text processor.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="memories.utils.text.TextProcessor.tokenize">
+<span class="sig-name descname"><span class="pre">tokenize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/memories/utils/text.html#TextProcessor.tokenize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#memories.utils.text.TextProcessor.tokenize" title="Link to this definition"></a></dt>
+<dd><p>Tokenize text into words.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>text</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="memories.utils.text.TextProcessor.segment_sentences">
+<span class="sig-name descname"><span class="pre">segment_sentences</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/memories/utils/text.html#TextProcessor.segment_sentences"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#memories.utils.text.TextProcessor.segment_sentences" title="Link to this definition"></a></dt>
+<dd><p>Split text into sentences.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>text</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="memories.utils.text.TextProcessor.pos_tag">
+<span class="sig-name descname"><span class="pre">pos_tag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/memories/utils/text.html#TextProcessor.pos_tag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#memories.utils.text.TextProcessor.pos_tag" title="Link to this definition"></a></dt>
+<dd><p>Tag parts of speech in the given text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>text</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="memories.utils.text.TextProcessor.extract_entities">
+<span class="sig-name descname"><span class="pre">extract_entities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/memories/utils/text.html#TextProcessor.extract_entities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#memories.utils.text.TextProcessor.extract_entities" title="Link to this definition"></a></dt>
+<dd><p>Extract named entities from the given text using simple rules.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference internal" href="#memories.utils.text.Entity" title="memories.utils.text.Entity"><code class="xref py py-class docutils literal notranslate"><span class="pre">Entity</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>text</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="memories.utils.text.TextProcessor.preprocess">
+<span class="sig-name descname"><span class="pre">preprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/memories/utils/text.html#TextProcessor.preprocess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#memories.utils.text.TextProcessor.preprocess" title="Link to this definition"></a></dt>
+<dd><p>Preprocess text for analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>text</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="memories.utils.text.TextProcessor.extract_keywords">
+<span class="sig-name descname"><span class="pre">extract_keywords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top_n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/memories/utils/text.html#TextProcessor.extract_keywords"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#memories.utils.text.TextProcessor.extract_keywords" title="Link to this definition"></a></dt>
+<dd><p>Extract important keywords from text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>text</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>)</p></li>
+<li><p><strong>top_n</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="memories.utils.text.TextProcessor.format_insights">
+<span class="sig-name descname"><span class="pre">format_insights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">insights</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/memories/utils/text.html#TextProcessor.format_insights"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#memories.utils.text.TextProcessor.format_insights" title="Link to this definition"></a></dt>
+<dd><p>Format insights into a readable string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>insights</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span>) – Dictionary containing analysis insights</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Formatted string representation</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="memories.utils.text.TextProcessor.parse_location">
+<span class="sig-name descname"><span class="pre">parse_location</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">location_str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/memories/utils/text.html#TextProcessor.parse_location"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#memories.utils.text.TextProcessor.parse_location" title="Link to this definition"></a></dt>
+<dd><p>Parse location string into coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>location_str</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – String containing location information (e.g., “Bbox: [1.0, 2.0, 3.0, 4.0]”)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of coordinates [min_x, min_y, max_x, max_y]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="file-operations">
 <h2>File Operations<a class="headerlink" href="#file-operations" title="Link to this heading"></a></h2>

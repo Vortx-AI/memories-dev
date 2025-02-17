@@ -17,7 +17,6 @@ from memories.data_acquisition.sources import (
     OvertureAPI,
     OSMDataAPI
 )
-from memories.data_acquisition.sources.osm_api import OSMHandler
 
 @pytest.fixture
 def pc_source():
@@ -167,46 +166,42 @@ async def test_overture_search(overture_source, bbox):
 @pytest.mark.asyncio
 async def test_osm_search(osm_source, bbox):
     """Test OSM data search functionality."""
-    mock_response = b"""<?xml version='1.0' encoding='UTF-8'?>
-        <osm version="0.6">
-            <node id="1" lat="37.7" lon="-122.4">
-                <tag k="building" v="yes"/>
-            </node>
-            <way id="2">
-                <nd ref="1"/>
-                <tag k="building" v="yes"/>
-            </way>
-        </osm>"""
+    mock_response = {
+        'elements': [
+            {
+                'type': 'way',
+                'nodes': [
+                    {'lat': 37.7, 'lon': -122.4},
+                    {'lat': 37.7, 'lon': -122.3},
+                    {'lat': 37.8, 'lon': -122.3},
+                    {'lat': 37.7, 'lon': -122.4}
+                ],
+                'tags': {'building': 'yes'}
+            }
+        ]
+    }
     
     mock_response_obj = AsyncMock()
-    mock_response_obj.read = AsyncMock(return_value=mock_response)
-    mock_response_obj.raise_for_status = AsyncMock()
+    mock_response_obj.status = 200
+    mock_response_obj.json = AsyncMock(return_value=mock_response)
+    mock_response_obj.__aenter__ = AsyncMock(return_value=mock_response_obj)
+    mock_response_obj.__aexit__ = AsyncMock(return_value=None)
     
     mock_session = AsyncMock()
     mock_session.post = AsyncMock(return_value=mock_response_obj)
+    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session.__aexit__ = AsyncMock(return_value=None)
     
-    class MockOSMHandler(OSMHandler):
-        def apply_buffer(self, content):
-            self.features['buildings'] = [{
-                'type': 'Feature',
-                'geometry': {
-                    'type': 'Polygon',
-                    'coordinates': [[[-122.4, 37.7], [-122.4, 37.7], [-122.4, 37.7]]]
-                },
-                'properties': {'building': 'yes'}
-            }]
-    
-    with patch('aiohttp.ClientSession', return_value=mock_session), \
-         patch('memories.data_acquisition.sources.osm_api.OSMHandler', MockOSMHandler):
+    with patch('aiohttp.ClientSession', return_value=mock_session):
         results = await osm_source.search(
             bbox=bbox,
             tags=['building']
         )
         
-        assert 'buildings' in results
-        assert len(results['buildings']) > 0
-        assert results['buildings'][0]['type'] == 'Feature'
-        assert results['buildings'][0]['properties']['building'] == 'yes'
+        assert 'features' in results
+        assert len(results['features']) > 0
+        assert results['features'][0]['type'] == 'Feature'
+        assert results['features'][0]['properties']['building'] == 'yes'
 
 @pytest.mark.asyncio
 async def test_pc_download(pc_source, tmp_path):

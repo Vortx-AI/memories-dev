@@ -1,0 +1,865 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>examples.traffic_analyzer &mdash; memories-dev 1.1.9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=fe9a5ec8" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=7b68ca77"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=30646c52"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script src="https://buttons.github.io/buttons.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            memories-dev
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../installation.html#basic-installation">Basic Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation.html#python-version-compatibility">Python Version Compatibility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation.html#installation-options">Installation Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#cpu-only-installation-default">1. CPU-only Installation (Default)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#gpu-support-installation">2. GPU Support Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#development-installation">3. Development Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#documentation-tools">4. Documentation Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation.html#detailed-installation-steps">Detailed Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#create-and-activate-virtual-environment">1. Create and Activate Virtual Environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#install-core-package">2. Install Core Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#install-documentation-dependencies">3. Install Documentation Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation.html#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#common-issues-and-solutions">Common Issues and Solutions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation.html#version-specific-dependencies">Version-specific Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation.html#working-examples">Working Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#basic-usage-example">Basic Usage Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#gpu-support-example">GPU Support Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#documentation-build-example">Documentation Build Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#testing-example">Testing Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quick Start Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart.html#basic-usage">Basic Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart.html#key-features">Key Features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../quickstart.html#memory-formation">1. Memory Formation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../quickstart.html#memory-querying">2. Memory Querying</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../quickstart.html#agent-integration">3. Agent Integration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide/index.html">User Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/memory_system.html">Memory System</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/memory_system.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/memory_system.html#memory-tiers">Memory Tiers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/memory_system.html#hot-memory">Hot Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/memory_system.html#warm-memory">Warm Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/memory_system.html#cold-memory">Cold Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/memory_system.html#glacier-memory">Glacier Memory</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/memory_system.html#usage-examples">Usage Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/memory_system.html#basic-memory-operations">Basic Memory Operations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/memory_system.html#advanced-features">Advanced Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/memory_system.html#memory-persistence">Memory Persistence</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/memory_system.html#memory-updates">Memory Updates</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/memory_system.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/agents.html">Agents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/agents.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/agents.html#agent-types">Agent Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/agents.html#memory-agent">Memory Agent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/agents.html#conversation-agent">Conversation Agent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/agents.html#task-agent">Task Agent</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/agents.html#usage-examples">Usage Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/agents.html#basic-agent-operations">Basic Agent Operations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/agents.html#advanced-features">Advanced Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/agents.html#custom-agents">Custom Agents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/agents.html#multi-agent-collaboration">Multi-Agent Collaboration</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/agents.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/data_sources.html">Data Sources</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/data_sources.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/data_sources.html#supported-data-sources">Supported Data Sources</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/data_sources.html#satellite-data">Satellite Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/data_sources.html#sensor-data">Sensor Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/data_sources.html#real-time-streams">Real-time Streams</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/data_sources.html#usage-examples">Usage Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/data_sources.html#satellite-data-access">Satellite Data Access</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/data_sources.html#sensor-data-integration">Sensor Data Integration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/data_sources.html#real-time-stream-processing">Real-time Stream Processing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/data_sources.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/advanced_features.html">Advanced Features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/advanced_features.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/advanced_features.html#custom-memory-stores">Custom Memory Stores</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/advanced_features.html#creating-custom-stores">Creating Custom Stores</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/advanced_features.html#advanced-querying">Advanced Querying</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/advanced_features.html#spatial-queries">Spatial Queries</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/advanced_features.html#temporal-queries">Temporal Queries</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/advanced_features.html#semantic-queries">Semantic Queries</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/advanced_features.html#performance-optimization">Performance Optimization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/advanced_features.html#caching-strategies">Caching Strategies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/advanced_features.html#batch-operations">Batch Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/advanced_features.html#distributed-processing">Distributed Processing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/advanced_features.html#security-features">Security Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/advanced_features.html#encryption">Encryption</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../user_guide/advanced_features.html#access-control">Access Control</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../user_guide/advanced_features.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/index.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/index.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../user_guide/index.html#core-concepts">Core Concepts</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_reference/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api_reference/memory_store.html">MemoryStore</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/memory_store.html#core-memory-management">Core Memory Management</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/memory_store.html#memories.core.memory.NumpyEncoder"><code class="docutils literal notranslate"><span class="pre">NumpyEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/memory_store.html#memories.core.memory.MemorySystem"><code class="docutils literal notranslate"><span class="pre">MemorySystem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/memory_store.html#memories.core.memory.MemoryEncoder"><code class="docutils literal notranslate"><span class="pre">MemoryEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/memory_store.html#memories.core.memory.MemoryStore"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/memory_store.html#memories.core.memory.encode_geospatial_data"><code class="docutils literal notranslate"><span class="pre">encode_geospatial_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/memory_store.html#memories.core.memory.create_faiss_storage"><code class="docutils literal notranslate"><span class="pre">create_faiss_storage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/memory_store.html#memories.core.memory.create_memories"><code class="docutils literal notranslate"><span class="pre">create_memories()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/memory_store.html#memorystore-class">MemoryStore Class</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/memory_store.html#id0"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/memory_store.html#memory-tiers">Memory Tiers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/memory_store.html#hot-memory">Hot Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/memory_store.html#warm-memory">Warm Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/memory_store.html#cold-memory">Cold Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/memory_store.html#glacier-memory">Glacier Memory</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/memory_store.html#example-usage">Example Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/memory_store.html#configuration-options">Configuration Options</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api_reference/agents.html">Agents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/agents.html#agent-system">Agent System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/agents.html#memories.agents.agent.Agent"><code class="docutils literal notranslate"><span class="pre">Agent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/agents.html#memories.agents.agent.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/agents.html#base-agent">Base Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/agents.html#agent-types">Agent Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/agents.html#memory-agent">Memory Agent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/agents.html#conversation-agent">Conversation Agent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/agents.html#task-agent">Task Agent</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/agents.html#property-agent">Property Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/agents.html#examples.property_analyzer.PropertyAgent"><code class="docutils literal notranslate"><span class="pre">PropertyAgent</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/agents.html#location-ambience-agent">Location Ambience Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/agents.html#examples.location_ambience.LocationAnalyzer"><code class="docutils literal notranslate"><span class="pre">LocationAnalyzer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/agents.html#traffic-agent">Traffic Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/agents.html#examples.traffic_analyzer.TrafficAnalyzer"><code class="docutils literal notranslate"><span class="pre">TrafficAnalyzer</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/agents.html#water-body-agent">Water Body Agent</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/agents.html#examples.water_bodies_monitor.WaterBodyAgent"><code class="docutils literal notranslate"><span class="pre">WaterBodyAgent</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/agents.html#common-agent-patterns">Common Agent Patterns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/agents.html#example-usage">Example Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api_reference/models.html">Models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/models.html#model-loading">Model Loading</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/models.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/models.html#model-types">Model Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/models.html#base-model">Base Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/models.html#embedding-model">Embedding Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/models.html#language-model">Language Model</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api_reference/load_model.html">LoadModel</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/load_model.html#model-loading-system">Model Loading System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/load_model.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/load_model.html#loadmodel-class">LoadModel Class</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/load_model.html#id0"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/load_model.html#model-types">Model Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/load_model.html#base-model">Base Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/load_model.html#embedding-model">Embedding Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/load_model.html#language-model">Language Model</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/load_model.html#example-usage">Example Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api_reference/gpu_utils.html">GPU Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/gpu_utils.html#gpu-statistics">GPU Statistics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/gpu_utils.html#memories.utils.processors.VectorProcessor"><code class="docutils literal notranslate"><span class="pre">VectorProcessor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/gpu_utils.html#memories.utils.processors.ImageProcessor"><code class="docutils literal notranslate"><span class="pre">ImageProcessor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/gpu_utils.html#memories.utils.processors.DataFusion"><code class="docutils literal notranslate"><span class="pre">DataFusion</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/gpu_utils.html#gpu-stat-function">gpu_stat Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/gpu_utils.html#memories.utils.processors.gpu_stat"><code class="docutils literal notranslate"><span class="pre">gpu_stat()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/gpu_utils.html#example-usage">Example Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api_reference/data_utils.html">Data Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/data_utils.html#duckdb-query-utilities">DuckDB Query Utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/data_utils.html#memories.utils.duckdb_utils.query_multiple_parquet"><code class="docutils literal notranslate"><span class="pre">query_multiple_parquet()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/data_utils.html#memories.utils.duckdb_utils.list_parquet_files"><code class="docutils literal notranslate"><span class="pre">list_parquet_files()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/data_utils.html#query-multiple-parquet-function">query_multiple_parquet Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/data_utils.html#id0"><code class="docutils literal notranslate"><span class="pre">query_multiple_parquet()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/data_utils.html#example-usage">Example Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api_reference/utils.html">Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/utils.html#general-utilities">General Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/utils.html#data-processing">Data Processing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/utils.html#text-processing">Text Processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/utils.html#memories.utils.text.Entity"><code class="docutils literal notranslate"><span class="pre">Entity</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/utils.html#memories.utils.text.TextProcessor"><code class="docutils literal notranslate"><span class="pre">TextProcessor</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/utils.html#file-operations">File Operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/utils.html#configuration">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api_reference/index.html#core-components">Core Components</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/index.html#memory-system">Memory System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/index.html#memories.core.memory.NumpyEncoder"><code class="docutils literal notranslate"><span class="pre">NumpyEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/index.html#memories.core.memory.MemorySystem"><code class="docutils literal notranslate"><span class="pre">MemorySystem</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/index.html#memories.core.memory.MemoryEncoder"><code class="docutils literal notranslate"><span class="pre">MemoryEncoder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/index.html#memories.core.memory.MemoryStore"><code class="docutils literal notranslate"><span class="pre">MemoryStore</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/index.html#memories.core.memory.encode_geospatial_data"><code class="docutils literal notranslate"><span class="pre">encode_geospatial_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/index.html#memories.core.memory.create_faiss_storage"><code class="docutils literal notranslate"><span class="pre">create_faiss_storage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/index.html#memories.core.memory.create_memories"><code class="docutils literal notranslate"><span class="pre">create_memories()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/index.html#agent-system">Agent System</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/index.html#memories.agents.agent.Agent"><code class="docutils literal notranslate"><span class="pre">Agent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/index.html#memories.agents.agent.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/index.html#models">Models</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api_reference/index.html#memories.models.load_model.LoadModel"><code class="docutils literal notranslate"><span class="pre">LoadModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/index.html#utilities">Utilities</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing.html#development-process">Development Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing.html#pull-request-process">Pull Request Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing.html#any-contributions-you-make-will-be-under-the-apache-license-2-0">Any contributions you make will be under the Apache License 2.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing.html#report-bugs-using-github-s-issue-tracker-https-github-com-vortx-ai-memories-dev-issues">Report bugs using GitHub’s [issue tracker](https://github.com/Vortx-AI/memories-dev/issues)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing.html#write-bug-reports-with-detail-background-and-sample-code">Write bug reports with detail, background, and sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing.html#license">License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../changelog.html#id1">[1.1.8] - 2025-02-16</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../changelog.html#changed">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../changelog.html#id2">[1.1.7] - 2025-02-16</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../changelog.html#added">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../changelog.html#fixed">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../changelog.html#id3">[1.1.6] - 2025-02-16</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../changelog.html#id4">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../changelog.html#id5">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../changelog.html#id6">Fixed</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">memories-dev</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">examples.traffic_analyzer</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for examples.traffic_analyzer</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example demonstrating the use of the memory system for traffic pattern analysis.</span>
+
+<span class="sd">This example shows how to:</span>
+<span class="sd">1. Analyze traffic patterns using satellite imagery and sensor data</span>
+<span class="sd">2. Store traffic insights in tiered memory based on congestion levels</span>
+<span class="sd">3. Generate traffic predictions and recommendations</span>
+<span class="sd">4. Track historical traffic patterns</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryStore</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.data_acquisition</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.utils.processors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ImageProcessor</span><span class="p">,</span> <span class="n">VectorProcessor</span>
+
+<div class="viewcode-block" id="TrafficAnalyzer">
+<a class="viewcode-back" href="../../api_reference/agents.html#examples.traffic_analyzer.TrafficAnalyzer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TrafficAnalyzer</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analyze traffic patterns and congestion using satellite imagery and sensor data.&quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="TrafficAnalyzer.__init__">
+<a class="viewcode-back" href="../../api_reference/agents.html#examples.traffic_analyzer.TrafficAnalyzer.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memory_store</span><span class="p">:</span> <span class="n">MemoryStore</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the traffic analyzer.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            memory_store: Memory store for caching and storing insights</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">memory_store</span> <span class="o">=</span> <span class="n">memory_store</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_manager</span> <span class="o">=</span> <span class="n">DataManager</span><span class="p">(</span><span class="n">cache_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;.memories&quot;</span> <span class="o">/</span> <span class="s2">&quot;cache&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_processor</span> <span class="o">=</span> <span class="n">ImageProcessor</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vector_processor</span> <span class="o">=</span> <span class="n">VectorProcessor</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="TrafficAnalyzer.analyze_traffic">
+<a class="viewcode-back" href="../../api_reference/agents.html#examples.traffic_analyzer.TrafficAnalyzer.analyze_traffic">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">analyze_traffic</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">road_segment</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">time_window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">24</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Analyze traffic patterns for a road segment.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            road_segment: Dictionary containing road information</span>
+<span class="sd">                Required fields: id, name, coordinates, bbox, road_type</span>
+<span class="sd">            time_window: Hours of historical data to analyze (default: 24)</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary containing traffic analysis insights</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get historical data for the time window</span>
+        <span class="n">end_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">start_date</span> <span class="o">=</span> <span class="n">end_date</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="n">time_window</span><span class="p">)</span>
+        
+        <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_manager</span><span class="o">.</span><span class="n">prepare_training_data</span><span class="p">(</span>
+            <span class="n">bbox</span><span class="o">=</span><span class="n">road_segment</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">],</span>
+            <span class="n">start_date</span><span class="o">=</span><span class="n">start_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">),</span>
+            <span class="n">end_date</span><span class="o">=</span><span class="n">end_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">),</span>
+            <span class="n">satellite_collections</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sentinel-2-l2a&quot;</span><span class="p">],</span>
+            <span class="n">vector_layers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;roads&quot;</span><span class="p">,</span> <span class="s2">&quot;traffic-sensors&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># Analyze traffic data</span>
+        <span class="n">insights</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_traffic_data</span><span class="p">(</span><span class="n">road_segment</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        
+        <span class="c1"># Store insights based on congestion level</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_store_insights</span><span class="p">(</span><span class="n">insights</span><span class="p">,</span> <span class="n">road_segment</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">insights</span></div>
+
+    
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_analyze_traffic_data</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">road_segment</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process and analyze traffic data to generate insights.&quot;&quot;&quot;</span>
+        <span class="c1"># Process satellite imagery for road conditions</span>
+        <span class="n">satellite_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_processor</span><span class="o">.</span><span class="n">extract_features</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;satellite_data&quot;</span><span class="p">][</span><span class="s2">&quot;pc&quot;</span><span class="p">][</span><span class="s2">&quot;sentinel-2-l2a&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># Calculate traffic metrics</span>
+        <span class="n">traffic_metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_traffic_metrics</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;traffic_sensors&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+            <span class="n">road_segment</span><span class="p">[</span><span class="s2">&quot;road_type&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># Analyze road conditions</span>
+        <span class="n">road_conditions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_road_conditions</span><span class="p">(</span>
+            <span class="n">satellite_features</span><span class="p">,</span>
+            <span class="n">road_segment</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># Calculate congestion patterns</span>
+        <span class="n">congestion_patterns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_congestion_patterns</span><span class="p">(</span>
+            <span class="n">traffic_metrics</span><span class="p">,</span>
+            <span class="n">road_segment</span><span class="p">[</span><span class="s2">&quot;road_type&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># Generate predictions</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_predictions</span><span class="p">(</span>
+            <span class="n">traffic_metrics</span><span class="p">,</span>
+            <span class="n">congestion_patterns</span><span class="p">,</span>
+            <span class="n">road_conditions</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># Generate recommendations</span>
+        <span class="n">recommendations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_recommendations</span><span class="p">(</span>
+            <span class="n">traffic_metrics</span><span class="p">,</span>
+            <span class="n">congestion_patterns</span><span class="p">,</span>
+            <span class="n">road_conditions</span><span class="p">,</span>
+            <span class="n">predictions</span>
+        <span class="p">)</span>
+        
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;road_id&quot;</span><span class="p">:</span> <span class="n">road_segment</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+            <span class="s2">&quot;traffic_metrics&quot;</span><span class="p">:</span> <span class="n">traffic_metrics</span><span class="p">,</span>
+            <span class="s2">&quot;road_conditions&quot;</span><span class="p">:</span> <span class="n">road_conditions</span><span class="p">,</span>
+            <span class="s2">&quot;congestion_patterns&quot;</span><span class="p">:</span> <span class="n">congestion_patterns</span><span class="p">,</span>
+            <span class="s2">&quot;predictions&quot;</span><span class="p">:</span> <span class="n">predictions</span><span class="p">,</span>
+            <span class="s2">&quot;recommendations&quot;</span><span class="p">:</span> <span class="n">recommendations</span>
+        <span class="p">}</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_store_insights</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">insights</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> 
+        <span class="n">road_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store traffic insights in appropriate memory tier based on congestion level.&quot;&quot;&quot;</span>
+        <span class="n">congestion_level</span> <span class="o">=</span> <span class="n">insights</span><span class="p">[</span><span class="s2">&quot;traffic_metrics&quot;</span><span class="p">][</span><span class="s2">&quot;congestion_level&quot;</span><span class="p">]</span>
+        
+        <span class="c1"># Add road segment ID to insights</span>
+        <span class="n">insights</span><span class="p">[</span><span class="s2">&quot;road_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">road_data</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="n">congestion_level</span> <span class="o">&gt;=</span> <span class="mf">0.8</span><span class="p">:</span>
+            <span class="c1"># High-congestion segments go to hot memory for quick access</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">memory_store</span><span class="o">.</span><span class="n">hot_memory</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">insights</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">congestion_level</span> <span class="o">&gt;=</span> <span class="mf">0.6</span><span class="p">:</span>
+            <span class="c1"># Medium-congestion segments go to warm memory</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">memory_store</span><span class="o">.</span><span class="n">warm_memory</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">insights</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Low-congestion segments go to cold memory</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">memory_store</span><span class="o">.</span><span class="n">cold_memory</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">insights</span><span class="p">)</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_traffic_metrics</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">sensor_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">road_type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate traffic metrics from sensor data.&quot;&quot;&quot;</span>
+        <span class="c1"># Define speed thresholds by road type (mph)</span>
+        <span class="n">speed_thresholds</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;highway&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mi">45</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mi">65</span><span class="p">},</span>
+            <span class="s2">&quot;arterial&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mi">25</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mi">45</span><span class="p">},</span>
+            <span class="s2">&quot;local&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span> <span class="mi">25</span><span class="p">}</span>
+        <span class="p">}</span>
+        
+        <span class="c1"># Get thresholds for road type</span>
+        <span class="n">thresholds</span> <span class="o">=</span> <span class="n">speed_thresholds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">road_type</span><span class="p">,</span> <span class="n">speed_thresholds</span><span class="p">[</span><span class="s2">&quot;local&quot;</span><span class="p">])</span>
+        
+        <span class="c1"># Simulate sensor readings if no real data</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">sensor_data</span><span class="p">:</span>
+            <span class="n">avg_speed</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">thresholds</span><span class="p">[</span><span class="s2">&quot;min&quot;</span><span class="p">],</span> <span class="n">thresholds</span><span class="p">[</span><span class="s2">&quot;max&quot;</span><span class="p">])</span>
+            <span class="n">volume</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">avg_speed</span> <span class="o">=</span> <span class="n">sensor_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;average_speed&quot;</span><span class="p">,</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">thresholds</span><span class="p">[</span><span class="s2">&quot;min&quot;</span><span class="p">],</span> <span class="n">thresholds</span><span class="p">[</span><span class="s2">&quot;max&quot;</span><span class="p">]))</span>
+            <span class="n">volume</span> <span class="o">=</span> <span class="n">sensor_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;volume&quot;</span><span class="p">,</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">200</span><span class="p">))</span>
+        
+        <span class="c1"># Calculate congestion level (0-1)</span>
+        <span class="n">speed_ratio</span> <span class="o">=</span> <span class="p">(</span><span class="n">avg_speed</span> <span class="o">-</span> <span class="n">thresholds</span><span class="p">[</span><span class="s2">&quot;min&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">thresholds</span><span class="p">[</span><span class="s2">&quot;max&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">thresholds</span><span class="p">[</span><span class="s2">&quot;min&quot;</span><span class="p">])</span>
+        <span class="n">congestion_level</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">speed_ratio</span><span class="p">))</span>
+        
+        <span class="c1"># Calculate density (vehicles per mile)</span>
+        <span class="n">density</span> <span class="o">=</span> <span class="n">volume</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">avg_speed</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;average_speed&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">avg_speed</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="s2">&quot;volume&quot;</span><span class="p">:</span> <span class="n">volume</span><span class="p">,</span>
+            <span class="s2">&quot;density&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">density</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="s2">&quot;congestion_level&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">congestion_level</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="s2">&quot;thresholds&quot;</span><span class="p">:</span> <span class="n">thresholds</span>
+        <span class="p">}</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_analyze_road_conditions</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">satellite_features</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">road_segment</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze road conditions from satellite imagery.&quot;&quot;&quot;</span>
+        <span class="c1"># Extract road surface features</span>
+        <span class="n">surface_quality</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">satellite_features</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;surface_index&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">())))</span>
+        
+        <span class="c1"># Calculate weather impact (simulated)</span>
+        <span class="n">weather_impact</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">)</span>
+        
+        <span class="c1"># Calculate maintenance score</span>
+        <span class="n">maintenance_score</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">surface_quality</span> <span class="o">-</span> <span class="n">weather_impact</span><span class="p">))</span>
+        
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;surface_quality&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">surface_quality</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="s2">&quot;weather_impact&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">weather_impact</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="s2">&quot;maintenance_score&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">maintenance_score</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="s2">&quot;hazards&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detect_road_hazards</span><span class="p">(</span><span class="n">satellite_features</span><span class="p">)</span>
+        <span class="p">}</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_analyze_congestion_patterns</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">traffic_metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">road_type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze traffic congestion patterns.&quot;&quot;&quot;</span>
+        <span class="c1"># Define typical peak hours</span>
+        <span class="n">morning_peak</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;07:00-09:00&quot;</span><span class="p">]</span>
+        <span class="n">evening_peak</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;16:00-18:00&quot;</span><span class="p">]</span>
+        
+        <span class="c1"># Calculate congestion severity</span>
+        <span class="n">severity</span> <span class="o">=</span> <span class="s2">&quot;high&quot;</span> <span class="k">if</span> <span class="n">traffic_metrics</span><span class="p">[</span><span class="s2">&quot;congestion_level&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.8</span> <span class="k">else</span> \
+                  <span class="s2">&quot;moderate&quot;</span> <span class="k">if</span> <span class="n">traffic_metrics</span><span class="p">[</span><span class="s2">&quot;congestion_level&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.5</span> <span class="k">else</span> <span class="s2">&quot;low&quot;</span>
+        
+        <span class="c1"># Estimate duration based on road type and current metrics</span>
+        <span class="k">if</span> <span class="n">road_type</span> <span class="o">==</span> <span class="s2">&quot;highway&quot;</span><span class="p">:</span>
+            <span class="n">duration</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">60</span><span class="p">,</span> <span class="mi">180</span><span class="p">)</span>  <span class="c1"># minutes</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">duration</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">90</span><span class="p">)</span>  <span class="c1"># minutes</span>
+        
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;peak_hours&quot;</span><span class="p">:</span> <span class="n">morning_peak</span> <span class="o">+</span> <span class="n">evening_peak</span><span class="p">,</span>
+            <span class="s2">&quot;severity&quot;</span><span class="p">:</span> <span class="n">severity</span><span class="p">,</span>
+            <span class="s2">&quot;expected_duration&quot;</span><span class="p">:</span> <span class="n">duration</span><span class="p">,</span>
+            <span class="s2">&quot;recurring&quot;</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">])</span>
+        <span class="p">}</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_detect_road_hazards</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">satellite_features</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Detect potential road hazards from satellite imagery.&quot;&quot;&quot;</span>
+        <span class="n">hazards</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="c1"># Simulate hazard detection</span>
+        <span class="k">if</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">0.3</span><span class="p">:</span>  <span class="c1"># 30% chance of detecting hazards</span>
+            <span class="n">hazard_types</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s2">&quot;pothole&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;construction&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;debris&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;water accumulation&quot;</span>
+            <span class="p">]</span>
+            
+            <span class="n">num_hazards</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_hazards</span><span class="p">):</span>
+                <span class="n">hazards</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">hazard_types</span><span class="p">),</span>
+                    <span class="s2">&quot;severity&quot;</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">),</span>
+                    <span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;mile_marker_</span><span class="si">{</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">})</span>
+        
+        <span class="k">return</span> <span class="n">hazards</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_predictions</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">traffic_metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">congestion_patterns</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">road_conditions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate traffic predictions.&quot;&quot;&quot;</span>
+        <span class="c1"># Calculate base clearance time</span>
+        <span class="n">base_time</span> <span class="o">=</span> <span class="n">congestion_patterns</span><span class="p">[</span><span class="s2">&quot;expected_duration&quot;</span><span class="p">]</span>
+        
+        <span class="c1"># Adjust for road conditions</span>
+        <span class="n">condition_factor</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">road_conditions</span><span class="p">[</span><span class="s2">&quot;maintenance_score&quot;</span><span class="p">])</span>
+        
+        <span class="c1"># Adjust for hazards</span>
+        <span class="n">hazard_factor</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">road_conditions</span><span class="p">[</span><span class="s2">&quot;hazards&quot;</span><span class="p">])</span> <span class="o">*</span> <span class="mf">0.2</span><span class="p">)</span>
+        
+        <span class="c1"># Calculate final clearance time</span>
+        <span class="n">clearance_time</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">base_time</span> <span class="o">*</span> <span class="n">condition_factor</span> <span class="o">*</span> <span class="n">hazard_factor</span><span class="p">)</span>
+        
+        <span class="c1"># Predict peak congestion times</span>
+        <span class="n">current_hour</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">hour</span>
+        <span class="n">next_peak</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">peak</span> <span class="ow">in</span> <span class="n">congestion_patterns</span><span class="p">[</span><span class="s2">&quot;peak_hours&quot;</span><span class="p">]:</span>
+            <span class="n">start_hour</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">peak</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">start_hour</span> <span class="o">&gt;</span> <span class="n">current_hour</span><span class="p">:</span>
+                <span class="n">next_peak</span> <span class="o">=</span> <span class="n">peak</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">next_peak</span> <span class="ow">and</span> <span class="n">congestion_patterns</span><span class="p">[</span><span class="s2">&quot;peak_hours&quot;</span><span class="p">]:</span>
+            <span class="n">next_peak</span> <span class="o">=</span> <span class="n">congestion_patterns</span><span class="p">[</span><span class="s2">&quot;peak_hours&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;clearance_time&quot;</span><span class="p">:</span> <span class="n">clearance_time</span><span class="p">,</span>
+            <span class="s2">&quot;next_peak&quot;</span><span class="p">:</span> <span class="n">next_peak</span><span class="p">,</span>
+            <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="p">}</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_recommendations</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">traffic_metrics</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">congestion_patterns</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">road_conditions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">predictions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate traffic-specific recommendations.&quot;&quot;&quot;</span>
+        <span class="n">recommendations</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="c1"># Congestion-based recommendations</span>
+        <span class="k">if</span> <span class="n">traffic_metrics</span><span class="p">[</span><span class="s2">&quot;congestion_level&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.8</span><span class="p">:</span>
+            <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">&quot;Severe congestion - consider alternative routes.&quot;</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">predictions</span><span class="p">[</span><span class="s2">&quot;clearance_time&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">60</span><span class="p">:</span>
+                <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Expected to clear in </span><span class="si">{</span><span class="n">predictions</span><span class="p">[</span><span class="s1">&#39;clearance_time&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> minutes.&quot;</span>
+                <span class="p">)</span>
+        
+        <span class="c1"># Road condition recommendations</span>
+        <span class="k">if</span> <span class="n">road_conditions</span><span class="p">[</span><span class="s2">&quot;maintenance_score&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mf">0.6</span><span class="p">:</span>
+            <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">&quot;Poor road conditions - exercise caution.&quot;</span>
+            <span class="p">)</span>
+        
+        <span class="c1"># Hazard-specific recommendations</span>
+        <span class="k">for</span> <span class="n">hazard</span> <span class="ow">in</span> <span class="n">road_conditions</span><span class="p">[</span><span class="s2">&quot;hazards&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">hazard</span><span class="p">[</span><span class="s2">&quot;severity&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.7</span><span class="p">:</span>
+                <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Warning: </span><span class="si">{</span><span class="n">hazard</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> reported at </span><span class="si">{</span><span class="n">hazard</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">)</span>
+        
+        <span class="c1"># Peak hour recommendations</span>
+        <span class="k">if</span> <span class="n">predictions</span><span class="p">[</span><span class="s2">&quot;next_peak&quot;</span><span class="p">]:</span>
+            <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Next congestion peak expected during </span><span class="si">{</span><span class="n">predictions</span><span class="p">[</span><span class="s1">&#39;next_peak&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+        
+        <span class="c1"># Pattern-based recommendations</span>
+        <span class="k">if</span> <span class="n">congestion_patterns</span><span class="p">[</span><span class="s2">&quot;recurring&quot;</span><span class="p">]:</span>
+            <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">&quot;Regular congestion pattern - plan trips outside peak hours.&quot;</span>
+            <span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">recommendations</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">simulate_road_segment</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate simulated road segment data for testing.&quot;&quot;&quot;</span>
+    <span class="n">road_types</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;highway&quot;</span><span class="p">,</span> <span class="s2">&quot;arterial&quot;</span><span class="p">,</span> <span class="s2">&quot;local&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()),</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Road_</span><span class="si">{</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="mi">9999</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;road_type&quot;</span><span class="p">:</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">road_types</span><span class="p">),</span>
+        <span class="s2">&quot;coordinates&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;start&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;lat&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">37.7</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">),</span> <span class="mi">4</span><span class="p">),</span>
+                <span class="s2">&quot;lon&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">122.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">122.4</span><span class="p">),</span> <span class="mi">4</span><span class="p">)</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;end&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;lat&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">37.7</span><span class="p">,</span> <span class="mf">37.8</span><span class="p">),</span> <span class="mi">4</span><span class="p">),</span>
+                <span class="s2">&quot;lon&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">122.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">122.4</span><span class="p">),</span> <span class="mi">4</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">122.5</span><span class="p">,</span> <span class="mf">37.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">122.0</span><span class="p">,</span> <span class="mf">38.0</span><span class="p">]</span>
+    <span class="p">}</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run the traffic pattern analyzer example.&quot;&quot;&quot;</span>
+    <span class="c1"># Initialize memory store</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span>
+        <span class="n">storage_path</span><span class="o">=</span><span class="s2">&quot;./traffic_data&quot;</span><span class="p">,</span>
+        <span class="n">hot_memory_size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+        <span class="n">warm_memory_size</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+        <span class="n">cold_memory_size</span><span class="o">=</span><span class="mi">1000</span>
+    <span class="p">)</span>
+    <span class="n">memory_store</span> <span class="o">=</span> <span class="n">MemoryStore</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    
+    <span class="c1"># Create traffic analyzer</span>
+    <span class="n">analyzer</span> <span class="o">=</span> <span class="n">TrafficAnalyzer</span><span class="p">(</span><span class="n">memory_store</span><span class="p">)</span>
+    
+    <span class="c1"># Analyze multiple road segments</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="n">road_data</span> <span class="o">=</span> <span class="n">simulate_road_segment</span><span class="p">()</span>
+        <span class="n">insights</span> <span class="o">=</span> <span class="k">await</span> <span class="n">analyzer</span><span class="o">.</span><span class="n">analyze_traffic</span><span class="p">(</span><span class="n">road_data</span><span class="p">)</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Analysis for </span><span class="si">{</span><span class="n">road_data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">road_data</span><span class="p">[</span><span class="s1">&#39;road_type&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">):&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Start: </span><span class="si">{</span><span class="n">road_data</span><span class="p">[</span><span class="s1">&#39;coordinates&#39;</span><span class="p">][</span><span class="s1">&#39;start&#39;</span><span class="p">][</span><span class="s1">&#39;lat&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">road_data</span><span class="p">[</span><span class="s1">&#39;coordinates&#39;</span><span class="p">][</span><span class="s1">&#39;start&#39;</span><span class="p">][</span><span class="s1">&#39;lon&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;End: </span><span class="si">{</span><span class="n">road_data</span><span class="p">[</span><span class="s1">&#39;coordinates&#39;</span><span class="p">][</span><span class="s1">&#39;end&#39;</span><span class="p">][</span><span class="s1">&#39;lat&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">road_data</span><span class="p">[</span><span class="s1">&#39;coordinates&#39;</span><span class="p">][</span><span class="s1">&#39;end&#39;</span><span class="p">][</span><span class="s1">&#39;lon&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Traffic Metrics:&quot;</span><span class="p">)</span>
+        <span class="n">metrics</span> <span class="o">=</span> <span class="n">insights</span><span class="p">[</span><span class="s2">&quot;traffic_metrics&quot;</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Average Speed: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;average_speed&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> mph&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Volume: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> vehicles/hour&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Density: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;density&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> vehicles/mile&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Congestion Level: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;congestion_level&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Road Conditions:&quot;</span><span class="p">)</span>
+        <span class="n">conditions</span> <span class="o">=</span> <span class="n">insights</span><span class="p">[</span><span class="s2">&quot;road_conditions&quot;</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Surface Quality: </span><span class="si">{</span><span class="n">conditions</span><span class="p">[</span><span class="s1">&#39;surface_quality&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Weather Impact: </span><span class="si">{</span><span class="n">conditions</span><span class="p">[</span><span class="s1">&#39;weather_impact&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Maintenance Score: </span><span class="si">{</span><span class="n">conditions</span><span class="p">[</span><span class="s1">&#39;maintenance_score&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">conditions</span><span class="p">[</span><span class="s2">&quot;hazards&quot;</span><span class="p">]:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Hazards Detected:&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">hazard</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">[</span><span class="s2">&quot;hazards&quot;</span><span class="p">]:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">hazard</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">title</span><span class="p">()</span><span class="si">}</span><span class="s2"> at </span><span class="si">{</span><span class="n">hazard</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> (Severity: </span><span class="si">{</span><span class="n">hazard</span><span class="p">[</span><span class="s1">&#39;severity&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Congestion Patterns:&quot;</span><span class="p">)</span>
+        <span class="n">patterns</span> <span class="o">=</span> <span class="n">insights</span><span class="p">[</span><span class="s2">&quot;congestion_patterns&quot;</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Severity: </span><span class="si">{</span><span class="n">patterns</span><span class="p">[</span><span class="s1">&#39;severity&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">title</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Expected Duration: </span><span class="si">{</span><span class="n">patterns</span><span class="p">[</span><span class="s1">&#39;expected_duration&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> minutes&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Peak Hours: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">patterns</span><span class="p">[</span><span class="s1">&#39;peak_hours&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Recurring: </span><span class="si">{</span><span class="s1">&#39;Yes&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">patterns</span><span class="p">[</span><span class="s1">&#39;recurring&#39;</span><span class="p">]</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;No&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Predictions:&quot;</span><span class="p">)</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="n">insights</span><span class="p">[</span><span class="s2">&quot;predictions&quot;</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Clearance Time: </span><span class="si">{</span><span class="n">predictions</span><span class="p">[</span><span class="s1">&#39;clearance_time&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> minutes&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">predictions</span><span class="p">[</span><span class="s2">&quot;next_peak&quot;</span><span class="p">]:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Next Peak: </span><span class="si">{</span><span class="n">predictions</span><span class="p">[</span><span class="s1">&#39;next_peak&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Confidence: </span><span class="si">{</span><span class="n">predictions</span><span class="p">[</span><span class="s1">&#39;confidence&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Recommendations:&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="n">insights</span><span class="p">[</span><span class="s2">&quot;recommendations&quot;</span><span class="p">]:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">rec</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span> 
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Memories-dev.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+    <!-- Theme Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-XXXXXXXX-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-XXXXXXXX-1', {
+          'anonymize_ip': false,
+      });
+    </script> 
+
+</body>
+</html>
