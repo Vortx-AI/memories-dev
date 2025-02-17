@@ -72,7 +72,7 @@ class AgentAnalyst:
         """
         try:
             # Load the knowledge base
-            kb_path = os.path.join(self.project_root, "knowledge_base", "duckdb_parquet_kb.json")
+            kb_path = os.path.join(self.project_root,"memories","utils","earth", "duckdb_parquet_kb.json")
             with open(kb_path, 'r') as f:
                 knowledge_base = json.load(f)
 
