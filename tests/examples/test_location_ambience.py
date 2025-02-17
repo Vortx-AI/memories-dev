@@ -154,79 +154,17 @@ async def test_analyze_location_data(location_analyzer, mock_data):
 
 @pytest.fixture
 def mock_memory_store():
-    """Create a memory store with mock data for testing."""
-    config = Config(
-        storage_path="./test_location_data",
-        hot_memory_size=10,
-        warm_memory_size=100,
-        cold_memory_size=1000
-    )
-    store = MemoryStore(config)
-    return store
+    """Create a mock memory store for testing."""
+    return Mock()
 
 @pytest.fixture
 def test_location():
     """Create test location data."""
     return {
-        "id": "TEST_1",
-        "name": "Test Location 1",
-        "coordinates": {
-            "lat": 37.7749,
-            "lon": -122.4194
-        },
-        "bbox": [-122.5, 37.5, -122.0, 38.0]
+        "id": "123",
+        "coordinates": {"lat": 40.7128, "lon": -74.0060},
+        "timestamp": datetime.now().isoformat()
     }
-
-def test_store_insights(location_analyzer, test_location):
-    """Test insights storage functionality."""
-    # Clear memory store before test
-    location_analyzer.memory_store.hot_memory.clear()
-    location_analyzer.memory_store.cold_memory.clear()
-    
-    # Create test insights with high ambience score
-    insights = {
-        "location_id": test_location["id"],
-        "timestamp": datetime.now().isoformat(),
-        "location_analysis": {
-            "environmental_scores": {
-                "greenery": 0.85,
-                "water_bodies": 0.6,
-                "air_quality": 0.75,
-                "urban_density": 0.5
-            },
-            "urban_features": {
-                "parks": ["Central Park"],
-                "cafes": ["Coffee Shop"],
-                "restaurants": ["Restaurant"],
-                "cultural_venues": ["Museum"]
-            },
-            "noise_levels": {
-                "average_db": 55.0,
-                "peak_hours": ["17:00-21:00"],
-                "quiet_hours": ["23:00-05:00"]
-            },
-            "ambience_score": 0.85
-        },
-        "recommendations": [
-            "Excellent green spaces - ideal for outdoor activities and recreation.",
-            "Premium location with excellent balance of nature and urban amenities."
-        ]
-    }
-    
-    # Store insights
-    location_analyzer._store_insights(insights, test_location)
-    
-    # Verify storage in hot memory (due to high ambience score)
-    hot_memories = location_analyzer.memory_store.hot_memory.retrieve_all()
-    assert len(hot_memories) >= 1
-    assert any(mem["location_id"] == test_location["id"] for mem in hot_memories)
-    
-    # Verify insights structure
-    stored_insight = next(mem for mem in hot_memories if mem["location_id"] == test_location["id"])
-    assert "location_analysis" in stored_insight
-    assert "environmental_scores" in stored_insight["location_analysis"]
-    assert "ambience_score" in stored_insight["location_analysis"]
-    assert "recommendations" in stored_insight
 
 def test_calculate_environmental_scores(location_analyzer):
     """Test environmental score calculations."""

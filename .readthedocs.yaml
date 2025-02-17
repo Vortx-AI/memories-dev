@@ -18,8 +18,9 @@ build:
       - pip install -e .
       # Install documentation dependencies
       - pip install -r docs/requirements.txt
-      # Additional pre-build steps for Earth Memory Synthesis
+      # Download required NLTK data
       - python -c "import nltk; nltk.download('punkt'); nltk.download('averaged_perceptron_tagger')"
+      # Additional pre-build steps for Earth Memory Synthesis
 
 # Build documentation in the docs/source directory with Sphinx
 sphinx:
