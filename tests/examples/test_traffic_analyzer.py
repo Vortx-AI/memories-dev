@@ -130,17 +130,73 @@ def test_store_insights(traffic_analyzer):
     
     # Create test insights with high congestion
     high_congestion_insights = {
+        "road_id": "TEST_1",
         "traffic_metrics": {
-            "congestion_level": 0.9
+            "congestion_level": 0.9,
+            "average_speed": 25.0,
+            "volume": 150,
+            "density": 0.8,
+            "thresholds": {
+                "speed": 45.0,
+                "volume": 200
+            }
         },
+        "road_conditions": {
+            "surface_quality": 0.7,
+            "weather_impact": 0.2,
+            "maintenance_score": 0.8,
+            "hazards": []
+        },
+        "congestion_patterns": {
+            "peak_hours": ["07:00-09:00", "16:00-18:00"],
+            "severity": "high",
+            "expected_duration": 120,
+            "recurring": True
+        },
+        "predictions": {
+            "next_hour": "severe congestion expected",
+            "next_day": "moderate to severe congestion during peak hours"
+        },
+        "recommendations": [
+            "Consider alternate routes during peak hours",
+            "Plan for delays of up to 30 minutes"
+        ],
         "timestamp": datetime.now().isoformat()
     }
     
     # Create test insights with low congestion
     low_congestion_insights = {
+        "road_id": "TEST_2",
         "traffic_metrics": {
-            "congestion_level": 0.4
+            "congestion_level": 0.4,
+            "average_speed": 45.0,
+            "volume": 80,
+            "density": 0.4,
+            "thresholds": {
+                "speed": 45.0,
+                "volume": 200
+            }
         },
+        "road_conditions": {
+            "surface_quality": 0.8,
+            "weather_impact": 0.1,
+            "maintenance_score": 0.9,
+            "hazards": []
+        },
+        "congestion_patterns": {
+            "peak_hours": ["07:00-09:00", "16:00-18:00"],
+            "severity": "low",
+            "expected_duration": 60,
+            "recurring": False
+        },
+        "predictions": {
+            "next_hour": "normal traffic flow expected",
+            "next_day": "light to moderate congestion during peak hours"
+        },
+        "recommendations": [
+            "Road conditions optimal for travel",
+            "No significant delays expected"
+        ],
         "timestamp": datetime.now().isoformat()
     }
     
