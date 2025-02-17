@@ -74,11 +74,28 @@ class Agent:
                 
                 print("Context Agent Response:")
                 print(f"• Data Type: {context_result.get('data_type', '')}")
-                print(f"• Location Info: {context_result.get('location_info', '')}")
+                
+                # Extract latitude and longitude from the 'location_info' output.
+                # Expected format:
+                # {'location': '12.9093124,77.6078977', 'location_type': 'coordinates', 
+                #  'normalized': {'original': '12.9093124,77.6078977', 'type': 'coordinates', 
+                #                 'coordinates': {'lat': 12.9093124, 'lon': 77.6078977}}}
+                location_info = context_result.get('location_info', {})
+                lat_val, lon_val = 0.0, 0.0
+                if isinstance(location_info, dict):
+                    normalized = location_info.get('normalized', {})
+                    coordinates = normalized.get('coordinates', {})
+                    if isinstance(coordinates, dict):
+                        lat_val = coordinates.get('lat', 0.0)
+                        lon_val = coordinates.get('lon', 0.0)
+                
+                print(f"• Latitude: {lat_val}")
+                print(f"• Longitude: {lon_val}")
                 
                 result.update({
                     'data_type': context_result.get('data_type'),
-                    'location_details': context_result.get('location_info')
+                    'latitude': lat_val,    # extracted from nested "location_info"
+                    'longitude': lon_val    # extracted from nested "location_info"
                 })
             
             # Step 3: L1 Agent (if classification is L1)
@@ -105,29 +122,24 @@ class Agent:
                             print(f"  File Path: {col['file_path']}")
                             print(f"  Distance: {col['distance']:.4f}")
                         
-                        # Extract latitude and longitude from location_details (assumed to be a dict).
-                        location_details = result.get('location_details', {})
-                        if isinstance(location_details, dict):
-                            lat_val = location_details.get('lat') or location_details.get('latitude')
-                            lon_val = location_details.get('lon') or location_details.get('longitude')
-                        else:
-                            # Fallback values if location details are missing or not a dict.
-                            lat_val, lon_val = 0.0, 0.0
-                        
+                        # Use the extracted latitude and longitude from the Context Agent.
+                        lat_val = result.get('latitude', 0.0)
+                        lon_val = result.get('longitude', 0.0)
+    
                         # Use the previously retrieved data_type.
                         data_type = result.get('data_type', '')
-
+    
                         # Get the Parquet file information from the best matching column.
                         best_column = similar_columns[0]
                         raw_file_path = best_column.get('file_path', '')
-
+    
                         # Construct the full Parquet file path if the provided file_path is not absolute.
                         if not os.path.isabs(raw_file_path):
                             project_root = os.getenv("PROJECT_ROOT", "")
                             parquet_file_path = os.path.join(project_root, "data", "parquet", raw_file_path)
                         else:
                             parquet_file_path = raw_file_path
-
+    
                         print("\n[Invoking Agent Analyst]")
                         print("-" * 50)
                         analyst = AgentAnalyst(self.load_model)
@@ -136,7 +148,7 @@ class Agent:
                             lat=lat_val,
                             lon=lon_val,
                             data_type=data_type,
-                            parquet_file=parquet_file_path,  # now using the full file path from the L1 agent response
+                            parquet_file=parquet_file_path,  # using the full file path from the L1 agent response
                             extra_params={"radius": 5000}  # Adjust extra parameters as needed.
                         )
     
@@ -163,7 +175,8 @@ class Agent:
             
             if 'data_type' in result:
                 print(f"\n• Data Type: {result['data_type']}")
-                print(f"• Location Details: {result.get('location_details', '')}")
+                print(f"• Latitude: {result.get('latitude', '')}")
+                print(f"• Longitude: {result.get('longitude', '')}")
             
             if 'similar_columns' in result:
                 print("\n• Similar Columns:")
@@ -173,7 +186,7 @@ class Agent:
             if 'query_results' in result:
                 print("\n• Query Results:")
                 print(result['query_results'])
-                print(f"\n• Total Rows: {result['row_count']}")
+                print(f"\n• Total Rows: {result.get('row_count', 'N/A')}")
             
             print("="*80)
             
