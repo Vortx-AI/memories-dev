@@ -195,10 +195,10 @@ def test_store_insights(location_analyzer, test_location):
                 "urban_density": 0.5
             },
             "urban_features": {
-                "parks": [],
-                "cafes": [],
-                "restaurants": [],
-                "cultural_venues": []
+                "parks": ["Central Park"],
+                "cafes": ["Coffee Shop"],
+                "restaurants": ["Restaurant"],
+                "cultural_venues": ["Museum"]
             },
             "noise_levels": {
                 "average_db": 55.0,

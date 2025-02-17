@@ -131,6 +131,7 @@ def test_store_insights(traffic_analyzer):
     # Create test insights with high congestion
     high_congestion_insights = {
         "road_id": "TEST_1",
+        "timestamp": datetime.now().isoformat(),
         "traffic_metrics": {
             "congestion_level": 0.9,
             "average_speed": 25.0,
@@ -160,13 +161,13 @@ def test_store_insights(traffic_analyzer):
         "recommendations": [
             "Consider alternate routes during peak hours",
             "Plan for delays of up to 30 minutes"
-        ],
-        "timestamp": datetime.now().isoformat()
+        ]
     }
     
     # Create test insights with low congestion
     low_congestion_insights = {
         "road_id": "TEST_2",
+        "timestamp": datetime.now().isoformat(),
         "traffic_metrics": {
             "congestion_level": 0.4,
             "average_speed": 45.0,
@@ -196,8 +197,7 @@ def test_store_insights(traffic_analyzer):
         "recommendations": [
             "Road conditions optimal for travel",
             "No significant delays expected"
-        ],
-        "timestamp": datetime.now().isoformat()
+        ]
     }
     
     # Test storage of high congestion road
