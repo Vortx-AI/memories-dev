@@ -50,12 +50,12 @@ def within_radius_query(parquet_file, column_name, value, target_lat, target_lon
     target_point = f"ST_Point({target_lon}, {target_lat})"
     return (
         f"SELECT *, "
-        f"ST_X(geom) as longitude, "
-        f"ST_Y(geom) as latitude, "
-        f"ST_Distance(geom, {target_point}) as distance_km "
+        f"ST_X(ST_GeomFromWKB(geom)) as longitude, "
+        f"ST_Y(ST_GeomFromWKB(geom)) as latitude, "
+        f"ST_Distance(ST_GeomFromWKB(geom), {target_point}) as distance_km "
         f"FROM '{parquet_file}' "
         f"WHERE {column_name} = {bool_value} "
-        f"AND ST_DWithin(geom, {target_point}, {radius}) "
+        f"AND ST_DWithin(ST_GeomFromWKB(geom), {target_point}, {radius}) "
         f"ORDER BY distance_km ASC;"
     )
 
@@ -68,9 +68,9 @@ def nearest_query(parquet_file, column_name, value, target_lat, target_lon, limi
     target_point = f"ST_Point({target_lon}, {target_lat})"
     return (
         f"SELECT *, "
-        f"ST_X(geom) as longitude, "
-        f"ST_Y(geom) as latitude, "
-        f"ST_Distance(geom, {target_point}) as distance_km "
+        f"ST_X(ST_GeomFromWKB(geom)) as longitude, "
+        f"ST_Y(ST_GeomFromWKB(geom)) as latitude, "
+        f"ST_Distance(ST_GeomFromWKB(geom), {target_point}) as distance_km "
         f"FROM '{parquet_file}' "
         f"WHERE {column_name} = {bool_value} "
         f"ORDER BY distance_km ASC "
@@ -109,9 +109,9 @@ def count_within_radius_query(parquet_file, column_name, value, target_lat, targ
     return (
         f"WITH distances AS ("
         f"  SELECT *, "
-        f"  ST_X(geom) as longitude, "
-        f"  ST_Y(geom) as latitude, "
-        f"  ST_Distance(geom, {target_point}) as distance_km "
+        f"  ST_X(ST_GeomFromWKB(geom)) as longitude, "
+        f"  ST_Y(ST_GeomFromWKB(geom)) as latitude, "
+        f"  ST_Distance(ST_GeomFromWKB(geom), {target_point}) as distance_km "
         f"  FROM '{parquet_file}' "
         f"  WHERE {column_name} = {bool_value}"
         f") "
