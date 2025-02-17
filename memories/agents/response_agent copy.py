@@ -2,16 +2,15 @@ from typing import Dict, Any, List, Optional
 import pandas as pd
 
 class AgentResponse:
-    def __init__(self, query: str, load_model: Any):
+    def __init__(self, query: str):
         """
         Initialize the response agent.
         
         Args:
             query (str): Original user query
-            load_model (Any): Initialized model instance for generating responses
         """
         self.query = query
-        self.load_model = load_model
+        self.load_model = None  # Will be initialized when needed
     
     def get_response_prompt(self, data: pd.DataFrame, query: str) -> str:
         """
@@ -69,6 +68,11 @@ Response:"""
             Dict containing the formatted response
         """
         try:
+            from memories.llm.load_model import LoadModel
+            
+            if self.load_model is None:
+                self.load_model = LoadModel()
+            
             # Generate prompt
             prompt = self.get_response_prompt(data, query)
             
@@ -129,8 +133,6 @@ Response:"""
 # Example usage
 if __name__ == "__main__":
     # Example query and data
-    from memories.llm.load_model import LoadModel
-    
     query = "Find water tanks near Bangalore"
     data = pd.DataFrame({
         'name': ['Tank 1', 'Tank 2'],
@@ -139,9 +141,8 @@ if __name__ == "__main__":
         'distance_km': [1.2, 2.5]
     })
     
-    # Create response agent with model and get response
-    load_model = LoadModel()
-    agent = AgentResponse(query, load_model)
+    # Create response agent and get response
+    agent = AgentResponse(query)
     response = agent.process_results(query, [data])
     print("\nQuery:", query)
     print("\nResponse:", response['response'])

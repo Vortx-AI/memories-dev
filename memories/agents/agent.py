@@ -43,7 +43,7 @@ class Agent:
         if project_root is None:
             raise ValueError("PROJECT_ROOT environment variable is not set")
 
-        self.response_agent = AgentResponse(query)
+        self.response_agent = AgentResponse(query, load_model)
 
     def process_query(self, query: str) -> Dict[str, Any]:
         """
