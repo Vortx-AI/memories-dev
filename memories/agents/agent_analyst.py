@@ -14,19 +14,25 @@ class AgentAnalyst:
         self.load_model = load_model
         self.project_root = os.getenv("PROJECT_ROOT", "")
 
-    def select_query_function(self, query: str, lat: float, lon: float, data_type: str) -> str:
+    def clean_generated_code(self, code: str) -> str:
         """
-        Selects the appropriate query function based on the input query and other parameters.
+        Clean up the generated code by removing markdown formatting and comments.
         """
-        query_lower = query.lower()
-        if "nearest" in query_lower:
-            return "nearest_query"
-        elif "within" in query_lower:
-            return "within_radius_query"
-        elif "at" in query_lower:
-            return "at_coordinates_query"
-        else:
-            return "exact_match_query"
+        if "```python" in code:
+            code = code.split("```python")[1].split("```")[0]
+        elif "```" in code:
+            code = code.split("```")[1].split("```")[0]
+        
+        code = code.strip()
+        
+        if "import" in code:
+            code_lines = code.split('\n')
+            for i, line in enumerate(code_lines):
+                if 'import' in line:
+                    code = '\n'.join(code_lines[i:])
+                    break
+        
+        return code
 
     def analyze_query(
         self,
@@ -35,50 +41,71 @@ class AgentAnalyst:
         lon: float,
         data_type: str,
         parquet_file: str,
+        relevant_column: str = None,
         geometry: Optional[str] = None,
         geometry_type: Optional[str] = None,
         extra_params: dict = {}
     ) -> dict:
         """
         Uses an LLM with the duckdb_parquet_kb.json knowledgebase to generate Python code that queries
-        the provided Parquet file. The generated code will filter records based on the provided
-        latitude and longitude. If columns named 'latitude'/'longitude' or 'lat'/'lon' exist, they should be used.
-        Otherwise, if a geometry column is provided (with its type), generate code that uses spatial functions
-        (like ST_Y and ST_X) on the geometry column.
-
-        Returns:
-            A dictionary with the status and the generated Python code.
+        the provided Parquet file using the appropriate query function based on the data type and context.
         """
         try:
-            # Load the knowledge base
-            kb_path = os.path.join(self.project_root, "knowledge_base", "duckdb_parquet_kb.json")
+            # Load the knowledge base from the correct path
+            kb_path = os.path.join(self.project_root, "memories", "utils", "earth", "duckdb_parquet_kb.json")
             with open(kb_path, 'r') as f:
                 knowledge_base = json.load(f)
 
             prompt = f"""
-Generate a Python code snippet that queries a Parquet file using DuckDB.
-The Parquet file is located at '{parquet_file}'.
-The target coordinates to filter are:
-    latitude: {lat}
-    longitude: {lon}
-The code should follow this logic:
-1. If the file contains columns named 'latitude' and 'longitude', filter using these.
-2. If not, but it contains 'lat' and 'lon', filter using those columns.
-3. Otherwise, if a geometry column is present, use the provided geometry column name:
-      geometry column: {geometry if geometry else "N/A"}
-   and its type: {geometry_type if geometry_type else "N/A"}.
-   In that case, generate code that applies spatial functions (for example, ST_Y and ST_X)
-   to extract the latitude and longitude from the geometry column.
+Generate executable Python code that uses the query functions defined in the knowledge base to fetch data from a Parquet file.
 
-Knowledge Base Context:
+Context:
+- User Query: "{query}"
+- Data Type: "{data_type}"
+- Relevant Column: "{relevant_column}"
+- Coordinates: ({lat}, {lon})
+- Parquet File: "{parquet_file}"
+
+Requirements:
+1. Use ONLY the query functions defined in the knowledge base
+2. Choose the most appropriate function based on the query context
+3. The code must store results in a variable named 'results'
+4. Use the relevant column for filtering data
+5. Consider the data type when constructing the query
+6. Include spatial functions if needed (geometry column: {geometry}, type: {geometry_type})
+7. Use proper string escaping for file paths in SQL queries
+
+Example structure:
+import duckdb
+
+def within_radius_query(conn, parquet_file, target_lat, target_lon, radius_meters):
+    query = f'''
+        SELECT *
+        FROM read_parquet({{parquet_file}})
+        WHERE ST_DWithin(
+            ST_Point(longitude, latitude),
+            ST_Point({target_lon}, {target_lat}),
+            {radius_meters}
+        )
+    '''
+    return conn.execute(query).fetchall()
+
+conn = duckdb.connect()
+conn.execute("LOAD spatial;")
+results = within_radius_query(conn, '{parquet_file}', {lat}, {lon}, 5000)
+
+Knowledge Base (contains available functions and their usage):
 {json.dumps(knowledge_base, indent=2)}
 
-Return only the Python code snippet.
-            """
+Return only the executable Python code without any explanations or markdown.
+"""
+            # Get the response and clean it
             generated_code = self.load_model.get_response(prompt)
+            clean_code = self.clean_generated_code(generated_code)
+            
             return {
                 "status": "success",
-                "generated_code": generated_code,
+                "generated_code": clean_code,
                 "chosen_function": "analyze_query"
             }
         except Exception as e:
