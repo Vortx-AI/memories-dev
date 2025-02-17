@@ -1,0 +1,566 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installation &mdash; memories-dev 1.1.9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=fe9a5ec8" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=7b68ca77"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=30646c52"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script src="https://buttons.github.io/buttons.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Quick Start Guide" href="quickstart.html" />
+    <link rel="prev" title="Welcome to Memories-Dev’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            memories-dev
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#basic-installation">Basic Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#python-version-compatibility">Python Version Compatibility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation-options">Installation Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#cpu-only-installation-default">1. CPU-only Installation (Default)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gpu-support-installation">2. GPU Support Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#development-installation">3. Development Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#documentation-tools">4. Documentation Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#detailed-installation-steps">Detailed Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-and-activate-virtual-environment">1. Create and Activate Virtual Environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-core-package">2. Install Core Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#install-documentation-dependencies">3. Install Documentation Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#common-issues-and-solutions">Common Issues and Solutions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#version-specific-dependencies">Version-specific Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#working-examples">Working Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#basic-usage-example">Basic Usage Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gpu-support-example">GPU Support Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#documentation-build-example">Documentation Build Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#testing-example">Testing Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#basic-usage">Basic Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#key-features">Key Features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="quickstart.html#memory-formation">1. Memory Formation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="quickstart.html#memory-querying">2. Memory Querying</a></li>
+<li class="toctree-l3"><a class="reference internal" href="quickstart.html#agent-integration">3. Agent Integration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide/index.html">User Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/memory_system.html">Memory System</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/memory_system.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/memory_system.html#memory-tiers">Memory Tiers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/memory_system.html#hot-memory">Hot Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/memory_system.html#warm-memory">Warm Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/memory_system.html#cold-memory">Cold Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/memory_system.html#glacier-memory">Glacier Memory</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/memory_system.html#usage-examples">Usage Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/memory_system.html#basic-memory-operations">Basic Memory Operations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/memory_system.html#advanced-features">Advanced Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/memory_system.html#memory-persistence">Memory Persistence</a></li>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/memory_system.html#memory-updates">Memory Updates</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/memory_system.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/agents.html">Agents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/agents.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/agents.html#agent-types">Agent Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/agents.html#memory-agent">Memory Agent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/agents.html#conversation-agent">Conversation Agent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/agents.html#task-agent">Task Agent</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/agents.html#usage-examples">Usage Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/agents.html#basic-agent-operations">Basic Agent Operations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/agents.html#advanced-features">Advanced Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/agents.html#custom-agents">Custom Agents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/agents.html#multi-agent-collaboration">Multi-Agent Collaboration</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/agents.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/data_sources.html">Data Sources</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/data_sources.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/data_sources.html#supported-data-sources">Supported Data Sources</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/data_sources.html#satellite-data">Satellite Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/data_sources.html#sensor-data">Sensor Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/data_sources.html#real-time-streams">Real-time Streams</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/data_sources.html#usage-examples">Usage Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/data_sources.html#satellite-data-access">Satellite Data Access</a></li>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/data_sources.html#sensor-data-integration">Sensor Data Integration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/data_sources.html#real-time-stream-processing">Real-time Stream Processing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/data_sources.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/advanced_features.html">Advanced Features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/advanced_features.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/advanced_features.html#custom-memory-stores">Custom Memory Stores</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/advanced_features.html#creating-custom-stores">Creating Custom Stores</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/advanced_features.html#advanced-querying">Advanced Querying</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/advanced_features.html#spatial-queries">Spatial Queries</a></li>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/advanced_features.html#temporal-queries">Temporal Queries</a></li>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/advanced_features.html#semantic-queries">Semantic Queries</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/advanced_features.html#performance-optimization">Performance Optimization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/advanced_features.html#caching-strategies">Caching Strategies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/advanced_features.html#batch-operations">Batch Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/advanced_features.html#distributed-processing">Distributed Processing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/advanced_features.html#security-features">Security Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/advanced_features.html#encryption">Encryption</a></li>
+<li class="toctree-l4"><a class="reference internal" href="user_guide/advanced_features.html#access-control">Access Control</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="user_guide/advanced_features.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/index.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/index.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user_guide/index.html#core-concepts">Core Concepts</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api_reference/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api_reference/memory_store.html">MemoryStore</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/memory_store.html#core-memory-management">Core Memory Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/memory_store.html#memorystore-class">MemoryStore Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/memory_store.html#memory-tiers">Memory Tiers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/memory_store.html#hot-memory">Hot Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/memory_store.html#warm-memory">Warm Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/memory_store.html#cold-memory">Cold Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/memory_store.html#glacier-memory">Glacier Memory</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/memory_store.html#example-usage">Example Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/memory_store.html#configuration-options">Configuration Options</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api_reference/agents.html">Agents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#agent-system">Agent System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#base-agent">Base Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#agent-types">Agent Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/agents.html#memory-agent">Memory Agent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/agents.html#conversation-agent">Conversation Agent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/agents.html#task-agent">Task Agent</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#property-agent">Property Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#location-ambience-agent">Location Ambience Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#traffic-agent">Traffic Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#water-body-agent">Water Body Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#common-agent-patterns">Common Agent Patterns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/agents.html#example-usage">Example Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api_reference/models.html">Models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/models.html#model-loading">Model Loading</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/models.html#model-types">Model Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/models.html#base-model">Base Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/models.html#embedding-model">Embedding Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_reference/models.html#language-model">Language Model</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api_reference/utils.html">Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/utils.html#general-utilities">General Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/utils.html#data-processing">Data Processing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/utils.html#text-processing">Text Processing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/utils.html#file-operations">File Operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/utils.html#configuration">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api_reference/index.html#core-components">Core Components</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/index.html#memory-system">Memory System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/index.html#agent-system">Agent System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/index.html#models">Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api_reference/index.html#utilities">Utilities</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#development-process">Development Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#pull-request-process">Pull Request Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#any-contributions-you-make-will-be-under-the-apache-license-2-0">Any contributions you make will be under the Apache License 2.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#report-bugs-using-github-s-issue-tracker-https-github-com-vortx-ai-memories-dev-issues">Report bugs using GitHub’s [issue tracker](https://github.com/Vortx-AI/memories-dev/issues)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#write-bug-reports-with-detail-background-and-sample-code">Write bug reports with detail, background, and sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#license">License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id1">[1.1.8] - 2025-02-16</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#changed">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id2">[1.1.7] - 2025-02-16</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#added">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#fixed">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id3">[1.1.6] - 2025-02-16</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id4">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id5">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id6">Fixed</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">memories-dev</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Installation</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/Vortx-AI/memories-dev/blob/main/docs/source/installation.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul><div class="rst-breadcrumbs-buttons" role="navigation" aria-label="Sequential page navigation">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to Memories-Dev’s documentation!" accesskey="p"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="quickstart.html" class="btn btn-neutral float-right" title="Quick Start Guide" accesskey="n">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+  </div>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
+<section id="basic-installation">
+<h2>Basic Installation<a class="headerlink" href="#basic-installation" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>memories-dev
+</pre></div>
+</div>
+</section>
+<section id="python-version-compatibility">
+<h2>Python Version Compatibility<a class="headerlink" href="#python-version-compatibility" title="Link to this heading"></a></h2>
+<p>The package supports Python versions 3.9 through 3.13. Dependencies are automatically adjusted based on your Python version to ensure compatibility.</p>
+</section>
+<section id="installation-options">
+<h2>Installation Options<a class="headerlink" href="#installation-options" title="Link to this heading"></a></h2>
+<section id="cpu-only-installation-default">
+<h3>1. CPU-only Installation (Default)<a class="headerlink" href="#cpu-only-installation-default" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>memories-dev
+</pre></div>
+</div>
+</section>
+<section id="gpu-support-installation">
+<h3>2. GPU Support Installation<a class="headerlink" href="#gpu-support-installation" title="Link to this heading"></a></h3>
+<p>For CUDA 11.8:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>memories-dev<span class="o">[</span>gpu<span class="o">]</span>
+</pre></div>
+</div>
+<p>For different CUDA versions, install PyTorch manually first:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># For CUDA 12.1</span>
+pip<span class="w"> </span>install<span class="w"> </span>torch<span class="w"> </span>torchvision<span class="w"> </span>torchaudio<span class="w"> </span>--index-url<span class="w"> </span>https://download.pytorch.org/whl/cu121
+
+<span class="c1"># Then install the package</span>
+pip<span class="w"> </span>install<span class="w"> </span>memories-dev<span class="o">[</span>gpu<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="development-installation">
+<h3>3. Development Installation<a class="headerlink" href="#development-installation" title="Link to this heading"></a></h3>
+<p>For contributing to the project:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>memories-dev<span class="o">[</span>dev<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="documentation-tools">
+<h3>4. Documentation Tools<a class="headerlink" href="#documentation-tools" title="Link to this heading"></a></h3>
+<p>For building documentation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>memories-dev<span class="o">[</span>docs<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="detailed-installation-steps">
+<h2>Detailed Installation Steps<a class="headerlink" href="#detailed-installation-steps" title="Link to this heading"></a></h2>
+<section id="create-and-activate-virtual-environment">
+<h3>1. Create and Activate Virtual Environment<a class="headerlink" href="#create-and-activate-virtual-environment" title="Link to this heading"></a></h3>
+<p>It’s recommended to install memories-dev in a virtual environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create virtual environment</span>
+python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv_test
+
+<span class="c1"># Activate virtual environment</span>
+<span class="nb">source</span><span class="w"> </span>venv_test/bin/activate<span class="w">  </span><span class="c1"># Linux/Mac</span>
+<span class="c1"># or</span>
+.<span class="se">\v</span>env_test<span class="se">\S</span>cripts<span class="se">\a</span>ctivate<span class="w">   </span><span class="c1"># Windows</span>
+</pre></div>
+</div>
+</section>
+<section id="install-core-package">
+<h3>2. Install Core Package<a class="headerlink" href="#install-core-package" title="Link to this heading"></a></h3>
+<p>Install the package in editable mode with development dependencies:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>dev<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="install-documentation-dependencies">
+<h3>3. Install Documentation Dependencies<a class="headerlink" href="#install-documentation-dependencies" title="Link to this heading"></a></h3>
+<p>If you’re working with documentation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>docs/requirements.txt
+</pre></div>
+</div>
+</section>
+<section id="verify-installation">
+<h3>4. Verify Installation<a class="headerlink" href="#verify-installation" title="Link to this heading"></a></h3>
+<p>Run the test suite to verify the installation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pytest
+</pre></div>
+</div>
+<p>Expected output:
+- Some tests may be skipped (particularly GPU-related tests if GPU is not available)
+- You should see “passed” tests with potential skips
+- Any warnings can typically be ignored unless they cause functionality issues</p>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="common-issues-and-solutions">
+<h3>Common Issues and Solutions<a class="headerlink" href="#common-issues-and-solutions" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Import Issues
+- If you encounter import errors, ensure you’re in the correct virtual environment
+- Verify that all dependencies are installed: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">list</span></code>
+- Try reinstalling the package: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code></p></li>
+<li><p>GPU Support
+- For GPU support, ensure CUDA toolkit is installed
+- Verify GPU availability: <code class="docutils literal notranslate"><span class="pre">nvidia-smi</span></code>
+- Install GPU dependencies: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">gpu-requirements.txt</span></code></p></li>
+<li><p>Documentation Build
+- Install Sphinx and related packages: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">docs/requirements.txt</span></code>
+- Build documentation locally: <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">docs</span> <span class="pre">&amp;&amp;</span> <span class="pre">make</span> <span class="pre">html</span></code></p></li>
+<li><p>Test Failures
+- Update all dependencies: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">--upgrade</span> <span class="pre">-r</span> <span class="pre">requirements.txt</span></code>
+- Clear pytest cache: <code class="docutils literal notranslate"><span class="pre">pytest</span> <span class="pre">--cache-clear</span></code>
+- Run specific test file: <code class="docutils literal notranslate"><span class="pre">pytest</span> <span class="pre">path/to/test_file.py</span> <span class="pre">-v</span></code></p></li>
+</ol>
+</section>
+</section>
+<section id="version-specific-dependencies">
+<h2>Version-specific Dependencies<a class="headerlink" href="#version-specific-dependencies" title="Link to this heading"></a></h2>
+<p>The package automatically handles version-specific dependencies based on your Python version:</p>
+<ul class="simple">
+<li><p>Python 3.9: Compatible with older versions of key packages</p></li>
+<li><p>Python 3.10-3.11: Standard modern package versions</p></li>
+<li><p>Python 3.12-3.13: Latest package versions with improved performance</p></li>
+</ul>
+</section>
+<section id="working-examples">
+<h2>Working Examples<a class="headerlink" href="#working-examples" title="Link to this heading"></a></h2>
+<section id="basic-usage-example">
+<h3>Basic Usage Example<a class="headerlink" href="#basic-usage-example" title="Link to this heading"></a></h3>
+<p>After installation, you can verify the setup with these examples:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">memories.models.load_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoadModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.core.memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryStore</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.agents.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span>
+
+<span class="c1"># Basic initialization</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_basic_setup</span><span class="p">():</span>
+    <span class="c1"># Initialize model loader</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">LoadModel</span><span class="p">(</span>
+        <span class="n">use_gpu</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Set to True if GPU is available</span>
+        <span class="n">model_provider</span><span class="o">=</span><span class="s2">&quot;deepseek-ai&quot;</span><span class="p">,</span>
+        <span class="n">deployment_type</span><span class="o">=</span><span class="s2">&quot;local&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Create memory store</span>
+    <span class="n">memory_store</span> <span class="o">=</span> <span class="n">MemoryStore</span><span class="p">()</span>
+
+    <span class="c1"># Test memory creation</span>
+    <span class="n">memories</span> <span class="o">=</span> <span class="n">memory_store</span><span class="o">.</span><span class="n">create_memories</span><span class="p">(</span>
+        <span class="n">location</span><span class="o">=</span><span class="p">(</span><span class="mf">37.7749</span><span class="p">,</span> <span class="o">-</span><span class="mf">122.4194</span><span class="p">),</span>  <span class="c1"># San Francisco</span>
+        <span class="n">time_range</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;2024-01-01&quot;</span><span class="p">,</span> <span class="s2">&quot;2024-02-01&quot;</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="s2">&quot;Setup successful!&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="gpu-support-example">
+<h3>GPU Support Example<a class="headerlink" href="#gpu-support-example" title="Link to this heading"></a></h3>
+<p>If you’ve installed GPU support:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.utils.processors</span><span class="w"> </span><span class="kn">import</span> <span class="n">gpu_stat</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">verify_gpu_setup</span><span class="p">():</span>
+    <span class="c1"># Check CUDA availability</span>
+    <span class="n">cuda_available</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">cuda_available</span><span class="p">:</span>
+        <span class="n">device_count</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">device_count</span><span class="p">()</span>
+        <span class="n">device_name</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">get_device_name</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Get GPU memory stats</span>
+        <span class="n">memory_stats</span> <span class="o">=</span> <span class="n">gpu_stat</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;cuda_available&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;device_count&quot;</span><span class="p">:</span> <span class="n">device_count</span><span class="p">,</span>
+            <span class="s2">&quot;device_name&quot;</span><span class="p">:</span> <span class="n">device_name</span><span class="p">,</span>
+            <span class="s2">&quot;memory_stats&quot;</span><span class="p">:</span> <span class="n">memory_stats</span>
+        <span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;cuda_available&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="documentation-build-example">
+<h3>Documentation Build Example<a class="headerlink" href="#documentation-build-example" title="Link to this heading"></a></h3>
+<p>To build and verify documentation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Navigate to docs directory</span>
+<span class="nb">cd</span><span class="w"> </span>docs
+
+<span class="c1"># Build documentation</span>
+make<span class="w"> </span>html
+
+<span class="c1"># Check build output</span>
+ls<span class="w"> </span>build/html/
+
+<span class="c1"># Open in browser (macOS)</span>
+open<span class="w"> </span>build/html/index.html
+<span class="c1"># or on Linux</span>
+xdg-open<span class="w"> </span>build/html/index.html
+<span class="c1"># or on Windows</span>
+start<span class="w"> </span>build/html/index.html
+</pre></div>
+</div>
+</section>
+<section id="testing-example">
+<h3>Testing Example<a class="headerlink" href="#testing-example" title="Link to this heading"></a></h3>
+<p>Run specific test categories:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run all tests</span>
+pytest
+
+<span class="c1"># Run specific test file</span>
+pytest<span class="w"> </span>tests/test_installation.py
+
+<span class="c1"># Run tests with coverage report</span>
+pytest<span class="w"> </span>--cov<span class="o">=</span>memories<span class="w"> </span>tests/
+
+<span class="c1"># Run tests in parallel</span>
+pytest<span class="w"> </span>-n<span class="w"> </span>auto
+</pre></div>
+</div>
+<p>For more detailed examples and usage patterns, please refer to our <a class="reference internal" href="quickstart.html"><span class="doc">Quick Start Guide</span></a> guide.</p>
+<p>For more detailed information about dependencies and compatibility, please refer to our <a class="reference internal" href="user_guide/index.html"><span class="doc">User Guide</span></a>.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to Memories-Dev’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="quickstart.html" class="btn btn-neutral float-right" title="Quick Start Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Memories-dev.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+    <!-- Theme Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-XXXXXXXX-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-XXXXXXXX-1', {
+          'anonymize_ip': false,
+      });
+    </script> 
+
+</body>
+</html>

@@ -1,13 +1,17 @@
 API Reference
-============
+=============
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   memory
+   memory_store
    agents
+   config
    models
+   load_model
+   gpu_utils
+   data_utils
    utils
 
 Core Components

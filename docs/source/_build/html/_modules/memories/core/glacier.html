@@ -1,0 +1,681 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>memories.core.glacier &mdash; memories-dev 1.1.9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=fe9a5ec8" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=7b68ca77"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=30646c52"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script src="https://buttons.github.io/buttons.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2c3e50" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            memories-dev
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#basic-installation">Basic Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#python-version-compatibility">Python Version Compatibility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#installation-options">Installation Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#cpu-only-installation-default">1. CPU-only Installation (Default)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#gpu-support-installation">2. GPU Support Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#development-installation">3. Development Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#documentation-tools">4. Documentation Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#detailed-installation-steps">Detailed Installation Steps</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#create-and-activate-virtual-environment">1. Create and Activate Virtual Environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#install-core-package">2. Install Core Package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#install-documentation-dependencies">3. Install Documentation Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#verify-installation">4. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#common-issues-and-solutions">Common Issues and Solutions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#version-specific-dependencies">Version-specific Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../installation.html#working-examples">Working Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#basic-usage-example">Basic Usage Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#gpu-support-example">GPU Support Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#documentation-build-example">Documentation Build Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../installation.html#testing-example">Testing Example</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#basic-usage">Basic Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../quickstart.html#key-features">Key Features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#memory-formation">1. Memory Formation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#memory-querying">2. Memory Querying</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../quickstart.html#agent-integration">3. Agent Integration</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide/index.html">User Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../user_guide/memory_system.html">Memory System</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/memory_system.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/memory_system.html#memory-tiers">Memory Tiers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/memory_system.html#hot-memory">Hot Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/memory_system.html#warm-memory">Warm Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/memory_system.html#cold-memory">Cold Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/memory_system.html#glacier-memory">Glacier Memory</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/memory_system.html#usage-examples">Usage Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/memory_system.html#basic-memory-operations">Basic Memory Operations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/memory_system.html#advanced-features">Advanced Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/memory_system.html#memory-persistence">Memory Persistence</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/memory_system.html#memory-updates">Memory Updates</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/memory_system.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../user_guide/agents.html">Agents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/agents.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/agents.html#agent-types">Agent Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/agents.html#memory-agent">Memory Agent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/agents.html#conversation-agent">Conversation Agent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/agents.html#task-agent">Task Agent</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/agents.html#usage-examples">Usage Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/agents.html#basic-agent-operations">Basic Agent Operations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/agents.html#advanced-features">Advanced Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/agents.html#custom-agents">Custom Agents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/agents.html#multi-agent-collaboration">Multi-Agent Collaboration</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/agents.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../user_guide/data_sources.html">Data Sources</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/data_sources.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/data_sources.html#supported-data-sources">Supported Data Sources</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/data_sources.html#satellite-data">Satellite Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/data_sources.html#sensor-data">Sensor Data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/data_sources.html#real-time-streams">Real-time Streams</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/data_sources.html#usage-examples">Usage Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/data_sources.html#satellite-data-access">Satellite Data Access</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/data_sources.html#sensor-data-integration">Sensor Data Integration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/data_sources.html#real-time-stream-processing">Real-time Stream Processing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/data_sources.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../user_guide/advanced_features.html">Advanced Features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/advanced_features.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/advanced_features.html#custom-memory-stores">Custom Memory Stores</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#creating-custom-stores">Creating Custom Stores</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/advanced_features.html#advanced-querying">Advanced Querying</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#spatial-queries">Spatial Queries</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#temporal-queries">Temporal Queries</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#semantic-queries">Semantic Queries</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/advanced_features.html#performance-optimization">Performance Optimization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#caching-strategies">Caching Strategies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#batch-operations">Batch Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#distributed-processing">Distributed Processing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/advanced_features.html#security-features">Security Features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#encryption">Encryption</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../user_guide/advanced_features.html#access-control">Access Control</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../user_guide/advanced_features.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../user_guide/index.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../user_guide/index.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../user_guide/index.html#core-concepts">Core Concepts</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_reference/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api_reference/memory_store.html">MemoryStore</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/memory_store.html#core-memory-management">Core Memory Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/memory_store.html#memorystore-class">MemoryStore Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/memory_store.html#memory-tiers">Memory Tiers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/memory_store.html#hot-memory">Hot Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/memory_store.html#warm-memory">Warm Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/memory_store.html#cold-memory">Cold Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/memory_store.html#glacier-memory">Glacier Memory</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/memory_store.html#example-usage">Example Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/memory_store.html#configuration-options">Configuration Options</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api_reference/agents.html">Agents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#agent-system">Agent System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#base-agent">Base Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#agent-types">Agent Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/agents.html#memory-agent">Memory Agent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/agents.html#conversation-agent">Conversation Agent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/agents.html#task-agent">Task Agent</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#property-agent">Property Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#location-ambience-agent">Location Ambience Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#traffic-agent">Traffic Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#water-body-agent">Water Body Agent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#common-agent-patterns">Common Agent Patterns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/agents.html#example-usage">Example Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api_reference/models.html">Models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/models.html#model-loading">Model Loading</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/models.html#model-types">Model Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/models.html#base-model">Base Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/models.html#embedding-model">Embedding Model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api_reference/models.html#language-model">Language Model</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api_reference/utils.html">Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/utils.html#general-utilities">General Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/utils.html#data-processing">Data Processing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/utils.html#text-processing">Text Processing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/utils.html#file-operations">File Operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/utils.html#configuration">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api_reference/index.html#core-components">Core Components</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/index.html#memory-system">Memory System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/index.html#agent-system">Agent System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/index.html#models">Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api_reference/index.html#utilities">Utilities</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../contributing.html#development-process">Development Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../contributing.html#pull-request-process">Pull Request Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../contributing.html#any-contributions-you-make-will-be-under-the-apache-license-2-0">Any contributions you make will be under the Apache License 2.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../contributing.html#report-bugs-using-github-s-issue-tracker-https-github-com-vortx-ai-memories-dev-issues">Report bugs using GitHub’s [issue tracker](https://github.com/Vortx-AI/memories-dev/issues)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../contributing.html#write-bug-reports-with-detail-background-and-sample-code">Write bug reports with detail, background, and sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../contributing.html#license">License</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#id1">[1.1.8] - 2025-02-16</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../changelog.html#changed">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#id2">[1.1.7] - 2025-02-16</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../changelog.html#added">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../changelog.html#fixed">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../changelog.html#id3">[1.1.6] - 2025-02-16</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../changelog.html#id4">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../changelog.html#id5">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../changelog.html#id6">Fixed</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2c3e50" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">memories-dev</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">memories.core.glacier</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for memories.core.glacier</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">duckdb</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gpd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pa</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.parquet</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pq</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">shape</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">zlib</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<div class="viewcode-block" id="GlacierMemory">
+<a class="viewcode-back" href="../../../api_reference/memory_store.html#memories.core.glacier.GlacierMemory">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GlacierMemory</span><span class="p">:</span>
+<div class="viewcode-block" id="GlacierMemory.__init__">
+<a class="viewcode-back" href="../../../api_reference/memory_store.html#memories.core.glacier.GlacierMemory.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;glacier.duckdb&quot;</span><span class="p">,</span> <span class="n">compression_level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">9</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize Glacier Memory with DuckDB and GeoParquet support.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            db_path (str): Path to DuckDB database file</span>
+<span class="sd">            compression_level (int): Compression level (1-9, default 9 for maximum)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db_path</span> <span class="o">=</span> <span class="n">db_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">compression_level</span> <span class="o">=</span> <span class="n">compression_level</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_db</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initialize_db</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">duckdb</span><span class="o">.</span><span class="n">DuckDBPyConnection</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize DuckDB connection and required extensions.&quot;&quot;&quot;</span>
+        <span class="n">conn</span> <span class="o">=</span> <span class="n">duckdb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">db_path</span><span class="p">)</span>
+        <span class="n">conn</span><span class="o">.</span><span class="n">install_extension</span><span class="p">(</span><span class="s2">&quot;spatial&quot;</span><span class="p">)</span>
+        <span class="n">conn</span><span class="o">.</span><span class="n">load_extension</span><span class="p">(</span><span class="s2">&quot;spatial&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Create tables if they don&#39;t exist</span>
+        <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            CREATE TABLE IF NOT EXISTS glacier_data (</span>
+<span class="s2">                id VARCHAR PRIMARY KEY,</span>
+<span class="s2">                data BLOB,</span>
+<span class="s2">                metadata JSON,</span>
+<span class="s2">                geometry JSON,</span>
+<span class="s2">                created_at TIMESTAMP,</span>
+<span class="s2">                archived_at TIMESTAMP,</span>
+<span class="s2">                last_accessed TIMESTAMP,</span>
+<span class="s2">                compression_level INTEGER,</span>
+<span class="s2">                original_size BIGINT,</span>
+<span class="s2">                compressed_size BIGINT,</span>
+<span class="s2">                tags VARCHAR[],</span>
+<span class="s2">                archive_status VARCHAR</span>
+<span class="s2">            )</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">conn</span>
+
+<div class="viewcode-block" id="GlacierMemory.archive">
+<a class="viewcode-back" href="../../../api_reference/memory_store.html#memories.core.glacier.GlacierMemory.archive">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">archive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                <span class="n">gdf</span><span class="p">:</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">,</span> 
+                <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+                <span class="n">tags</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Archive new entry in glacier storage with compression.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            gdf (GeoDataFrame): GeoDataFrame to store</span>
+<span class="sd">            metadata (dict): Additional metadata</span>
+<span class="sd">            tags (list): List of tags for searching</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            str: ID of archived entry</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Convert GeoDataFrame to Parquet bytes</span>
+            <span class="n">parquet_bytes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gdf_to_parquet_bytes</span><span class="p">(</span><span class="n">gdf</span><span class="p">)</span>
+            <span class="n">original_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">parquet_bytes</span><span class="p">)</span>
+            
+            <span class="c1"># Compress the data</span>
+            <span class="n">compressed_data</span> <span class="o">=</span> <span class="n">zlib</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">parquet_bytes</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">compression_level</span><span class="p">)</span>
+            <span class="n">compressed_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">compressed_data</span><span class="p">)</span>
+            
+            <span class="c1"># Convert geometry to GeoJSON</span>
+            <span class="n">geometry_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">gdf</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">__geo_interface__</span><span class="p">)</span>
+            
+            <span class="c1"># Generate ID</span>
+            <span class="n">entry_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+            
+            <span class="c1"># Insert data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                INSERT INTO glacier_data (</span>
+<span class="s2">                    id, data, metadata, geometry, created_at, archived_at,</span>
+<span class="s2">                    last_accessed, compression_level, original_size,</span>
+<span class="s2">                    compressed_size, tags, archive_status</span>
+<span class="s2">                )</span>
+<span class="s2">                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,</span>
+<span class="s2">                        CURRENT_TIMESTAMP, ?, ?, ?, ?, &#39;ARCHIVED&#39;)</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">,</span> <span class="p">(</span>
+                <span class="n">entry_id</span><span class="p">,</span>
+                <span class="n">compressed_data</span><span class="p">,</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{}),</span>
+                <span class="n">geometry_json</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">compression_level</span><span class="p">,</span>
+                <span class="n">original_size</span><span class="p">,</span>
+                <span class="n">compressed_size</span><span class="p">,</span>
+                <span class="n">tags</span> <span class="ow">or</span> <span class="p">[]</span>
+            <span class="p">))</span>
+            
+            <span class="k">return</span> <span class="n">entry_id</span>
+            
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error archiving entry: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span></div>
+
+
+<div class="viewcode-block" id="GlacierMemory.retrieve">
+<a class="viewcode-back" href="../../../api_reference/memory_store.html#memories.core.glacier.GlacierMemory.retrieve">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">retrieve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve entry from glacier storage.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            id (str): Entry ID</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            GeoDataFrame or None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                SELECT data</span>
+<span class="s2">                FROM glacier_data</span>
+<span class="s2">                WHERE id = ?</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">,</span> <span class="p">[</span><span class="nb">id</span><span class="p">])</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+            
+            <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            
+            <span class="c1"># Update last accessed timestamp</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                UPDATE glacier_data</span>
+<span class="s2">                SET last_accessed = CURRENT_TIMESTAMP</span>
+<span class="s2">                WHERE id = ?</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">,</span> <span class="p">[</span><span class="nb">id</span><span class="p">])</span>
+            
+            <span class="c1"># Decompress and convert data</span>
+            <span class="n">compressed_data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">parquet_bytes</span> <span class="o">=</span> <span class="n">zlib</span><span class="o">.</span><span class="n">decompress</span><span class="p">(</span><span class="n">compressed_data</span><span class="p">)</span>
+            <span class="n">gdf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parquet_bytes_to_gdf</span><span class="p">(</span><span class="n">parquet_bytes</span><span class="p">)</span>
+            
+            <span class="k">return</span> <span class="n">gdf</span>
+            
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error retrieving entry </span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="GlacierMemory.update_metadata">
+<a class="viewcode-back" href="../../../api_reference/memory_store.html#memories.core.glacier.GlacierMemory.update_metadata">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                       <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                       <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update metadata of archived entry.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            id (str): Entry ID</span>
+<span class="sd">            metadata (dict, optional): New metadata</span>
+<span class="sd">            tags (list, optional): New tags</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: Success status</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">updates</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="p">[]</span>
+            
+            <span class="k">if</span> <span class="n">metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;metadata = ?&quot;</span><span class="p">)</span>
+                <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">metadata</span><span class="p">))</span>
+                
+            <span class="k">if</span> <span class="n">tags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">updates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;tags = ?&quot;</span><span class="p">)</span>
+                <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+                
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">updates</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+                
+            <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                UPDATE glacier_data</span>
+<span class="s2">                SET </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">updates</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">                WHERE id = ?</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+            
+            <span class="k">return</span> <span class="kc">True</span>
+            
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error updating metadata for entry </span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="GlacierMemory.delete">
+<a class="viewcode-back" href="../../../api_reference/memory_store.html#memories.core.glacier.GlacierMemory.delete">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Delete entry from glacier storage.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            id (str): Entry ID</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: Success status</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;DELETE FROM glacier_data WHERE id = ?&quot;</span><span class="p">,</span> <span class="p">[</span><span class="nb">id</span><span class="p">])</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error deleting entry </span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="GlacierMemory.search">
+<a class="viewcode-back" href="../../../api_reference/memory_store.html#memories.core.glacier.GlacierMemory.search">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+               <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="n">bbox</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="n">archived_before</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="n">accessed_before</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+               <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Search archived entries by various criteria.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            tags (list, optional): Tags to search for</span>
+<span class="sd">            bbox (list, optional): Bounding box [minx, miny, maxx, maxy]</span>
+<span class="sd">            archived_before (datetime, optional): Filter by archive date</span>
+<span class="sd">            accessed_before (datetime, optional): Filter by last access date</span>
+<span class="sd">            limit (int): Maximum number of results</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list: List of matching entry metadata</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                SELECT id, metadata, geometry, archived_at, last_accessed,</span>
+<span class="s2">                       original_size, compressed_size, tags</span>
+<span class="s2">                FROM glacier_data </span>
+<span class="s2">                WHERE 1=1</span>
+<span class="s2">            &quot;&quot;&quot;</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="p">[]</span>
+            
+            <span class="k">if</span> <span class="n">tags</span><span class="p">:</span>
+                <span class="n">query</span> <span class="o">+=</span> <span class="s2">&quot; AND tags &amp;&amp; ?&quot;</span>
+                <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+                
+            <span class="k">if</span> <span class="n">bbox</span><span class="p">:</span>
+                <span class="n">query</span> <span class="o">+=</span> <span class="s2">&quot;&quot;&quot; </span>
+<span class="s2">                    AND ST_Intersects(</span>
+<span class="s2">                        ST_GeomFromGeoJSON(geometry),</span>
+<span class="s2">                        ST_MakeEnvelope(?, ?, ?, ?)</span>
+<span class="s2">                    )</span>
+<span class="s2">                &quot;&quot;&quot;</span>
+                <span class="n">params</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">bbox</span><span class="p">)</span>
+                
+            <span class="k">if</span> <span class="n">archived_before</span><span class="p">:</span>
+                <span class="n">query</span> <span class="o">+=</span> <span class="s2">&quot; AND archived_at &lt; ?&quot;</span>
+                <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">archived_before</span><span class="p">)</span>
+                
+            <span class="k">if</span> <span class="n">accessed_before</span><span class="p">:</span>
+                <span class="n">query</span> <span class="o">+=</span> <span class="s2">&quot; AND last_accessed &lt; ?&quot;</span>
+                <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">accessed_before</span><span class="p">)</span>
+                
+            <span class="n">query</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; LIMIT </span><span class="si">{</span><span class="n">limit</span><span class="si">}</span><span class="s2">&quot;</span>
+            
+            <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+            
+            <span class="k">return</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="s1">&#39;metadata&#39;</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                    <span class="s1">&#39;geometry&#39;</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
+                    <span class="s1">&#39;archived_at&#39;</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+                    <span class="s1">&#39;last_accessed&#39;</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>
+                    <span class="s1">&#39;original_size&#39;</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span>
+                    <span class="s1">&#39;compressed_size&#39;</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="mi">6</span><span class="p">],</span>
+                    <span class="s1">&#39;tags&#39;</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>
+                <span class="p">}</span>
+                <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span>
+            <span class="p">]</span>
+            
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error searching entries: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span></div>
+
+
+<div class="viewcode-block" id="GlacierMemory.get_storage_stats">
+<a class="viewcode-back" href="../../../api_reference/memory_store.html#memories.core.glacier.GlacierMemory.get_storage_stats">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_storage_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get storage statistics.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">stats</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                SELECT </span>
+<span class="s2">                    COUNT(*) as total_entries,</span>
+<span class="s2">                    SUM(original_size) as total_original_size,</span>
+<span class="s2">                    SUM(compressed_size) as total_compressed_size,</span>
+<span class="s2">                    AVG(CAST(compressed_size AS FLOAT) / NULLIF(original_size, 0)) as avg_compression_ratio</span>
+<span class="s2">                FROM glacier_data</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+            
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s1">&#39;total_entries&#39;</span><span class="p">:</span> <span class="n">stats</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="s1">&#39;total_original_size&#39;</span><span class="p">:</span> <span class="n">stats</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                <span class="s1">&#39;total_compressed_size&#39;</span><span class="p">:</span> <span class="n">stats</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                <span class="s1">&#39;avg_compression_ratio&#39;</span><span class="p">:</span> <span class="n">stats</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+            <span class="p">}</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error getting storage stats: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{}</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_gdf_to_parquet_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gdf</span><span class="p">:</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert GeoDataFrame to Parquet bytes.&quot;&quot;&quot;</span>
+        <span class="n">buffer</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">BufferOutputStream</span><span class="p">()</span>
+        <span class="n">gdf</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">buffer</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span><span class="o">.</span><span class="n">to_pybytes</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parquet_bytes_to_gdf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parquet_bytes</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert Parquet bytes back to GeoDataFrame.&quot;&quot;&quot;</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">pq</span><span class="o">.</span><span class="n">read_table</span><span class="p">(</span><span class="n">pa</span><span class="o">.</span><span class="n">BufferReader</span><span class="p">(</span><span class="n">parquet_bytes</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="o">.</span><span class="n">from_arrow</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GlacierMemory.close">
+<a class="viewcode-back" href="../../../api_reference/memory_store.html#memories.core.glacier.GlacierMemory.close">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close database connection.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Memories-dev.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+    <!-- Theme Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-XXXXXXXX-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-XXXXXXXX-1', {
+          'anonymize_ip': false,
+      });
+    </script> 
+
+</body>
+</html>
