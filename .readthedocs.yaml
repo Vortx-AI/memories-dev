@@ -12,17 +12,32 @@ build:
     python: "3.12"
   jobs:
     pre_build:
-      - python -m pip install --upgrade pip setuptools wheel
-      - python -m pip install -e .
+      # Install the package in editable mode
+      - pip install -e .
+      # Install documentation dependencies
+      - pip install -r docs/requirements.txt
 
-# Build documentation in the docs/ directory with Sphinx
+# Build documentation in the docs/source directory with Sphinx
 sphinx:
   configuration: docs/source/conf.py
   fail_on_warning: false
+  builder: html
 
-# Python requirements
+# Optionally build your docs in additional formats such as PDF and ePub
+formats:
+  - pdf
+  - epub
+
+# Optionally declare the Python requirements required to build your docs
 python:
   install:
     - method: pip
       path: .
-    - requirements: docs/requirements.txt 
+      extra_requirements:
+        - docs
+    - requirements: docs/requirements.txt
+
+# Don't use submodules for documentation
+submodules:
+  include: all
+  recursive: true 
