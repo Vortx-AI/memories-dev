@@ -1,187 +1,85 @@
 {
   "queries": [
     {
-      "name": "Spatial Search with CTE",
-      "function": "create_spatial_query",
-      "code_to_execute": """
-        from memories.utils.earth.geocode import create_spatial_query
-        from memories.utils.earth.duckdb_parquet_queries import execute_duckdb_spatial_query
-
-        # Create and execute the spatial query
-        query = create_spatial_query(
-            parquet_file='{parquet_file}',
-            column_name='{column_name}',
-            value='{value}',
-            target_lat={target_lat},
-            target_lon={target_lon},
-            radius={radius}
-        )
-        
-        results = execute_duckdb_spatial_query(query)
-        return results
-      """,
-      "inputs_required": {
-        "parquet_file": "Path to the GeoParquet file",
-        "column_name": "Name of the column to filter",
-        "value": "Value to match in the column",
-        "target_lat": "Target latitude",
-        "target_lon": "Target longitude",
-        "radius": "Search radius in meters"
-      },
-      "output_expected": "DataFrame containing records within radius that match the column value",
-      "explanation": "Uses geocode.py and duckdb_parquet_queries.py functions to perform spatial search",
-      "details": "Handles DuckDB connection and spatial extension loading internally"
-    },
-    {
       "name": "Exact Match Query",
       "function": "exact_match_query",
-      "code_to_execute": """
-        from memories.utils.earth.duckdb_parquet_queries import exact_match_query, execute_duckdb_spatial_query
-        
-        query = exact_match_query(
-            parquet_file='{parquet_file}',
-            geometry_column='{geometry_column}',
-            geometry_type='{geometry_type}',
-            column_name='{column_name}',
-            value='{value}'
-        )
-        
-        results = execute_duckdb_spatial_query(query)
-        return results
-      """,
+      "code_to_execute": "SELECT * FROM '{parquet_file}' WHERE {column_name} = '{value}';",
       "inputs_required": {
-        "parquet_file": "Path to the GeoParquet file",
-        "geometry_column": "Name of the geometry column",
-        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
-        "column_name": "Name of the column to filter",
-        "value": "Value to match exactly"
-      }
-    },
-    {
-      "name": "Within Radius Query",
-      "function": "within_radius_query",
-      "code_to_execute": """
-        from memories.utils.earth.duckdb_parquet_queries import within_radius_query, execute_duckdb_spatial_query
-        
-        query = within_radius_query(
-            parquet_file='{parquet_file}',
-            geometry_column='{geometry_column}',
-            geometry_type='{geometry_type}',
-            column_name='{column_name}',
-            value='{value}',
-            target_lat={target_lat},
-            target_lon={target_lon},
-            radius={radius}
-        )
-        
-        results = execute_duckdb_spatial_query(query)
-        return results
-      """
+        "parquet_file": "Path to the Parquet file",
+        "column_name": "Name of the column to match against",
+        "value": "The exact value to search"
+      },
+      "output_expected": "A dataset containing all rows where the column exactly matches the provided value.",
+      "explanation": "This query filters the dataset by verifying each row's specified column against an exact value.",
+      "details": "Use this query when you need to retrieve data based on an exact match; for example, filtering users by ID or name."
     },
     {
       "name": "LIKE Query",
       "function": "like_query",
-      "code_to_execute": """
-        from memories.utils.earth.duckdb_parquet_queries import like_query, execute_duckdb_spatial_query
-        
-        query = like_query(
-            parquet_file='{parquet_file}',
-            geometry_column='{geometry_column}',
-            geometry_type='{geometry_type}',
-            column_name='{column_name}',
-            pattern='{pattern}'
-        )
-        
-        results = execute_duckdb_spatial_query(query)
-      """,
+      "code_to_execute": "SELECT * FROM '{parquet_file}' WHERE {column_name} LIKE '{pattern}';",
       "inputs_required": {
         "parquet_file": "Path to the Parquet file",
-        "geometry_column": "Name of the geometry column",
-        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
-        "column_name": "Name of the column to filter",
+        "column_name": "Column name to perform pattern matching",
         "pattern": "The pattern to search for, e.g., 'prefix%'"
       },
       "output_expected": "Rows where the column contains values matching the specified pattern.",
       "explanation": "Uses the SQL LIKE operator to facilitate pattern matching on text data.",
-      "details": "Useful for fuzzy matching or searching for values that begin with, end with, or contain a certain substring.",
-      "example": """
-        query = like_query(
-            parquet_file='data.parquet',
-            geometry_column='geometry',
-            geometry_type='POINT',
-            column_name='name',
-            pattern='%Restaurant%'
-        )
-      """
+      "details": "Useful for fuzzy matching or searching for values that begin with, end with, or contain a certain substring."
     },
     {
       "name": "At Coordinates Query",
       "function": "at_coordinates_query",
-      "code_to_execute": """
-        from memories.utils.earth.duckdb_parquet_queries import at_coordinates_query, execute_duckdb_spatial_query
-        
-        query = at_coordinates_query(
-            parquet_file='{parquet_file}',
-            geometry_column='{geometry_column}',
-            geometry_type='{geometry_type}',
-            column_name='{column_name}',
-            value='{value}',
-            target_lat={target_lat},
-            target_lon={target_lon}
-        )
-        
-        results = execute_duckdb_spatial_query(query)
-      """,
+      "code_to_execute": "SELECT * FROM '{parquet_file}' WHERE {lat_col} = {target_lat} AND {lon_col} = {target_lon};",
       "inputs_required": {
         "parquet_file": "Path to the Parquet file",
-        "geometry_column": "Name of the geometry column",
-        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
-        "column_name": "Name of the column to filter",
-        "value": "Value to match in the column",
-        "target_lat": "Target latitude",
-        "target_lon": "Target longitude"
+        "lat_col": "Name of the latitude column",
+        "lon_col": "Name of the longitude column",
+        "target_lat": "Target latitude value",
+        "target_lon": "Target longitude value"
       },
       "output_expected": "Records that exactly match the given latitude and longitude.",
       "explanation": "This query retrieves data that is precisely at the specified coordinates.",
-      "details": "Useful for pinpointing exact locations in geospatial datasets.",
-      "example": """
-        query = at_coordinates_query(
-            parquet_file='data.parquet',
-            geometry_column='geometry',
-            geometry_type='POINT',
-            column_name='amenity',
-            value='restaurant',
-            target_lat=12.9716,
-            target_lon=77.5946
-        )
-      """
+      "details": "Useful for pinpointing exact locations in geospatial datasets."
+    },
+    {
+      "name": "Within Radius Query",
+      "function": "within_radius_query",
+      "code_to_execute": "SELECT * FROM '{parquet_file}' WHERE ST_Distance(ST_Point({lon_col}, {lat_col}), ST_Point({target_lon}, {target_lat})) <= {radius};",
+      "inputs_required": {
+        "parquet_file": "Path to the Parquet file",
+        "lat_col": "Name of the latitude column",
+        "lon_col": "Name of the longitude column",
+        "target_lat": "Target latitude value",
+        "target_lon": "Target longitude value",
+        "radius": "Radius within which to search"
+      },
+      "output_expected": "Rows that are within the specified radius from the target coordinates.",
+      "explanation": "Calculates the distance from each record to the target point and filters those within the given radius.",
+      "details": "Assumes the presence of spatial functions like ST_Distance and ST_Point. Ideal for proximity search."
+    },
+    {
+      "name": "Nearest Query",
+      "function": "nearest_query",
+      "code_to_execute": "SELECT *, ST_Distance(ST_Point({lon_col}, {lat_col}), ST_Point({target_lon}, {target_lat})) AS distance FROM '{parquet_file}' ORDER BY distance ASC LIMIT 1;",
+      "inputs_required": {
+        "parquet_file": "Path to the Parquet file",
+        "lat_col": "Name of the latitude column",
+        "lon_col": "Name of the longitude column",
+        "target_lat": "Target latitude value",
+        "target_lon": "Target longitude value"
+      },
+      "output_expected": "The row that is closest to the specified coordinates along with its calculated distance.",
+      "explanation": "Sorts the rows by their distance from a target point and retrieves the nearest one.",
+      "details": "Ideal for applications requiring nearest neighbor lookup in a spatial dataset."
     },
     {
       "name": "Bounding Box Query",
       "function": "bounding_box_query",
-      "code_to_execute": """
-        from memories.utils.earth.duckdb_parquet_queries import bounding_box_query, execute_duckdb_spatial_query
-        
-        query = bounding_box_query(
-            parquet_file='{parquet_file}',
-            geometry_column='{geometry_column}',
-            geometry_type='{geometry_type}',
-            column_name='{column_name}',
-            value='{value}',
-            min_lat={min_lat},
-            max_lat={max_lat},
-            min_lon={min_lon},
-            max_lon={max_lon}
-        )
-        
-        results = execute_duckdb_spatial_query(query)
-      """,
+      "code_to_execute": "SELECT * FROM '{parquet_file}' WHERE {lat_col} BETWEEN {min_lat} AND {max_lat} AND {lon_col} BETWEEN {min_lon} AND {max_lon};",
       "inputs_required": {
         "parquet_file": "Path to the Parquet file",
-        "geometry_column": "Name of the geometry column",
-        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
-        "column_name": "Name of the column to filter",
-        "value": "Value to match in the column",
+        "lat_col": "Name of the latitude column",
+        "lon_col": "Name of the longitude column",
         "min_lat": "Minimum latitude value",
         "max_lat": "Maximum latitude value",
         "min_lon": "Minimum longitude value",
@@ -189,397 +87,72 @@
       },
       "output_expected": "All records that fall within the defined rectangular area.",
       "explanation": "Filters records whose latitude and longitude lie within the specified ranges.",
-      "details": "Useful for spatial queries that define areas with bounding coordinates.",
-      "example": """
-        query = bounding_box_query(
-            parquet_file='data.parquet',
-            geometry_column='geometry',
-            geometry_type='POINT',
-            column_name='amenity',
-            value='restaurant',
-            min_lat=12.9,
-            max_lat=13.0,
-            min_lon=77.5,
-            max_lon=77.6
-        )
-      """
+      "details": "Useful for spatial queries that define areas with bounding coordinates."
     },
     {
       "name": "Count Within Radius Query",
       "function": "count_within_radius_query",
-      "code_to_execute": """
-        from memories.utils.earth.duckdb_parquet_queries import count_within_radius_query, execute_duckdb_spatial_query
-        
-        query = count_within_radius_query(
-            parquet_file='{parquet_file}',
-            geometry_column='{geometry_column}',
-            geometry_type='{geometry_type}',
-            column_name='{column_name}',
-            value='{value}',
-            target_lat={target_lat},
-            target_lon={target_lon},
-            radius={radius}
-        )
-        
-        results = execute_duckdb_spatial_query(query)
-      """,
+      "code_to_execute": "SELECT COUNT(*) FROM '{parquet_file}' WHERE ST_Distance(ST_Point({lon_col}, {lat_col}), ST_Point({target_lon}, {target_lat})) < {radius};",
       "inputs_required": {
         "parquet_file": "Path to the Parquet file",
-        "geometry_column": "Name of the geometry column",
-        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
-        "column_name": "Name of the column to filter",
-        "value": "Value to match in the column",
-        "target_lat": "Center latitude",
-        "target_lon": "Center longitude",
-        "radius": "Search radius in meters"
+        "lat_col": "Name of the latitude column",
+        "lon_col": "Name of the longitude column",
+        "target_lat": "Target latitude value",
+        "target_lon": "Target longitude value",
+        "radius": "Radius within which to count records"
       },
       "output_expected": "The number of records found within the specified radius.",
       "explanation": "Counts the number of locations within a given radius using spatial distance.",
-      "details": "Ideal for obtaining summary statistics on spatial data.",
-      "example": """
-        query = count_within_radius_query(
-            parquet_file='data.parquet',
-            geometry_column='geometry',
-            geometry_type='POINT',
-            column_name='amenity',
-            value='restaurant',
-            target_lat=12.9716,
-            target_lon=77.5946,
-            radius=1000
-        )
-      """
+      "details": "Ideal for obtaining summary statistics on spatial data."
     },
     {
       "name": "Aggregate Query",
       "function": "aggregate_query",
-      "code_to_execute": """
-        from memories.utils.earth.duckdb_parquet_queries import aggregate_query, execute_duckdb_spatial_query
-        
-        query = aggregate_query(
-            parquet_file='{parquet_file}',
-            geometry_column='{geometry_column}',
-            geometry_type='{geometry_type}',
-            group_column='{group_column}',
-            filter_column='{filter_column}',
-            value='{value}',
-            target_lat={target_lat},
-            target_lon={target_lon},
-            radius={radius}
-        )
-        
-        results = execute_duckdb_spatial_query(query)
-      """,
+      "code_to_execute": "SELECT {group_column}, COUNT(*) FROM '{parquet_file}' WHERE ST_Distance(ST_Point({lon_col}, {lat_col}), ST_Point({target_lon}, {target_lat})) < {radius} GROUP BY {group_column};",
       "inputs_required": {
         "parquet_file": "Path to the Parquet file",
-        "geometry_column": "Name of the geometry column",
-        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
         "group_column": "Column name to group the results by",
-        "filter_column": "Column to filter on",
-        "value": "Value to match in filter column",
-        "target_lat": "Center latitude",
-        "target_lon": "Center longitude",
-        "radius": "Search radius in meters"
+        "lat_col": "Name of the latitude column",
+        "lon_col": "Name of the longitude column",
+        "target_lat": "Target latitude value",
+        "target_lon": "Target longitude value",
+        "radius": "Radius within which to aggregate records"
       },
       "output_expected": "Aggregated counts of records grouped by the specified column for entries within the radius.",
       "explanation": "Groups spatially filtered records by a designated column and returns the count for each group.",
-      "details": "Useful for analyzing spatial data categorization and distribution.",
-      "example": """
-        query = aggregate_query(
-            parquet_file='data.parquet',
-            geometry_column='geometry',
-            geometry_type='POINT',
-            group_column='cuisine',
-            filter_column='amenity',
-            value='restaurant',
-            target_lat=12.9716,
-            target_lon=77.5946,
-            radius=1000
-        )
-      """
+      "details": "Useful for analyzing spatial data categorization and distribution."
     },
     {
       "name": "Combined Filters Query",
       "function": "combined_filters_query",
-      "code_to_execute": """
-        from memories.utils.earth.duckdb_parquet_queries import combined_filters_query, execute_duckdb_spatial_query
-        
-        query = combined_filters_query(
-            parquet_file='{parquet_file}',
-            geometry_column='{geometry_column}',
-            geometry_type='{geometry_type}',
-            column_name='{column_name}',
-            value='{value}',
-            pattern_column='{pattern_column}',
-            pattern='{pattern}',
-            target_lat={target_lat},
-            target_lon={target_lon},
-            radius={radius}
-        )
-        
-        results = execute_duckdb_spatial_query(query)
-      """,
+      "code_to_execute": "SELECT * FROM '{parquet_file}' WHERE {text_column} LIKE '{pattern}' AND ST_Distance(ST_Point({lon_col}, {lat_col}), ST_Point({target_lon}, {target_lat})) < {radius};",
       "inputs_required": {
         "parquet_file": "Path to the Parquet file",
-        "geometry_column": "Name of the geometry column",
-        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
-        "column_name": "Primary column to filter",
-        "value": "Value to match exactly",
-        "pattern_column": "Column to apply pattern matching",
-        "pattern": "Pattern to match",
-        "target_lat": "Center latitude",
-        "target_lon": "Center longitude",
-        "radius": "Search radius in meters"
+        "text_column": "Name of the column for text pattern matching",
+        "pattern": "Pattern to search for (e.g., '%pattern%')",
+        "lat_col": "Name of the latitude column",
+        "lon_col": "Name of the longitude column",
+        "target_lat": "Target latitude value",
+        "target_lon": "Target longitude value",
+        "radius": "Radius within which to apply spatial filtering"
       },
       "output_expected": "Records meeting both the text-based and spatial proximity criteria.",
       "explanation": "Combines a LIKE-based text filter with a spatial filter based on proximity.",
-      "details": "Useful when you want to apply both textual and geospatial filters on the dataset.",
-      "example": """
-        query = combined_filters_query(
-            parquet_file='data.parquet',
-            geometry_column='geometry',
-            geometry_type='POINT',
-            column_name='amenity',
-            value='restaurant',
-            pattern_column='name',
-            pattern='%Pizza%',
-            target_lat=12.9716,
-            target_lon=77.5946,
-            radius=1000
-        )
-      """
+      "details": "Useful when you want to apply both textual and geospatial filters on the dataset."
     },
     {
       "name": "Range Query",
       "function": "range_query",
-      "code_to_execute": """
-        from memories.utils.earth.duckdb_parquet_queries import range_query, execute_duckdb_spatial_query
-        
-        query = range_query(
-            parquet_file='{parquet_file}',
-            geometry_column='{geometry_column}',
-            geometry_type='{geometry_type}',
-            range_column='{range_column}',
-            min_value={min_value},
-            max_value={max_value},
-            filter_column='{filter_column}',
-            value='{value}'
-        )
-        
-        results = execute_duckdb_spatial_query(query)
-      """,
+      "code_to_execute": "SELECT * FROM '{parquet_file}' WHERE {column_name} BETWEEN {min_value} AND {max_value};",
       "inputs_required": {
         "parquet_file": "Path to the Parquet file",
-        "geometry_column": "Name of the geometry column",
-        "geometry_type": "Type of geometry (e.g., POINT, POLYGON)",
-        "range_column": "Column for range check",
-        "min_value": "Minimum value in range",
-        "max_value": "Maximum value in range",
-        "filter_column": "Column to filter on",
-        "value": "Value to match in filter column"
+        "column_name": "Name of the column to filter on",
+        "min_value": "Minimum value of the range",
+        "max_value": "Maximum value of the range"
       },
       "output_expected": "Records where the specified column's value falls within the given range.",
       "explanation": "Selects rows whose values in a specified column are within a given range.",
-      "details": "Typically used for filtering numeric or date ranges.",
-      "example": """
-        query = range_query(
-            parquet_file='data.parquet',
-            geometry_column='geometry',
-            geometry_type='POINT',
-            range_column='rating',
-            min_value=4,
-            max_value=5,
-            filter_column='amenity',
-            value='restaurant'
-        )
-      """
+      "details": "Typically used for filtering numeric or date ranges."
     }
-  ],
-  "initialization": {
-    "required_imports": [
-      "from memories.utils.earth.geocode import *",
-      "from memories.utils.earth.duckdb_parquet_queries import *"
-    ],
-    "required_extensions": ["spatial"],
-    "setup_commands": [
-      "INSTALL spatial;",
-      "LOAD spatial;"
-    ]
-  },
-  "query_functions": {
-    "create_spatial_query": {
-      "description": "Create a spatial query using CTE for efficient geometry handling",
-      "parameters": {
-        "target_lat": "Target latitude value",
-        "target_lon": "Target longitude value",
-        "radius": "Search radius in meters",
-        "value": "Value to match in the column",
-        "parquet_file": "Path to the GeoParquet file",
-        "column_name": "Name of the column to filter"
-      },
-      "example": """
-        from memories.utils.earth.geocode import create_spatial_query
-        
-        query = create_spatial_query(
-          target_lat=12.9093124,
-          target_lon=77.6078977,
-          radius=1000,
-          value='water tanks',
-          parquet_file='data.parquet',
-          column_name='amenity'
-        )
-      """
-    },
-    "create_duckdb_point_geometry": {
-      "name": "Create Point Geometry",
-      "function": "create_duckdb_point_geometry",
-      "code_to_execute": """
-        from memories.utils.earth.geocode import create_duckdb_point_geometry
-        
-        point_geometry = create_duckdb_point_geometry(
-            lat={target_lat},
-            lon={target_lon}
-        )
-        return point_geometry
-      """,
-      "example": """
-        point_geometry = create_duckdb_point_geometry(
-            lat=12.9716,
-            lon=77.5946
-        )
-      """,
-      "inputs_required": {
-        "lat": "Latitude value",
-        "lon": "Longitude value"
-      },
-      "output_expected": "DuckDB-compatible WKT point geometry string"
-    },
-    "transform_duckdb_geometry": {
-      "name": "Transform Geometry",
-      "function": "transform_duckdb_geometry",
-      "code_to_execute": """
-        from memories.utils.earth.geocode import transform_duckdb_geometry
-        
-        transformed_geom = transform_duckdb_geometry(
-            geom_expr='{geometry_column}',
-            source_srid={source_srid},
-            target_srid={target_srid}
-        )
-        return transformed_geom
-      """,
-      "example": """
-        transformed_geom = transform_duckdb_geometry(
-            geom_expr='geometry',
-            source_srid=4326,
-            target_srid=3857
-        )
-      """,
-      "inputs_required": {
-        "geom_expr": "Geometry expression or column name",
-        "source_srid": "Source coordinate system SRID (default: 4326 WGS84)",
-        "target_srid": "Target coordinate system SRID (default: 3857 Web Mercator)"
-      }
-    },
-    "compute_duckdb_spatial_distance": {
-      "name": "Compute Spatial Distance",
-      "function": "compute_duckdb_spatial_distance",
-      "code_to_execute": """
-        from memories.utils.earth.geocode import compute_duckdb_spatial_distance
-        
-        distance_expr = compute_duckdb_spatial_distance(
-            geom1='{geometry_column}',
-            geom2='{target_geometry}',
-            source_srid={source_srid},
-            target_srid={target_srid}
-        )
-        return distance_expr
-      """,
-      "example": """
-        distance_expr = compute_duckdb_spatial_distance(
-            geom1='geometry',
-            geom2='ST_Point(77.5946, 12.9716)',
-            source_srid=4326,
-            target_srid=3857
-        )
-      """
-    },
-    "create_duckdb_spatial_query": {
-      "name": "Create Spatial Query",
-      "function": "create_duckdb_spatial_query",
-      "code_to_execute": """
-        from memories.utils.earth.geocode import create_duckdb_spatial_query
-        
-        query = create_duckdb_spatial_query(
-            parquet_file='{parquet_file}',
-            column_name='{column_name}',
-            value='{value}',
-            geometry_column='{geometry_column}',
-            target_lat={target_lat},
-            target_lon={target_lon},
-            radius={radius},
-            source_srid={source_srid},
-            target_srid={target_srid}
-        )
-        return query
-      """,
-      "example": """
-        query = create_duckdb_spatial_query(
-            parquet_file='data.parquet',
-            column_name='amenity',
-            value='restaurant',
-            geometry_column='geometry',
-            target_lat=12.9716,
-            target_lon=77.5946,
-            radius=1000,
-            source_srid=4326,
-            target_srid=3857
-        )
-      """
-    },
-    "execute_duckdb_spatial_query": {
-      "name": "Execute Spatial Query",
-      "function": "execute_duckdb_spatial_query",
-      "code_to_execute": """
-        from memories.utils.earth.geocode import execute_duckdb_spatial_query
-        
-        results = execute_duckdb_spatial_query(query)
-        return results
-      """,
-      "example": """
-        # After creating a query using any of the query functions
-        results = execute_duckdb_spatial_query(query)
-      """,
-      "inputs_required": {
-        "query": "DuckDB spatial SQL query string"
-      },
-      "output_expected": "pandas DataFrame containing query results"
-    },
-    "geocode_address": {
-      "name": "Geocode Address",
-      "function": "geocode_address",
-      "code_to_execute": """
-        from memories.utils.earth.geocode import geocode_address
-        
-        matches = geocode_address(
-            faiss_storage={faiss_storage},
-            address='{address}',
-            word_vectors={word_vectors}
-        )
-        return matches
-      """,
-      "example": """
-        matches = geocode_address(
-            faiss_storage=faiss_index_data,
-            address='Restaurant in Bangalore',
-            word_vectors=None  # Optional
-        )
-      """,
-      "inputs_required": {
-        "faiss_storage": "Dictionary containing FAISS index and metadata",
-        "address": "Address string to geocode",
-        "word_vectors": "Optional word embedding model"
-      },
-      "output_expected": "List of matching location dictionaries"
-    }
-  }
+  ]
 }
-   

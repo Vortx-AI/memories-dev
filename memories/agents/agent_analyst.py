@@ -48,28 +48,45 @@ class AgentAnalyst:
     ) -> dict:
         """
         Generate DuckDB query code based on the input parameters.
+        
+        Args:
+            query (str): User's query
+            lat (float): Target latitude
+            lon (float): Target longitude
+            data_type (str): Type of data being queried
+            parquet_file (str): Path to Parquet file
+            relevant_column (str): Column name for filtering
+            geometry_column (str): Name of the geometry column
+            geometry_type (str): Type of geometry (e.g., 'POINT')
+            extra_params (dict): Additional parameters
         """
         try:
-            # Load the knowledge base
+            # Load the knowledge base from the correct path
             kb_path = os.path.join(self.project_root, "memories", "utils", "earth", "duckdb_parquet_kb.json")
             with open(kb_path, 'r') as f:
                 knowledge_base = json.load(f)
 
-            # Find the appropriate query function based on the query type
-            query_type = "within_radius_query"  # Default to within_radius_query
-            if "exact" in query.lower() or "match" in query.lower():
-                query_type = "exact_match_query"
-            elif "like" in query.lower() or "similar" in query.lower():
-                query_type = "like_query"
-            elif "nearest" in query.lower() or "closest" in query.lower():
-                query_type = "nearest_query"
-            elif "count" in query.lower():
-                query_type = "count_within_radius_query"
+            prompt = f"""
+Generate executable Python code using the query function/functions from the knowledge base.
 
-            # Generate code using the selected query type
-            code = f"""from memories.utils.earth.duckdb_parquet_queries import {query_type}, execute_duckdb_spatial_query
+Parameters:
+- Parquet file: '{parquet_file}'
+- Target coordinates: lat={lat}, lon={lon}
+- Data type: '{data_type}'
+- Column to filter: '{relevant_column}'
+- Geometry column: '{geometry_column}'
+- Geometry type: '{geometry_type}'
 
-query = {query_type}(
+Required code structure:
+import duckdb
+
+# Initialize connection
+conn = duckdb.connect()
+conn.execute("LOAD spatial;")
+
+# Execute query using one of the predefined functions
+results = [CHOSEN_FUNCTION](
+    conn,
     parquet_file='{parquet_file}',
     geometry_column='{geometry_column}',
     geometry_type='{geometry_type}',
@@ -77,22 +94,27 @@ query = {query_type}(
     value='{data_type}',
     target_lat={lat},
     target_lon={lon},
-    radius=1000
+    radius=1000  # Example radius in meters
 )
 
-results = execute_duckdb_spatial_query(query)
-return results"""
+Knowledge Base:
+{json.dumps(knowledge_base, indent=2)}
+
+Return only executable Python code without explanations or markdown.
+"""
+            # Get the response and clean it
+            generated_code = self.load_model.get_response(prompt)
+            clean_code = self.clean_generated_code(generated_code)
             
             return {
                 "status": "success",
-                "generated_code": code,
-                "chosen_function": query_type
+                "generated_code": clean_code,
+                "chosen_function": "analyze_query"
             }
         except Exception as e:
             return {
                 "status": "error",
-                "error": f"Analysis Error: {str(e)}",
-                "traceback": str(e.__traceback__)
+                "error": f"Binder Error: {str(e)}"
             }
 
 def main():
