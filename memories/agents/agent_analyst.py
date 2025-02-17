@@ -14,29 +14,34 @@ class AgentAnalyst:
         self.load_model = load_model
         self.project_root = os.getenv("PROJECT_ROOT", "")
 
-    def select_query_function(self, query: str, lat: float, lon: float, data_type: str) -> str:
+    def clean_generated_code(self, code: str) -> str:
         """
-        Selects the appropriate query function based on the input query and other parameters.
-
+        Clean up the generated code by removing markdown formatting and comments.
+        
         Args:
-            query (str): The user query describing what to search for.
-            lat (float): Target latitude coordinate.
-            lon (float): Target longitude coordinate.
-            data_type (str): Data type or column name to be used (for example, 'amenity').
-
+            code (str): The raw generated code
+            
         Returns:
-            str: The chosen function name from the available set, e.g., "nearest_query",
-                 "within_radius_query", "at_coordinates_query", or "exact_match_query".
+            str: Clean, executable Python code
         """
-        query_lower = query.lower()
-        if "nearest" in query_lower:
-            return "nearest_query"
-        elif "within" in query_lower:
-            return "within_radius_query"
-        elif "at" in query_lower:
-            return "at_coordinates_query"
-        else:
-            return "exact_match_query"
+        # Remove markdown code blocks if present
+        if "```python" in code:
+            code = code.split("```python")[1].split("```")[0]
+        elif "```" in code:
+            code = code.split("```")[1].split("```")[0]
+        
+        # Remove any leading/trailing whitespace
+        code = code.strip()
+        
+        # Remove any installation instructions or other text before import statements
+        if "import" in code:
+            code_lines = code.split('\n')
+            for i, line in enumerate(code_lines):
+                if 'import' in line:
+                    code = '\n'.join(code_lines[i:])
+                    break
+        
+        return code
 
     def analyze_query(
         self,
@@ -51,44 +56,41 @@ class AgentAnalyst:
     ) -> dict:
         """
         Uses an LLM with the duckdb_parquet_kb.json knowledgebase to generate Python code that queries
-        the provided Parquet file. The generated code will filter records based on the provided
-        latitude and longitude. If columns named 'latitude'/'longitude' or 'lat'/'lon' exist, they should be used.
-        Otherwise, if a geometry column is provided (with its type), generate code that uses spatial functions
-        (like ST_Y and ST_X) on the geometry column.
-
-        Returns:
-            A dictionary with the status and the generated Python code.
+        the provided Parquet file.
         """
         try:
             # Load the knowledge base
-            kb_path = os.path.join(self.project_root,"memories", "utils", "earth","duckdb_parquet_kb.json")
+            kb_path = os.path.join(self.project_root, "knowledge_base", "duckdb_parquet_kb.json")
             with open(kb_path, 'r') as f:
                 knowledge_base = json.load(f)
 
             prompt = f"""
-Generate a Python code snippet that queries a Parquet file using DuckDB.
-The Parquet file is located at '{parquet_file}'.
-The target coordinates to filter are:
-    latitude: {lat}
-    longitude: {lon}
-The code should follow this logic:
-1. If the file contains columns named 'latitude' and 'longitude', filter using these.
-2. If not, but it contains 'lat' and 'lon', filter using those columns.
-3. Otherwise, if a geometry column is present, use the provided geometry column name:
-      geometry column: {geometry if geometry else "N/A"}
-   and its type: {geometry_type if geometry_type else "N/A"}.
-   In that case, generate code that applies spatial functions (for example, ST_Y and ST_X)
-   to extract the latitude and longitude from the geometry column.
+Generate only executable Python code for DuckDB query. No explanations or markdown formatting.
+The code must:
+1. Import duckdb
+2. Connect to DuckDB
+3. Query the Parquet file at '{parquet_file}'
+4. Find records matching:
+   - latitude: {lat}
+   - longitude: {lon}
+5. Store results in a variable named 'results'
 
-Knowledge Base Context:
+Use this exact structure:
+import duckdb
+conn = duckdb.connect()
+conn.execute("LOAD spatial;")
+results = conn.execute("YOUR QUERY HERE").fetchall()
+
+Knowledge Base:
 {json.dumps(knowledge_base, indent=2)}
-
-Return only the Python code snippet.
-            """
+"""
+            # Get the response and clean it
             generated_code = self.load_model.get_response(prompt)
+            clean_code = self.clean_generated_code(generated_code)
+            
             return {
                 "status": "success",
-                "generated_code": generated_code,
+                "generated_code": clean_code,
                 "chosen_function": "analyze_query"
             }
         except Exception as e:
