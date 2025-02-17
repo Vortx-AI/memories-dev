@@ -9,6 +9,7 @@ from memories.agents.agent_analyst import AgentAnalyst
 from memories.core.memory import MemoryStore
 from memories.utils.duckdb_queries import DuckDBQueryGenerator
 import pandas as pd
+from memories.agents.agent_code_executor import AgentCodeExecutor
 
 # Load environment variables
 load_dotenv()
@@ -154,14 +155,34 @@ class Agent:
                         print(analyst_result)
     
                         if analyst_result["status"] == "success":
+                            print("\n[Invoking Code Executor Agent]")
+                            print("-" * 50)
+                            
+                            # Create an instance of the Code Executor Agent
+                            code_executor = AgentCodeExecutor()
+                            
+                            # Execute the generated code with context data
+                            execution_result = code_executor.execute_query(
+                                code=analyst_result['generated_code'],
+                                data={
+                                    'query': query,
+                                    'parquet_file': parquet_file_path,
+                                    'lat': lat_val,
+                                    'lon': lon_val,
+                                    'data_type': data_type
+                                }
+                            )
+                            
+                            # Update the result dictionary with execution results
                             result.update({
                                 'generated_code': analyst_result['generated_code'],
-                                'query_results': analyst_result['results'],
+                                'query_results': execution_result,
                                 'chosen_function': analyst_result['chosen_function']
                             })
-                            print("\nAnalyst Agent Response:")
+                            
+                            print("\nCode Executor Agent Response:")
                             print(f"• Generated Code:\n{analyst_result['generated_code']}")
-                            print(f"\n• Query Results:\n{analyst_result['results']}")
+                            print(f"• Execution Results:\n{execution_result}")
                         else:
                             print(f"• Error in Analyst: {analyst_result.get('error', 'Unknown error')}")
                     else:
