@@ -1,194 +1,148 @@
-import os
-import logging
-from typing import Dict, Any, Optional, List, Union
-from dotenv import load_dotenv
-from transformers import AutoTokenizer, AutoModelForCausalLM
-import torch
-import gc
-from langchain.llms.base import LLM
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-from langchain.callbacks.manager import CallbackManagerForLLMRun
-from pydantic import BaseModel, Field
-import tempfile
-import json
+from typing import Dict, Any, List, Optional
+import pandas as pd
 
-# Load environment variables
-load_dotenv()
-
-class DeepSeekLLM(LLM, BaseModel):
-    model_name: str = Field(default="deepseek-ai/deepseek-coder-1.3b-base")
-    temperature: float = Field(default=0.7)
-    max_tokens: int = Field(default=150)  # Increased for longer responses
-    top_p: float = Field(default=0.95)
-    verbose: bool = Field(default=False)
-    tokenizer: Any = Field(default=None)
-    model: Any = Field(default=None)
-    logger: Any = Field(default=None)
-    offload_folder: str = Field(default=None)
-    
-    class Config:
-        arbitrary_types_allowed = True
-    
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._setup_logging()
-        self._initialize_model()
-        
-    def _setup_logging(self):
-        logging.basicConfig(
-            level=logging.INFO if self.verbose else logging.WARNING,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-        self.logger = logging.getLogger(__name__)
-        
-    def _initialize_model(self):
-        if self.offload_folder is None:
-            self.offload_folder = tempfile.mkdtemp()
-            
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        
-        if torch.cuda.is_available():
-            dtype = torch.float16
-            device_map = { "": torch.cuda.current_device() }
-        else:
-            dtype = torch.float32
-            device_map = "cpu"
-            
-        self.model = AutoModelForCausalLM.from_pretrained(
-            self.model_name,
-            torch_dtype=dtype,
-            device_map=device_map,
-            low_cpu_mem_usage=True,
-            offload_folder=self.offload_folder
-        )
-    
-    def _cleanup(self):
-        try:
-            gc.collect()
-            if torch.cuda.is_available():
-                with torch.cuda.device('cuda'):
-                    torch.cuda.empty_cache()
-                    torch.cuda.ipc_collect()
-        except Exception as e:
-            self.logger.warning(f"Error during cleanup: {str(e)}")
-            
-    @property
-    def _llm_type(self) -> str:
-        return "deepseek"
-        
-    def _call(
-        self,
-        prompt: str,
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
-        **kwargs: Any,
-    ) -> str:
-        try:
-            self._cleanup()
-            inputs = self.tokenizer(prompt, return_tensors="pt")
-            if torch.cuda.is_available():
-                inputs = {k: v.cuda() for k, v in inputs.items()}
-            
-            with torch.no_grad():
-                outputs = self.model.generate(
-                    **inputs,
-                    max_new_tokens=self.max_tokens,
-                    temperature=self.temperature,
-                    top_p=self.top_p,
-                    do_sample=True,
-                    pad_token_id=self.tokenizer.eos_token_id
-                )
-            
-            response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            response = response[len(prompt):].strip()
-            
-            self._cleanup()
-            return response
-            
-        except Exception as e:
-            self.logger.error(f"Error during generation: {str(e)}")
-            self._cleanup()
-            raise
-
-class ResponseAgent:
-    def __init__(self):
-        """Initialize the Response Agent with LangChain and DeepSeek."""
-        offload_folder = os.path.join(
-            tempfile.gettempdir(),
-            'deepseek_offload'
-        )
-        os.makedirs(offload_folder, exist_ok=True)
-        
-        self.llm = DeepSeekLLM(
-            model_name=os.getenv("DEEPEEKS_MODEL_NAME", "deepseek-ai/deepseek-coder-1.3b-base"),
-            temperature=0.7,
-            max_tokens=250,  # Increased for more detailed responses
-            top_p=0.95,
-            verbose=True,
-            offload_folder=offload_folder
-        )
-        
-        self.response_prompt = PromptTemplate(
-            input_variables=["query", "code_result"],
-            template="""You are a helpful assistant having a conversation with a user. Respond to their query based on the data results in a friendly, natural way as if you're having a casual conversation.
-
-User's Question: {query}
-
-I found this data: {code_result}
-
-Please respond in a conversational way that:
-- Uses everyday language (avoid technical terms unless necessary)
-- Explains the findings in a friendly, engaging manner
-- Provides context and meaning behind the numbers
-- Starts with phrases like "I found that...", "It looks like...", or "Based on the data..."
-- Ends with a relevant observation or helpful note
-
-If there's an error or no data:
-- Apologize naturally
-- Explain what went wrong in simple terms
-- Suggest what might help
-
-Remember to sound friendly and conversational, as if you're chatting with a friend!
-
-Your conversational response:"""
-        )
-        
-        self.response_chain = LLMChain(llm=self.llm, prompt=self.response_prompt)
-        self.logger = logging.getLogger(__name__)
-
-    def format_response(self, query: str, code_result: Any) -> str:
+class AgentResponse:
+    def __init__(self, query: str):
         """
-        Format the code execution result into a conversational response.
+        Initialize the response agent.
         
         Args:
             query (str): Original user query
-            code_result: Result from code execution
+        """
+        self.query = query
+        self.load_model = None  # Will be initialized when needed
+    
+    def get_response_prompt(self, data: pd.DataFrame, query: str) -> str:
+        """
+        Generate a prompt for the LLM to create a response.
+        
+        Args:
+            data (pd.DataFrame): Query results
+            query (str): Original user query
             
         Returns:
-            str: Formatted conversational response
+            str: Formatted prompt
+        """
+        # Convert DataFrame to string representation
+        if data is not None and not data.empty:
+            data_str = data.to_string()
+            data_summary = (
+                f"Found {len(data)} results\n"
+                f"Columns: {', '.join(data.columns)}\n"
+                f"Data Preview:\n{data.head().to_string()}"
+            )
+        else:
+            data_str = "No results found"
+            data_summary = "No matching data available"
+            
+        return f"""
+Given the following user query and data results, generate a natural language response that answers the query.
+Be concise but informative. Include relevant numbers and statistics when available.
+
+User Query: {query}
+
+Data Summary:
+{data_summary}
+
+Full Data:
+{data_str}
+
+Please provide a response that:
+1. Directly answers the user's query
+2. Includes specific details from the data
+3. Mentions distances when available
+4. Provides context about the locations
+5. Is written in a clear, natural style
+
+Response:"""
+
+    def format_response(self, query: str, data: Optional[pd.DataFrame]) -> Dict[str, Any]:
+        """
+        Format the final response using the LLM.
+        
+        Args:
+            query (str): Original user query
+            data (Optional[pd.DataFrame]): Query results
+            
+        Returns:
+            Dict containing the formatted response
         """
         try:
-            # Handle error cases
-            if isinstance(code_result, str) and code_result.startswith('Error:'):
-                return f"I apologize, but I encountered an error: {code_result}"
+            from memories.llm.load_model import LoadModel
             
-            if code_result is None:
-                return "I couldn't find any matching data for your query."
+            if self.load_model is None:
+                self.load_model = LoadModel()
             
-            # Convert code_result to string if it's not already
-            if not isinstance(code_result, str):
-                code_result = str(code_result)
+            # Generate prompt
+            prompt = self.get_response_prompt(data, query)
             
-            # Generate response using LLM
-            response = self.response_chain.invoke({
+            # Get response from LLM
+            response = self.load_model.get_response(prompt)
+            
+            return {
+                "status": "success",
                 "query": query,
-                "code_result": code_result
-            })["text"]
-            
-            return response.strip()
+                "response": response,
+                "data": data.to_dict('records') if data is not None and not data.empty else None
+            }
             
         except Exception as e:
-            self.logger.error(f"Error formatting response: {str(e)}")
-            return f"I apologize, but I encountered an error while formatting the response: {str(e)}"
+            return {
+                "status": "error",
+                "query": query,
+                "error": str(e),
+                "data": None
+            }
+
+    def process_results(self, query: str, results: List[pd.DataFrame]) -> Dict[str, Any]:
+        """
+        Process query results and generate a response.
         
+        Args:
+            query (str): Original user query
+            results (List[pd.DataFrame]): List of result DataFrames
+            
+        Returns:
+            Dict containing the formatted response
+        """
+        try:
+            # Combine results if multiple DataFrames
+            if results:
+                if len(results) > 1:
+                    combined_data = pd.concat(results, ignore_index=True)
+                else:
+                    combined_data = results[0]
+                
+                # Sort by distance if available
+                if 'distance_km' in combined_data.columns:
+                    combined_data = combined_data.sort_values('distance_km')
+            else:
+                combined_data = None
+            
+            # Format and return response
+            return self.format_response(query, combined_data)
+            
+        except Exception as e:
+            return {
+                "status": "error",
+                "query": query,
+                "error": str(e),
+                "data": None
+            }
+
+# Example usage
+if __name__ == "__main__":
+    # Example query and data
+    query = "Find water tanks near Bangalore"
+    data = pd.DataFrame({
+        'name': ['Tank 1', 'Tank 2'],
+        'latitude': [12.9, 12.8],
+        'longitude': [77.6, 77.5],
+        'distance_km': [1.2, 2.5]
+    })
+    
+    # Create response agent and get response
+    agent = AgentResponse(query)
+    response = agent.process_results(query, [data])
+    print("\nQuery:", query)
+    print("\nResponse:", response['response'])

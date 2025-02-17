@@ -11,6 +11,7 @@ from memories.utils.duckdb_queries import DuckDBQueryGenerator
 import pandas as pd
 from memories.agents.agent_code_executor import AgentCodeExecutor
 from memories.utils.earth.run_kb_functions import execute_kb_function, validate_function_inputs
+from memories.agents.response_agent import AgentResponse
 
 # Load environment variables
 load_dotenv()
@@ -41,6 +42,8 @@ class Agent:
         project_root = os.getenv("PROJECT_ROOT")
         if project_root is None:
             raise ValueError("PROJECT_ROOT environment variable is not set")
+
+        self.response_agent = AgentResponse(query)
 
     def process_query(self, query: str) -> Dict[str, Any]:
         """
@@ -212,8 +215,20 @@ class Agent:
                                 result['query_results'] = final_results
                                 print("\nFinal Results:")
                                 print(f"Total records found: {len(final_results)}")
+                                
+                                # Generate natural language response
+                                print("\n[Generating Response]")
+                                print("-" * 50)
+                                response_result = self.response_agent.process_results(query, final_results)
+                                if response_result['status'] == 'success':
+                                    result['response'] = response_result['response']
+                                    print("\nResponse:")
+                                    print(response_result['response'])
+                                else:
+                                    print(f"Error generating response: {response_result.get('error')}")
                             else:
                                 result['query_results'] = pd.DataFrame()
+                                result['response'] = "No results found matching your query."
                                 print("\nNo results found from any function")
             
             return result
