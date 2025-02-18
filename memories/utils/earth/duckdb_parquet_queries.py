@@ -1,30 +1,58 @@
-def exact_match_query(parquet_file, column_name, value, aoi=None):
+def exact_match_query(parquet_file, column_name, value, geometry=None, geometry_type=None):
     """
-    Returns a query string for an exact match with optional AOI filtering.
-    Assumes column_name is a Boolean column.
+    Returns a query string for an exact match with optional geometry filtering.
+    
+    Args:
+        parquet_file: Path to parquet file
+        column_name: Name of the column to match
+        value: Value to match (boolean)
+        geometry: WKT geometry string for spatial filtering
+        geometry_type: Type of geometry (POINT, LINESTRING, POLYGON)
     """
     bool_value = str(value).lower() == 'true'
     base_query = (
-        f"SELECT *, "
-        f"ST_X(geom) as longitude, "
-        f"ST_Y(geom) as latitude "
-        f"FROM '{parquet_file}' WHERE {column_name} = {bool_value}"
+        f"WITH geom_col AS (SELECT {get_geometry_column(parquet_file)} as col_name), "
+        f"data AS (SELECT *, "
+        f"CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END as geometry_col "
+        f"FROM '{parquet_file}' CROSS JOIN geom_col "
+        f"WHERE {column_name} = {bool_value}"
     )
     
-    if aoi is not None:
-        return f"{base_query} AND ST_Intersects(geom, ST_GeomFromText('{aoi}'));"
-    return f"{base_query};"
+    if geometry is not None and geometry_type is not None:
+        return (
+            f"{base_query} "
+            f"AND ST_Intersects(geometry_col, ST_GeomFromText('{geometry}', '{geometry_type}'))"
+            f") SELECT *, ST_AsText(geometry_col) as wkt_geometry FROM data;"
+        )
+    return f"{base_query}) SELECT *, ST_AsText(geometry_col) as wkt_geometry FROM data;"
 
 
-def like_query(parquet_file, column_name, pattern, aoi=None):
+def like_query(parquet_file, column_name, pattern, geometry=None, geometry_type=None):
     """
     Returns a query string that uses the LIKE operator for pattern matching.
-    """
-    base_query = f"SELECT * FROM '{parquet_file}' WHERE {column_name} LIKE '{pattern}'"
     
-    if aoi is not None:
-        return f"{base_query} AND ST_Intersects(geom, ST_GeomFromText('{aoi}'));"
-    return f"{base_query};"
+    Args:
+        parquet_file: Path to parquet file
+        column_name: Column name to perform pattern matching
+        pattern: Pattern to search for
+        geometry: WKT geometry string for spatial filtering
+        geometry_type: Type of geometry (POINT, LINESTRING, POLYGON)
+    """
+    base_query = (
+        f"WITH geom_col AS (SELECT {get_geometry_column(parquet_file)} as col_name), "
+        f"data AS (SELECT *, "
+        f"CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END as geometry_col "
+        f"FROM '{parquet_file}' CROSS JOIN geom_col "
+        f"WHERE {column_name} LIKE '{pattern}'"
+    )
+    
+    if geometry is not None and geometry_type is not None:
+        return (
+            f"{base_query} "
+            f"AND ST_Intersects(geometry_col, ST_GeomFromText('{geometry}', '{geometry_type}'))"
+            f") SELECT *, ST_AsText(geometry_col) as wkt_geometry FROM data;"
+        )
+    return f"{base_query}) SELECT *, ST_AsText(geometry_col) as wkt_geometry FROM data;"
 
 
 def at_coordinates_query(parquet_file, column_name, value, target_lat, target_lon):
@@ -69,23 +97,28 @@ def get_geometry_column(parquet_file):
            "END".format(parquet_file)
 
 
-def nearest_query(parquet_file, column_name, value, aoi, limit=5):
+def nearest_query(parquet_file, column_name, value, geometry, geometry_type, limit=5):
     """
-    Returns a query to find the nearest records to AOI centroid matching boolean column value.
+    Returns a query to find the nearest records to input geometry matching boolean column value.
+    
+    Args:
+        parquet_file: Path to parquet file
+        column_name: Name of the column to filter
+        value: Boolean value to match
+        geometry: WKT geometry string for distance calculation
+        geometry_type: Type of geometry (POINT, LINESTRING, POLYGON)
+        limit: Number of nearest records to return
     """
     bool_value = str(value).lower() == 'true'
     return (
         f"WITH geom_col AS (SELECT {get_geometry_column(parquet_file)} as col_name), "
-        f"data AS ("
-        f"  SELECT *, "
-        f"  ST_X(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END)) as longitude, "
-        f"  ST_Y(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END)) as latitude, "
-        f"  ST_Distance(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END), "
-        f"             ST_Centroid(ST_GeomFromText('{aoi}'))) as distance_km "
-        f"  FROM '{parquet_file}' CROSS JOIN geom_col "
-        f"  WHERE {column_name} = {bool_value} "
-        f") "
-        f"SELECT * FROM data "
+        f"data AS (SELECT *, "
+        f"CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END as geometry_col, "
+        f"ST_Distance(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END, "
+        f"ST_GeomFromText('{geometry}', '{geometry_type}')) as distance_km "
+        f"FROM '{parquet_file}' CROSS JOIN geom_col "
+        f"WHERE {column_name} = {bool_value}"
+        f") SELECT *, ST_AsText(geometry_col) as wkt_geometry FROM data "
         f"ORDER BY distance_km ASC "
         f"LIMIT {limit};"
     )
@@ -205,48 +238,55 @@ def range_query(parquet_file, range_column, min_value, max_value, filter_column,
     return f"{base_query};"
 
 
-def within_area_query(parquet_file, column_name, value, aoi):
+def within_area_query(parquet_file, column_name, value, geometry, geometry_type):
     """
-    Returns a query to find records within AOI and matching boolean column value.
+    Returns a query to find records within geometry and matching boolean column value.
+    
+    Args:
+        parquet_file: Path to parquet file
+        column_name: Name of the column to filter
+        value: Boolean value to match
+        geometry: WKT geometry string for spatial filtering
+        geometry_type: Type of geometry (POINT, LINESTRING, POLYGON)
     """
     bool_value = str(value).lower() == 'true'
     return (
         f"WITH geom_col AS (SELECT {get_geometry_column(parquet_file)} as col_name), "
-        f"data AS ("
-        f"  SELECT *, "
-        f"  ST_X(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END)) as longitude, "
-        f"  ST_Y(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END)) as latitude, "
-        f"  ST_Distance(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END), "
-        f"             ST_Centroid(ST_GeomFromText('{aoi}'))) as distance_km "
-        f"  FROM '{parquet_file}' CROSS JOIN geom_col "
-        f"  WHERE {column_name} = {bool_value} "
-        f"  AND ST_Intersects(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END), "
-        f"                    ST_GeomFromText('{aoi}'))"
-        f") "
-        f"SELECT * FROM data "
+        f"data AS (SELECT *, "
+        f"CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END as geometry_col, "
+        f"ST_Distance(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END, "
+        f"ST_GeomFromText('{geometry}', '{geometry_type}')) as distance_km "
+        f"FROM '{parquet_file}' CROSS JOIN geom_col "
+        f"WHERE {column_name} = {bool_value} "
+        f"AND ST_Intersects(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END, "
+        f"ST_GeomFromText('{geometry}', '{geometry_type}'))"
+        f") SELECT *, ST_AsText(geometry_col) as wkt_geometry FROM data "
         f"ORDER BY distance_km ASC;"
     )
 
 
-def count_within_area_query(parquet_file, column_name, value, aoi):
+def count_within_area_query(parquet_file, column_name, value, geometry, geometry_type):
     """
-    Returns a query to count records within AOI and matching boolean column value.
+    Returns a query to count records within geometry and matching boolean column value.
+    
+    Args:
+        parquet_file: Path to parquet file
+        column_name: Name of the column to filter
+        value: Boolean value to match
+        geometry: WKT geometry string for spatial filtering
+        geometry_type: Type of geometry (POINT, LINESTRING, POLYGON)
     """
     bool_value = str(value).lower() == 'true'
     return (
         f"WITH geom_col AS (SELECT {get_geometry_column(parquet_file)} as col_name), "
-        f"distances AS ("
-        f"  SELECT *, "
-        f"  ST_X(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END)) as longitude, "
-        f"  ST_Y(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END)) as latitude, "
-        f"  ST_Distance(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END), "
-        f"             ST_Centroid(ST_GeomFromText('{aoi}'))) as distance_km "
-        f"  FROM '{parquet_file}' CROSS JOIN geom_col "
-        f"  WHERE {column_name} = {bool_value} "
-        f"  AND ST_Intersects(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END), "
-        f"                    ST_GeomFromText('{aoi}'))"
-        f") "
-        f"SELECT COUNT(*) as count, "
+        f"distances AS (SELECT *, "
+        f"ST_Distance(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END, "
+        f"ST_GeomFromText('{geometry}', '{geometry_type}')) as distance_km "
+        f"FROM '{parquet_file}' CROSS JOIN geom_col "
+        f"WHERE {column_name} = {bool_value} "
+        f"AND ST_Intersects(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END, "
+        f"ST_GeomFromText('{geometry}', '{geometry_type}'))"
+        f") SELECT COUNT(*) as count, "
         f"MIN(distance_km) as min_distance_km, "
         f"MAX(distance_km) as max_distance_km "
         f"FROM distances;"
