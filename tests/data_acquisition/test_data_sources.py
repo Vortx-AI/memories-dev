@@ -150,13 +150,33 @@ async def test_osm_search(osm_source, bbox):
     mock_response = {
         'elements': [
             {
+                'type': 'node',
+                'id': 1,
+                'lat': 37.7,
+                'lon': -122.4
+            },
+            {
+                'type': 'node',
+                'id': 2,
+                'lat': 37.7,
+                'lon': -122.3
+            },
+            {
+                'type': 'node',
+                'id': 3,
+                'lat': 37.8,
+                'lon': -122.3
+            },
+            {
+                'type': 'node',
+                'id': 4,
+                'lat': 37.7,
+                'lon': -122.4
+            },
+            {
                 'type': 'way',
-                'nodes': [
-                    {'lat': 37.7, 'lon': -122.4},
-                    {'lat': 37.7, 'lon': -122.3},
-                    {'lat': 37.8, 'lon': -122.3},
-                    {'lat': 37.7, 'lon': -122.4}
-                ],
+                'id': 100,
+                'nodes': [1, 2, 3, 4, 1],
                 'tags': {'building': 'yes'}
             }
         ]
