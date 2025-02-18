@@ -406,7 +406,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">memories.agents</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseAgent</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">memories.utils.text</span><span class="w"> </span><span class="kn">import</span> <span class="n">TextProcessor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">memories.data_acquisition.sources.overture_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">OvertureAPI</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">memories.data_acquisition.sources.planetary_compute</span><span class="w"> </span><span class="kn">import</span> <span class="n">PlanetaryCompute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.data_acquisition.sources.sentinel_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">SentinelAPI</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">memories.utils.processors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ImageProcessor</span><span class="p">,</span> <span class="n">VectorProcessor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">memories.data_acquisition</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataManager</span>
 
@@ -416,6 +416,76 @@
 
 <span class="c1"># Load environment variables</span>
 <span class="n">load_dotenv</span><span class="p">()</span>
+
+<span class="c1"># San Francisco Financial District (1km x 1km)</span>
+<span class="n">SF_BBOX</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;xmin&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">122.4018</span><span class="p">,</span>  <span class="c1"># Approximately Market &amp; Montgomery</span>
+    <span class="s1">&#39;ymin&#39;</span><span class="p">:</span> <span class="mf">37.7914</span><span class="p">,</span>
+    <span class="s1">&#39;xmax&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">122.3928</span><span class="p">,</span>  <span class="c1"># About 1km east</span>
+    <span class="s1">&#39;ymax&#39;</span><span class="p">:</span> <span class="mf">37.7994</span>     <span class="c1"># About 1km north</span>
+<span class="p">}</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">setup_directories</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create all necessary data directories.&quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">download_location_data</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">,</span> <span class="n">bbox</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Download Overture Maps and satellite data for the location.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        config: Configuration object</span>
+<span class="sd">        bbox: Bounding box dictionary</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary containing download results</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Initialize APIs with config paths</span>
+    <span class="n">overture_api</span> <span class="o">=</span> <span class="n">OvertureAPI</span><span class="p">(</span><span class="n">data_dir</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;overture_path&#39;</span><span class="p">])</span>
+    <span class="n">sentinel_api</span> <span class="o">=</span> <span class="n">SentinelAPI</span><span class="p">(</span><span class="n">data_dir</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;satellite_path&#39;</span><span class="p">])</span>
+    
+    <span class="c1"># Download Overture data</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">=== Downloading Overture Maps Data ===&quot;</span><span class="p">)</span>
+    <span class="n">overture_results</span> <span class="o">=</span> <span class="n">overture_api</span><span class="o">.</span><span class="n">download_data</span><span class="p">(</span><span class="n">bbox</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">overture_results</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Successfully downloaded all Overture themes:&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">theme</span><span class="p">,</span> <span class="n">success</span> <span class="ow">in</span> <span class="n">overture_results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">theme</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="s1">&#39;✓&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">success</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;✗&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Some Overture downloads failed:&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">theme</span><span class="p">,</span> <span class="n">success</span> <span class="ow">in</span> <span class="n">overture_results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">theme</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="s1">&#39;✓&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">success</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;✗&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Download satellite data</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">=== Downloading Satellite Imagery ===&quot;</span><span class="p">)</span>
+    <span class="n">satellite_results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">sentinel_api</span><span class="o">.</span><span class="n">download_data</span><span class="p">(</span>
+        <span class="n">bbox</span><span class="o">=</span><span class="n">bbox</span><span class="p">,</span>
+        <span class="n">cloud_cover</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
+        <span class="n">bands</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;B04&quot;</span><span class="p">:</span> <span class="s2">&quot;Red&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;B08&quot;</span><span class="p">:</span> <span class="s2">&quot;NIR&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;B11&quot;</span><span class="p">:</span> <span class="s2">&quot;SWIR&quot;</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">satellite_results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Successfully downloaded satellite data:&quot;</span><span class="p">)</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">satellite_results</span><span class="p">[</span><span class="s2">&quot;metadata&quot;</span><span class="p">]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Scene ID: </span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;scene_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Date: </span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;datetime&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Cloud cover: </span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;cloud_cover&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Bands: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;bands_downloaded&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Satellite data download failed:&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Error: </span><span class="si">{</span><span class="n">satellite_results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;failed_bands&#39;</span> <span class="ow">in</span> <span class="n">satellite_results</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Failed bands: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">satellite_results</span><span class="p">[</span><span class="s1">&#39;failed_bands&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;overture&quot;</span><span class="p">:</span> <span class="n">overture_results</span><span class="p">,</span>
+        <span class="s2">&quot;satellite&quot;</span><span class="p">:</span> <span class="n">satellite_results</span>
+    <span class="p">}</span>
 
 <div class="viewcode-block" id="LocationAnalyzer">
 <a class="viewcode-back" href="../../api_reference/agents.html#examples.location_ambience.LocationAnalyzer">[docs]</a>
@@ -434,7 +504,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">data_manager</span> <span class="o">=</span> <span class="n">data_manager</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">memory_store</span> <span class="o">=</span> <span class="n">memory_store</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">overture_api</span> <span class="o">=</span> <span class="n">OvertureAPI</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pc_api</span> <span class="o">=</span> <span class="n">PlanetaryCompute</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">text_processor</span> <span class="o">=</span> <span class="n">TextProcessor</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">image_processor</span> <span class="o">=</span> <span class="n">ImageProcessor</span><span class="p">()</span></div>
 
@@ -457,18 +526,7 @@
             <span class="c1"># Get Overture data for urban features</span>
             <span class="n">overture_data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">overture_api</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">location_data</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">])</span>
             
-            <span class="c1"># Get satellite data from Planetary Computer</span>
-            <span class="n">end_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-            <span class="n">start_date</span> <span class="o">=</span> <span class="n">end_date</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>  <span class="c1"># Last 30 days</span>
-            <span class="n">satellite_data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">pc_api</span><span class="o">.</span><span class="n">search_and_download</span><span class="p">(</span>
-                <span class="n">bbox</span><span class="o">=</span><span class="n">location_data</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">],</span>
-                <span class="n">start_date</span><span class="o">=</span><span class="n">start_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">),</span>
-                <span class="n">end_date</span><span class="o">=</span><span class="n">end_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">),</span>
-                <span class="n">collections</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sentinel-2-l2a&quot;</span><span class="p">],</span>
-                <span class="n">cloud_cover</span><span class="o">=</span><span class="mf">20.0</span>
-            <span class="p">)</span>
-            
-            <span class="n">insights</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_location_data</span><span class="p">(</span><span class="n">location_data</span><span class="p">,</span> <span class="n">overture_data</span><span class="p">,</span> <span class="n">satellite_data</span><span class="p">)</span>
+            <span class="n">insights</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_location_data</span><span class="p">(</span><span class="n">location_data</span><span class="p">,</span> <span class="n">overture_data</span><span class="p">)</span>
             <span class="k">return</span> <span class="p">{</span>
                 <span class="s2">&quot;location_id&quot;</span><span class="p">:</span> <span class="n">location_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">),</span>
                 <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
@@ -483,10 +541,10 @@
             <span class="p">}</span></div>
 
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_analyze_location_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">overture_data</span><span class="p">,</span> <span class="n">satellite_data</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_analyze_location_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">overture_data</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze location data with both Overture and satellite data.&quot;&quot;&quot;</span>
         <span class="n">urban_features</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_urban_features</span><span class="p">(</span><span class="n">overture_data</span><span class="p">)</span>
-        <span class="n">env_scores</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_environmental_scores</span><span class="p">(</span><span class="n">urban_features</span><span class="p">,</span> <span class="n">satellite_data</span><span class="p">)</span>
+        <span class="n">env_scores</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_environmental_scores</span><span class="p">(</span><span class="n">urban_features</span><span class="p">)</span>
         <span class="n">noise_levels</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_noise_levels</span><span class="p">(</span><span class="n">urban_features</span><span class="p">)</span>
         
         <span class="n">ambience_score</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_ambience_score</span><span class="p">(</span><span class="n">env_scores</span><span class="p">,</span> <span class="n">urban_features</span><span class="p">,</span> <span class="n">noise_levels</span><span class="p">)</span>
@@ -502,8 +560,7 @@
             <span class="s2">&quot;urban_features&quot;</span><span class="p">:</span> <span class="n">urban_features</span><span class="p">,</span>
             <span class="s2">&quot;environmental_scores&quot;</span><span class="p">:</span> <span class="n">env_scores</span><span class="p">,</span>
             <span class="s2">&quot;noise_levels&quot;</span><span class="p">:</span> <span class="n">noise_levels</span><span class="p">,</span>
-            <span class="s2">&quot;recommendations&quot;</span><span class="p">:</span> <span class="n">recommendations</span><span class="p">,</span>
-            <span class="s2">&quot;satellite_metadata&quot;</span><span class="p">:</span> <span class="n">satellite_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sentinel-2-l2a&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{})</span> <span class="k">if</span> <span class="n">satellite_data</span> <span class="k">else</span> <span class="p">{}</span>
+            <span class="s2">&quot;recommendations&quot;</span><span class="p">:</span> <span class="n">recommendations</span>
         <span class="p">}</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_analyze_urban_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">overture_data</span><span class="p">):</span>
@@ -516,54 +573,44 @@
             <span class="p">}</span>
             
         <span class="n">buildings</span> <span class="o">=</span> <span class="n">overture_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;buildings&quot;</span><span class="p">,</span> <span class="p">[])</span>
-        <span class="n">roads</span> <span class="o">=</span> <span class="n">overture_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;roads&quot;</span><span class="p">,</span> <span class="p">[])</span>
-        <span class="n">amenities</span> <span class="o">=</span> <span class="n">overture_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;amenities&quot;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">transportation</span> <span class="o">=</span> <span class="n">overture_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;transportation&quot;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">places</span> <span class="o">=</span> <span class="n">overture_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;places&quot;</span><span class="p">,</span> <span class="p">[])</span>
         
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">&quot;building_characteristics&quot;</span><span class="p">:</span> <span class="p">{</span>
                 <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">buildings</span><span class="p">),</span>
                 <span class="s2">&quot;density&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">buildings</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100</span><span class="p">,</span>  <span class="c1"># per hectare</span>
-                <span class="s2">&quot;types&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_count_types</span><span class="p">(</span><span class="n">buildings</span><span class="p">)</span>
+                <span class="s2">&quot;types&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_count_types</span><span class="p">(</span><span class="n">buildings</span><span class="p">,</span> <span class="s2">&quot;building_type&quot;</span><span class="p">)</span>
             <span class="p">},</span>
             <span class="s2">&quot;road_characteristics&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">roads</span><span class="p">),</span>
-                <span class="s2">&quot;density&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">roads</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100</span><span class="p">,</span>
-                <span class="s2">&quot;types&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_count_types</span><span class="p">(</span><span class="n">roads</span><span class="p">)</span>
+                <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">transportation</span><span class="p">),</span>
+                <span class="s2">&quot;density&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">transportation</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s2">&quot;types&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_count_types</span><span class="p">(</span><span class="n">transportation</span><span class="p">,</span> <span class="s2">&quot;road_type&quot;</span><span class="p">)</span>
             <span class="p">},</span>
             <span class="s2">&quot;amenity_characteristics&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">amenities</span><span class="p">),</span>
-                <span class="s2">&quot;density&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">amenities</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100</span><span class="p">,</span>
-                <span class="s2">&quot;types&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_count_types</span><span class="p">(</span><span class="n">amenities</span><span class="p">)</span>
+                <span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">places</span><span class="p">),</span>
+                <span class="s2">&quot;density&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">places</span><span class="p">)</span> <span class="o">/</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="s2">&quot;types&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_count_types</span><span class="p">(</span><span class="n">places</span><span class="p">,</span> <span class="s2">&quot;place_type&quot;</span><span class="p">)</span>
             <span class="p">}</span>
         <span class="p">}</span>
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_environmental_scores</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">urban_features</span><span class="p">,</span> <span class="n">satellite_data</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate environmental scores using urban features and satellite data.&quot;&quot;&quot;</span>
-        <span class="n">base_scores</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;green_space&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
-            <span class="s2">&quot;air_quality&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
-            <span class="s2">&quot;water_bodies&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
-            <span class="s2">&quot;urban_density&quot;</span><span class="p">:</span> <span class="mf">0.0</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_environmental_scores</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">urban_features</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate environmental scores using urban features.&quot;&quot;&quot;</span>
+        <span class="c1"># Default scores</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;green_space&quot;</span><span class="p">:</span> <span class="mf">5.93</span><span class="p">,</span>  <span class="c1"># Example value based on typical urban area</span>
+            <span class="s2">&quot;air_quality&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>   <span class="c1"># Example value based on typical urban area</span>
+            <span class="s2">&quot;water_bodies&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>  <span class="c1"># Default if no water bodies detected</span>
+            <span class="s2">&quot;urban_density&quot;</span><span class="p">:</span> <span class="mf">0.0</span>  <span class="c1"># Default if no urban density data</span>
         <span class="p">}</span>
         
-        <span class="k">if</span> <span class="n">satellite_data</span> <span class="ow">and</span> <span class="s2">&quot;sentinel-2-l2a&quot;</span> <span class="ow">in</span> <span class="n">satellite_data</span><span class="p">:</span>
-            <span class="n">ndvi_data</span> <span class="o">=</span> <span class="n">satellite_data</span><span class="p">[</span><span class="s2">&quot;sentinel-2-l2a&quot;</span><span class="p">][</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ndvi_data</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">4</span><span class="p">:</span>  <span class="c1"># Ensure we have enough bands</span>
-                <span class="n">red_band</span> <span class="o">=</span> <span class="n">ndvi_data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>  <span class="c1"># B04</span>
-                <span class="n">nir_band</span> <span class="o">=</span> <span class="n">ndvi_data</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>  <span class="c1"># B08</span>
-                <span class="n">ndvi</span> <span class="o">=</span> <span class="p">(</span><span class="n">nir_band</span> <span class="o">-</span> <span class="n">red_band</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">nir_band</span> <span class="o">+</span> <span class="n">red_band</span><span class="p">)</span>
-                <span class="n">base_scores</span><span class="p">[</span><span class="s2">&quot;green_space&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ndvi</span><span class="p">))</span>
-                <span class="n">base_scores</span><span class="p">[</span><span class="s2">&quot;air_quality&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">urban_features</span><span class="p">[</span><span class="s2">&quot;building_characteristics&quot;</span><span class="p">][</span><span class="s2">&quot;density&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+        <span class="c1"># Calculate urban density from building characteristics if available</span>
+        <span class="k">if</span> <span class="s2">&quot;building_characteristics&quot;</span> <span class="ow">in</span> <span class="n">urban_features</span> <span class="ow">and</span> <span class="n">urban_features</span><span class="p">[</span><span class="s2">&quot;building_characteristics&quot;</span><span class="p">]:</span>
+            <span class="n">density</span> <span class="o">=</span> <span class="n">urban_features</span><span class="p">[</span><span class="s2">&quot;building_characteristics&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;density&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">scores</span><span class="p">[</span><span class="s2">&quot;urban_density&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">density</span> <span class="o">/</span> <span class="mf">100.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+            <span class="n">scores</span><span class="p">[</span><span class="s2">&quot;air_quality&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="nb">min</span><span class="p">(</span><span class="n">density</span> <span class="o">/</span> <span class="mf">100.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
         
-        <span class="c1"># Calculate urban density score</span>
-        <span class="n">total_density</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">urban_features</span><span class="p">[</span><span class="s2">&quot;building_characteristics&quot;</span><span class="p">][</span><span class="s2">&quot;density&quot;</span><span class="p">]</span> <span class="o">+</span>
-            <span class="n">urban_features</span><span class="p">[</span><span class="s2">&quot;road_characteristics&quot;</span><span class="p">][</span><span class="s2">&quot;density&quot;</span><span class="p">]</span> <span class="o">+</span>
-            <span class="n">urban_features</span><span class="p">[</span><span class="s2">&quot;amenity_characteristics&quot;</span><span class="p">][</span><span class="s2">&quot;density&quot;</span><span class="p">]</span>
-        <span class="p">)</span>
-        <span class="n">base_scores</span><span class="p">[</span><span class="s2">&quot;urban_density&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">total_density</span> <span class="o">/</span> <span class="mf">30.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
-        
-        <span class="k">return</span> <span class="n">base_scores</span>
+        <span class="k">return</span> <span class="n">scores</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_estimate_noise_levels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">urban_features</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate noise levels based on urban features.&quot;&quot;&quot;</span>
@@ -644,66 +691,78 @@
             
         <span class="k">return</span> <span class="n">recommendations</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_count_types</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_count_types</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">type_field</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Helper method to count feature types.&quot;&quot;&quot;</span>
         <span class="n">type_counts</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">features</span><span class="p">:</span>
-            <span class="n">feature_type</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+            <span class="n">feature_type</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">type_field</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
             <span class="n">type_counts</span><span class="p">[</span><span class="n">feature_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">type_counts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">feature_type</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="k">return</span> <span class="n">type_counts</span></div>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">simulate_location_data</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate random location data for testing.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate location data for San Francisco Financial District.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="p">{</span>
         <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()),</span>
-        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Test Location&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">122.5</span><span class="p">,</span> <span class="mf">37.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">122.0</span><span class="p">,</span> <span class="mf">38.0</span><span class="p">],</span>  <span class="c1"># San Francisco area</span>
-        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;residential&quot;</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;SF Financial District&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">SF_BBOX</span><span class="p">[</span><span class="s1">&#39;xmin&#39;</span><span class="p">],</span> <span class="n">SF_BBOX</span><span class="p">[</span><span class="s1">&#39;ymin&#39;</span><span class="p">],</span> <span class="n">SF_BBOX</span><span class="p">[</span><span class="s1">&#39;xmax&#39;</span><span class="p">],</span> <span class="n">SF_BBOX</span><span class="p">[</span><span class="s1">&#39;ymax&#39;</span><span class="p">]],</span>
+        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;commercial&quot;</span>
     <span class="p">}</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run the location ambience analyzer example.&quot;&quot;&quot;</span>
-    <span class="c1"># Initialize memory store</span>
-    <span class="n">config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span>
-        <span class="n">storage_path</span><span class="o">=</span><span class="s2">&quot;./examples/data/location_data&quot;</span><span class="p">,</span>
-        <span class="n">hot_memory_size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
-        <span class="n">warm_memory_size</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
-        <span class="n">cold_memory_size</span><span class="o">=</span><span class="mi">1000</span>
-    <span class="p">)</span>
+    <span class="c1"># Initialize config and create directories</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">()</span>
+    <span class="n">setup_directories</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    
+    <span class="c1"># Download required data</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;=== Downloading Required Data ===&quot;</span><span class="p">)</span>
+    <span class="n">download_results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">download_location_data</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">SF_BBOX</span><span class="p">)</span>
+    
+    <span class="c1"># Initialize memory store with paths in examples directory</span>
     <span class="n">memory_store</span> <span class="o">=</span> <span class="n">MemoryStore</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
     
     <span class="c1"># Create location analyzer</span>
-    <span class="n">data_manager</span> <span class="o">=</span> <span class="n">DataManager</span><span class="p">()</span>
+    <span class="n">data_manager</span> <span class="o">=</span> <span class="n">DataManager</span><span class="p">(</span><span class="n">cache_dir</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;raw_path&#39;</span><span class="p">])</span>
     <span class="n">analyzer</span> <span class="o">=</span> <span class="n">LocationAnalyzer</span><span class="p">(</span><span class="n">data_manager</span><span class="p">,</span> <span class="n">memory_store</span><span class="p">)</span>
     
-    <span class="c1"># Analyze a simulated location</span>
+    <span class="c1"># Analyze the Financial District location</span>
     <span class="n">location_data</span> <span class="o">=</span> <span class="n">simulate_location_data</span><span class="p">()</span>
     <span class="n">insights</span> <span class="o">=</span> <span class="k">await</span> <span class="n">analyzer</span><span class="o">.</span><span class="n">analyze_location</span><span class="p">(</span><span class="n">location_data</span><span class="p">)</span>
     
     <span class="c1"># Print results</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Location Analysis Results:&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">50</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Location ID: </span><span class="si">{</span><span class="n">insights</span><span class="p">[</span><span class="s1">&#39;location_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analysis Timestamp: </span><span class="si">{</span><span class="n">insights</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Location: </span><span class="si">{</span><span class="n">location_data</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Location ID: </span><span class="si">{</span><span class="n">insights</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;location_id&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analysis Timestamp: </span><span class="si">{</span><span class="n">insights</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;timestamp&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
     
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Ambience Analysis:&quot;</span><span class="p">)</span>
-    <span class="n">analysis</span> <span class="o">=</span> <span class="n">insights</span><span class="p">[</span><span class="s2">&quot;ambience_analysis&quot;</span><span class="p">]</span>
-    
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Environmental Scores:&quot;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">analysis</span><span class="p">[</span><span class="s2">&quot;environmental_scores&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">title</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Noise Levels:&quot;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">analysis</span><span class="p">[</span><span class="s2">&quot;noise_levels&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="k">if</span> <span class="n">key</span> <span class="o">!=</span> <span class="s2">&quot;sources&quot;</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">key</span><span class="o">.</span><span class="n">title</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Overall Ambience Score: </span><span class="si">{</span><span class="n">analysis</span><span class="p">[</span><span class="s1">&#39;scores&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Recommendations:&quot;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="n">analysis</span><span class="p">[</span><span class="s2">&quot;recommendations&quot;</span><span class="p">]:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">rec</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;error&quot;</span> <span class="ow">in</span> <span class="n">insights</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="n">insights</span><span class="p">[</span><span class="s1">&#39;error&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ambience Analysis:&quot;</span><span class="p">)</span>
+        <span class="n">analysis</span> <span class="o">=</span> <span class="n">insights</span><span class="p">[</span><span class="s2">&quot;ambience_analysis&quot;</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Overall Ambience Score: </span><span class="si">{</span><span class="n">analysis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;scores&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;N/A&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Environmental Scores:&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">analysis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;environmental_scores&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Noise Levels:&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">analysis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;noise_levels&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Urban Features:&quot;</span><span class="p">)</span>
+        <span class="n">urban</span> <span class="o">=</span> <span class="n">analysis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;urban_features&#39;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">for</span> <span class="n">category</span><span class="p">,</span> <span class="n">stats</span> <span class="ow">in</span> <span class="n">urban</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="n">category</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">title</span><span class="p">()</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Count: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;count&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Density: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;density&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> per hectare&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;types&#39;</span> <span class="ow">in</span> <span class="n">stats</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;- Types:&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">type_name</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">stats</span><span class="p">[</span><span class="s1">&#39;types&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  * </span><span class="si">{</span><span class="n">type_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Recommendations:&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="n">analysis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;recommendations&#39;</span><span class="p">,</span> <span class="p">[]):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">rec</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
     <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span> 

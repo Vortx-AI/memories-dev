@@ -218,10 +218,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../api_reference/agents.html#task-agent">Task Agent</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../../api_reference/agents.html#property-agent">Property Agent</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../api_reference/agents.html#examples.property_analyzer.PropertyAgent"><code class="docutils literal notranslate"><span class="pre">PropertyAgent</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api_reference/agents.html#property-agent">Property Agent</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../api_reference/agents.html#location-ambience-agent">Location Ambience Agent</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../api_reference/agents.html#examples.location_ambience.LocationAnalyzer"><code class="docutils literal notranslate"><span class="pre">LocationAnalyzer</span></code></a></li>
 </ul>
@@ -429,8 +426,7 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">memory_store</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">text_processor</span> <span class="o">=</span> <span class="n">TextProcessor</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data_manager</span> <span class="o">=</span> <span class="n">DataManager</span><span class="p">(</span>
-            <span class="n">cache_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;.memories&quot;</span> <span class="o">/</span> <span class="s2">&quot;cache&quot;</span><span class="p">),</span>
-            <span class="n">pc_token</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;PLANETARY_COMPUTER_API_KEY&quot;</span><span class="p">)</span>
+            <span class="n">cache_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;.memories&quot;</span> <span class="o">/</span> <span class="s2">&quot;cache&quot;</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">image_processor</span> <span class="o">=</span> <span class="n">ImageProcessor</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">vector_processor</span> <span class="o">=</span> <span class="n">VectorProcessor</span><span class="p">()</span></div>
