@@ -228,6 +228,18 @@ def multiple_parquet_connector(
 ) -> Dict[str, Any]:
     """Process multiple parquet files recursively."""
     
+    # Add debug prints
+    print(f"Searching for parquet files in: {folder_path}")
+    print("Directory exists:", os.path.exists(folder_path))
+    print("Is directory:", os.path.isdir(folder_path))
+    
+    # List all files in directory for debugging
+    print("\nFiles in directory:")
+    for root, dirs, files in os.walk(folder_path):
+        print(f"\nIn directory: {root}")
+        print("Subdirectories:", dirs)
+        print("Files:", files)
+    
     # Get project root and set up data directory
     project_root = os.getenv("PROJECT_ROOT")
     if not project_root:
