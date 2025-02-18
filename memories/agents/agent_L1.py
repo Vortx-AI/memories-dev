@@ -176,19 +176,46 @@ class Agent_L1:
             # Find similar columns.
             similar_columns = self.find_similar_columns()
             
+            # Process search results
+            similar_columns = []
+            for i, (idx, distance) in enumerate(zip(I[0], D[0])):
+                if idx < len(self.metadata):
+                    metadata = self.metadata[idx]
+                    
+                    # Create result dictionary based on metadata type
+                    try:
+                        # Try original column metadata format
+                        result = {
+                            'column_name': metadata['column_name'],
+                            'file_name': metadata['file_name'],
+                            'file_path': metadata['file_path'],
+                            'geometry': metadata['geometry'],
+                            'geometry_type': metadata['geometry_type'],
+                            'distance': float(distance)
+                        }
+                    except KeyError:
+                        # Fall back to analysis terms metadata format
+                        result = {
+                            'column_name': metadata.get('term', 'unknown'),  # Use term as column_name
+                            'file_name': metadata.get('function_name', 'unknown'),
+                            'file_path': metadata.get('file_path', 'unknown'),
+                            'geometry': 'POLYGON',  # Default value
+                            'geometry_type': 'POLYGON',  # Default value
+                            'distance': float(distance)
+                        }
+                    
+                    similar_columns.append(result)
+
             return {
-                "query": self.query,
-                "instance_id": self.instance_id,
-                "similar_columns": similar_columns,
-                "status": "success"
+                "status": "success",
+                "similar_columns": similar_columns
             }
-            
+
         except Exception as e:
+            logger.error(f"Error in L1 Agent: {str(e)}")
             return {
-                "query": self.query,
-                "instance_id": self.instance_id,
-                "error": str(e),
-                "status": "error"
+                "status": "error",
+                "error": str(e)
             }
 
 def main():
