@@ -171,7 +171,7 @@ setup(
             "nbsphinx>=0.9.0",
             "pandoc>=2.3",
             "sphinx-copybutton>=0.5.2",
-            "myst-parser>=4.0.1"
+            "myst-parser>=0.18.1"
         ]
     },
     
