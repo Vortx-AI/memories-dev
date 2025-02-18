@@ -137,6 +137,7 @@ class Agent:
                             print(f"\n  Column: {col['column_name']}")
                             print(f"  File: {col['file_name']}")
                             print(f"  File Path: {col['file_path']}")
+                            print(f"  Geometry: {col['geometry']}")
                             print(f"  Geometry Type: {col['geometry_type']}")
                             
                             print(f"  Distance: {col['distance']:.4f}")
