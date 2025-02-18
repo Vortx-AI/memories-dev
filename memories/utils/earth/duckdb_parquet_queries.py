@@ -59,18 +59,33 @@ def within_radius_query(parquet_file, column_name, value, target_lat, target_lon
     )
 
 
+def get_geometry_column(parquet_file):
+    """
+    Determine which geometry column exists in the parquet file.
+    Returns 'geometry' or 'geom' based on which exists.
+    """
+    return "CASE WHEN EXISTS(SELECT 1 FROM '{0}' LIMIT 1) THEN " \
+           "CASE WHEN '{0}' LIKE '%geometry%' THEN 'geometry' ELSE 'geom' END " \
+           "END".format(parquet_file)
+
+
 def nearest_query(parquet_file, column_name, value, aoi, limit=5):
     """
     Returns a query to find the nearest records to AOI centroid matching boolean column value.
     """
     bool_value = str(value).lower() == 'true'
     return (
-        f"SELECT *, "
-        f"ST_X(geom) as longitude, "
-        f"ST_Y(geom) as latitude, "
-        f"ST_Distance(geom, ST_Centroid(ST_GeomFromText('{aoi}'))) as distance_km "
-        f"FROM '{parquet_file}' "
-        f"WHERE {column_name} = {bool_value} "
+        f"WITH geom_col AS (SELECT {get_geometry_column(parquet_file)} as col_name), "
+        f"data AS ("
+        f"  SELECT *, "
+        f"  ST_X(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END)) as longitude, "
+        f"  ST_Y(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END)) as latitude, "
+        f"  ST_Distance(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END), "
+        f"             ST_Centroid(ST_GeomFromText('{aoi}'))) as distance_km "
+        f"  FROM '{parquet_file}' CROSS JOIN geom_col "
+        f"  WHERE {column_name} = {bool_value} "
+        f") "
+        f"SELECT * FROM data "
         f"ORDER BY distance_km ASC "
         f"LIMIT {limit};"
     )
@@ -196,13 +211,19 @@ def within_area_query(parquet_file, column_name, value, aoi):
     """
     bool_value = str(value).lower() == 'true'
     return (
-        f"SELECT *, "
-        f"ST_X(geom) as longitude, "
-        f"ST_Y(geom) as latitude, "
-        f"ST_Distance(geom, ST_Centroid(ST_GeomFromText('{aoi}'))) as distance_km "
-        f"FROM '{parquet_file}' "
-        f"WHERE {column_name} = {bool_value} "
-        f"AND ST_Intersects(geom, ST_GeomFromText('{aoi}')) "
+        f"WITH geom_col AS (SELECT {get_geometry_column(parquet_file)} as col_name), "
+        f"data AS ("
+        f"  SELECT *, "
+        f"  ST_X(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END)) as longitude, "
+        f"  ST_Y(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END)) as latitude, "
+        f"  ST_Distance(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END), "
+        f"             ST_Centroid(ST_GeomFromText('{aoi}'))) as distance_km "
+        f"  FROM '{parquet_file}' CROSS JOIN geom_col "
+        f"  WHERE {column_name} = {bool_value} "
+        f"  AND ST_Intersects(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END), "
+        f"                    ST_GeomFromText('{aoi}'))"
+        f") "
+        f"SELECT * FROM data "
         f"ORDER BY distance_km ASC;"
     )
 
@@ -213,14 +234,17 @@ def count_within_area_query(parquet_file, column_name, value, aoi):
     """
     bool_value = str(value).lower() == 'true'
     return (
-        f"WITH distances AS ("
+        f"WITH geom_col AS (SELECT {get_geometry_column(parquet_file)} as col_name), "
+        f"distances AS ("
         f"  SELECT *, "
-        f"  ST_X(geom) as longitude, "
-        f"  ST_Y(geom) as latitude, "
-        f"  ST_Distance(geom, ST_Centroid(ST_GeomFromText('{aoi}'))) as distance_km "
-        f"  FROM '{parquet_file}' "
-        f"  WHERE {column_name} = {bool_value}"
-        f"  AND ST_Intersects(geom, ST_GeomFromText('{aoi}'))"
+        f"  ST_X(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END)) as longitude, "
+        f"  ST_Y(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END)) as latitude, "
+        f"  ST_Distance(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END), "
+        f"             ST_Centroid(ST_GeomFromText('{aoi}'))) as distance_km "
+        f"  FROM '{parquet_file}' CROSS JOIN geom_col "
+        f"  WHERE {column_name} = {bool_value} "
+        f"  AND ST_Intersects(ST_GeomFromWKB(CASE WHEN col_name = 'geometry' THEN geometry ELSE geom END), "
+        f"                    ST_GeomFromText('{aoi}'))"
         f") "
         f"SELECT COUNT(*) as count, "
         f"MIN(distance_km) as min_distance_km, "
