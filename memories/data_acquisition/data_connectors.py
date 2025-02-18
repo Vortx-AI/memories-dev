@@ -220,39 +220,28 @@ def parquet_connector(file_path: str, faiss_storage: Optional[Dict] = None, word
             "error": str(e)
         }
 
-def multiple_parquet_connector(folder_path: str, word_vectors: Optional[KeyedVectors] = None, output_file_name: str = None) -> Dict[str, Any]:
+def multiple_parquet_connector(
+    folder_path: str,
+    faiss_storage: Optional[Dict[str, Any]] = None,
+    word_vectors: Optional[Any] = None,
+    output_file_name: Optional[str] = None
+) -> Dict[str, Any]:
     """
-    Create detailed index of all parquet files in a folder and store column embeddings in FAISS.
+    Recursively searches for all parquet files under folder_path, extracts schema
+    and metadata for each file, and (optionally) computes word embeddings for column names
+    using a provided word_vectors model (e.g., the GloVe model). If faiss_storage is provided,
+    embeddings are added to the FAISS index and the cumulative total number of vectors added
+    is displayed after processing each file.
     
     Args:
-        folder_path (str): Path to the folder containing parquet files
-        word_vectors (KeyedVectors, optional): Loaded word vectors model for embeddings
-        output_file_name (str, optional): Name for the output JSON file
-        
+        folder_path (str): Root folder containing parquet files (recursively).
+        faiss_storage (Optional[Dict[str, Any]]): A dict containing the FAISS index and metadata.
+        word_vectors (Optional[Any]): Gensim KeyedVectors instance to compute column embeddings.
+        output_file_name (Optional[str]): Desired name for the aggregated JSON output file.
+    
     Returns:
-        Dict containing detailed information about all parquet files
+        Dict[str, Any]: Aggregated results including file metadata, processing details, and errors.
     """
-    folder_path = Path(folder_path)
-    data_dir = Path(__file__).parents[3] / "data"
-    data_dir.mkdir(parents=True, exist_ok=True)
-    
-    if output_file_name is None:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        unique_id = str(uuid.uuid4())[:8]
-        output_file_name = f"multiple_parquet_index_{timestamp}_{unique_id}"
-    
-    # Initialize FAISS index if word vectors provided
-    faiss_storage = None
-    if word_vectors is not None:
-        dimension = word_vectors.vector_size  # Use actual dimension from word vectors (100 for GloVe)
-        index = faiss.IndexFlatL2(dimension)
-        instance_id = f"{int(datetime.now().timestamp())}"
-        faiss_storage = {
-            'index': index,
-            'instance_id': instance_id,
-            'metadata': []
-        }
-    
     results = {
         "processed_files": [],
         "error_files": [],
@@ -263,35 +252,46 @@ def multiple_parquet_connector(folder_path: str, word_vectors: Optional[KeyedVec
         }
     }
     
-    for root, _, files in os.walk(folder_path):
-        for file_name in files:
-            if file_name.endswith('.parquet'):
-                file_path = Path(root) / file_name
-                
-                results["metadata"]["file_count"] += 1
-                results["metadata"]["total_size"] += file_path.stat().st_size
-                
-                try:
-                    file_info = parquet_connector(str(file_path), faiss_storage, word_vectors)
-                    results["processed_files"].append(file_info)
-                    print(f"Processed: {file_path}")
-                    
-                except Exception as e:
-                    results["error_files"].append({
-                        "file_name": file_name,
-                        "file_path": str(file_path),
-                        "relative_path": str(file_path.relative_to(folder_path)),
-                        "error": str(e),
-                        "size_bytes": file_path.stat().st_size
-                    })
-                    print(f"Error processing {file_path}: {str(e)}")
+    folder_path_obj = Path(folder_path)
     
-    # Save results to JSON
-    output_path = data_dir / f"{output_file_name}.json"
+    # If no specific output file name is provided, create one using a timestamp.
+    if output_file_name is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_file_name = f"multiple_parquet_schema_index_{timestamp}.json"
+    
+    # Use rglob to find all files ending in .parquet (case-insensitive)
+    for file_path in folder_path_obj.rglob("*"):
+        if file_path.is_file() and file_path.suffix.lower() == ".parquet":
+            results["metadata"]["file_count"] += 1
+            results["metadata"]["total_size"] += file_path.stat().st_size
+            
+            try:
+                # Import the single-file connector function.
+                from memories.data_acquisition.data_connectors import parquet_schema_connector
+                file_info = parquet_schema_connector(str(file_path), faiss_storage, word_vectors)
+                results["processed_files"].append(file_info)
+                
+                # Display the cumulative number of vectors added after processing this file.
+                if faiss_storage is not None:
+                    total_vectors = faiss_storage['index'].ntotal
+                    print(f"After processing file {file_path}, total vectors added: {total_vectors}")
+                else:
+                    print(f"Processed file {file_path} (no FAISS storage used)")
+            except Exception as e:
+                err_info = {
+                    "file_name": file_path.name,
+                    "file_path": str(file_path),
+                    "error": str(e)
+                }
+                results["error_files"].append(err_info)
+                print(f"Error processing {file_path}: {e}")
+    
+    # Save the aggregated result into a JSON file at the base folder.
+    output_path = folder_path_obj / output_file_name
     with open(output_path, 'w') as f:
         json.dump(results, f, indent=2, default=str)
     
-    print(f"\nAnalysis saved to: {output_path}")
+    print(f"\nSchema analysis saved to: {output_path}")
     print("\nSummary:")
     print(f"Base folder: {results['metadata']['base_folder']}")
     print(f"Total parquet files found: {results['metadata']['file_count']}")
@@ -300,7 +300,7 @@ def multiple_parquet_connector(folder_path: str, word_vectors: Optional[KeyedVec
     print(f"Errors encountered: {len(results['error_files'])}")
     
     if faiss_storage:
-        print(f"\nFAISS index created with instance_id: {faiss_storage['instance_id']}")
+        print(f"\nFAISS index instance_id: {faiss_storage.get('instance_id', 'N/A')}")
         print(f"Total vectors stored: {faiss_storage['index'].ntotal}")
     
     return results
