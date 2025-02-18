@@ -2,7 +2,7 @@ import duckdb
 import geopandas as gpd
 from pathlib import Path
 import logging
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Tuple, Union
 import pyarrow as pa
 import pyarrow.parquet as pq
 from shapely.geometry import shape
@@ -10,17 +10,37 @@ import json
 import uuid
 import yaml
 import os
-import os
 import sys
 from dotenv import load_dotenv
 import logging
 import pkg_resources
-import cudf
-import cuspatial
 import numpy as np
 import pandas as pd
 from datetime import datetime
 import subprocess
+import gzip
+import shutil
+
+# Initialize GPU support flags
+HAS_GPU_SUPPORT = False
+HAS_CUDF = False
+HAS_CUSPATIAL = False
+
+try:
+    import cudf
+    HAS_CUDF = True
+except ImportError:
+    logging.warning("cudf not available. GPU acceleration for dataframes will be disabled.")
+
+try:
+    import cuspatial
+    HAS_CUSPATIAL = True
+except ImportError:
+    logging.warning("cuspatial not available. GPU acceleration for spatial operations will be disabled.")
+
+if HAS_CUDF and HAS_CUSPATIAL:
+    HAS_GPU_SUPPORT = True
+    logging.info("GPU support enabled with cudf and cuspatial.")
 
 # Load environment variables
 load_dotenv()
@@ -124,89 +144,113 @@ class Config:
         """Get path for a specific modality"""
         return self.raw_data_path / modality
 
-class ColdStorage:
-    def __init__(self):
-        """Initialize Cold Storage with DuckDB and GeoParquet support."""
-        load_dotenv()
-        
-        # Setup logging
-        self.logger = logging.getLogger(__name__)
-        
-        # Initialize DuckDB connection with spatial extension
-        self.conn = duckdb.connect()
-        self.conn.execute("INSTALL spatial;")
-        self.conn.execute("LOAD spatial;")
+logger = logging.getLogger(__name__)
 
-    def query_by_point(
-        self, 
-        lat: float, 
-        lon: float,
-        geometry_types: List[str] = None,
-        columns: List[str] = None,
-        limit: int = None
-    ) -> pd.DataFrame:
+class ColdMemory:
+    """Cold memory layer using compressed file-based storage."""
+    
+    def __init__(self, storage_path: Path, max_size: int):
+        """Initialize cold memory.
+        
+        Args:
+            storage_path: Path to store data files
+            max_size: Maximum number of items to store
         """
-        Query all geometries that either match or contain the given point.
+        self.storage_path = storage_path
+        self.max_size = max_size
+        
+        # Create storage directory
+        self.storage_path.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Initialized cold memory at {storage_path}")
+    
+    def store(self, data: Dict[str, Any]) -> None:
+        """Store data in a compressed file.
+        
+        Args:
+            data: Data to store
         """
         try:
-            # Get the GEO_MEMORIES path from environment variables
-            geo_memories_path = os.getenv('GEO_MEMORIES')
-            if not geo_memories_path:
-                raise ValueError("GEO_MEMORIES path is not set in the .env file.")
-
-            # Prepare column selection
-            select_cols = '*' if not columns else ', '.join(columns)
+            # Use timestamp as filename
+            timestamp = data.get("timestamp", "")
+            if not timestamp:
+                logger.error("Data must have a timestamp")
+                return
             
-            # Create or replace the view combining all Parquet files
-            self.conn.execute(f"""
-                CREATE OR REPLACE VIEW combined_data AS
-                SELECT *
-                FROM read_parquet('{geo_memories_path}/*.parquet', union_by_name=True)
-            """)
+            filename = self.storage_path / f"{timestamp}.json.gz"
             
-            # Build the spatial query
-            point_query = f"""
-            WITH point_geom AS (
-                SELECT ST_Point({lon}, {lat}) as point
-            )
-            SELECT {select_cols}
-            FROM combined_data
-            WHERE (
-                ST_Contains(geom, (SELECT point FROM point_geom))
-                OR
-                ST_Equals(geom, (SELECT point FROM point_geom))
-            )
-            """
+            # Store as compressed JSON
+            with gzip.open(filename, "wt") as f:
+                json.dump(data, f, indent=2)
             
-            if geometry_types:
-                geometry_types_str = "', '".join(geometry_types)
-                point_query += f"""
-                AND ST_GeometryType(geom) IN ('ST_{geometry_types_str}')
-                """
-                
-            if limit:
-                point_query += f"\nLIMIT {limit}"
-                
-            point_query += ";"
-            
-            result = self.conn.execute(point_query).df()
-            
-            if len(result) > 0:
-                self.logger.info(f"Found {len(result)} geometries at/containing point ({lat}, {lon})")
-            else:
-                self.logger.info(f"No geometries found at/containing point ({lat}, {lon})")
-                
-            return result
-            
+            # Maintain max size by removing oldest files
+            files = list(self.storage_path.glob("*.json.gz"))
+            if len(files) > self.max_size:
+                # Sort by modification time and remove oldest
+                files.sort(key=lambda x: x.stat().st_mtime)
+                for old_file in files[:-self.max_size]:
+                    old_file.unlink()
         except Exception as e:
-            self.logger.error(f"Error querying geometries by point: {str(e)}")
-            return pd.DataFrame()
+            logger.error(f"Failed to store data in file: {e}")
+    
+    def retrieve(self, query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Retrieve data from compressed files.
+        
+        Args:
+            query: Query to match against stored data
+            
+        Returns:
+            Retrieved data or None if not found
+        """
+        try:
+            # Use timestamp as filename if provided
+            if "timestamp" in query:
+                filename = self.storage_path / f"{query['timestamp']}.json.gz"
+                if filename.exists():
+                    with gzip.open(filename, "rt") as f:
+                        return json.load(f)
+            
+            # Otherwise, search through all files
+            for file in self.storage_path.glob("*.json.gz"):
+                with gzip.open(file, "rt") as f:
+                    data = json.load(f)
+                    # Check if all query items match
+                    if all(data.get(k) == v for k, v in query.items()):
+                        return data
+            
+            return None
+        except Exception as e:
+            logger.error(f"Failed to retrieve data from file: {e}")
+            return None
+    
+    def retrieve_all(self) -> List[Dict[str, Any]]:
+        """Retrieve all data from compressed files.
+        
+        Returns:
+            List of all stored data
+        """
+        try:
+            result = []
+            for file in self.storage_path.glob("*.json.gz"):
+                with gzip.open(file, "rt") as f:
+                    result.append(json.load(f))
+            return result
+        except Exception as e:
+            logger.error(f"Failed to retrieve all data from files: {e}")
+            return []
+    
+    def clear(self) -> None:
+        """Clear all data files."""
+        try:
+            shutil.rmtree(self.storage_path)
+            self.storage_path.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            logger.error(f"Failed to clear files: {e}")
 
 # Test code with more verbose output
 if __name__ == "__main__":
     try:
-        print("Initializing ColdStorage...")
-        cold_storage = ColdStorage()
+        print("Initializing ColdMemory...")
+        cold_memory = ColdMemory(Path(os.getenv('GEO_MEMORIES')), 100)
         
         # Test coordinates (Bangalore, India)
         test_lat, test_lon = 12.9095706, 77.6085865
@@ -214,16 +258,16 @@ if __name__ == "__main__":
         
         # Basic query with debug info
         print("\n1. Executing basic query...")
-        results = cold_storage.query_by_point(
-            lat=test_lat,
-            lon=test_lon,
-            limit=5
-        )
+        results = cold_memory.retrieve({
+            "latitude": test_lat,
+            "longitude": test_lon,
+            "limit": 5
+        })
         print(f"Query returned {len(results)} results")
         
-        if not results.empty:
+        if results:
             print("\nAll columns in results:")
-            print("Available columns:", list(results.columns))
+            print("Available columns:", list(results.keys()))
             print("\nComplete results:")
             # Set pandas to show all columns and rows without truncation
             pd.set_option('display.max_columns', None)  # Show all columns
@@ -235,27 +279,26 @@ if __name__ == "__main__":
             print("\nNo results found. Checking data in the Parquet files...")
             
             # Show sample of available data with all columns
-            geo_memories_path = os.getenv('GEO_MEMORIES')
             print("\nSample of available data:")
-            sample_query = f"""
-                SELECT *
-                FROM read_parquet('{geo_memories_path}/*.parquet', union_by_name=True)
-                LIMIT 1;
-            """
+            sample_query = {
+                "latitude": 12.9095706,
+                "longitude": 77.6085865,
+                "limit": 1
+            }
             print(f"Executing sample query: {sample_query}")
-            sample_df = cold_storage.conn.execute(sample_query).df()
-            print("\nAvailable columns:", list(sample_df.columns))
-            print("\nComplete sample row:")
-            pd.set_option('display.max_columns', None)
-            pd.set_option('display.max_rows', None)
-            pd.set_option('display.width', None)
-            pd.set_option('display.max_colwidth', None)
-            print(sample_df)
+            sample_data = cold_memory.retrieve(sample_query)
+            if sample_data:
+                print("\nAvailable columns:", list(sample_data.keys()))
+                print("\nComplete sample row:")
+                pd.set_option('display.max_columns', None)
+                pd.set_option('display.max_rows', None)
+                pd.set_option('display.width', None)
+                pd.set_option('display.max_colwidth', None)
+                print(sample_data)
 
     except Exception as e:
         print(f"An error occurred during testing: {str(e)}")
     finally:
-        if 'cold_storage' in locals():
-            cold_storage.conn.close()
-            print("\nClosed DuckDB connection.")
+        if 'cold_memory' in locals():
+            print("\nClosed ColdMemory.")
     

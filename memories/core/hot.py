@@ -1,165 +1,175 @@
-import redis
-from typing import Any, Optional, List, Dict
+"""
+Hot memory implementation using Redis.
+"""
+
 import json
 import logging
+from typing import Dict, Any, Optional, List
+import redis
 
-class HotStorage:
-    """
-    Hot storage implementation using Redis for cached memory operations.
-    """
+logger = logging.getLogger(__name__)
+
+class HotMemory:
+    """Hot memory layer using Redis for fast access."""
     
-    def __init__(self, host: str = 'localhost', port: int = 6379, db: int = 0):
-        """
-        Initialize Redis connection.
+    def __init__(self, redis_url: str, redis_db: int, max_size: int):
+        """Initialize hot memory.
         
         Args:
-            host (str): Redis host address
-            port (int): Redis port number
-            db (int): Redis database number
+            redis_url: Redis connection URL
+            redis_db: Redis database number
+            max_size: Maximum number of items to store
         """
-        self.redis_client = redis.Redis(
-            host=host,
-            port=port,
-            db=db,
-            decode_responses=True  # Automatically decode responses to strings
-        )
-        self.logger = logging.getLogger(__name__)
-
-    def create(self, key: str, value: Any, expiry: Optional[int] = None) -> bool:
-        """
-        Create a new key-value pair in Redis.
+        self.redis_url = redis_url
+        self.redis_db = redis_db
+        self.max_size = max_size
+        self.using_redis = True
+        
+        # Connect to Redis
+        try:
+            self.redis_client = redis.from_url(redis_url, db=redis_db)
+            logger.info("Successfully connected to Redis")
+        except Exception as e:
+            logger.error(f"Failed to connect to Redis: {e}")
+            self.redis_client = None
+            self.using_redis = False
+    
+    def store(self, data: Dict[str, Any]) -> None:
+        """Store data in Redis.
         
         Args:
-            key (str): The key to store the value under
-            value (Any): The value to store (will be JSON serialized)
-            expiry (Optional[int]): Time in seconds until the key expires
+            data: Data to store
+        """
+        if not self.using_redis or not self.redis_client:
+            logger.error("Redis connection not available")
+            return
+        
+        try:
+            # Use timestamp as key
+            key = data.get("timestamp", "")
+            if not key:
+                logger.error("Data must have a timestamp")
+                return
+            
+            # Ensure data is a dictionary before storing
+            if not isinstance(data, dict):
+                logger.error("Data must be a dictionary")
+                return
+            
+            # Store as JSON
+            self.redis_client.set(key, json.dumps(data))
+            
+            # Maintain max size by removing oldest entries
+            keys = [k.decode('utf-8') for k in self.redis_client.keys("*")]
+            if len(keys) > self.max_size:
+                # Sort by timestamp and remove oldest
+                sorted_keys = sorted(keys)
+                for old_key in sorted_keys[:-self.max_size]:
+                    self.redis_client.delete(old_key)
+        except Exception as e:
+            logger.error(f"Failed to store data in Redis: {e}")
+    
+    def retrieve(self, query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Retrieve data from Redis.
+        
+        Args:
+            query: Query to match against stored data
             
         Returns:
-            bool: True if successful, False otherwise
+            Retrieved data or None if not found
         """
-        try:
-            serialized_value = json.dumps(value)
-            if expiry:
-                return self.redis_client.setex(key, expiry, serialized_value)
-            return self.redis_client.set(key, serialized_value)
-        except Exception as e:
-            self.logger.error(f"Error creating key {key}: {str(e)}")
-            return False
-
-    def read(self, key: str) -> Optional[Any]:
-        """
-        Read a value from Redis.
-        
-        Args:
-            key (str): The key to retrieve
-            
-        Returns:
-            Optional[Any]: The deserialized value or None if not found
-        """
-        try:
-            value = self.redis_client.get(key)
-            if value is None:
-                return None
-            return json.loads(value)
-        except Exception as e:
-            self.logger.error(f"Error reading key {key}: {str(e)}")
+        if not self.using_redis or not self.redis_client:
+            logger.error("Redis connection not available")
             return None
-
-    def update(self, key: str, value: Any, expiry: Optional[int] = None) -> bool:
-        """
-        Update an existing key-value pair in Redis.
         
-        Args:
-            key (str): The key to update
-            value (Any): The new value
-            expiry (Optional[int]): New expiry time in seconds
-            
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        return self.create(key, value, expiry)  # Redis set operation handles both create and update
-
-    def delete(self, key: str) -> bool:
-        """
-        Delete a key from Redis.
-        
-        Args:
-            key (str): The key to delete
-            
-        Returns:
-            bool: True if successful, False otherwise
-        """
         try:
-            return bool(self.redis_client.delete(key))
-        except Exception as e:
-            self.logger.error(f"Error deleting key {key}: {str(e)}")
-            return False
-
-    def list_keys(self, pattern: str = "*") -> List[str]:
-        """
-        List all keys matching a pattern.
-        
-        Args:
-            pattern (str): Pattern to match keys against
+            # Use timestamp as key if provided
+            if "timestamp" in query:
+                key = query["timestamp"]
+                data = self.redis_client.get(key)
+                if data:
+                    try:
+                        decoded_data = json.loads(data.decode('utf-8'))
+                        if isinstance(decoded_data, dict):
+                            return decoded_data
+                        else:
+                            logger.error(f"Invalid data structure for key {key}: not a dictionary")
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to decode JSON for key {key}")
+                        return None
             
-        Returns:
-            List[str]: List of matching keys
-        """
-        try:
-            return self.redis_client.keys(pattern)
+            # Otherwise, search through all keys
+            for key in self.redis_client.keys("*"):
+                data = self.redis_client.get(key)
+                if data:
+                    try:
+                        decoded_data = json.loads(data.decode('utf-8'))
+                        if isinstance(decoded_data, dict):
+                            # Check if all query items match
+                            if all(decoded_data.get(k) == v for k, v in query.items()):
+                                return decoded_data
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to decode JSON for key {key}")
+                        continue
+            
+            return None
         except Exception as e:
-            self.logger.error(f"Error listing keys with pattern {pattern}: {str(e)}")
+            logger.error(f"Failed to retrieve data from Redis: {e}")
+            return None
+    
+    def retrieve_all(self) -> List[Dict[str, Any]]:
+        """Retrieve all data from Redis.
+        
+        Returns:
+            List of all stored data
+        """
+        if not self.using_redis or not self.redis_client:
+            logger.error("Redis connection not available")
             return []
-
-    def increment(self, key: str, amount: int = 1) -> Optional[int]:
-        """
-        Increment a numeric value in Redis.
         
-        Args:
-            key (str): The key to increment
-            amount (int): Amount to increment by
-            
-        Returns:
-            Optional[int]: New value after increment or None if failed
-        """
         try:
-            return self.redis_client.incrby(key, amount)
+            result = []
+            # Get all keys and decode them from bytes
+            keys = [k.decode('utf-8') for k in self.redis_client.keys("*")]
+            
+            # Get data for each key
+            for key in keys:
+                data = self.redis_client.get(key)
+                if data:
+                    try:
+                        # Decode bytes to string and parse JSON
+                        decoded_data = json.loads(data.decode('utf-8'))
+                        if isinstance(decoded_data, dict):
+                            result.append(decoded_data)
+                        else:
+                            logger.error(f"Invalid data structure for key {key}: not a dictionary")
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to decode JSON for key {key}")
+                        continue
+            return result
         except Exception as e:
-            self.logger.error(f"Error incrementing key {key}: {str(e)}")
-            return None
-
-    def flush(self) -> bool:
-        """
-        Clear all keys in the current database.
+            logger.error(f"Failed to retrieve all data from Redis: {e}")
+            return []
+    
+    def clear(self) -> None:
+        """Clear all data from Redis."""
+        if not self.using_redis or not self.redis_client:
+            logger.error("Redis connection not available")
+            return
         
-        Returns:
-            bool: True if successful, False otherwise
-        """
         try:
             self.redis_client.flushdb()
-            return True
         except Exception as e:
-            self.logger.error(f"Error flushing database: {str(e)}")
-            return False
-
-# Initialize hot storage
-hot_storage = HotStorage()
-
-# Create a key-value pair
-hot_storage.create("user:1", {"name": "John", "age": 30}, expiry=3600)  # expires in 1 hour
-
-# Read the value
-user = hot_storage.read("user:1")
-
-# Update the value
-hot_storage.update("user:1", {"name": "John", "age": 31})
-
-# Delete the key
-hot_storage.delete("user:1")
-
-# List all keys
-all_keys = hot_storage.list_keys()
-
-# Increment a counter
-hot_storage.create("visits", 0)
-new_count = hot_storage.increment("visits")
+            logger.error(f"Failed to clear Redis: {e}")
+    
+    def cleanup(self) -> None:
+        """Clean up resources."""
+        if self.using_redis and hasattr(self, 'redis_client'):
+            try:
+                self.redis_client.close()
+            except Exception as e:
+                logger.error(f"Failed to close Redis connection: {e}")
+    
+    def __del__(self):
+        """Destructor to ensure cleanup is performed."""
+        self.cleanup()

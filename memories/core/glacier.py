@@ -11,10 +11,10 @@ import uuid
 import zlib
 from datetime import datetime
 
-class GlacierStorage:
+class GlacierMemory:
     def __init__(self, db_path: str = "glacier.duckdb", compression_level: int = 9):
         """
-        Initialize Glacier Storage with DuckDB and GeoParquet support.
+        Initialize Glacier Memory with DuckDB and GeoParquet support.
         
         Args:
             db_path (str): Path to DuckDB database file

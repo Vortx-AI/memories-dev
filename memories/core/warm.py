@@ -1,220 +1,111 @@
-import sqlite3
-from typing import Any, Optional, List, Dict
+"""
+Warm memory implementation using file-based storage.
+"""
+
 import json
 import logging
-from datetime import datetime
-import os
+from typing import Dict, Any, Optional, List
+from pathlib import Path
+import shutil
 
-class WarmStorage:
-    """
-    Warm storage implementation using SQLite for persistent memory operations.
-    """
+logger = logging.getLogger(__name__)
+
+class WarmMemory:
+    """Warm memory layer using file-based storage."""
     
-    def __init__(self, db_path: str):
-        """
-        Initialize SQLite connection and create necessary tables.
+    def __init__(self, storage_path: Path, max_size: int):
+        """Initialize warm memory.
         
         Args:
-            db_path (str): Path to SQLite database file
+            storage_path: Path to store data files
+            max_size: Maximum number of items to store
         """
-        self.db_path = db_path
-        self.logger = logging.getLogger(__name__)
+        self.storage_path = storage_path
+        self.max_size = max_size
         
-        # Ensure directory exists
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        # Create storage directory
+        self.storage_path.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Initialized warm memory at {storage_path}")
+    
+    def store(self, data: Dict[str, Any]) -> None:
+        """Store data in a file.
         
-        # Initialize database and create table
+        Args:
+            data: Data to store
+        """
         try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS warm_storage (
-                        key TEXT PRIMARY KEY,
-                        value TEXT NOT NULL,
-                        expiry INTEGER,
-                        created_at INTEGER NOT NULL,
-                        updated_at INTEGER NOT NULL
-                    )
-                ''')
-                conn.commit()
+            # Use timestamp as filename
+            timestamp = data.get("timestamp", "")
+            if not timestamp:
+                logger.error("Data must have a timestamp")
+                return
+            
+            filename = self.storage_path / f"{timestamp}.json"
+            
+            # Store as JSON
+            with open(filename, "w") as f:
+                json.dump(data, f, indent=2)
+            
+            # Maintain max size by removing oldest files
+            files = list(self.storage_path.glob("*.json"))
+            if len(files) > self.max_size:
+                # Sort by modification time and remove oldest
+                files.sort(key=lambda x: x.stat().st_mtime)
+                for old_file in files[:-self.max_size]:
+                    old_file.unlink()
         except Exception as e:
-            self.logger.error(f"Error initializing database: {str(e)}")
-            raise
-
-    def _get_connection(self) -> sqlite3.Connection:
-        """Get a database connection with proper configuration."""
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
-
-    def create(self, key: str, value: Any, expiry: int) -> bool:
-        """
-        Create a new key-value pair in SQLite.
+            logger.error(f"Failed to store data in file: {e}")
+    
+    def retrieve(self, query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Retrieve data from files.
         
         Args:
-            key (str): The key to store the value under
-            value (Any): The value to store (will be JSON serialized)
-            expiry (int): Time in seconds until the key expires
+            query: Query to match against stored data
             
         Returns:
-            bool: True if successful, False otherwise
+            Retrieved data or None if not found
         """
         try:
-            current_time = int(datetime.now().timestamp())
-            expiry_time = current_time + expiry if expiry else None
+            # Use timestamp as filename if provided
+            if "timestamp" in query:
+                filename = self.storage_path / f"{query['timestamp']}.json"
+                if filename.exists():
+                    with open(filename) as f:
+                        return json.load(f)
             
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute('''
-                    INSERT INTO warm_storage (key, value, expiry, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', (key, json.dumps(value), expiry_time, current_time, current_time))
-                conn.commit()
-            return True
-        except Exception as e:
-            self.logger.error(f"Error creating key {key}: {str(e)}")
-            return False
-
-    def read(self, key: str) -> Optional[Any]:
-        """
-        Read a value from SQLite.
-        
-        Args:
-            key (str): The key to retrieve
+            # Otherwise, search through all files
+            for file in self.storage_path.glob("*.json"):
+                with open(file) as f:
+                    data = json.load(f)
+                    # Check if all query items match
+                    if all(data.get(k) == v for k, v in query.items()):
+                        return data
             
-        Returns:
-            Optional[Any]: The deserialized value or None if not found
-        """
-        try:
-            current_time = int(datetime.now().timestamp())
-            
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute('''
-                    SELECT value FROM warm_storage 
-                    WHERE key = ? 
-                    AND (expiry IS NULL OR expiry > ?)
-                ''', (key, current_time))
-                
-                row = cursor.fetchone()
-                if row is None:
-                    return None
-                    
-                return json.loads(row['value'])
-        except Exception as e:
-            self.logger.error(f"Error reading key {key}: {str(e)}")
             return None
-
-    def update(self, key: str, value: Any, expiry: int) -> bool:
-        """
-        Update an existing key-value pair in SQLite.
+        except Exception as e:
+            logger.error(f"Failed to retrieve data from file: {e}")
+            return None
+    
+    def retrieve_all(self) -> List[Dict[str, Any]]:
+        """Retrieve all data from files.
         
-        Args:
-            key (str): The key to update
-            value (Any): The new value
-            expiry (int): Time in seconds until the key expires
-            
         Returns:
-            bool: True if successful, False otherwise
+            List of all stored data
         """
         try:
-            current_time = int(datetime.now().timestamp())
-            expiry_time = current_time + expiry if expiry else None
-            
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute('''
-                    UPDATE warm_storage 
-                    SET value = ?, expiry = ?, updated_at = ?
-                    WHERE key = ?
-                ''', (json.dumps(value), expiry_time, current_time, key))
-                conn.commit()
-            return cursor.rowcount > 0
+            result = []
+            for file in self.storage_path.glob("*.json"):
+                with open(file) as f:
+                    result.append(json.load(f))
+            return result
         except Exception as e:
-            self.logger.error(f"Error updating key {key}: {str(e)}")
-            return False
-
-    def delete(self, key: str) -> bool:
-        """
-        Delete a key from SQLite.
-        
-        Args:
-            key (str): The key to delete
-            
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute('DELETE FROM warm_storage WHERE key = ?', (key,))
-                conn.commit()
-            return True
-        except Exception as e:
-            self.logger.error(f"Error deleting key {key}: {str(e)}")
-            return False
-
-    def list_keys(self, pattern: str) -> List[str]:
-        """
-        List all keys matching a pattern.
-        
-        Args:
-            pattern (str): SQL LIKE pattern to match keys against
-            
-        Returns:
-            List[str]: List of matching keys
-        """
-        try:
-            current_time = int(datetime.now().timestamp())
-            
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute('''
-                    SELECT key FROM warm_storage 
-                    WHERE key LIKE ? 
-                    AND (expiry IS NULL OR expiry > ?)
-                ''', (pattern.replace('*', '%'), current_time))
-                
-                return [row['key'] for row in cursor.fetchall()]
-        except Exception as e:
-            self.logger.error(f"Error listing keys with pattern {pattern}: {str(e)}")
+            logger.error(f"Failed to retrieve all data from files: {e}")
             return []
-
-    def cleanup_expired(self) -> int:
-        """
-        Remove expired entries from the database.
-        
-        Returns:
-            int: Number of entries removed
-        """
+    
+    def clear(self) -> None:
+        """Clear all data files."""
         try:
-            current_time = int(datetime.now().timestamp())
-            
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute('''
-                    DELETE FROM warm_storage 
-                    WHERE expiry IS NOT NULL AND expiry <= ?
-                ''', (current_time,))
-                conn.commit()
-                return cursor.rowcount
+            shutil.rmtree(self.storage_path)
+            self.storage_path.mkdir(parents=True, exist_ok=True)
         except Exception as e:
-            self.logger.error(f"Error cleaning up expired entries: {str(e)}")
-            return 0
-
-    def flush(self) -> bool:
-        """
-        Clear all entries in the database.
-        
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute('DELETE FROM warm_storage')
-                conn.commit()
-            return True
-        except Exception as e:
-            self.logger.error(f"Error flushing database: {str(e)}")
-            return False
+            logger.error(f"Failed to clear files: {e}")
