@@ -420,7 +420,7 @@ def main():
         
         # Call the connector directly
         results = multiple_parquet_connector(
-            folder_path="/home/jaya/geo_memories",
+            folder_path="",
             faiss_storage=faiss_storage,
             word_vectors=glove_model
         )
