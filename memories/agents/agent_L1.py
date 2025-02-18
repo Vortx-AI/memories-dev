@@ -215,45 +215,59 @@ class Agent_L1:
             self.logger.info("Falling back to direct ambience analysis...")
             try:
                 # Sample bbox for a location in India (Delhi region)
-                sample_bbox = [77.1000, 28.5000, 77.3000, 28.7000]  # [min_lon, min_lat, max_lon, max_lat]
+                sample_bbox = [77.1000, 28.5000, 77.3000, 28.7000]
                 
                 from memories.utils.earth.download_data import download_location_data
                 from memories.utils.earth.analyze_location_data import analyze_location_data
                 from memories.utils.earth.ambience_analyzer import analyze_location_ambience
                 
-                print("\n[Executing Ambience Analysis Pipeline for Sample Location]")
-                print("-" * 50)
-                print(f"Using sample bbox for Delhi region: {sample_bbox}")
+                analysis_status = {
+                    "steps": [],
+                    "results": {},
+                    "status": "in_progress"
+                }
                 
                 # 1. Download location data
-                print("\n1. Downloading location data...")
+                analysis_status["steps"].append({
+                    "step": "download_data",
+                    "status": "starting",
+                    "message": "Downloading location data..."
+                })
+                
                 location_data = download_location_data(
                     bbox=sample_bbox,
-                    data_types=[
-                        "amenities",
-                        "buildings",
-                        "roads",
-                        "landuse",
-                        "points_of_interest"
-                    ]
+                    data_types=["amenities", "buildings", "roads", "landuse", "points_of_interest"]
                 )
-                print("✓ Location data downloaded")
                 
+                analysis_status["steps"][-1].update({
+                    "status": "completed",
+                    "message": "Location data downloaded successfully"
+                })
+
                 # 2. Analyze location data
-                print("\n2. Analyzing location data...")
+                analysis_status["steps"].append({
+                    "step": "analyze_data",
+                    "status": "starting",
+                    "message": "Analyzing location characteristics..."
+                })
+                
                 analysis_data = analyze_location_data(
                     location_data=location_data,
-                    analysis_types=[
-                        "density",
-                        "diversity",
-                        "accessibility",
-                        "urban_form"
-                    ]
+                    analysis_types=["density", "diversity", "accessibility", "urban_form"]
                 )
-                print("✓ Location data analyzed")
                 
+                analysis_status["steps"][-1].update({
+                    "status": "completed",
+                    "message": "Location analysis completed"
+                })
+
                 # 3. Run ambience analysis
-                print("\n3. Running ambience analysis...")
+                analysis_status["steps"].append({
+                    "step": "ambience_analysis",
+                    "status": "starting",
+                    "message": "Calculating ambience metrics..."
+                })
+                
                 ambience_result = analyze_location_ambience(
                     bbox=sample_bbox,
                     location_data=location_data,
@@ -261,31 +275,46 @@ class Agent_L1:
                     time_of_day="current",
                     day_of_week="current"
                 )
-                print("✓ Ambience analysis completed")
                 
-                # Print analysis results
-                print("\n[Ambience Analysis Results]")
-                print("-" * 50)
-                for category, details in ambience_result.items():
-                    print(f"\n{category}:")
-                    if isinstance(details, dict):
-                        for key, value in details.items():
-                            print(f"  • {key}: {value}")
-                    else:
-                        print(f"  • {details}")
+                analysis_status["steps"][-1].update({
+                    "status": "completed",
+                    "message": "Ambience analysis completed"
+                })
                 
+                # Prepare final results
+                analysis_status.update({
+                    "status": "completed",
+                    "results": {
+                        "location_info": {
+                            "bbox": sample_bbox,
+                            "area_type": "urban",
+                            "region": "Delhi NCR"
+                        },
+                        "ambience_metrics": ambience_result,
+                        "analysis_summary": analysis_data.get("summary", {})
+                    }
+                })
+
                 return {
                     "status": "success",
                     "analysis_type": "direct_ambience",
-                    "bbox": sample_bbox,
-                    "ambience_analysis": ambience_result
+                    "analysis_status": analysis_status,
+                    "requires_response_agent": True,  # Flag for response generation
+                    "raw_data": {
+                        "bbox": sample_bbox,
+                        "location_data": location_data,
+                        "analysis_data": analysis_data,
+                        "ambience_result": ambience_result
+                    }
                 }
                 
             except Exception as analysis_error:
                 self.logger.error(f"Error in ambience analysis: {str(analysis_error)}")
                 return {
                     "status": "error",
-                    "error": str(analysis_error)
+                    "error": str(analysis_error),
+                    "requires_response_agent": True,
+                    "error_type": "analysis_failure"
                 }
 
 def main():
