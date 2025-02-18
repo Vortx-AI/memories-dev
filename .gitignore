@@ -88,3 +88,14 @@ docs/api/
 # Jupyter Notebook
 .ipynb_checkpoints
 *.ipynb_checkpoints/
+
+# Test data directories
+test_cache/
+test_location_data/
+test_property_data/
+test_water_bodies_data/
+test_traffic_data/
+traffic_cache/
+data/
+*_cache/
+*_data/
