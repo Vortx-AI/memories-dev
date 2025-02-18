@@ -228,35 +228,120 @@ class Agent:
                     if l1_result["status"] == "success":
                         # Filter columns with distance < 0.5
                         similar_columns = [col for col in l1_result["similar_columns"] if col['distance'] < 0.5]
-                        result['similar_columns'] = similar_columns
                         
-                        if similar_columns:
-                            print(f"\n• Searching columns for data type: {search_term}")
-                            print("\n• Similar columns found:")
-                            for col in similar_columns:
-                                print(f"\n  Column: {col['column_name']}")
-                                print(f"  File: {col['file_name']}")
-                                print(f"  File Path: {col['file_path']}")
-                                print(f"  Geometry: {col['geometry']}")
-                                print(f"  Geometry Type: {col['geometry_type']}")
-                                print(f"  Distance: {col['distance']:.4f}")
-                            
-                            # Continue with the best matching column
-                            best_column = similar_columns[0]
-                            # ... rest of the processing ...
-                        else:
+                        if not similar_columns:
                             print("\nNo columns found with similarity distance < 0.5")
-                            print("Falling back to model response...")
-                            
-                            # Get direct response from model as done in N and L0 cases
+                            print("Getting direct response from model...")
                             model_response = self.load_model.get_response(query)
                             return {
                                 "query": query,
                                 "classification": "L1",
-                                "status": "fallback_to_model",
-                                "explanation": "No sufficiently similar columns found (distance threshold: 0.5). Using model response instead.",
+                                "status": "model_response",
+                                "explanation": "No columns found with similarity distance < 0.5. Providing direct model response.",
                                 "response": model_response
                             }
+                        
+                        result['similar_columns'] = similar_columns
+                        print(f"\n• Searching columns for data type: {search_term}")
+                        print("\n• Similar columns found:")
+                        for col in similar_columns:
+                            print(f"\n  Column: {col['column_name']}")
+                            print(f"  File: {col['file_name']}")
+                            print(f"  File Path: {col['file_path']}")
+                            print(f"  Geometry: {col['geometry']}")
+                            print(f"  Geometry Type: {col['geometry_type']}")
+                            print(f"  Distance: {col['distance']:.4f}")
+                        
+                        # Use the extracted latitude and longitude from the Context Agent.
+                        lat_val = result.get('latitude', 0.0)
+                        lon_val = result.get('longitude', 0.0)
+    
+                        # Use the previously retrieved data_type.
+                        data_type = result.get('data_type', '')
+    
+                        # Get the Parquet file information from the best matching column.
+                        best_column = similar_columns[0]
+                        raw_file_path = best_column.get('file_path', '')
+    
+                        # Construct the full Parquet file path if the provided file_path is not absolute.
+                        if not os.path.isabs(raw_file_path):
+                            project_root = os.getenv("PROJECT_ROOT", "")
+                            parquet_file_path = os.path.join(project_root, "data", "parquet", raw_file_path)
+                        else:
+                            parquet_file_path = raw_file_path
+    
+                        print("\n[Invoking Agent Analyst]")
+                        print("-" * 50)
+                        analyst = AgentAnalyst(self.load_model)
+                        relevant_column = best_column.get('column_name', '')
+                        analyst_result = analyst.analyze_query(
+                            query=query,
+                            geometry=aoi,  # Using the dynamic AOI here
+                            geometry_type='POLYGON',
+                            data_type=data_type,
+                            parquet_file=parquet_file_path,
+                            relevant_column=relevant_column,
+                            geometry_column='geometry',
+                            extra_params={}
+                        )
+
+                        print(analyst_result)
+                        
+                        # Execute recommended functions
+                        if analyst_result.get('status') == 'success':
+                            print("\n[Executing Recommended Functions]")
+                            print("-" * 50)
+                            
+                            combined_results = []
+                            for recommendation in analyst_result.get('recommendations', []):
+                                function_name = recommendation.get('function_name')
+                                parameters = recommendation.get('parameters', {})
+                                
+                                print(f"\nExecuting {function_name}:")
+                                print(f"Parameters: {parameters}")
+                                
+                                try:
+                                    # Validate inputs first
+                                    validation = validate_function_inputs(function_name, parameters)
+                                    if validation["is_valid"]:
+                                        # Execute the function
+                                        results = execute_kb_function(function_name, parameters)
+                                        if isinstance(results, pd.DataFrame):
+                                            # Add a column to indicate which function produced these results
+                                            results['source_function'] = function_name
+                                            combined_results.append(results)
+                                            print(f"Found {len(results)} results")
+                                        else:
+                                            print(f"Unexpected result type: {type(results)}")
+                                    else:
+                                        print(f"Invalid inputs for {function_name}:")
+                                        print(f"Missing parameters: {validation['missing_params']}")
+                                        print(f"Extra parameters: {validation['extra_params']}")
+                                except Exception as e:
+                                    print(f"Error executing {function_name}: {str(e)}")
+                            
+                            # Combine all results into a single DataFrame
+                            if combined_results:
+                                final_results = pd.concat(combined_results, ignore_index=True)
+                                result['query_results'] = final_results
+                                print("\nFinal Results:")
+                                print(f"Total records found: {len(final_results)}")
+                                
+                                # Generate natural language response
+                                print("\n[Generating Response]")
+                                print("-" * 50)
+                                response_result = self.response_agent.process_results(query, [final_results])
+                                if response_result['status'] == 'success':
+                                    result['response'] = response_result['response']
+                                    print("\nResponse:")
+                                    print(response_result['response'])
+                                else:
+                                    print(f"Error generating response: {response_result.get('error')}")
+                                    result['response'] = "Error generating natural language response."
+                            else:
+                                result['query_results'] = pd.DataFrame()
+                                result['response'] = "No results found matching your query."
+                                print("\nNo results found from any function")
             
             return result
             
