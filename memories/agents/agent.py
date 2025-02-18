@@ -12,6 +12,10 @@ import pandas as pd
 from memories.agents.agent_code_executor import AgentCodeExecutor
 from memories.utils.earth.run_kb_functions import execute_kb_function, validate_function_inputs
 from memories.agents.response_agent import AgentResponse
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
+import time
+import re
 
 # Load environment variables
 load_dotenv()
@@ -44,6 +48,85 @@ class Agent:
             raise ValueError("PROJECT_ROOT environment variable is not set")
 
         self.response_agent = AgentResponse(query, load_model)
+
+        # Initialize Nominatim geocoder with a custom User-Agent
+        self.geocoder = Nominatim(user_agent="memories_agent")
+
+    def get_location_bbox(self, location: str, max_retries: int = 3) -> Dict[str, float]:
+        """
+        Get bounding box for a location using Nominatim.
+        
+        Args:
+            location (str): Location string or coordinates to geocode
+            max_retries (int): Maximum number of retry attempts
+            
+        Returns:
+            Dict containing bounding box coordinates or None if not found
+        """
+        # Check if location is in coordinates format (lat,lon)
+        coord_pattern = re.compile(r'^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$')
+        
+        for attempt in range(max_retries):
+            try:
+                if coord_pattern.match(location.strip()):
+                    # Parse coordinates
+                    lat, lon = map(float, location.split(','))
+                    # Create a small bounding box around the coordinates (approximately 1km)
+                    delta = 0.009  # roughly 1km at the equator
+                    bbox = {
+                        'south': lat - delta,
+                        'north': lat + delta,
+                        'west': lon - delta,
+                        'east': lon + delta
+                    }
+                else:
+                    # Get location details from Nominatim
+                    location_data = self.geocoder.geocode(location, exactly_one=True, timeout=10)
+                    
+                    if location_data and hasattr(location_data, 'raw'):
+                        bbox_raw = location_data.raw.get('boundingbox')
+                        if bbox_raw:
+                            bbox = {
+                                'south': float(bbox_raw[0]),
+                                'north': float(bbox_raw[1]),
+                                'west': float(bbox_raw[2]),
+                                'east': float(bbox_raw[3])
+                            }
+                        else:
+                            # If no bounding box, create one around the point
+                            delta = 0.009
+                            bbox = {
+                                'south': location_data.latitude - delta,
+                                'north': location_data.latitude + delta,
+                                'west': location_data.longitude - delta,
+                                'east': location_data.longitude + delta
+                            }
+                
+                if bbox:
+                    # Create WKT polygon from bbox
+                    wkt_polygon = (
+                        f"POLYGON(("
+                        f"{bbox['west']} {bbox['south']},"
+                        f"{bbox['east']} {bbox['south']},"
+                        f"{bbox['east']} {bbox['north']},"
+                        f"{bbox['west']} {bbox['north']},"
+                        f"{bbox['west']} {bbox['south']}"
+                        f"))"
+                    )
+                    return {'bbox': bbox, 'wkt_polygon': wkt_polygon}
+                
+                self.logger.warning(f"No bounding box found for location: {location}")
+                return None
+                
+            except (GeocoderTimedOut, GeocoderUnavailable) as e:
+                if attempt == max_retries - 1:
+                    self.logger.error(f"Failed to geocode after {max_retries} attempts: {str(e)}")
+                    return None
+                time.sleep(1)  # Wait before retrying
+                
+            except Exception as e:
+                self.logger.error(f"Error geocoding location: {str(e)}")
+                return None
 
     def process_query(self, query: str) -> Dict[str, Any]:
         """
@@ -78,42 +161,57 @@ class Agent:
                 context_agent = AgentContext(query, self.load_model)
                 context_result = context_agent.process_query()
                 
-                print("Context Agent Response:")
-                print(context_result)
-                print(f"• Data Type: {context_result.get('data_type', '')}")
-                
-                # Extract latitude and longitude from the 'location_info' output
+                # Extract location information
                 location_info = context_result.get('location_info', {})
-                lat_val, lon_val = 0.0, 0.0
-                location_type = 'unknown'
                 location = 'unknown'
+                coordinates = None
                 
                 if isinstance(location_info, dict):
                     normalized = location_info.get('normalized', {})
                     coordinates = normalized.get('coordinates', {})
-                    location_type = normalized.get('type', 'unknown')
                     location = normalized.get('location', 'unknown')
                     
-                    if isinstance(coordinates, dict):
-                        lat_val = coordinates.get('lat', 0.0)
-                        lon_val = coordinates.get('lon', 0.0)
+                    # Try to get bounding box
+                    location_query = None
+                    if isinstance(coordinates, dict) and 'lat' in coordinates and 'lon' in coordinates:
+                        location_query = f"{coordinates['lat']},{coordinates['lon']}"
+                    elif location != 'unknown':
+                        location_query = location
+                    
+                    if location_query:
+                        print(f"\n[Getting Bounding Box for Location: {location_query}]")
+                        print("-"*50)
+                        bbox_result = self.get_location_bbox(location_query)
+                        
+                        if bbox_result:
+                            bbox = bbox_result['bbox']
+                            print("Bounding Box Found:")
+                            print(f"• North: {bbox['north']}")
+                            print(f"• South: {bbox['south']}")
+                            print(f"• East: {bbox['east']}")
+                            print(f"• West: {bbox['west']}")
+                            
+                            # Update result with bbox and WKT
+                            result.update({
+                                'bbox': bbox,
+                                'wkt_polygon': bbox_result['wkt_polygon']
+                            })
+                        else:
+                            print("No bounding box found for the location")
                 
-                print(f"• Latitude: {lat_val}")
-                print(f"• Longitude: {lon_val}")
-                print(f"• Location type: {location_type}")
-                print(f"• Location: {location}")
-                
+                # Update other location information
                 result.update({
                     'data_type': context_result.get('data_type', ''),
-                    'latitude': lat_val,
-                    'longitude': lon_val,
-                    'location_type': location_type,
+                    'latitude': coordinates.get('lat', 0.0) if isinstance(coordinates, dict) else 0.0,
+                    'longitude': coordinates.get('lon', 0.0) if isinstance(coordinates, dict) else 0.0,
+                    'location_type': location_info.get('type', 'unknown') if isinstance(location_info, dict) else 'unknown',
                     'location': location
                 })
             #######################################################
             
-            aoi =  "POLYGON((77.59765625 12.900390625,77.609375 12.900390625,77.609375 12.912109375,77.59765625 12.912109375,77.59765625 12.900390625))"
-
+            # Get the AOI from the WKT polygon or use a default if not available
+            aoi = bbox_result['wkt_polygon']
+            print(bbox_result['bbox'])
             ############
             # Step 3: L1 Agent (if classification is L1)
             if result.get('classification') == 'L1':
@@ -166,8 +264,8 @@ class Agent:
                         relevant_column = best_column.get('column_name', '')
                         analyst_result = analyst.analyze_query(
                             query=query,
-                            geometry=aoi,
-                            geometry_type='POLYGON',  # Since aoi is a polygon
+                            geometry=aoi,  # Using the dynamic AOI here
+                            geometry_type='POLYGON',
                             data_type=data_type,
                             parquet_file=parquet_file_path,
                             relevant_column=relevant_column,
