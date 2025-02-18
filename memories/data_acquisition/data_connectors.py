@@ -226,22 +226,16 @@ def multiple_parquet_connector(
     word_vectors: Optional[Any] = None,
     output_file_name: Optional[str] = None
 ) -> Dict[str, Any]:
-    """
-    Recursively searches for all parquet files under folder_path, extracts schema
-    and metadata for each file, and (optionally) computes word embeddings for column names
-    using a provided word_vectors model (e.g., the GloVe model). If faiss_storage is provided,
-    embeddings are added to the FAISS index and the cumulative total number of vectors added
-    is displayed after processing each file.
+    """Process multiple parquet files recursively."""
     
-    Args:
-        folder_path (str): Root folder containing parquet files (recursively).
-        faiss_storage (Optional[Dict[str, Any]]): A dict containing the FAISS index and metadata.
-        word_vectors (Optional[Any]): Gensim KeyedVectors instance to compute column embeddings.
-        output_file_name (Optional[str]): Desired name for the aggregated JSON output file.
+    # Get project root and set up data directory
+    project_root = os.getenv("PROJECT_ROOT")
+    if not project_root:
+        raise ValueError("PROJECT_ROOT environment variable not set")
     
-    Returns:
-        Dict[str, Any]: Aggregated results including file metadata, processing details, and errors.
-    """
+    data_dir = Path(project_root) / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    
     results = {
         "processed_files": [],
         "error_files": [],
@@ -254,7 +248,7 @@ def multiple_parquet_connector(
     
     folder_path_obj = Path(folder_path)
     
-    # If no specific output file name is provided, create one using a timestamp.
+    # If no specific output file name is provided, create one using a timestamp
     if output_file_name is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_file_name = f"multiple_parquet_schema_index_{timestamp}.json"
@@ -262,21 +256,18 @@ def multiple_parquet_connector(
     # Use rglob to find all files ending in .parquet (case-insensitive)
     for file_path in folder_path_obj.rglob("*"):
         if file_path.is_file() and file_path.suffix.lower() == ".parquet":
+            print(f"\nProcessing file: {file_path}")
             results["metadata"]["file_count"] += 1
             results["metadata"]["total_size"] += file_path.stat().st_size
             
             try:
-                # Import the single-file connector function.
-                from memories.data_acquisition.data_connectors import parquet_schema_connector
-                file_info = parquet_schema_connector(str(file_path), faiss_storage, word_vectors)
+                file_info = parquet_connector(str(file_path), faiss_storage, word_vectors)
                 results["processed_files"].append(file_info)
                 
-                # Display the cumulative number of vectors added after processing this file.
+                # Display the cumulative number of vectors added after processing this file
                 if faiss_storage is not None:
                     total_vectors = faiss_storage['index'].ntotal
-                    print(f"After processing file {file_path}, total vectors added: {total_vectors}")
-                else:
-                    print(f"Processed file {file_path} (no FAISS storage used)")
+                    print(f"Total vectors after processing: {total_vectors}")
             except Exception as e:
                 err_info = {
                     "file_name": file_path.name,
@@ -286,8 +277,9 @@ def multiple_parquet_connector(
                 results["error_files"].append(err_info)
                 print(f"Error processing {file_path}: {e}")
     
-    # Save the aggregated result into a JSON file at the base folder.
-    output_path = folder_path_obj / output_file_name
+    # Save the aggregated result into a JSON file in the project's data directory
+    output_path = data_dir / output_file_name
+    
     with open(output_path, 'w') as f:
         json.dump(results, f, indent=2, default=str)
     
