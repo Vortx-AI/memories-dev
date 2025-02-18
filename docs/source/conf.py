@@ -5,10 +5,10 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # Project information
 project = 'memories-dev'
-copyright = '2024, Memories-dev'
+copyright = '2025, Memories-dev'
 author = 'Memories-dev'
-version = '1.1.9'
-release = '1.1.9'
+version = '2.0.0'
+release = '2.0.0'
 
 # Add any Sphinx extension module names here
 extensions = [
