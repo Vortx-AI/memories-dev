@@ -44,8 +44,8 @@ class Agent_L1:
         """
         Get word embedding for a single word, handling multi-word phrases by averaging.
         """
-        global _WORD_VECTORS
         try:
+            # Convert to lowercase and split into words
             words = word.lower().split('_')
             vectors = []
             
@@ -119,37 +119,42 @@ class Agent_L1:
     def find_similar_columns(self, k: int = 3) -> List[Dict[str, Any]]:
         """
         Find k most similar columns to the query.
-        
-        Args:
-            k (int): Number of similar columns to retrieve.
-            
-        Returns:
-            List[Dict[str, Any]]: List of similar columns with their metadata.
         """
         try:
-            # Create query vector.
+            # Create query vector
             query_vector = self.get_word_embedding(self.query)
+            
+            # Print debug information
+            print(f"\nQuery vector norm: {np.linalg.norm(query_vector)}")
+            print(f"FAISS index type: {type(self.faiss_index)}")
+            
             query_vector = np.array([query_vector]).astype('float32')
             
-            # Search for similar vectors.
+            # Search for similar vectors
             D, I = self.faiss_index.search(query_vector, k)
             
-            # Prepare results.
+            # Print raw results for debugging
+            print(f"\nTop {k} columns similar to '{self.query}':")
+            
+            # Prepare results
             results = []
             for i, (idx, distance) in enumerate(zip(I[0], D[0])):
                 if idx < len(self.metadata):
                     column_info = self.metadata[idx]
-                    results.append({
+                    result = {
                         "rank": i + 1,
                         "column_name": column_info['column_name'],
                         "file_name": column_info['file_name'],
                         "file_path": column_info['file_path'],
                         "geometry": column_info['geometry_column'],
                         "geometry_type": column_info['geometry_type'],
-                        
-                        "distance": float(distance),
-                         #"data_type": column_info['data_type'],
-                    })
+                        "distance": float(distance)
+                    }
+                    results.append(result)
+                    # Print results in the same format as the working example
+                    print(f"\n{i+1}. Column: {column_info['column_name']}")
+                    print(f"   File: {column_info['file_name']}")
+                    print(f"   Distance: {distance:.4f}")
             
             return results
             
