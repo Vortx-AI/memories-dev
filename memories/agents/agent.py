@@ -265,9 +265,9 @@ class Agent:
                                     if col.get('term') in ['ambiance', 'ambience']:
                                         if result.get('bbox'):
                                             try:
-                                                from memories.utils.earth.download_data import download_location_data
-                                                from memories.utils.earth.analyze_location_data import analyze_location_data
-                                                from memories.utils.earth.ambience_analyzer import analyze_location_ambience
+                                                from memories.utils.download_data import download_location_data
+                                                from memories.utils.analyze_location_data import analyze_location_data
+                                                from memories.utils.ambience_analyzer import analyze_location_ambience
                                                 
                                                 print("\n[Executing Ambience Analysis Pipeline]")
                                                 print("-" * 50)
