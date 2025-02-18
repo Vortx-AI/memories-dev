@@ -197,10 +197,32 @@ class Agent:
                                         # Execute the function
                                         results = execute_kb_function(function_name, parameters)
                                         if isinstance(results, pd.DataFrame):
-                                            # Add a column to indicate which function produced these results
-                                            results['source_function'] = function_name
-                                            combined_results.append(results)
-                                            print(f"Found {len(results)} results")
+                                            # Keep only relevant columns
+                                            relevant_columns = [
+                                                parameters.get('column_name', ''),  # The queried data type
+                                                'name',  # Name if available
+                                                'address',  # Address if available
+                                                'xmin', 'xmax', 'ymin', 'ymax',  # Bounding box coordinates
+                                                'wkt_geometry',  # WKT geometry
+                                                'distance_km'  # Distance if available
+                                            ]
+                                            
+                                            # Filter columns that exist in the DataFrame
+                                            existing_columns = [col for col in relevant_columns if col in results.columns]
+                                            filtered_results = results[existing_columns].copy()
+                                            
+                                            # Convert to JSON-compatible format
+                                            json_results = filtered_results.to_dict(orient='records')
+                                            
+                                            # Add metadata about the query
+                                            formatted_results = {
+                                                'source_function': function_name,
+                                                'data_type': parameters.get('column_name', ''),
+                                                'results': json_results
+                                            }
+                                            
+                                            combined_results.append(formatted_results)
+                                            print(f"Found {len(json_results)} results")
                                         else:
                                             print(f"Unexpected result type: {type(results)}")
                                     else:
@@ -210,26 +232,20 @@ class Agent:
                                 except Exception as e:
                                     print(f"Error executing {function_name}: {str(e)}")
                             
-                            # Combine all results into a single DataFrame
+                            # Generate natural language response if we have results
                             if combined_results:
-                                final_results = pd.concat(combined_results, ignore_index=True)
-                                result['query_results'] = final_results
-                                print("\nFinal Results:")
-                                print(f"Total records found: {len(final_results)}")
-                                
-                                # Generate natural language response
                                 print("\n[Generating Response]")
                                 print("-" * 50)
-                                response_result = self.response_agent.process_results(query, [final_results])
+                                response_result = self.response_agent.process_results(query, combined_results)
                                 if response_result['status'] == 'success':
                                     result['response'] = response_result['response']
+                                    result['formatted_results'] = combined_results
                                     print("\nResponse:")
                                     print(response_result['response'])
                                 else:
                                     print(f"Error generating response: {response_result.get('error')}")
                                     result['response'] = "Error generating natural language response."
                             else:
-                                result['query_results'] = pd.DataFrame()
                                 result['response'] = "No results found matching your query."
                                 print("\nNo results found from any function")
             
