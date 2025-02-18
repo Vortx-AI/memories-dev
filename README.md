@@ -9,7 +9,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Version](https://img.shields.io/badge/version-1.1.8-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.8)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.0)
 [![Discord](https://img.shields.io/discord/1339432819784683522?color=7289da&label=Discord&logo=discord&logoColor=white)](https://discord.com/invite/7qAFEekp)
 
 
