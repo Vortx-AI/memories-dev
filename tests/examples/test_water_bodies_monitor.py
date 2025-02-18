@@ -8,24 +8,23 @@ from datetime import datetime, timedelta
 import numpy as np
 from pathlib import Path
 from examples.water_bodies_monitor import WaterBodyAgent
-from memories.config import Config
+from memories.core.config import Config
 from memories import MemoryStore
 
 @pytest.fixture
-def memory_store():
+def config():
+    """Create a config for testing."""
+    return Config(config_path="examples/config/db_config.yml")
+
+@pytest.fixture
+def memory_store(config):
     """Create a memory store for testing."""
-    config = Config(
-        storage_path="./test_water_bodies_data",
-        hot_memory_size=10,
-        warm_memory_size=100,
-        cold_memory_size=1000
-    )
     return MemoryStore(config)
 
 @pytest.fixture
-def water_body_agent(memory_store):
+def water_body_agent(memory_store, config):
     """Create a water body agent for testing."""
-    return WaterBodyAgent(memory_store)
+    return WaterBodyAgent(memory_store, config)
 
 @pytest.fixture
 def mock_data():

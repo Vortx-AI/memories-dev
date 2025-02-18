@@ -22,6 +22,7 @@ from memories.utils.text import TextProcessor
 from memories.data_acquisition.sources.overture_api import OvertureAPI
 from memories.data_acquisition.sources.sentinel_api import SentinelAPI
 from memories.utils.processors import ImageProcessor, VectorProcessor
+from memories.data_acquisition.data_manager import DataManager
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -57,6 +58,9 @@ class WaterBodyAgent(BaseAgent):
         self.vector_processor = VectorProcessor()
         self.config = config
         
+        # Initialize data manager
+        self.data_manager = DataManager(cache_dir=config.config['data']['processed_path'])
+        
         # Initialize APIs with config paths
         self.overture_api = OvertureAPI(data_dir=config.config['data']['overture_path'])
         self.sentinel_api = SentinelAPI(data_dir=config.config['data']['satellite_path'])
@@ -68,196 +72,97 @@ class WaterBodyAgent(BaseAgent):
         """
         return await self.analyze_water_body(bbox, start_date, end_date)
     
-    async def analyze_water_body(self, bbox, start_date, end_date):
-        """Analyze water body data and store insights."""
+    async def analyze_water_body(self, bbox, start_date=None, end_date=None):
+        """Analyze a water body using satellite and vector data."""
         logger.info(f"analyze_water_body - Input bbox: {bbox}, type: {type(bbox)}")
         
-        # Use bbox directly if it's already a dictionary, otherwise convert it
-        bbox_dict = bbox if isinstance(bbox, dict) else {
-            'xmin': bbox[0],
-            'ymin': bbox[1],
-            'xmax': bbox[2],
-            'ymax': bbox[3]
-        }
+        # Prepare data
+        data = await self.data_manager.prepare_training_data(
+            bbox=bbox,
+            start_date=start_date,
+            end_date=end_date
+        )
         
-        try:
-            # Download Overture data
-            logger.info("\n=== Downloading Overture Maps Data ===")
-            overture_results = self.overture_api.download_data(bbox_dict)
-            
-            if all(overture_results.values()):
-                logger.info("\nSuccessfully downloaded all Overture themes:")
-                for theme, success in overture_results.items():
-                    logger.info(f"- {theme}: {'✓' if success else '✗'}")
-            else:
-                logger.info("\nSome Overture downloads failed:")
-                for theme, success in overture_results.items():
-                    logger.info(f"- {theme}: {'✓' if success else '✗'}")
-            
-            # Download satellite data
-            logger.info("\n=== Downloading Satellite Imagery ===")
-            logger.info(f"Searching for imagery between {start_date} and {end_date}")
-            logger.info(f"Using bbox: {bbox_dict}")
-            logger.info(f"Cloud cover threshold: 50.0%")
-            
-            satellite_results = await self.sentinel_api.download_data(
-                bbox=bbox_dict,
-                start_date=datetime.strptime(start_date, "%Y-%m-%d"),
-                end_date=datetime.strptime(end_date, "%Y-%m-%d"),
-                cloud_cover=50.0,  # Increase cloud cover threshold to find more imagery
-                bands={
-                    "B04": "Red",
-                    "B08": "NIR",
-                    "B11": "SWIR"
-                }
-            )
-            
-            if satellite_results.get("success"):
-                logger.info("\nSuccessfully downloaded satellite data:")
-                metadata = satellite_results["metadata"]
-                logger.info(f"- Scene ID: {metadata['scene_id']}")
-                logger.info(f"- Date: {metadata['datetime']}")
-                logger.info(f"- Cloud cover: {metadata['cloud_cover']}%")
-                logger.info(f"- Bands: {', '.join(metadata['bands_downloaded'])}")
-            else:
-                logger.info("\nSatellite data download failed:")
-                logger.info(f"- Error: {satellite_results.get('error')}")
-                if 'failed_bands' in satellite_results:
-                    logger.info(f"- Failed bands: {', '.join(satellite_results['failed_bands'])}")
-                if 'parameters' in satellite_results:
-                    logger.info("Search parameters:")
-                    for key, value in satellite_results['parameters'].items():
-                        logger.info(f"- {key}: {value}")
-            
-            # Process the data
-            insights = await self._process_water_data({
-                "satellite_data": satellite_results,
-                "vector_data": overture_results,
-                "bbox": bbox_dict
-            })
-            
-            # Store in different memory layers based on importance
-            if self._is_significant_change(insights):
-                self.memory_store.hot_memory.store({
-                    "timestamp": datetime.now().isoformat(),
-                    "type": "significant_change",
-                    "data": insights
-                })
-            else:
-                self.memory_store.warm_memory.store({
-                    "timestamp": datetime.now().isoformat(),
-                    "type": "regular_update",
-                    "data": insights
-                })
-            
-            return insights
-            
-        except asyncio.CancelledError:
-            logger.info("\nAnalysis cancelled by user")
-            raise
-        except Exception as e:
-            logger.error(f"Error in analyze_water_body: {str(e)}")
-            return {
-                "error": str(e),
-                "location": f"Bbox: {bbox_dict}",
-                "surface_area": 0,
-                "ndwi_mean": None,
-                "quality_metrics": self._analyze_quality(None),
-                "timestamp": datetime.now().isoformat()
+        # Process data
+        insights = await self._process_water_data(data)
+        
+        # Extract quality metrics
+        quality_metrics = insights.get("quality_metrics", {})
+        if not quality_metrics:
+            quality_metrics = {
+                "clarity": 0.0,
+                "water_presence": 0.0,
+                "variability": 0.0
             }
-    
-    async def _process_water_data(self, data):
-        """Process satellite and vector data for water body analysis."""
-        logger.info("\n=== Processing Water Body Data ===")
-        
-        satellite_data = data["satellite_data"]
-        vector_data = data["vector_data"]
-        
-        # Extract water bodies from vector data
-        water_features = []
-        for theme, features in vector_data.items():
-            if features and theme in ['waterways', 'water']:
-                water_features.extend(features)
-        
-        logger.info(f"Found {len(water_features)} water features")
-        water_area = sum(feature.get("area", 0) for feature in water_features)
-        logger.info(f"Total water area: {water_area:.2f} sq km")
-        
-        # Analyze satellite imagery
-        if satellite_data.get("success"):
-            logger.info("\nProcessing satellite imagery...")
-            metadata = satellite_data["metadata"]
-            data_dir = Path(satellite_data["data_dir"])
-            
-            # Load the bands
-            try:
-                import rasterio
-                
-                # Try loading .tif files
-                red_band = None
-                nir_band = None
-                
-                red_file = data_dir / "B04.tif"
-                nir_file = data_dir / "B08.tif"
-                
-                logger.info(f"Looking for band files:")
-                logger.info(f"Red band file: {red_file} (exists: {red_file.exists()})")
-                logger.info(f"NIR band file: {nir_file} (exists: {nir_file.exists()})")
-                
-                if red_file.exists() and nir_file.exists():
-                    logger.info("Loading bands from .tif files...")
-                    with rasterio.open(red_file) as src:
-                        red_band = src.read(1)
-                    with rasterio.open(nir_file) as src:
-                        nir_band = src.read(1)
-                else:
-                    # Try loading .npy files as fallback
-                    logger.info("Loading bands from .npy files...")
-                    red_npy = data_dir / "B04.npy"
-                    nir_npy = data_dir / "B08.npy"
-                    logger.info(f"Red band NPY file: {red_npy} (exists: {red_npy.exists()})")
-                    logger.info(f"NIR band NPY file: {nir_npy} (exists: {nir_npy.exists()})")
-                    
-                    red_band = np.load(red_npy) if red_npy.exists() else None
-                    nir_band = np.load(nir_npy) if nir_npy.exists() else None
-                
-                if red_band is not None and nir_band is not None:
-                    logger.info("Calculating NDWI...")
-                    logger.info(f"Red band shape: {red_band.shape}")
-                    logger.info(f"NIR band shape: {nir_band.shape}")
-                    
-                    ndwi = self.image_processor.calculate_ndwi(
-                        np.stack([red_band, nir_band]),
-                        green_band=0,  # Index for red band (using as proxy for green)
-                        nir_band=1     # Index for NIR band
-                    )
-                    logger.info(f"NDWI shape: {ndwi.shape}")
-                    logger.info(f"NDWI statistics - min: {ndwi.min():.2f}, max: {ndwi.max():.2f}, mean: {ndwi.mean():.2f}")
-                    
-                    water_quality = self._analyze_quality(ndwi)
-                    logger.info("\nWater quality metrics:")
-                    for metric, value in water_quality.items():
-                        if value is not None:
-                            logger.info(f"- {metric}: {value:.2f}")
-                else:
-                    logger.warning("Required bands not found")
-                    ndwi = None
-                    water_quality = self._analyze_quality(None)
-            except Exception as e:
-                logger.error(f"Error processing satellite data: {str(e)}")
-                ndwi = None
-                water_quality = self._analyze_quality(None)
-        else:
-            logger.warning("No satellite data available")
-            ndwi = None
-            water_quality = self._analyze_quality(None)
         
         return {
-            "location": f"Bbox: {data['bbox']}",
-            "surface_area": water_area,
-            "ndwi_mean": float(np.mean(ndwi)) if ndwi is not None else None,
-            "quality_metrics": water_quality,
-            "timestamp": datetime.now().isoformat()
+            "surface_area": insights.get("surface_area", 0.0),
+            "perimeter": insights.get("perimeter", 0.0),
+            "water_features": insights.get("water_features", 0),
+            "ndwi_mean": insights.get("ndwi_mean", 0.0),
+            "quality_metrics": quality_metrics
+        }
+    
+    async def _process_water_data(self, data):
+        """Process water body data to extract key metrics."""
+        logger.info("\n=== Processing Water Body Data ===")
+        
+        if not data or "vector_data" not in data:
+            logger.warning("No vector data available")
+            return {
+                "location": f"Bbox: {data.get('bbox', 'unknown')}",
+                "surface_area": 0.0,
+                "perimeter": 0.0,
+                "water_features": 0,
+                "quality_metrics": {},
+                "ndwi_mean": 0.0  # Default float value
+            }
+            
+        water_features = []
+        total_area = 0.0
+        total_perimeter = 0.0
+        
+        # Process OSM water features
+        if "osm" in data["vector_data"] and "waterways" in data["vector_data"]["osm"]:
+            water_features = data["vector_data"]["osm"]["waterways"]
+            
+            # Calculate total area and perimeter
+            for feature in water_features:
+                if "properties" in feature and "area" in feature["properties"]:
+                    total_area += feature["properties"]["area"]
+                    
+                if "geometry" in feature and feature["geometry"]["type"] == "Polygon":
+                    coords = feature["geometry"]["coordinates"][0]  # Outer ring
+                    # Calculate perimeter as sum of distances between consecutive points
+                    for i in range(len(coords)-1):
+                        x1, y1 = coords[i]
+                        x2, y2 = coords[i+1]
+                        total_perimeter += ((x2-x1)**2 + (y2-y1)**2)**0.5
+        
+        logger.info(f"Found {len(water_features)} water features")
+        logger.info(f"Total water area: {total_area:.2f} sq km")
+        
+        # Process satellite data if available
+        quality_metrics = {}
+        ndwi_mean = 0.0  # Default float value
+        if "satellite_data" in data and "pc" in data["satellite_data"]:
+            try:
+                quality_metrics = await self.analyze_quality(data["satellite_data"])
+                if "ndwi_mean" in quality_metrics:
+                    ndwi_mean = quality_metrics.pop("ndwi_mean") or 0.0
+            except Exception as e:
+                logger.warning(f"Error analyzing water quality: {str(e)}")
+                logger.warning("No satellite data available")
+        else:
+            logger.warning("No satellite data available")
+            
+        return {
+            "location": f"Bbox: {data.get('bbox', 'unknown')}",
+            "surface_area": total_area,
+            "perimeter": total_perimeter,
+            "water_features": len(water_features),
+            "quality_metrics": quality_metrics,
+            "ndwi_mean": ndwi_mean
         }
     
     def _is_significant_change(self, insights):
@@ -278,6 +183,69 @@ class WaterBodyAgent(BaseAgent):
             "clarity": None,
             "water_presence": None,
             "variability": None
+        }
+
+    async def analyze_quality(self, satellite_data):
+        """Analyze water quality using satellite data."""
+        if not satellite_data or "pc" not in satellite_data:
+            return {
+                "turbidity": 0.0,
+                "chlorophyll": 0.0,
+                "temperature": 0.0,
+                "ndwi_mean": 0.0,
+                "clarity": 0.0,
+                "water_presence": 0.0,
+                "variability": 0.0
+            }
+            
+        try:
+            # Extract Sentinel-2 data
+            if "sentinel-2-l2a" in satellite_data["pc"]:
+                scenes = satellite_data["pc"]["sentinel-2-l2a"]
+                if scenes and len(scenes) > 0:
+                    scene = scenes[0]  # Use most recent scene
+                    bands = scene.get("data", None)
+                    
+                    if bands is not None and len(bands) >= 4:
+                        # Calculate NDWI using green (band 3) and NIR (band 8)
+                        green = bands[2]  # Band 3 (green)
+                        nir = bands[7]    # Band 8 (NIR)
+                        
+                        # Ensure bands are not empty
+                        if green is not None and nir is not None:
+                            ndwi = (green - nir) / (green + nir + 1e-6)  # Add small epsilon to avoid division by zero
+                            ndwi_mean = float(np.nanmean(ndwi))
+                            
+                            # Calculate other metrics
+                            turbidity = float(np.nanmean(bands[1]))  # Use blue band for turbidity
+                            chlorophyll = float(np.nanmean(bands[3]))  # Use red band for chlorophyll
+                            temperature = 0.0  # Sentinel-2 doesn't have thermal bands
+                            
+                            # Calculate additional quality metrics
+                            clarity = float(np.nanmean(bands[1] / (bands[2] + 1e-6)))  # Blue/Green ratio
+                            water_presence = float(np.nanmean(ndwi > 0))  # Fraction of pixels with water
+                            variability = float(np.nanstd(ndwi))  # Standard deviation of NDWI
+                            
+                            return {
+                                "turbidity": turbidity,
+                                "chlorophyll": chlorophyll,
+                                "temperature": temperature,
+                                "ndwi_mean": ndwi_mean,
+                                "clarity": clarity,
+                                "water_presence": water_presence,
+                                "variability": variability
+                            }
+        except Exception as e:
+            logger.warning(f"Error calculating water quality metrics: {str(e)}")
+            
+        return {
+            "turbidity": 0.0,
+            "chlorophyll": 0.0,
+            "temperature": 0.0,
+            "ndwi_mean": 0.0,
+            "clarity": 0.0,
+            "water_presence": 0.0,
+            "variability": 0.0
         }
 
 async def main():
