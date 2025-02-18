@@ -253,56 +253,42 @@ class Agent:
                                 print(f"  Geometry: {col['geometry']}")
                                 print(f"  Geometry Type: {col['geometry_type']}")
                                 print(f"  Distance: {col['distance']:.4f}")
-                            except:
-                                print(f"\n  Term: {col.get('term', 'unknown')}")
-                                print(f"  Function: {col.get('function_name', 'unknown')}")
-                                print(f"  File Path: {col.get('file_path', 'unknown')}")
-                                print(f"  Distance: {col.get('distance', 0.0):.4f}")
-                                
-                                if col.get('term') in ['ambiance', 'ambience']:
-                                    print("\n[Executing Ambience Analysis Pipeline]")
-                                    print("-" * 50)
+                            except KeyError:
+                                # Handle analysis terms
+                                if col.get('is_analysis_term'):
+                                    print(f"\n  Term: {col.get('term', 'unknown')}")
+                                    print(f"  Function: {col.get('function_name', 'unknown')}")
+                                    print(f"  File Path: {col.get('file_path', 'unknown')}")
+                                    print(f"  Distance: {col.get('distance', 0.0):.4f}")
                                     
-                                    try:
-                                        # Get the bbox from earlier context processing
-                                        bbox = result.get('bbox')
-                                        if not bbox:
-                                            print("Error: No bounding box available for analysis")
-                                            continue
+                                    # If this is an ambiance term, trigger the analysis pipeline
+                                    if col.get('term') in ['ambiance', 'ambience']:
+                                        if result.get('bbox'):
+                                            try:
+                                                from memories.utils.earth.download_data import download_location_data
+                                                from memories.utils.earth.analyze_location_data import analyze_location_data
+                                                from memories.utils.earth.ambience_analyzer import analyze_location_ambience
                                                 
-                                        # 1. Download Data
-                                        from memories.utils.earth.download_data import download_location_data
-                                        location_data = download_location_data(bbox)
-                                        
-                                        # 2. Analyze Location Data
-                                        from memories.utils.earth.analyze_location_data import analyze_location_data
-                                        analysis_data = analyze_location_data(location_data)
-                                        
-                                        # 3. Run Ambience Analysis
-                                        from memories.utils.earth.ambience_analyzer import analyze_location_ambience
-                                        ambience_result = analyze_location_ambience(
-                                            bbox=bbox,
-                                            location_data=location_data,
-                                            analysis_data=analysis_data
-                                        )
-                                        
-                                        # Print analysis results
-                                        print("\n[Ambience Analysis Results]")
-                                        print("-" * 50)
-                                        for category, details in ambience_result.items():
-                                            print(f"\n{category}:")
-                                            if isinstance(details, dict):
-                                                for key, value in details.items():
-                                                    print(f"  • {key}: {value}")
-                                            else:
-                                                print(f"  • {details}")
-                                        
-                                        # Update result with ambience analysis
-                                        result['ambience_analysis'] = ambience_result
-                                        
-                                    except Exception as e:
-                                        print(f"Error during ambience analysis: {str(e)}")
-                        
+                                                print("\n[Executing Ambience Analysis Pipeline]")
+                                                print("-" * 50)
+                                                
+                                                # Execute analysis pipeline
+                                                location_data = download_location_data(result['bbox'])
+                                                analysis_data = analyze_location_data(location_data)
+                                                ambience_result = analyze_location_ambience(
+                                                    bbox=result['bbox'],
+                                                    location_data=location_data,
+                                                    analysis_data=analysis_data
+                                                )
+                                                
+                                                # Add results to the response
+                                                result['ambience_analysis'] = ambience_result
+                                                
+                                            except Exception as e:
+                                                print(f"Error in ambience analysis: {str(e)}")
+                            except Exception as e:
+                                print(f"Error executing {col['column_name']}: {str(e)}")
+                                
                         # Use the extracted latitude and longitude from the Context Agent.
                         lat_val = result.get('latitude', 0.0)
                         lon_val = result.get('longitude', 0.0)
