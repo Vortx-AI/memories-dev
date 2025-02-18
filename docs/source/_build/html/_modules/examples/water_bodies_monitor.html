@@ -405,15 +405,33 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">memories.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">HotMemory</span><span class="p">,</span> <span class="n">WarmMemory</span><span class="p">,</span> <span class="n">ColdMemory</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">memories.agents</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseAgent</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">memories.utils.text</span><span class="w"> </span><span class="kn">import</span> <span class="n">TextProcessor</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">memories.data_acquisition.data_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.data_acquisition.sources.overture_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">OvertureAPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">memories.data_acquisition.sources.sentinel_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">SentinelAPI</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">memories.utils.processors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ImageProcessor</span><span class="p">,</span> <span class="n">VectorProcessor</span>
 
 <span class="c1"># Configure logging</span>
-<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(name)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">)</span>
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="c1"># Load environment variables</span>
 <span class="n">load_dotenv</span><span class="p">()</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">setup_directories</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create all necessary data directories.&quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Setting up data directories...&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Creating directory: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="c1"># Create additional directories for satellite and vector data</span>
+    <span class="n">satellite_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;satellite_path&#39;</span><span class="p">])</span>
+    <span class="n">overture_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;overture_path&#39;</span><span class="p">])</span>
+    
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Creating satellite directory: </span><span class="si">{</span><span class="n">satellite_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">satellite_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Creating Overture directory: </span><span class="si">{</span><span class="n">overture_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">overture_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <div class="viewcode-block" id="WaterBodyAgent">
 <a class="viewcode-back" href="../../api_reference/agents.html#examples.water_bodies_monitor.WaterBodyAgent">[docs]</a>
@@ -422,14 +440,16 @@
     
 <div class="viewcode-block" id="WaterBodyAgent.__init__">
 <a class="viewcode-back" href="../../api_reference/agents.html#examples.water_bodies_monitor.WaterBodyAgent.__init__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memory_store</span><span class="p">:</span> <span class="n">MemoryStore</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memory_store</span><span class="p">:</span> <span class="n">MemoryStore</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Config</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">memory_store</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">text_processor</span> <span class="o">=</span> <span class="n">TextProcessor</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data_manager</span> <span class="o">=</span> <span class="n">DataManager</span><span class="p">(</span>
-            <span class="n">cache_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;.memories&quot;</span> <span class="o">/</span> <span class="s2">&quot;cache&quot;</span><span class="p">)</span>
-        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">image_processor</span> <span class="o">=</span> <span class="n">ImageProcessor</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">vector_processor</span> <span class="o">=</span> <span class="n">VectorProcessor</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vector_processor</span> <span class="o">=</span> <span class="n">VectorProcessor</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+        
+        <span class="c1"># Initialize APIs with config paths</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">overture_api</span> <span class="o">=</span> <span class="n">OvertureAPI</span><span class="p">(</span><span class="n">data_dir</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;overture_path&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sentinel_api</span> <span class="o">=</span> <span class="n">SentinelAPI</span><span class="p">(</span><span class="n">data_dir</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;satellite_path&#39;</span><span class="p">])</span></div>
 
     
 <div class="viewcode-block" id="WaterBodyAgent.process">
@@ -446,55 +466,186 @@
 <a class="viewcode-back" href="../../api_reference/agents.html#examples.water_bodies_monitor.WaterBodyAgent.analyze_water_body">[docs]</a>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">analyze_water_body</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze water body data and store insights.&quot;&quot;&quot;</span>
-        <span class="c1"># Get satellite and vector data</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_manager</span><span class="o">.</span><span class="n">prepare_training_data</span><span class="p">(</span>
-            <span class="n">bbox</span><span class="o">=</span><span class="n">bbox</span><span class="p">,</span>
-            <span class="n">start_date</span><span class="o">=</span><span class="n">start_date</span><span class="p">,</span>
-            <span class="n">end_date</span><span class="o">=</span><span class="n">end_date</span><span class="p">,</span>
-            <span class="n">satellite_collections</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sentinel-2-l2a&quot;</span><span class="p">],</span>
-            <span class="n">vector_layers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;water&quot;</span><span class="p">],</span>
-            <span class="n">cloud_cover</span><span class="o">=</span><span class="mf">20.0</span>
-        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;analyze_water_body - Input bbox: </span><span class="si">{</span><span class="n">bbox</span><span class="si">}</span><span class="s2">, type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">bbox</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         
-        <span class="c1"># Process the data</span>
-        <span class="n">insights</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_water_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="c1"># Use bbox directly if it&#39;s already a dictionary, otherwise convert it</span>
+        <span class="n">bbox_dict</span> <span class="o">=</span> <span class="n">bbox</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bbox</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="s1">&#39;xmin&#39;</span><span class="p">:</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="s1">&#39;ymin&#39;</span><span class="p">:</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="s1">&#39;xmax&#39;</span><span class="p">:</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+            <span class="s1">&#39;ymax&#39;</span><span class="p">:</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="p">}</span>
         
-        <span class="c1"># Store in different memory layers based on importance</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_significant_change</span><span class="p">(</span><span class="n">insights</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">memory_store</span><span class="o">.</span><span class="n">hot_memory</span><span class="o">.</span><span class="n">store</span><span class="p">({</span>
-                <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
-                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;significant_change&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">insights</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Download Overture data</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">=== Downloading Overture Maps Data ===&quot;</span><span class="p">)</span>
+            <span class="n">overture_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">overture_api</span><span class="o">.</span><span class="n">download_data</span><span class="p">(</span><span class="n">bbox_dict</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">overture_results</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Successfully downloaded all Overture themes:&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">theme</span><span class="p">,</span> <span class="n">success</span> <span class="ow">in</span> <span class="n">overture_results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">theme</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="s1">&#39;✓&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">success</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;✗&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Some Overture downloads failed:&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">theme</span><span class="p">,</span> <span class="n">success</span> <span class="ow">in</span> <span class="n">overture_results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">theme</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="s1">&#39;✓&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">success</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;✗&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="c1"># Download satellite data</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">=== Downloading Satellite Imagery ===&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Searching for imagery between </span><span class="si">{</span><span class="n">start_date</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">end_date</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using bbox: </span><span class="si">{</span><span class="n">bbox_dict</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cloud cover threshold: 50.0%&quot;</span><span class="p">)</span>
+            
+            <span class="n">satellite_results</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">sentinel_api</span><span class="o">.</span><span class="n">download_data</span><span class="p">(</span>
+                <span class="n">bbox</span><span class="o">=</span><span class="n">bbox_dict</span><span class="p">,</span>
+                <span class="n">start_date</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">),</span>
+                <span class="n">end_date</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">end_date</span><span class="p">,</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">),</span>
+                <span class="n">cloud_cover</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span>  <span class="c1"># Increase cloud cover threshold to find more imagery</span>
+                <span class="n">bands</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;B04&quot;</span><span class="p">:</span> <span class="s2">&quot;Red&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;B08&quot;</span><span class="p">:</span> <span class="s2">&quot;NIR&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;B11&quot;</span><span class="p">:</span> <span class="s2">&quot;SWIR&quot;</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+            
+            <span class="k">if</span> <span class="n">satellite_results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Successfully downloaded satellite data:&quot;</span><span class="p">)</span>
+                <span class="n">metadata</span> <span class="o">=</span> <span class="n">satellite_results</span><span class="p">[</span><span class="s2">&quot;metadata&quot;</span><span class="p">]</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Scene ID: </span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;scene_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Date: </span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;datetime&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Cloud cover: </span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;cloud_cover&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Bands: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;bands_downloaded&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Satellite data download failed:&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Error: </span><span class="si">{</span><span class="n">satellite_results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s1">&#39;failed_bands&#39;</span> <span class="ow">in</span> <span class="n">satellite_results</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- Failed bands: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">satellite_results</span><span class="p">[</span><span class="s1">&#39;failed_bands&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s1">&#39;parameters&#39;</span> <span class="ow">in</span> <span class="n">satellite_results</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Search parameters:&quot;</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">satellite_results</span><span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="c1"># Process the data</span>
+            <span class="n">insights</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_water_data</span><span class="p">({</span>
+                <span class="s2">&quot;satellite_data&quot;</span><span class="p">:</span> <span class="n">satellite_results</span><span class="p">,</span>
+                <span class="s2">&quot;vector_data&quot;</span><span class="p">:</span> <span class="n">overture_results</span><span class="p">,</span>
+                <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="n">bbox_dict</span>
             <span class="p">})</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">memory_store</span><span class="o">.</span><span class="n">warm_memory</span><span class="o">.</span><span class="n">store</span><span class="p">({</span>
-                <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
-                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;regular_update&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">insights</span>
-            <span class="p">})</span>
-        
-        <span class="k">return</span> <span class="n">insights</span></div>
+            
+            <span class="c1"># Store in different memory layers based on importance</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_significant_change</span><span class="p">(</span><span class="n">insights</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">memory_store</span><span class="o">.</span><span class="n">hot_memory</span><span class="o">.</span><span class="n">store</span><span class="p">({</span>
+                    <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;significant_change&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">insights</span>
+                <span class="p">})</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">memory_store</span><span class="o">.</span><span class="n">warm_memory</span><span class="o">.</span><span class="n">store</span><span class="p">({</span>
+                    <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;regular_update&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">insights</span>
+                <span class="p">})</span>
+            
+            <span class="k">return</span> <span class="n">insights</span>
+            
+        <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Analysis cancelled by user&quot;</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error in analyze_water_body: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                <span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bbox: </span><span class="si">{</span><span class="n">bbox_dict</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;surface_area&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;ndwi_mean&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;quality_metrics&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_quality</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
+                <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+            <span class="p">}</span></div>
 
     
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_process_water_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Process satellite and vector data for water body analysis.&quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">=== Processing Water Body Data ===&quot;</span><span class="p">)</span>
+        
         <span class="n">satellite_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;satellite_data&quot;</span><span class="p">]</span>
         <span class="n">vector_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;vector_data&quot;</span><span class="p">]</span>
         
-        <span class="c1"># Extract water bodies from OSM data</span>
-        <span class="n">water_features</span> <span class="o">=</span> <span class="n">vector_data</span><span class="p">[</span><span class="s2">&quot;osm&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;waterways&quot;</span><span class="p">,</span> <span class="p">[])</span>
-        <span class="n">water_area</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">feature</span><span class="p">[</span><span class="s2">&quot;properties&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;area&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">water_features</span><span class="p">)</span>
+        <span class="c1"># Extract water bodies from vector data</span>
+        <span class="n">water_features</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">theme</span><span class="p">,</span> <span class="n">features</span> <span class="ow">in</span> <span class="n">vector_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">features</span> <span class="ow">and</span> <span class="n">theme</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;waterways&#39;</span><span class="p">,</span> <span class="s1">&#39;water&#39;</span><span class="p">]:</span>
+                <span class="n">water_features</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+        
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">water_features</span><span class="p">)</span><span class="si">}</span><span class="s2"> water features&quot;</span><span class="p">)</span>
+        <span class="n">water_area</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">feature</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;area&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">water_features</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total water area: </span><span class="si">{</span><span class="n">water_area</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> sq km&quot;</span><span class="p">)</span>
         
         <span class="c1"># Analyze satellite imagery</span>
-        <span class="k">if</span> <span class="s2">&quot;pc&quot;</span> <span class="ow">in</span> <span class="n">satellite_data</span> <span class="ow">and</span> <span class="s2">&quot;sentinel-2-l2a&quot;</span> <span class="ow">in</span> <span class="n">satellite_data</span><span class="p">[</span><span class="s2">&quot;pc&quot;</span><span class="p">]:</span>
-            <span class="n">sentinel_data</span> <span class="o">=</span> <span class="n">satellite_data</span><span class="p">[</span><span class="s2">&quot;pc&quot;</span><span class="p">][</span><span class="s2">&quot;sentinel-2-l2a&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">ndwi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_processor</span><span class="o">.</span><span class="n">calculate_ndwi</span><span class="p">(</span>
-                <span class="n">sentinel_data</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">],</span>
-                <span class="n">green_band</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>  <span class="c1"># Index for green band</span>
-                <span class="n">nir_band</span><span class="o">=</span><span class="mi">3</span>    <span class="c1"># Index for NIR band</span>
-            <span class="p">)</span>
-            <span class="n">water_quality</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_quality</span><span class="p">(</span><span class="n">ndwi</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">satellite_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Processing satellite imagery...&quot;</span><span class="p">)</span>
+            <span class="n">metadata</span> <span class="o">=</span> <span class="n">satellite_data</span><span class="p">[</span><span class="s2">&quot;metadata&quot;</span><span class="p">]</span>
+            <span class="n">data_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">satellite_data</span><span class="p">[</span><span class="s2">&quot;data_dir&quot;</span><span class="p">])</span>
+            
+            <span class="c1"># Load the bands</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="kn">import</span><span class="w"> </span><span class="nn">rasterio</span>
+                
+                <span class="c1"># Try loading .tif files</span>
+                <span class="n">red_band</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">nir_band</span> <span class="o">=</span> <span class="kc">None</span>
+                
+                <span class="n">red_file</span> <span class="o">=</span> <span class="n">data_dir</span> <span class="o">/</span> <span class="s2">&quot;B04.tif&quot;</span>
+                <span class="n">nir_file</span> <span class="o">=</span> <span class="n">data_dir</span> <span class="o">/</span> <span class="s2">&quot;B08.tif&quot;</span>
+                
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Looking for band files:&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Red band file: </span><span class="si">{</span><span class="n">red_file</span><span class="si">}</span><span class="s2"> (exists: </span><span class="si">{</span><span class="n">red_file</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;NIR band file: </span><span class="si">{</span><span class="n">nir_file</span><span class="si">}</span><span class="s2"> (exists: </span><span class="si">{</span><span class="n">nir_file</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+                
+                <span class="k">if</span> <span class="n">red_file</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="n">nir_file</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loading bands from .tif files...&quot;</span><span class="p">)</span>
+                    <span class="k">with</span> <span class="n">rasterio</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">red_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">src</span><span class="p">:</span>
+                        <span class="n">red_band</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">with</span> <span class="n">rasterio</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">nir_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">src</span><span class="p">:</span>
+                        <span class="n">nir_band</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Try loading .npy files as fallback</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loading bands from .npy files...&quot;</span><span class="p">)</span>
+                    <span class="n">red_npy</span> <span class="o">=</span> <span class="n">data_dir</span> <span class="o">/</span> <span class="s2">&quot;B04.npy&quot;</span>
+                    <span class="n">nir_npy</span> <span class="o">=</span> <span class="n">data_dir</span> <span class="o">/</span> <span class="s2">&quot;B08.npy&quot;</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Red band NPY file: </span><span class="si">{</span><span class="n">red_npy</span><span class="si">}</span><span class="s2"> (exists: </span><span class="si">{</span><span class="n">red_npy</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;NIR band NPY file: </span><span class="si">{</span><span class="n">nir_npy</span><span class="si">}</span><span class="s2"> (exists: </span><span class="si">{</span><span class="n">nir_npy</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+                    
+                    <span class="n">red_band</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">red_npy</span><span class="p">)</span> <span class="k">if</span> <span class="n">red_npy</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span>
+                    <span class="n">nir_band</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">nir_npy</span><span class="p">)</span> <span class="k">if</span> <span class="n">nir_npy</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span>
+                
+                <span class="k">if</span> <span class="n">red_band</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">nir_band</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Calculating NDWI...&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Red band shape: </span><span class="si">{</span><span class="n">red_band</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;NIR band shape: </span><span class="si">{</span><span class="n">nir_band</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    
+                    <span class="n">ndwi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_processor</span><span class="o">.</span><span class="n">calculate_ndwi</span><span class="p">(</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">red_band</span><span class="p">,</span> <span class="n">nir_band</span><span class="p">]),</span>
+                        <span class="n">green_band</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>  <span class="c1"># Index for red band (using as proxy for green)</span>
+                        <span class="n">nir_band</span><span class="o">=</span><span class="mi">1</span>     <span class="c1"># Index for NIR band</span>
+                    <span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;NDWI shape: </span><span class="si">{</span><span class="n">ndwi</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;NDWI statistics - min: </span><span class="si">{</span><span class="n">ndwi</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, max: </span><span class="si">{</span><span class="n">ndwi</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, mean: </span><span class="si">{</span><span class="n">ndwi</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    
+                    <span class="n">water_quality</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_quality</span><span class="p">(</span><span class="n">ndwi</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Water quality metrics:&quot;</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">metric</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">water_quality</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">metric</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Required bands not found&quot;</span><span class="p">)</span>
+                    <span class="n">ndwi</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="n">water_quality</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_quality</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing satellite data: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">ndwi</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">water_quality</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_quality</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No satellite data available&quot;</span><span class="p">)</span>
             <span class="n">ndwi</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">water_quality</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_quality</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
         
@@ -529,67 +680,87 @@
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Main execution function.&quot;&quot;&quot;</span>
-    <span class="c1"># Initialize memory system</span>
-    <span class="n">config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span>
-        <span class="n">storage_path</span><span class="o">=</span><span class="s2">&quot;./water_bodies_data&quot;</span><span class="p">,</span>
-        <span class="n">hot_memory_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-        <span class="n">warm_memory_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-        <span class="n">cold_memory_size</span><span class="o">=</span><span class="mi">10000</span>
-    <span class="p">)</span>
-    
-    <span class="n">memory_store</span> <span class="o">=</span> <span class="n">MemoryStore</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-    
-    <span class="c1"># Initialize agent</span>
-    <span class="n">agent</span> <span class="o">=</span> <span class="n">WaterBodyAgent</span><span class="p">(</span><span class="n">memory_store</span><span class="p">)</span>
-    
-    <span class="c1"># Define monitoring locations (bounding boxes)</span>
-    <span class="n">locations</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="p">{</span>
-            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Lake Victoria&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">32.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">34.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span>  <span class="c1"># Simplified bbox for example</span>
-        <span class="p">},</span>
-        <span class="p">{</span>
-            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Lake Superior&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">87.0</span><span class="p">,</span> <span class="mf">46.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">84.0</span><span class="p">,</span> <span class="mf">48.5</span><span class="p">]</span>
-        <span class="p">}</span>
-    <span class="p">]</span>
-    
-    <span class="c1"># Set time range for analysis</span>
-    <span class="n">end_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
-    <span class="n">start_date</span> <span class="o">=</span> <span class="n">end_date</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
-    
-    <span class="c1"># Monitor water bodies</span>
-    <span class="k">for</span> <span class="n">location</span> <span class="ow">in</span> <span class="n">locations</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analyzing water body: </span><span class="si">{</span><span class="n">location</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Initialize memory system</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span><span class="n">config_path</span><span class="o">=</span><span class="s2">&quot;examples/config/db_config.yml&quot;</span><span class="p">)</span>  <span class="c1"># Updated config path</span>
+        <span class="n">setup_directories</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
         
+        <span class="n">memory_store</span> <span class="o">=</span> <span class="n">MemoryStore</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        
+        <span class="c1"># Initialize agent</span>
+        <span class="n">agent</span> <span class="o">=</span> <span class="n">WaterBodyAgent</span><span class="p">(</span><span class="n">memory_store</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+        
+        <span class="c1"># Define monitoring locations (bounding boxes)</span>
+        <span class="n">locations</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Lake Victoria&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;xmin&quot;</span><span class="p">:</span> <span class="mf">32.0</span><span class="p">,</span>
+                    <span class="s2">&quot;ymin&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span>
+                    <span class="s2">&quot;xmax&quot;</span><span class="p">:</span> <span class="mf">34.0</span><span class="p">,</span>
+                    <span class="s2">&quot;ymax&quot;</span><span class="p">:</span> <span class="mf">0.0</span>
+                <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Lake Superior&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;bbox&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;xmin&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">87.0</span><span class="p">,</span>
+                    <span class="s2">&quot;ymin&quot;</span><span class="p">:</span> <span class="mf">46.5</span><span class="p">,</span>
+                    <span class="s2">&quot;xmax&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">84.0</span><span class="p">,</span>
+                    <span class="s2">&quot;ymax&quot;</span><span class="p">:</span> <span class="mf">48.5</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">]</span>
+        
+        <span class="c1"># Set time range for analysis</span>
+        <span class="n">end_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">start_date</span> <span class="o">=</span> <span class="n">end_date</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>  <span class="c1"># Increase to 90 days to find more imagery</span>
+        
+        <span class="c1"># Monitor water bodies</span>
+        <span class="k">for</span> <span class="n">location</span> <span class="ow">in</span> <span class="n">locations</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analyzing water body: </span><span class="si">{</span><span class="n">location</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Location bbox: </span><span class="si">{</span><span class="n">location</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">location</span><span class="p">[</span><span class="s1">&#39;bbox&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Analyze and store results</span>
+                <span class="n">insights</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">analyze_water_body</span><span class="p">(</span>
+                    <span class="n">bbox</span><span class="o">=</span><span class="n">location</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">],</span>
+                    <span class="n">start_date</span><span class="o">=</span><span class="n">start_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">),</span>
+                    <span class="n">end_date</span><span class="o">=</span><span class="n">end_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="p">)</span>
+                
+                <span class="c1"># Log results</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analysis results for </span><span class="si">{</span><span class="n">location</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Surface Area: </span><span class="si">{</span><span class="n">insights</span><span class="p">[</span><span class="s1">&#39;surface_area&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> sq km&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">insights</span><span class="p">[</span><span class="s1">&#39;ndwi_mean&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;NDWI Mean: </span><span class="si">{</span><span class="n">insights</span><span class="p">[</span><span class="s1">&#39;ndwi_mean&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Quality Metrics:&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">metric</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">insights</span><span class="p">[</span><span class="s1">&#39;quality_metrics&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - </span><span class="si">{</span><span class="n">metric</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">50</span><span class="p">)</span>
+                
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error analyzing </span><span class="si">{</span><span class="n">location</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>  <span class="c1"># Continue with next location even if one fails</span>
+        
+        <span class="c1"># Demonstrate memory retrieval</span>
+        <span class="n">hot_memories</span> <span class="o">=</span> <span class="n">memory_store</span><span class="o">.</span><span class="n">hot_memory</span><span class="o">.</span><span class="n">retrieve_all</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Significant changes detected: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">hot_memories</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Clean up (optional)</span>
+        <span class="n">memory_store</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        
+    <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Script interrupted by user. Cleaning up...&quot;</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="c1"># Analyze and store results</span>
-            <span class="n">insights</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">analyze_water_body</span><span class="p">(</span>
-                <span class="n">bbox</span><span class="o">=</span><span class="n">location</span><span class="p">[</span><span class="s2">&quot;bbox&quot;</span><span class="p">],</span>
-                <span class="n">start_date</span><span class="o">=</span><span class="n">start_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">),</span>
-                <span class="n">end_date</span><span class="o">=</span><span class="n">end_date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="p">)</span>
-            
-            <span class="c1"># Log results</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analysis results for </span><span class="si">{</span><span class="n">location</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Surface Area: </span><span class="si">{</span><span class="n">insights</span><span class="p">[</span><span class="s1">&#39;surface_area&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> sq km&quot;</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">insights</span><span class="p">[</span><span class="s1">&#39;ndwi_mean&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;NDWI Mean: </span><span class="si">{</span><span class="n">insights</span><span class="p">[</span><span class="s1">&#39;ndwi_mean&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Quality Metrics:&quot;</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">metric</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">insights</span><span class="p">[</span><span class="s1">&#39;quality_metrics&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - </span><span class="si">{</span><span class="n">metric</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">50</span><span class="p">)</span>
-            
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error analyzing </span><span class="si">{</span><span class="n">location</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
-    <span class="c1"># Demonstrate memory retrieval</span>
-    <span class="n">hot_memories</span> <span class="o">=</span> <span class="n">memory_store</span><span class="o">.</span><span class="n">hot_memory</span><span class="o">.</span><span class="n">retrieve_all</span><span class="p">()</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Significant changes detected: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">hot_memories</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    
-    <span class="c1"># Clean up (optional)</span>
-    <span class="n">memory_store</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="n">memory_store</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unexpected error in main: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Script completed.&quot;</span><span class="p">)</span>
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
     <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span> 
