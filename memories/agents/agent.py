@@ -166,13 +166,12 @@ class Agent:
                         relevant_column = best_column.get('column_name', '')
                         analyst_result = analyst.analyze_query(
                             query=query,
-                            lat=lat_val,
-                            lon=lon_val,
+                            geometry=aoi,
+                            geometry_type='POLYGON',  # Since aoi is a polygon
                             data_type=data_type,
                             parquet_file=parquet_file_path,
                             relevant_column=relevant_column,
                             geometry_column='geometry',
-                            geometry_type='POINT',
                             extra_params={}
                         )
 
@@ -187,16 +186,6 @@ class Agent:
                             for recommendation in analyst_result.get('recommendations', []):
                                 function_name = recommendation.get('function_name')
                                 parameters = recommendation.get('parameters', {})
-                                
-                                # Set a default radius if not specified
-                                if 'radius' in parameters and parameters['radius'] == 'specify_radius':
-                                    parameters['radius'] = 1000  # Default 1km radius
-                                
-                                # Convert lat/lon to float if they're strings
-                                if 'target_lat' in parameters:
-                                    parameters['target_lat'] = float(parameters['target_lat'])
-                                if 'target_lon' in parameters:
-                                    parameters['target_lon'] = float(parameters['target_lon'])
                                 
                                 print(f"\nExecuting {function_name}:")
                                 print(f"Parameters: {parameters}")
