@@ -212,11 +212,81 @@ class Agent_L1:
             }
 
         except Exception as e:
-            print(f"Error in L1 Agent: {str(e)}")
-            return {
-                "status": "error",
-                "error": str(e)
-            }
+            self.logger.info("Falling back to direct ambience analysis...")
+            try:
+                # Sample bbox for a location in India (Delhi region)
+                sample_bbox = [77.1000, 28.5000, 77.3000, 28.7000]  # [min_lon, min_lat, max_lon, max_lat]
+                
+                from memories.utils.earth.download_data import download_location_data
+                from memories.utils.earth.analyze_location_data import analyze_location_data
+                from memories.utils.earth.ambience_analyzer import analyze_location_ambience
+                
+                print("\n[Executing Ambience Analysis Pipeline for Sample Location]")
+                print("-" * 50)
+                print(f"Using sample bbox for Delhi region: {sample_bbox}")
+                
+                # 1. Download location data
+                print("\n1. Downloading location data...")
+                location_data = download_location_data(
+                    bbox=sample_bbox,
+                    data_types=[
+                        "amenities",
+                        "buildings",
+                        "roads",
+                        "landuse",
+                        "points_of_interest"
+                    ]
+                )
+                print("✓ Location data downloaded")
+                
+                # 2. Analyze location data
+                print("\n2. Analyzing location data...")
+                analysis_data = analyze_location_data(
+                    location_data=location_data,
+                    analysis_types=[
+                        "density",
+                        "diversity",
+                        "accessibility",
+                        "urban_form"
+                    ]
+                )
+                print("✓ Location data analyzed")
+                
+                # 3. Run ambience analysis
+                print("\n3. Running ambience analysis...")
+                ambience_result = analyze_location_ambience(
+                    bbox=sample_bbox,
+                    location_data=location_data,
+                    analysis_data=analysis_data,
+                    time_of_day="current",
+                    day_of_week="current"
+                )
+                print("✓ Ambience analysis completed")
+                
+                # Print analysis results
+                print("\n[Ambience Analysis Results]")
+                print("-" * 50)
+                for category, details in ambience_result.items():
+                    print(f"\n{category}:")
+                    if isinstance(details, dict):
+                        for key, value in details.items():
+                            print(f"  • {key}: {value}")
+                    else:
+                        print(f"  • {details}")
+                
+                return {
+                    "status": "success",
+                    "analysis_type": "direct_ambience",
+                    "bbox": sample_bbox,
+                    "ambience_analysis": ambience_result
+                }
+                
+            except Exception as analysis_error:
+                self.logger.error(f"Error in ambience analysis: {str(analysis_error)}")
+                return {
+                    "status": "error",
+                    "error": str(analysis_error)
+                }
 
 def main():
     """
