@@ -394,17 +394,23 @@ def main():
     from memories.agents.agent_config import get_model_config
     
     # Get input from user
-    query = "find water tanks near 12.9093124,77.6078977"
+    query = "find ambiance at 12.9093124,77.6078977"
     #input("Enter your query: ")
-    instance_id = "123937239372432"
+    instance_id = "1739846342"
     #input("Enter FAISS instance ID (or press Enter to skip): ")
     
     # Initialize model with get_model_config
-    load_model, _ = get_model_config(
-        use_gpu=True,
-        model_provider="deepseek-ai",
-        deployment_type="deployment",
-        model_name="deepseek-coder-1.3b-base"
+    #load_model, _ = get_model_config(
+    #    use_gpu=True,
+    #    model_provider="deepseek-ai",
+    #    deployment_type="deployment",
+    #    model_name="deepseek-coder-1.3b-base"
+    #)
+    load_model = LoadModel(
+        model_provider="openai",
+        deployment_type="api",
+        model_name="gpt-4",
+        api_key=""
     )
     
     print(f"[Agent] Model initialized")
