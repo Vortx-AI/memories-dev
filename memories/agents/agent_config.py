@@ -9,7 +9,7 @@ from gensim.models import KeyedVectors
 import faiss
 import numpy as np
 from memories.models.load_model import LoadModel
-from memories.data_acquisition.data_connectors import parquet_connector
+from memories.data_acquisition.data_connectors import parquet_connector,multiple_parquet_connector
 import requests
 import zipfile
 import pickle
@@ -414,5 +414,48 @@ def main():
         print(f"  Total Vectors: {result['faiss_storage']['total_vectors']}")
         print(f"  Metadata Count: {result['faiss_storage']['metadata_count']}")
 
+def load_glove_model() -> KeyedVectors:
+    """
+    Loads the GloVe model as a gensim KeyedVectors instance.
+    Assumes the model file ('glove.6B.100d.txt.word2vec') is located under:
+      {PROJECT_ROOT}/data/models/
+    """
+    models_dir = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "models")
+    vectors_path = os.path.join(models_dir, "glove.6B.100d.txt.word2vec")
+    print(f"Loading GloVe model from {vectors_path}")
+    return KeyedVectors.load_word2vec_format(vectors_path)
+
+def get_multiple_parquet_connector_config(
+    folder_path: str = "",
+    output_file_name: Optional[str] = None,
+    word_vectors: Optional[Any] = None
+) -> List[Dict[str, Any]]:
+    """
+    Returns a connector configuration that makes use of the multiple parquet connector,
+    and passes the GloVe model (word_vectors) to it.
+    
+    Args:
+        folder_path (str): The root folder where parquet files are stored.
+        output_file_name (Optional[str]): Output file name for the aggregated JSON report.
+        word_vectors (Optional[Any]): A gensim KeyedVectors instance, in this case the GloVe model.
+    
+    Returns:
+        List[Dict[str, Any]]: List with a single connector configuration.
+    """
+    return [
+        {
+            "name": "multiple_parquet_connector",
+            "category": "schema_extraction",
+            "folder_path": folder_path,
+            "output_file_name": output_file_name,
+            "word_vectors": word_vectors  # This will be our GloVe model
+        }
+    ]
+
 if __name__ == "__main__":
-    main()
+    glove_model = load_glove_model()
+    connector_config = get_multiple_parquet_connector_config(word_vectors=glove_model)
+    
+    # Assuming your agent system uses this configuration to trigger memory creation,
+    # You would then pass this config to the rest of your pipeline.
+    print("Connector configuration created with GloVe model for word embeddings.")

@@ -12,48 +12,35 @@ from gensim.models import Word2Vec, KeyedVectors
 import faiss
 import pickle
 
-def get_word_embedding(word: str, word_vectors: KeyedVectors, vector_size: int = 768) -> np.ndarray:
+def get_word_embedding(word: str, word_vectors, vector_size: int = 100) -> np.ndarray:
     """
-    Get word embedding for a single word, handling multi-word phrases by averaging.
+    Get word embedding for a word/phrase using the provided GloVe model.
     
     Args:
-        word (str): Word or phrase to get embedding for
-        word_vectors (KeyedVectors): Loaded word vectors model
-        vector_size (int): Size of the word vectors (default 768 for BERT-like dimensions)
+        word (str): The word or phrase.
+        word_vectors: Gensim KeyedVectors instance for GloVe.
+        vector_size (int): Expected dimension of the embeddings (default 100, matching glove.6B.100d).
         
     Returns:
-        np.ndarray: Word embedding vector
+        np.ndarray: The normalized embedding vector.
     """
     try:
-        # Convert to lowercase and split into words
-        words = word.lower().split('_')
+        words = word.lower().split('_')  # Support underscore-separated words
         vectors = []
-        
         for w in words:
             try:
                 vector = word_vectors[w]
                 vectors.append(vector)
             except KeyError:
-                print(f"Warning: '{w}' not found in vocabulary")
-                continue
-        
+                print(f"Warning: '{w}' not found in GloVe vocabulary.")
         if vectors:
             avg_vector = np.mean(vectors, axis=0)
-            # Pad vector to match 768 dimensions
-            if len(avg_vector) < vector_size:
-                print(f"Padding vector from {len(avg_vector)} to {vector_size} dimensions")
-                avg_vector = np.pad(avg_vector, (0, vector_size - len(avg_vector)))
-            elif len(avg_vector) > vector_size:
-                print(f"Truncating vector from {len(avg_vector)} to {vector_size} dimensions")
-                avg_vector = avg_vector[:vector_size]
-            
-            # Normalize
             norm = np.linalg.norm(avg_vector)
             if norm > 0:
-                avg_vector = avg_vector / norm
+                return (avg_vector / norm).astype('float32')
             return avg_vector.astype('float32')
         else:
-            print(f"No vectors found for word '{word}', returning zero vector")
+            print(f"No vectors found for word '{word}', returning zero vector.")
             return np.zeros(vector_size, dtype='float32')
     except Exception as e:
         print(f"Error in get_word_embedding for word '{word}': {str(e)}")
@@ -257,7 +244,7 @@ def multiple_parquet_connector(folder_path: str, word_vectors: Optional[KeyedVec
     # Initialize FAISS index if word vectors provided
     faiss_storage = None
     if word_vectors is not None:
-        dimension = 300  # Word2Vec dimension
+        dimension = word_vectors.vector_size  # Use actual dimension from word vectors (100 for GloVe)
         index = faiss.IndexFlatL2(dimension)
         instance_id = f"{int(datetime.now().timestamp())}"
         faiss_storage = {
@@ -321,10 +308,12 @@ def multiple_parquet_connector(folder_path: str, word_vectors: Optional[KeyedVec
 if __name__ == "__main__":
     # Example usage
     try:
-        # Load word vectors
-        print("Loading Word2Vec model...")
-        word_vectors = KeyedVectors.load_word2vec_format("GoogleNews-vectors-negative300.bin", binary=True)
-        print("Word2Vec model loaded successfully")
+        # Load word vectors - using same GloVe embeddings as Agent_L1
+        models_dir = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "models")
+        vectors_path = os.path.join(models_dir, "glove.6B.100d.txt.word2vec")
+        print(f"Loading word vectors from {vectors_path}")
+        word_vectors = KeyedVectors.load_word2vec_format(vectors_path)
+        print("Word vectors loaded successfully")
         
         # Process multiple parquet files
         folder_path = "/path/to/parquet/folder"

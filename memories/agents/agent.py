@@ -55,7 +55,8 @@ class Agent:
             print("="*80)
             print(f"Input Query: {query}")
             print("="*80)
-            
+
+            #######################################################
             # Step 1: Query Classification Agent
             print("\n[Invoking Query Classification Agent]")
             print("-"*50)
@@ -109,6 +110,8 @@ class Agent:
                     'location_type': location_type,
                     'location': location
                 })
+            #######################################################
+            
             
             # Step 3: L1 Agent (if classification is L1)
             if result.get('classification') == 'L1':
