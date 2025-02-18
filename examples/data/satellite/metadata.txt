@@ -1,0 +1,7 @@
+datetime: 2025-01-28T18:57:01.025000Z
+cloud_cover: 4.779063
+satellite: Sentinel-2C
+scene_id: S2C_MSIL2A_20250128T185701_R113_T10SEG_20250128T214509
+bbox: [-122.4018, 37.7914, -122.3928, 37.7994]
+utm_zone: 10
+bands_downloaded: ['B04', 'B08', 'B11']

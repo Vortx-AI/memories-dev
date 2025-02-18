@@ -14,6 +14,7 @@ import numpy as np
 import json
 from datetime import datetime
 import aiohttp
+import logging
 
 from .sources import (
     PlanetaryCompute,
@@ -24,32 +25,34 @@ from .sources import (
 )
 from ..utils.processors import ImageProcessor, VectorProcessor, DataFusion
 
+logger = logging.getLogger(__name__)
+
 class DataManager:
     """Manages data acquisition and processing from various sources."""
     
-    def __init__(self, cache_dir: str, pc_token: Optional[str] = None):
+    def __init__(self, cache_dir: str):
         """
         Initialize data manager.
         
         Args:
-            cache_dir: Directory for caching data
-            pc_token: Planetary Computer API token
+            cache_dir: Directory for caching downloaded data
         """
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        self.pc_token = pc_token
         
         # Initialize data sources
-        self.pc = PlanetaryCompute(token=pc_token, cache_dir=str(self.cache_dir))
-        self.sentinel = SentinelAPI(token=pc_token, cache_dir=str(self.cache_dir))
+        self.overture = OvertureAPI(data_dir=str(self.cache_dir))
+        self.planetary = PlanetaryCompute(cache_dir=str(self.cache_dir))
+        self.sentinel = SentinelAPI(data_dir=str(self.cache_dir))
         self.landsat = LandsatAPI(cache_dir=str(self.cache_dir))
-        self.overture = OvertureAPI(cache_dir=str(self.cache_dir))
         self.osm = OSMDataAPI(cache_dir=str(self.cache_dir))
         
         # Initialize processors
         self.image_processor = ImageProcessor()
         self.vector_processor = VectorProcessor()
         self.data_fusion = DataFusion()
+        
+        logger.info(f"Initialized data manager with cache at {self.cache_dir}")
     
     def _get_bbox_polygon(self, bbox: Union[Tuple[float, float, float, float], List[float], Polygon]) -> Union[List[float], Polygon]:
         """Convert bbox to appropriate format."""
@@ -99,7 +102,7 @@ class DataManager:
         results = {}
         
         # Get Planetary Computer data
-        pc_results = await self.pc.search_and_download(
+        pc_results = await self.planetary.search_and_download(
             bbox=bbox_coords,
             start_date=start_date,
             end_date=end_date,
@@ -254,4 +257,47 @@ class DataManager:
                                [bbox[2], bbox[3]], [bbox[2], bbox[1]],
                                [bbox[0], bbox[1]]]]
             }
-        }] 
+        }]
+
+    async def get_location_data(
+        self,
+        bbox: List[float],
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get location data from all sources.
+        
+        Args:
+            bbox: Bounding box [min_lon, min_lat, max_lon, max_lat]
+            start_date: Optional start date (YYYY-MM-DD)
+            end_date: Optional end date (YYYY-MM-DD)
+            
+        Returns:
+            Dictionary containing data from all sources
+        """
+        # Convert bbox list to dictionary for Sentinel API
+        bbox_dict = {
+            'xmin': bbox[0],
+            'ymin': bbox[1],
+            'xmax': bbox[2],
+            'ymax': bbox[3]
+        }
+        
+        # Get Overture data
+        overture_data = await self.overture.search(bbox)
+        
+        # Get satellite data
+        satellite_data = await self.sentinel.download_data(
+            bbox=bbox_dict,
+            cloud_cover=10.0,
+            bands={
+                "B04": "Red",
+                "B08": "NIR",
+                "B11": "SWIR"
+            }
+        )
+        
+        return {
+            "overture": overture_data,
+            "satellite": satellite_data
+        } 

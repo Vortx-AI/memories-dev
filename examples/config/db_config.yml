@@ -1,0 +1,19 @@
+database:
+  path: "./examples/data/db"
+  name: "location_ambience.db"
+
+data:
+  raw_path: "./examples/data/raw"
+  processed_path: "./examples/data/processed"
+  overture_path: "./examples/data/overture"
+  satellite_path: "./examples/data/satellite"
+  location_data_path: "./examples/data/location_data"
+
+memory:
+  hot_size: 50
+  warm_size: 200
+  cold_size: 1000
+
+redis:
+  url: "redis://localhost:6379"
+  db: 0 

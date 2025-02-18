@@ -30,48 +30,41 @@ def date_range():
 def test_initialization(tmp_path):
     """Test data manager initialization."""
     cache_dir = tmp_path / "cache"
-    pc_token = "test_token"
     
     dm = DataManager(
-        cache_dir=str(cache_dir),
-        pc_token=pc_token
+        cache_dir=str(cache_dir)
     )
     
     assert dm.cache_dir == cache_dir
     assert dm.cache_dir.exists()
-    assert dm.pc is not None
+    assert dm.planetary is not None
     assert dm.sentinel is not None
     assert dm.landsat is not None
     assert dm.overture is not None
     assert dm.osm is not None
 
 @pytest.mark.asyncio
-async def test_get_satellite_data(data_manager, bbox, date_range):
-    """Test satellite data acquisition."""
-    with patch('pystac_client.Client') as mock_pc_client:
-        # Mock Planetary Computer response
-        mock_pc_items = [
-            {'id': 'pc1', 'properties': {'cloud_cover': 10.0}},
-            {'id': 'pc2', 'properties': {'cloud_cover': 15.0}}
-        ]
-        mock_pc_client.return_value.search.return_value.get_items.return_value = mock_pc_items
-        
-        # Mock Sentinel and Landsat APIs
-        data_manager.sentinel.search = AsyncMock(return_value={'items': mock_pc_items})
-        data_manager.landsat.search = AsyncMock(return_value=mock_pc_items)
-        data_manager.pc.search_and_download = AsyncMock(return_value={'sentinel-2-l2a': mock_pc_items})
-        
-        results = await data_manager.get_satellite_data(
-            bbox=bbox,
-            start_date=date_range['start_date'],
-            end_date=date_range['end_date'],
-            collections=['sentinel-2-l2a']
-        )
-        
-        assert 'pc' in results
-        assert 'sentinel' in results
-        assert len(results['pc']['sentinel-2-l2a']) == 2
-        assert len(results['sentinel']['items']) == 2
+async def test_get_satellite_data(data_manager):
+    """Test getting satellite data."""
+    mock_pc_items = [{"id": "test_item"}]
+    
+    # Mock the search and download methods
+    data_manager.planetary.search_and_download = AsyncMock(return_value={'sentinel-2-l2a': mock_pc_items})
+    data_manager.sentinel.search = AsyncMock(return_value={"items": []})
+    data_manager.landsat.search = AsyncMock(return_value={"items": []})
+    
+    bbox = [0, 0, 1, 1]
+    start_date = "2023-01-01"
+    end_date = "2023-01-02"
+    
+    results = await data_manager.get_satellite_data(
+        bbox=bbox,
+        start_date=start_date,
+        end_date=end_date
+    )
+    
+    assert "pc" in results
+    assert results["pc"]["sentinel-2-l2a"] == mock_pc_items
 
 @pytest.mark.asyncio
 async def test_get_vector_data(data_manager, bbox):

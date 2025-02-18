@@ -36,8 +36,7 @@ class WaterBodyAgent(BaseAgent):
         super().__init__(memory_store)
         self.text_processor = TextProcessor()
         self.data_manager = DataManager(
-            cache_dir=str(Path.home() / ".memories" / "cache"),
-            pc_token=os.getenv("PLANETARY_COMPUTER_API_KEY")
+            cache_dir=str(Path.home() / ".memories" / "cache")
         )
         self.image_processor = ImageProcessor()
         self.vector_processor = VectorProcessor()
