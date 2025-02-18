@@ -3,8 +3,10 @@ import pandas as pd
 from typing import Dict, Any, List, Optional
 from memories.utils.earth.duckdb_parquet_queries import (
     nearest_query,
-    within_radius_query,
-    count_within_radius_query
+    within_area_query,
+    count_within_area_query,
+    exact_match_query,
+    like_query
 )
 
 def execute_kb_function(function_name: str, parameters: Dict[str, Any]) -> Optional[pd.DataFrame]:
@@ -33,27 +35,41 @@ def execute_kb_function(function_name: str, parameters: Dict[str, Any]) -> Optio
                 parquet_file=parameters['parquet_file'],
                 column_name=parameters['column_name'],
                 value=parameters['value'],
-                target_lat=parameters['target_lat'],
-                target_lon=parameters['target_lon'],
+                geometry=parameters['geometry'],
+                geometry_type=parameters['geometry_type'],
                 limit=parameters.get('limit', 5)
             )
-        elif function_name == 'within_radius_query':
-            query = within_radius_query(
+        elif function_name == 'within_area_query':
+            query = within_area_query(
                 parquet_file=parameters['parquet_file'],
                 column_name=parameters['column_name'],
                 value=parameters['value'],
-                target_lat=parameters['target_lat'],
-                target_lon=parameters['target_lon'],
-                radius=parameters.get('radius', 5)
+                geometry=parameters['geometry'],
+                geometry_type=parameters['geometry_type']
             )
-        elif function_name == 'count_within_radius_query':
-            query = count_within_radius_query(
+        elif function_name == 'count_within_area_query':
+            query = count_within_area_query(
                 parquet_file=parameters['parquet_file'],
                 column_name=parameters['column_name'],
                 value=parameters['value'],
-                target_lat=parameters['target_lat'],
-                target_lon=parameters['target_lon'],
-                radius=parameters.get('radius', 5)
+                geometry=parameters['geometry'],
+                geometry_type=parameters['geometry_type']
+            )
+        elif function_name == 'exact_match_query':
+            query = exact_match_query(
+                parquet_file=parameters['parquet_file'],
+                column_name=parameters['column_name'],
+                value=parameters['value'],
+                geometry=parameters['geometry'],
+                geometry_type=parameters['geometry_type']
+            )
+        elif function_name == 'like_query':
+            query = like_query(
+                parquet_file=parameters['parquet_file'],
+                column_name=parameters['column_name'],
+                pattern=parameters['pattern'],
+                geometry=parameters['geometry'],
+                geometry_type=parameters['geometry_type']
             )
         else:
             raise ValueError(f"Unknown function: {function_name}")
@@ -83,9 +99,11 @@ def validate_function_inputs(function_name: str, parameters: Dict[str, Any]) -> 
         Dict containing validation results
     """
     required_params = {
-        'nearest_query': ['parquet_file', 'column_name', 'value', 'target_lat', 'target_lon'],
-        'within_radius_query': ['parquet_file', 'column_name', 'value', 'target_lat', 'target_lon', 'radius'],
-        'count_within_radius_query': ['parquet_file', 'column_name', 'value', 'target_lat', 'target_lon', 'radius']
+        'nearest_query': {'parquet_file', 'column_name', 'value', 'geometry', 'geometry_type'},
+        'within_area_query': {'parquet_file', 'column_name', 'value', 'geometry', 'geometry_type'},
+        'count_within_area_query': {'parquet_file', 'column_name', 'value', 'geometry', 'geometry_type'},
+        'exact_match_query': {'parquet_file', 'column_name', 'value', 'geometry', 'geometry_type'},
+        'like_query': {'parquet_file', 'column_name', 'pattern', 'geometry', 'geometry_type'}
     }
     
     if function_name not in required_params:
@@ -147,10 +165,10 @@ if __name__ == "__main__":
             'function_name': 'nearest_query',
             'parameters': {
                 'parquet_file': '/path/to/file.parquet',
-                'column_name': 'communications_dish',
+                'column_name': 'water',
                 'value': 'true',
-                'target_lat': 12.9093124,
-                'target_lon': 77.6078977,
+                'geometry': 'POINT(77.6078977 12.9093124)',
+                'geometry_type': 'POINT',
                 'limit': 5
             }
         }
