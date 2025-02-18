@@ -56,11 +56,23 @@ class DataManager:
     
     def _get_bbox_polygon(self, bbox: Union[Tuple[float, float, float, float], List[float], Polygon]) -> Union[List[float], Polygon]:
         """Convert bbox to appropriate format."""
+        logger.info(f"Input bbox: {bbox}, type: {type(bbox)}")
+        
         if isinstance(bbox, Polygon):
+            logger.info("Input is a Polygon")
             return bbox
-        elif isinstance(bbox, (tuple, list)) and len(bbox) == 4:
-            return bbox  # Return as list for APIs that expect [west, south, east, north]
+        elif isinstance(bbox, (tuple, list)):
+            logger.info(f"Input is a {type(bbox).__name__} with length {len(bbox)}")
+            if len(bbox) == 4:
+                # Convert to list and ensure all values are float
+                result = [float(x) for x in bbox]
+                logger.info(f"Converted to float list: {result}")
+                return result
+            else:
+                logger.error(f"Invalid bbox length: {len(bbox)}")
+                raise ValueError("Invalid bbox format. Must be [west, south, east, north] or Polygon")
         else:
+            logger.error(f"Invalid bbox type: {type(bbox)}")
             raise ValueError("Invalid bbox format. Must be [west, south, east, north] or Polygon")
     
     def cache_exists(self, cache_key: str) -> bool:
@@ -84,7 +96,7 @@ class DataManager:
     
     async def get_satellite_data(
         self,
-        bbox: Union[Tuple[float, float, float, float], List[float], Polygon],
+        bbox: Union[Tuple[float, float, float, float], List[float], Polygon, Dict[str, float]],
         start_date: str,
         end_date: str,
         collections: List[str] = ["sentinel-2-l2a"],
@@ -92,53 +104,67 @@ class DataManager:
         resolution: Optional[float] = None
     ) -> Dict[str, Any]:
         """Get satellite imagery data."""
-        bbox_coords = self._get_bbox_polygon(bbox)
-        
-        # Convert shapely box to coordinates for APIs that need them
-        if isinstance(bbox_coords, Polygon):
-            bounds = bbox_coords.bounds
-            bbox_coords = [bounds[0], bounds[1], bounds[2], bounds[3]]
-        
-        results = {}
-        
-        # Get Planetary Computer data
-        pc_results = await self.planetary.search_and_download(
-            bbox=bbox_coords,
-            start_date=start_date,
-            end_date=end_date,
-            collections=collections,
-            cloud_cover=cloud_cover
-        )
-        if pc_results:
-            results["pc"] = pc_results
-        
-        # Get Sentinel data
-        sentinel_results = await self.sentinel.search(
-            bbox=bbox_coords,
-            start_date=start_date,
-            end_date=end_date,
-            cloud_cover=cloud_cover
-        )
-        if sentinel_results:
-            results["sentinel"] = sentinel_results
-        
-        # Get Landsat data
-        landsat_results = await self.landsat.search(
-            bbox=bbox_coords,
-            start_date=start_date,
-            end_date=end_date,
-            cloud_cover=cloud_cover
-        )
-        if landsat_results:
-            results["landsat"] = landsat_results
-        
-        # Apply resolution if specified
-        if resolution is not None:
-            for source, data in results.items():
-                if isinstance(data, dict) and "items" in data:
-                    data["resolution"] = resolution
-        
-        return results
+        try:
+            logger.info(f"get_satellite_data - Input bbox: {bbox}, type: {type(bbox)}")
+            
+            # Convert dictionary bbox to list if needed
+            if isinstance(bbox, dict):
+                bbox_list = [bbox['xmin'], bbox['ymin'], bbox['xmax'], bbox['ymax']]
+            else:
+                bbox_list = bbox
+            
+            bbox_coords = self._get_bbox_polygon(bbox_list)
+            logger.info(f"get_satellite_data - Converted bbox_coords: {bbox_coords}, type: {type(bbox_coords)}")
+            
+            # Convert shapely box to coordinates for APIs that need them
+            if isinstance(bbox_coords, Polygon):
+                bounds = bbox_coords.bounds
+                bbox_coords = [bounds[0], bounds[1], bounds[2], bounds[3]]
+            
+            results = {}
+            
+            # Get Planetary Computer data
+            pc_results = await self.planetary.search_and_download(
+                bbox=bbox_coords,
+                start_date=start_date,
+                end_date=end_date,
+                collections=collections,
+                cloud_cover=cloud_cover
+            )
+            if pc_results:
+                results["pc"] = pc_results
+            
+            # Get Sentinel data
+            sentinel_results = await self.sentinel.download_data(
+                bbox={"xmin": bbox_coords[0], "ymin": bbox_coords[1], "xmax": bbox_coords[2], "ymax": bbox_coords[3]},
+                start_date=datetime.strptime(start_date, "%Y-%m-%d"),
+                end_date=datetime.strptime(end_date, "%Y-%m-%d"),
+                cloud_cover=cloud_cover
+            )
+            if sentinel_results:
+                results["sentinel"] = sentinel_results
+            
+            # Get Landsat data
+            landsat_results = await self.landsat.search(
+                bbox=bbox_coords,
+                start_date=start_date,
+                end_date=end_date,
+                cloud_cover=cloud_cover
+            )
+            if landsat_results:
+                results["landsat"] = landsat_results
+            
+            # Apply resolution if specified
+            if resolution is not None:
+                for source, data in results.items():
+                    if isinstance(data, dict) and "items" in data:
+                        data["resolution"] = resolution
+            
+            return results
+        except Exception as e:
+            logger.error(f"Error in get_satellite_data: {str(e)}")
+            logger.error(f"Input bbox: {bbox}, type: {type(bbox)}")
+            raise
     
     async def get_vector_data(
         self,
@@ -146,24 +172,37 @@ class DataManager:
         layers: List[str] = ["buildings", "roads", "landuse"]
     ) -> Dict[str, Any]:
         """Get vector data from Overture Maps and OSM."""
-        bbox_coords = self._get_bbox_polygon(bbox)
-        
-        # Get Overture data
-        overture_results = await self.overture.search(
-            bbox=bbox_coords,
-            layer=layers[0] if layers else "buildings"
-        )
-        
-        # Get OSM data
-        osm_results = await self.osm.search(
-            bbox=bbox_coords,
-            tags=layers
-        )
-        
-        return {
-            "overture": overture_results,
-            "osm": osm_results
-        }
+        try:
+            logger.info(f"get_vector_data - Input bbox: {bbox}, type: {type(bbox)}")
+            bbox_coords = self._get_bbox_polygon(bbox)
+            logger.info(f"get_vector_data - Converted bbox_coords: {bbox_coords}, type: {type(bbox_coords)}")
+            
+            # Convert bbox to list format for APIs
+            if isinstance(bbox_coords, Polygon):
+                bounds = bbox_coords.bounds
+                bbox_list = [bounds[0], bounds[1], bounds[2], bounds[3]]
+            else:
+                bbox_list = bbox_coords
+            
+            logger.info(f"get_vector_data - Final bbox_list: {bbox_list}, type: {type(bbox_list)}")
+            
+            # Get Overture data
+            overture_results = await self.overture.search(bbox_list)
+            
+            # Get OSM data
+            osm_results = await self.osm.search(
+                bbox=bbox_list,
+                tags=layers
+            )
+            
+            return {
+                "overture": overture_results,
+                "osm": osm_results
+            }
+        except Exception as e:
+            logger.error(f"Error in get_vector_data: {str(e)}")
+            logger.error(f"Input bbox: {bbox}, type: {type(bbox)}")
+            raise
     
     async def prepare_training_data(
         self,
@@ -176,28 +215,53 @@ class DataManager:
         resolution: Optional[float] = None
     ) -> Dict[str, Any]:
         """Prepare training data by combining satellite and vector data."""
-        bbox_coords = self._get_bbox_polygon(bbox)
-        
-        # Get satellite data
-        satellite_data = await self.get_satellite_data(
-            bbox=bbox_coords,
-            start_date=start_date,
-            end_date=end_date,
-            collections=satellite_collections,
-            cloud_cover=cloud_cover,
-            resolution=resolution
-        )
-        
-        # Get vector data
-        vector_data = await self.get_vector_data(
-            bbox=bbox_coords,
-            layers=vector_layers
-        )
-        
-        return {
-            "satellite_data": satellite_data,
-            "vector_data": vector_data
-        }
+        try:
+            logger.info(f"prepare_training_data - Input bbox: {bbox}, type: {type(bbox)}")
+            
+            # Convert bbox to list if needed
+            if isinstance(bbox, (tuple, list)) and len(bbox) == 4:
+                bbox_list = [float(x) for x in bbox]
+            elif isinstance(bbox, Polygon):
+                bounds = bbox.bounds
+                bbox_list = [float(x) for x in bounds]
+            else:
+                raise ValueError("Invalid bbox format. Must be [west, south, east, north] or Polygon")
+            
+            logger.info(f"prepare_training_data - Converted bbox_list: {bbox_list}, type: {type(bbox_list)}")
+            
+            # Convert bbox to dictionary format for satellite data
+            bbox_dict = {
+                "xmin": bbox_list[0],
+                "ymin": bbox_list[1],
+                "xmax": bbox_list[2],
+                "ymax": bbox_list[3]
+            }
+            
+            # Get satellite data
+            satellite_data = await self.get_satellite_data(
+                bbox=bbox_dict,
+                start_date=start_date,
+                end_date=end_date,
+                collections=satellite_collections,
+                cloud_cover=cloud_cover,
+                resolution=resolution
+            )
+            
+            # Get vector data
+            vector_data = await self.get_vector_data(
+                bbox=bbox_list,
+                layers=vector_layers
+            )
+            
+            return {
+                "satellite_data": satellite_data,
+                "vector_data": vector_data,
+                "bbox": bbox_dict
+            }
+        except Exception as e:
+            logger.error(f"Error in prepare_training_data: {str(e)}")
+            logger.error(f"Input bbox: {bbox}, type: {type(bbox)}")
+            raise
     
     async def download_satellite_data(
         self,

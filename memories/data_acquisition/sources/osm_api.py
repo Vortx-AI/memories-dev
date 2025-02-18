@@ -108,18 +108,39 @@ class OSMDataAPI(DataSource):
                         if response.status == 200:
                             data = await response.json()
                             if 'elements' in data:
-                                # Convert OSM elements to GeoJSON features
+                                # First, collect all nodes
+                                nodes = {}
                                 for element in data['elements']:
-                                    if 'type' in element and element['type'] in ['way', 'relation']:
-                                        feature = {
-                                            'type': 'Feature',
-                                            'geometry': {
-                                                'type': 'Polygon',
-                                                'coordinates': [[[node['lon'], node['lat']] for node in element['nodes']]]
-                                            },
-                                            'properties': element.get('tags', {})
-                                        }
-                                        results['features'].append(feature)
+                                    if element['type'] == 'node':
+                                        nodes[element['id']] = element
+                                
+                                # Then process ways and relations
+                                for element in data['elements']:
+                                    if element['type'] in ['way', 'relation']:
+                                        try:
+                                            # Get coordinates for each node reference
+                                            coordinates = []
+                                            for node_id in element.get('nodes', []):
+                                                if node_id in nodes:
+                                                    node = nodes[node_id]
+                                                    coordinates.append([node['lon'], node['lat']])
+                                            
+                                            if coordinates:
+                                                # Close the polygon if needed
+                                                if coordinates[0] != coordinates[-1]:
+                                                    coordinates.append(coordinates[0])
+                                                
+                                                feature = {
+                                                    'type': 'Feature',
+                                                    'geometry': {
+                                                        'type': 'Polygon',
+                                                        'coordinates': [coordinates]
+                                                    },
+                                                    'properties': element.get('tags', {})
+                                                }
+                                                results['features'].append(feature)
+                                        except Exception as e:
+                                            self.logger.warning(f"Error processing element: {str(e)}")
             except Exception as e:
                 self.logger.error(f"Error querying OSM data: {str(e)}")
 

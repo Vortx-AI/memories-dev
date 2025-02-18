@@ -162,6 +162,19 @@ class OvertureAPI:
             Dictionary containing buildings, places, and transportation features
         """
         try:
+            # First, download the data if it doesn't exist
+            bbox_dict = {
+                "xmin": bbox[0],
+                "ymin": bbox[1],
+                "xmax": bbox[2],
+                "ymax": bbox[3]
+            }
+            download_results = self.download_data(bbox_dict)
+            
+            if not any(download_results.values()):
+                logger.warning("Failed to download any Overture data")
+                return {theme: [] for theme in self.THEMES.keys()}
+            
             # Convert bbox to WKT polygon
             bbox_wkt = f"POLYGON(({bbox[0]} {bbox[1]}, {bbox[0]} {bbox[3]}, {bbox[2]} {bbox[3]}, {bbox[2]} {bbox[1]}, {bbox[0]} {bbox[1]}))"
             bbox_expr = f"ST_GeomFromText('{bbox_wkt}')"

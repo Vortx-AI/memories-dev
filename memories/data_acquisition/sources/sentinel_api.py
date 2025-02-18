@@ -18,6 +18,7 @@ from shapely.ops import transform
 from typing import Dict, List, Any, Optional, Union
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)  # Set to DEBUG level to see more information
 
 class SentinelAPI:
     """Interface for accessing Sentinel-2 data using Planetary Computer."""
@@ -248,9 +249,18 @@ class SentinelAPI:
             )
             
             items = list(search.get_items())
+            
             if not items:
                 logger.warning("No suitable imagery found")
-                return {"error": "No suitable imagery found"}
+                return {
+                    "status": "no_data",
+                    "message": "No suitable imagery found for the given parameters",
+                    "parameters": {
+                        "bbox": bbox,
+                        "time_range": time_range,
+                        "cloud_cover": cloud_cover
+                    }
+                }
             
             item = items[0]
             logger.info(f"\nFound scene from {item.properties['datetime']}")
@@ -282,41 +292,54 @@ class SentinelAPI:
                 return {"error": "No valid bands to download"}
             
             # Wait for all downloads to complete
-            results = await asyncio.gather(*tasks)
-            
-            # Save metadata if all downloads succeeded
-            if all(results):
-                metadata = {
-                    "datetime": item.properties["datetime"],
-                    "cloud_cover": item.properties["eo:cloud_cover"],
-                    "satellite": item.properties["platform"],
-                    "scene_id": item.id,
-                    "bbox": bbox_list,
-                    "utm_zone": utm_zone,
-                    "bands_downloaded": list(bands.keys())
-                }
+            try:
+                results = await asyncio.gather(*tasks)
                 
-                metadata_file = self.data_dir / "metadata.txt"
-                with open(metadata_file, 'w') as f:
-                    for key, value in metadata.items():
-                        f.write(f"{key}: {value}\n")
-                
-                logger.info(f"\nSatellite data downloaded to: {self.data_dir}")
-                logger.info(f"Metadata saved to: {metadata_file}")
-                
-                return {
-                    "success": True,
-                    "metadata": metadata,
-                    "data_dir": str(self.data_dir)
-                }
-            else:
-                return {
-                    "error": "Some band downloads failed",
-                    "failed_bands": [
-                        band_id for band_id, result in zip(bands.keys(), results)
-                        if not result
-                    ]
-                }
+                # Save metadata if all downloads succeeded
+                if all(results):
+                    metadata = {
+                        "datetime": item.properties["datetime"],
+                        "cloud_cover": item.properties["eo:cloud_cover"],
+                        "satellite": item.properties["platform"],
+                        "scene_id": item.id,
+                        "bbox": bbox_list,
+                        "utm_zone": utm_zone,
+                        "bands_downloaded": list(bands.keys())
+                    }
+                    
+                    metadata_file = self.data_dir / "metadata.txt"
+                    with open(metadata_file, 'w') as f:
+                        for key, value in metadata.items():
+                            f.write(f"{key}: {value}\n")
+                    
+                    logger.info(f"\nSatellite data downloaded to: {self.data_dir}")
+                    logger.info(f"Metadata saved to: {metadata_file}")
+                    
+                    return {
+                        "success": True,
+                        "metadata": metadata,
+                        "data_dir": str(self.data_dir)
+                    }
+                else:
+                    return {
+                        "error": "Some band downloads failed",
+                        "failed_bands": [
+                            band_id for band_id, result in zip(bands.keys(), results)
+                            if not result
+                        ]
+                    }
+            except asyncio.CancelledError:
+                logger.info("\nDownload cancelled by user. Cleaning up...")
+                # Clean up any partially downloaded files
+                for band_id in bands.keys():
+                    file_path = self.data_dir / f"{band_id}.tif"
+                    if file_path.exists():
+                        try:
+                            file_path.unlink()
+                            logger.info(f"Removed partial download: {file_path}")
+                        except:
+                            pass
+                raise
                 
         except Exception as e:
             logger.error(f"Error during satellite data download: {str(e)}")
