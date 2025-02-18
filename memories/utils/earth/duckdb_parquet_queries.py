@@ -16,10 +16,10 @@ def exact_match_query(parquet_file, column_name, value, geometry=None, geometry_
         f"WHERE {column_name} = {bool_value}"
     )
     
-    if geometry is not None and geometry_type is not None:
+    if geometry is not None:
         return (
             f"{base_query} "
-            f"AND ST_Intersects(geometry, ST_GeomFromText('{geometry}', '{geometry_type}'));"
+            f"AND ST_Intersects(geometry, ST_GeomFromText('{geometry}'));"
         )
     return f"{base_query};"
 
@@ -41,10 +41,10 @@ def like_query(parquet_file, column_name, pattern, geometry=None, geometry_type=
         f"WHERE {column_name} LIKE '{pattern}'"
     )
     
-    if geometry is not None and geometry_type is not None:
+    if geometry is not None:
         return (
             f"{base_query} "
-            f"AND ST_Intersects(geometry, ST_GeomFromText('{geometry}', '{geometry_type}'));"
+            f"AND ST_Intersects(geometry, ST_GeomFromText('{geometry}'));"
         )
     return f"{base_query};"
 
@@ -106,7 +106,7 @@ def nearest_query(parquet_file, column_name, value, geometry, geometry_type, lim
     bool_value = str(value).lower() == 'true'
     return (
         f"SELECT *, "
-        f"ST_Distance(geometry, ST_GeomFromText('{geometry}', '{geometry_type}')) as distance_km, "
+        f"ST_Distance(geometry, ST_GeomFromText('{geometry}')) as distance_km, "
         f"ST_AsText(geometry) as wkt_geometry "
         f"FROM '{parquet_file}' "
         f"WHERE {column_name} = {bool_value} "
@@ -243,11 +243,11 @@ def within_area_query(parquet_file, column_name, value, geometry, geometry_type)
     bool_value = str(value).lower() == 'true'
     return (
         f"SELECT *, "
-        f"ST_Distance(geometry, ST_GeomFromText('{geometry}', '{geometry_type}')) as distance_km, "
+        f"ST_Distance(geometry, ST_GeomFromText('{geometry}')) as distance_km, "
         f"ST_AsText(geometry) as wkt_geometry "
         f"FROM '{parquet_file}' "
         f"WHERE {column_name} = {bool_value} "
-        f"AND ST_Intersects(geometry, ST_GeomFromText('{geometry}', '{geometry_type}')) "
+        f"AND ST_Intersects(geometry, ST_GeomFromText('{geometry}')) "
         f"ORDER BY distance_km ASC;"
     )
 
@@ -266,10 +266,10 @@ def count_within_area_query(parquet_file, column_name, value, geometry, geometry
     bool_value = str(value).lower() == 'true'
     return (
         f"WITH distances AS ("
-        f"SELECT ST_Distance(geometry, ST_GeomFromText('{geometry}', '{geometry_type}')) as distance_km "
+        f"SELECT ST_Distance(geometry, ST_GeomFromText('{geometry}')) as distance_km "
         f"FROM '{parquet_file}' "
         f"WHERE {column_name} = {bool_value} "
-        f"AND ST_Intersects(geometry, ST_GeomFromText('{geometry}', '{geometry_type}'))"
+        f"AND ST_Intersects(geometry, ST_GeomFromText('{geometry}'))"
         f") SELECT COUNT(*) as count, "
         f"MIN(distance_km) as min_distance_km, "
         f"MAX(distance_km) as max_distance_km "
