@@ -228,29 +228,26 @@ class Agent:
                     if l1_result["status"] == "success":
                         # Filter columns with distance < 0.5
                         similar_columns = [col for col in l1_result["similar_columns"] if col['distance'] < 0.5]
-                        
-                        if not similar_columns:
-                            print("\nNo columns found with similarity distance < 0.5")
-                            print("Getting direct response from model...")
-                            model_response = self.load_model.get_response(query)
-                            return {
-                                "query": query,
-                                "classification": "L1",
-                                "status": "model_response",
-                                "explanation": "No columns found with similarity distance < 0.5. Providing direct model response.",
-                                "response": model_response
-                            }
-                        
                         result['similar_columns'] = similar_columns
-                        print(f"\n• Searching columns for data type: {search_term}")
-                        print("\n• Similar columns found:")
-                        for col in similar_columns:
-                            print(f"\n  Column: {col['column_name']}")
-                            print(f"  File: {col['file_name']}")
-                            print(f"  File Path: {col['file_path']}")
-                            print(f"  Geometry: {col['geometry']}")
-                            print(f"  Geometry Type: {col['geometry_type']}")
-                            print(f"  Distance: {col['distance']:.4f}")
+                        
+                        if similar_columns:
+                            print(f"\n• Searching columns for data type: {search_term}")
+                            print("\n• Similar columns found:")
+                            for col in similar_columns:
+                                try:
+                                    # Try original column metadata format
+                                    print(f"\n  Column: {col['column_name']}")
+                                    print(f"  File: {col['file_name']}")
+                                    print(f"  File Path: {col['file_path']}")
+                                    print(f"  Geometry: {col['geometry']}")
+                                    print(f"  Geometry Type: {col['geometry_type']}")
+                                    print(f"  Distance: {col['distance']:.4f}")
+                                except KeyError:
+                                    # Fall back to analysis terms metadata format
+                                    print(f"\n  Term: {col.get('term', 'unknown')}")
+                                    print(f"  Function: {col.get('function_name', 'unknown')}")
+                                    print(f"  File Path: {col.get('file_path', 'unknown')}")
+                                    print(f"  Distance: {col.get('distance', 0.0):.4f}")
                         
                         # Use the extracted latitude and longitude from the Context Agent.
                         lat_val = result.get('latitude', 0.0)
