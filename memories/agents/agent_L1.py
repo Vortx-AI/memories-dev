@@ -170,19 +170,21 @@ class Agent_L1:
             Dict[str, Any]: Processing results including similar columns.
         """
         try:
-            # Load required resources.
+            # Load required resources
             self.load_resources()
             
-            # Find similar columns.
-            similar_columns = self.find_similar_columns()
+            # Create query vector
+            query_vector = self.get_word_embedding(self.query)
+            query_vector = np.array([query_vector]).astype('float32')
+            
+            # Search for similar vectors
+            D, I = self.faiss_index.search(query_vector, 3)  # Get top 3 matches
             
             # Process search results
             similar_columns = []
             for i, (idx, distance) in enumerate(zip(I[0], D[0])):
                 if idx < len(self.metadata):
                     metadata = self.metadata[idx]
-                    
-                    # Create result dictionary based on metadata type
                     try:
                         # Try original column metadata format
                         result = {
@@ -193,17 +195,15 @@ class Agent_L1:
                             'geometry_type': metadata['geometry_type'],
                             'distance': float(distance)
                         }
-                    except KeyError:
+                    except :
                         # Fall back to analysis terms metadata format
                         result = {
-                            'column_name': metadata.get('term', 'unknown'),  # Use term as column_name
-                            'file_name': metadata.get('function_name', 'unknown'),
+                            'term': metadata.get('term', 'unknown'),
+                            'function_name': metadata.get('function_name', 'unknown'),
                             'file_path': metadata.get('file_path', 'unknown'),
-                            'geometry': 'POLYGON',  # Default value
-                            'geometry_type': 'POLYGON',  # Default value
-                            'distance': float(distance)
+                            'distance': float(distance),
+                            'is_analysis_term': True  # Flag to identify analysis terms
                         }
-                    
                     similar_columns.append(result)
 
             return {
@@ -212,7 +212,7 @@ class Agent_L1:
             }
 
         except Exception as e:
-            logger.error(f"Error in L1 Agent: {str(e)}")
+            print(f"Error in L1 Agent: {str(e)}")
             return {
                 "status": "error",
                 "error": str(e)
