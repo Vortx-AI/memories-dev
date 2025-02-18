@@ -3,186 +3,119 @@
     {
       "name": "Exact Match Query",
       "function": "exact_match_query",
-      "code_to_execute": "SELECT * FROM '{parquet_file}' WHERE {column_name} = '{value}' AND lat = {lat} AND lon = {lon};",
+      "code_to_execute": "SELECT *, ST_X(geom) as longitude, ST_Y(geom) as latitude FROM '{parquet_file}' WHERE {column_name} = {value} AND ST_Intersects(geom, ST_GeomFromText('{aoi}'));",
       "inputs_required": {
         "parquet_file": "Path to the Parquet file",
         "column_name": "Name of the column to match against",
-        "value": "The exact value to search",
-        "lat": "Optional latitude value",
-        "lon": "Optional longitude value"
+        "value": "The exact value to search (boolean)",
+        "aoi": "Optional WKT geometry string for spatial filtering"
       },
-      "output_expected": "A dataset containing all rows where the column exactly matches the provided value and coordinates if specified.",
-      "explanation": "This query filters the dataset by verifying each row's specified column against an exact value and optional coordinates.",
-      "details": "Use this query when you need to retrieve data based on an exact match with optional coordinate filtering.",
-      "function_call": "exact_match_query(parquet_file='{parquet_file}', column_name='{column_name}', value='{value}', lat={lat}, lon={lon})",
+      "output_expected": "A dataset containing all rows where the column exactly matches the provided value and intersects with the AOI if specified.",
+      "explanation": "This query filters the dataset by verifying each row's specified column against an exact boolean value and optional spatial intersection.",
+      "details": "Use this query when you need to retrieve data based on an exact match with optional spatial filtering.",
+      "function_call": "exact_match_query(parquet_file='{parquet_file}', column_name='{column_name}', value='{value}', aoi='{aoi}')",
       "imports_required": ["import duckdb"]
     },
     {
       "name": "LIKE Query",
       "function": "like_query",
-      "code_to_execute": "SELECT * FROM '{parquet_file}' WHERE {column_name} LIKE '{pattern}' AND lat = {lat} AND lon = {lon};",
+      "code_to_execute": "SELECT * FROM '{parquet_file}' WHERE {column_name} LIKE '{pattern}' AND ST_Intersects(geom, ST_GeomFromText('{aoi}'));",
       "inputs_required": {
         "parquet_file": "Path to the Parquet file",
         "column_name": "Column name to perform pattern matching",
         "pattern": "The pattern to search for, e.g., 'prefix%'",
-        "lat": "Optional latitude value",
-        "lon": "Optional longitude value"
+        "aoi": "Optional WKT geometry string for spatial filtering"
       },
-      "output_expected": "Rows where the column contains values matching the specified pattern and coordinates if specified.",
-      "explanation": "Uses the SQL LIKE operator to facilitate pattern matching on text data with optional coordinate filtering.",
-      "details": "Useful for fuzzy matching with optional location filtering.",
-      "function_call": "like_query(parquet_file='{parquet_file}', column_name='{column_name}', pattern='{pattern}', lat={lat}, lon={lon})",
+      "output_expected": "Rows where the column contains values matching the specified pattern and intersects with the AOI if specified.",
+      "explanation": "Uses the SQL LIKE operator for pattern matching with optional spatial filtering.",
+      "details": "Useful for fuzzy matching with optional spatial filtering.",
+      "function_call": "like_query(parquet_file='{parquet_file}', column_name='{column_name}', pattern='{pattern}', aoi='{aoi}')",
       "imports_required": ["import duckdb"]
     },
     {
-      "name": "At Coordinates Query",
-      "function": "at_coordinates_query",
-      "code_to_execute": "SELECT *, SQRT(POWER(lat - {target_lat}, 2) + POWER(lon - {target_lon}, 2)) as distance FROM '{parquet_file}' WHERE {column_name} = '{value}' AND lat = {target_lat} AND lon = {target_lon};",
+      "name": "Within Area Query",
+      "function": "within_area_query",
+      "code_to_execute": "WITH geom_col AS (SELECT {get_geometry_column} as col_name), data AS (SELECT *, ST_Distance(geom, ST_Centroid(ST_GeomFromText('{aoi}'))) as distance_km FROM '{parquet_file}' WHERE {column_name} = {value} AND ST_Intersects(geom, ST_GeomFromText('{aoi}'))) SELECT * FROM data ORDER BY distance_km ASC;",
       "inputs_required": {
         "parquet_file": "Path to the Parquet file",
         "column_name": "Name of the column to filter",
-        "value": "Value to match in the column",
-        "target_lat": "Target latitude value",
-        "target_lon": "Target longitude value"
+        "value": "Boolean value to match in the column",
+        "aoi": "WKT geometry string defining the area of interest"
       },
-      "output_expected": "Records that exactly match the given coordinates and column value, with distance calculation.",
-      "explanation": "This query retrieves data that is precisely at the specified coordinates with matching column value.",
-      "details": "Useful for pinpointing exact locations with specific attributes.",
-      "function_call": "at_coordinates_query(parquet_file='{parquet_file}', column_name='{column_name}', value='{value}', target_lat={target_lat}, target_lon={target_lon})",
-      "imports_required": ["import duckdb"]
-    },
-    {
-      "name": "Within Radius Query",
-      "function": "within_radius_query",
-      "code_to_execute": "SELECT *, 6371 * 2 * ASIN(SQRT(POWER(SIN(RADIANS({target_lat} - lat) / 2), 2) + COS(RADIANS(lat)) * COS(RADIANS({target_lat})) * POWER(SIN(RADIANS({target_lon} - lon) / 2), 2))) as distance_km FROM '{parquet_file}' WHERE {column_name} = '{value}' HAVING distance_km <= {radius} ORDER BY distance_km ASC;",
-      "inputs_required": {
-        "parquet_file": "Path to the Parquet file",
-        "column_name": "Name of the column to filter",
-        "value": "Value to match in the column",
-        "target_lat": "Target latitude value",
-        "target_lon": "Target longitude value",
-        "radius": "Radius in kilometers within which to search"
-      },
-      "output_expected": "Records within the specified radius that match the column value, ordered by distance.",
-      "explanation": "Finds records within a given radius using the Haversine formula for distance calculation.",
-      "details": "Distance is calculated in kilometers. Results are ordered from nearest to farthest.",
-      "function_call": "within_radius_query(parquet_file='{parquet_file}', column_name='{column_name}', value='{value}', target_lat={target_lat}, target_lon={target_lon}, radius={radius})",
+      "output_expected": "Records that intersect with the given AOI and match the column value, ordered by distance to AOI centroid.",
+      "explanation": "This query retrieves data that intersects with the specified area and matches the boolean column value.",
+      "details": "Uses ST_Intersects for spatial filtering and calculates distances to AOI centroid for ordering.",
+      "function_call": "within_area_query(parquet_file='{parquet_file}', column_name='{column_name}', value='{value}', aoi='{aoi}')",
       "imports_required": ["import duckdb"]
     },
     {
       "name": "Nearest Query",
       "function": "nearest_query",
-      "code_to_execute": "SELECT *, 6371 * 2 * ASIN(SQRT(POWER(SIN(RADIANS({target_lat} - lat) / 2), 2) + COS(RADIANS(lat)) * COS(RADIANS({target_lat})) * POWER(SIN(RADIANS({target_lon} - lon) / 2), 2))) as distance_km FROM '{parquet_file}' WHERE {column_name} = '{value}' ORDER BY distance_km ASC LIMIT {limit};",
+      "code_to_execute": "WITH geom_col AS (SELECT {get_geometry_column} as col_name), data AS (SELECT *, ST_Distance(geom, ST_Centroid(ST_GeomFromText('{aoi}'))) as distance_km FROM '{parquet_file}' WHERE {column_name} = {value}) SELECT * FROM data ORDER BY distance_km ASC LIMIT {limit};",
       "inputs_required": {
         "parquet_file": "Path to the Parquet file",
         "column_name": "Name of the column to filter",
-        "value": "Value to match in the column",
-        "target_lat": "Target latitude value",
-        "target_lon": "Target longitude value",
+        "value": "Boolean value to match in the column",
+        "aoi": "WKT geometry string for distance calculation",
         "limit": "Number of nearest records to return (default: 5)"
       },
-      "output_expected": "The nearest records to the specified coordinates that match the column value.",
-      "explanation": "Finds the closest records to given coordinates, ordered by distance.",
-      "details": "Uses Haversine formula for distance calculation in kilometers.",
-      "function_call": "nearest_query(parquet_file='{parquet_file}', column_name='{column_name}', value='{value}', target_lat={target_lat}, target_lon={target_lon}, limit={limit})",
+      "output_expected": "The nearest records to the AOI centroid that match the column value.",
+      "explanation": "Finds the closest records to the AOI centroid, ordered by distance.",
+      "details": "Uses ST_Distance for calculating distances to AOI centroid.",
+      "function_call": "nearest_query(parquet_file='{parquet_file}', column_name='{column_name}', value='{value}', aoi='{aoi}', limit={limit})",
       "imports_required": ["import duckdb"]
     },
     {
-      "name": "Count Within Radius Query",
-      "function": "count_within_radius_query",
-      "code_to_execute": "WITH distances AS (SELECT *, 6371 * 2 * ASIN(SQRT(POWER(SIN(RADIANS({target_lat} - lat) / 2), 2) + COS(RADIANS(lat)) * COS(RADIANS({target_lat})) * POWER(SIN(RADIANS({target_lon} - lon) / 2), 2))) as distance_km FROM '{parquet_file}' WHERE {column_name} = '{value}') SELECT COUNT(*) as count, MIN(distance_km) as min_distance_km, MAX(distance_km) as max_distance_km FROM distances WHERE distance_km <= {radius};",
+      "name": "Count Within Area Query",
+      "function": "count_within_area_query",
+      "code_to_execute": "WITH geom_col AS (SELECT {get_geometry_column} as col_name), distances AS (SELECT *, ST_Distance(geom, ST_Centroid(ST_GeomFromText('{aoi}'))) as distance_km FROM '{parquet_file}' WHERE {column_name} = {value} AND ST_Intersects(geom, ST_GeomFromText('{aoi}'))) SELECT COUNT(*) as count, MIN(distance_km) as min_distance_km, MAX(distance_km) as max_distance_km FROM distances;",
       "inputs_required": {
         "parquet_file": "Path to the Parquet file",
         "column_name": "Name of the column to filter",
-        "value": "Value to match in the column",
-        "target_lat": "Target latitude value",
-        "target_lon": "Target longitude value",
-        "radius": "Radius in kilometers within which to count"
+        "value": "Boolean value to match in the column",
+        "aoi": "WKT geometry string defining the area of interest"
       },
-      "output_expected": "Count of records within radius with min and max distances.",
-      "explanation": "Counts records within specified radius and provides distance statistics.",
-      "details": "Uses Haversine formula for accurate distance calculation in kilometers.",
-      "function_call": "count_within_radius_query(parquet_file='{parquet_file}', column_name='{column_name}', value='{value}', target_lat={target_lat}, target_lon={target_lon}, radius={radius})",
+      "output_expected": "Count of records within AOI with min and max distances to centroid.",
+      "explanation": "Counts records intersecting with AOI and provides distance statistics.",
+      "details": "Uses ST_Intersects for spatial filtering and ST_Distance for distance calculations.",
+      "function_call": "count_within_area_query(parquet_file='{parquet_file}', column_name='{column_name}', value='{value}', aoi='{aoi}')",
       "imports_required": ["import duckdb"]
-    },
-    {
-      "name": "Bounding Box Query",
-      "function": "bounding_box_query",
-      "code_to_execute": "SELECT * FROM '{parquet_file}' WHERE {lat_col} BETWEEN {min_lat} AND {max_lat} AND {lon_col} BETWEEN {min_lon} AND {max_lon};",
-      "inputs_required": {
-        "parquet_file": "Path to the Parquet file",
-        "lat_col": "Name of the latitude column",
-        "lon_col": "Name of the longitude column",
-        "min_lat": "Minimum latitude value",
-        "max_lat": "Maximum latitude value",
-        "min_lon": "Minimum longitude value",
-        "max_lon": "Maximum longitude value"
-      },
-      "output_expected": "All records that fall within the defined rectangular area.",
-      "explanation": "Filters records whose latitude and longitude lie within the specified ranges.",
-      "details": "Useful for spatial queries that define areas with bounding coordinates.",
-      "function_call": "bounding_box_query(parquet_file='{parquet_file}', lat_col='{lat_col}', lon_col='{lon_col}', min_lat={min_lat}, max_lat={max_lat}, min_lon={min_lon}, max_lon={max_lon})",
-      "imports_required": ["import duckdb"]
-    },
-    {
-      "name": "Aggregate Query",
-      "function": "aggregate_query",
-      "code_to_execute": "SELECT {group_column}, COUNT(*) FROM '{parquet_file}' WHERE ST_Distance(ST_Point({lon_col}, {lat_col}), ST_Point({target_lon}, {target_lat})) < {radius} GROUP BY {group_column};",
-      "inputs_required": {
-        "parquet_file": "Path to the Parquet file",
-        "group_column": "Column name to group the results by",
-        "lat_col": "Name of the latitude column",
-        "lon_col": "Name of the longitude column",
-        "target_lat": "Target latitude value",
-        "target_lon": "Target longitude value",
-        "radius": "Radius within which to aggregate records"
-      },
-      "output_expected": "Aggregated counts of records grouped by the specified column for entries within the radius.",
-      "explanation": "Groups spatially filtered records by a designated column and returns the count for each group.",
-      "details": "Useful for analyzing spatial data categorization and distribution.",
-      "function_call": "aggregate_query(parquet_file='{parquet_file}', group_column='{group_column}', lat_col='{lat_col}', lon_col='{lon_col}', target_lat={target_lat}, target_lon={target_lon}, radius={radius})",
-      "imports_required": [
-        "import duckdb",
-        "from memories.utils.earth.geocode import compute_spatial_distance, create_point_geometry"
-      ]
     },
     {
       "name": "Combined Filters Query",
       "function": "combined_filters_query",
-      "code_to_execute": "SELECT * FROM '{parquet_file}' WHERE {text_column} LIKE '{pattern}' AND ST_Distance(ST_Point({lon_col}, {lat_col}), ST_Point({target_lon}, {target_lat})) < {radius};",
+      "code_to_execute": "SELECT *, ST_Distance(geom, ST_Centroid(ST_GeomFromText('{aoi}'))) as distance_km FROM '{parquet_file}' WHERE {column_name} = {value} AND {pattern_column} LIKE '{pattern}' AND ST_Intersects(geom, ST_GeomFromText('{aoi}')) ORDER BY distance_km ASC;",
       "inputs_required": {
         "parquet_file": "Path to the Parquet file",
-        "text_column": "Name of the column for text pattern matching",
-        "pattern": "Pattern to search for (e.g., '%pattern%')",
-        "lat_col": "Name of the latitude column",
-        "lon_col": "Name of the longitude column",
-        "target_lat": "Target latitude value",
-        "target_lon": "Target longitude value",
-        "radius": "Radius within which to apply spatial filtering"
+        "column_name": "Name of the boolean column to filter",
+        "value": "Boolean value to match",
+        "pattern_column": "Column for pattern matching",
+        "pattern": "Pattern to search for",
+        "aoi": "WKT geometry string for spatial filtering"
       },
-      "output_expected": "Records meeting both the text-based and spatial proximity criteria.",
-      "explanation": "Combines a LIKE-based text filter with a spatial filter based on proximity.",
-      "details": "Useful when you want to apply both textual and geospatial filters on the dataset.",
-      "function_call": "combined_filters_query(parquet_file='{parquet_file}', text_column='{text_column}', pattern='{pattern}', lat_col='{lat_col}', lon_col='{lon_col}', target_lat={target_lat}, target_lon={target_lon}, radius={radius})",
-      "imports_required": [
-        "import duckdb",
-        "from memories.utils.earth.geocode import compute_spatial_distance, create_point_geometry"
-      ]
+      "output_expected": "Records meeting boolean, pattern, and spatial criteria.",
+      "explanation": "Combines boolean filter, LIKE pattern matching, and spatial intersection.",
+      "details": "Orders results by distance to AOI centroid.",
+      "function_call": "combined_filters_query(parquet_file='{parquet_file}', column_name='{column_name}', value='{value}', pattern_column='{pattern_column}', pattern='{pattern}', aoi='{aoi}')",
+      "imports_required": ["import duckdb"]
     },
     {
       "name": "Range Query",
       "function": "range_query",
-      "code_to_execute": "SELECT * FROM '{parquet_file}' WHERE {column_name} BETWEEN {min_value} AND {max_value};",
+      "code_to_execute": "SELECT *, ST_Distance(geom, ST_Centroid(ST_GeomFromText('{aoi}'))) as distance_km FROM (SELECT * FROM '{parquet_file}' WHERE {range_column} BETWEEN {min_value} AND {max_value} AND {filter_column} = {value}) WHERE ST_Intersects(geom, ST_GeomFromText('{aoi}')) ORDER BY distance_km ASC;",
       "inputs_required": {
         "parquet_file": "Path to the Parquet file",
-        "column_name": "Name of the column to filter on",
+        "range_column": "Column for range filtering",
         "min_value": "Minimum value of the range",
-        "max_value": "Maximum value of the range"
+        "max_value": "Maximum value of the range",
+        "filter_column": "Boolean column to filter",
+        "value": "Boolean value to match",
+        "aoi": "Optional WKT geometry string for spatial filtering"
       },
-      "output_expected": "Records where the specified column's value falls within the given range.",
-      "explanation": "Selects rows whose values in a specified column are within a given range.",
-      "details": "Typically used for filtering numeric or date ranges.",
-      "function_call": "range_query(parquet_file='{parquet_file}', column_name='{column_name}', min_value={min_value}, max_value={max_value})",
+      "output_expected": "Records within value range and spatial constraints.",
+      "explanation": "Filters by value range and boolean condition with optional spatial intersection.",
+      "details": "Orders results by distance to AOI centroid when AOI is specified.",
+      "function_call": "range_query(parquet_file='{parquet_file}', range_column='{range_column}', min_value={min_value}, max_value={max_value}, filter_column='{filter_column}', value='{value}', aoi='{aoi}')",
       "imports_required": ["import duckdb"]
     }
   ]
