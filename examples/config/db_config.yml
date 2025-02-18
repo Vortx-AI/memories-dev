@@ -1,13 +1,13 @@
 database:
-  path: "./examples/data/db"
-  name: "location_ambience.db"
+  path: "./data/db"
+  name: "water_bodies.db"
 
 data:
-  raw_path: "./examples/data/raw"
-  processed_path: "./examples/data/processed"
-  overture_path: "./examples/data/overture"
-  satellite_path: "./examples/data/satellite"
-  location_data_path: "./examples/data/location_data"
+  raw_path: "./data/raw"
+  processed_path: "./data/processed"
+  overture_path: "./data/overture"
+  satellite_path: "./data/satellite"
+  location_data_path: "./data/location_data"
 
 memory:
   hot_size: 50
