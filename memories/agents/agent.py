@@ -308,3 +308,45 @@ def main():
 if __name__ == "__main__":
     main()
 
+def validate_function_inputs(function_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Validate the inputs for a given function.
+    
+    Args:
+        function_name: Name of the function to validate
+        parameters: Dictionary of parameters to validate
+    
+    Returns:
+        Dictionary containing validation results
+    """
+    required_params = {
+        'exact_match_query': {'parquet_file', 'column_name', 'value', 'geometry', 'geometry_type'},
+        'like_query': {'parquet_file', 'column_name', 'pattern', 'geometry', 'geometry_type'},
+        'within_area_query': {'parquet_file', 'column_name', 'value', 'geometry', 'geometry_type'},
+        'nearest_query': {'parquet_file', 'column_name', 'value', 'geometry', 'geometry_type', 'limit'},
+        'count_within_area_query': {'parquet_file', 'column_name', 'value', 'geometry', 'geometry_type'},
+        'aggregate_query': {'parquet_file', 'group_column', 'filter_column', 'value', 'geometry', 'geometry_type'},
+        'combined_filters_query': {'parquet_file', 'column_name', 'value', 'pattern_column', 'pattern', 'geometry', 'geometry_type'},
+        'range_query': {'parquet_file', 'range_column', 'min_value', 'max_value', 'filter_column', 'value', 'geometry', 'geometry_type'}
+    }
+
+    if function_name not in required_params:
+        return {
+            "is_valid": False,
+            "error": f"Unknown function: {function_name}",
+            "missing_params": [],
+            "extra_params": []
+        }
+
+    provided_params = set(parameters.keys())
+    required = required_params[function_name]
+    
+    missing = required - provided_params
+    extra = provided_params - required
+    
+    return {
+        "is_valid": len(missing) == 0,
+        "missing_params": list(missing),
+        "extra_params": list(extra)
+    }
+
