@@ -201,23 +201,22 @@ class LocationAnalyzer:
         }
 
     async def _calculate_environmental_scores(self, urban_features):
-        """Calculate environmental scores using urban features and satellite data."""
-        base_scores = {
-            "green_space": 5.93,  # Example value based on NDVI
-            "air_quality": 1.0 - min(urban_features["building_characteristics"]["density"] / 10.0, 1.0),
-            "water_bodies": 0.0,
-            "urban_density": 0.0
+        """Calculate environmental scores using urban features."""
+        # Default scores
+        scores = {
+            "green_space": 5.93,  # Example value based on typical urban area
+            "air_quality": 1.0,   # Example value based on typical urban area
+            "water_bodies": 0.0,  # Default if no water bodies detected
+            "urban_density": 0.0  # Default if no urban density data
         }
         
-        # Calculate urban density score
-        total_density = (
-            urban_features["building_characteristics"]["density"] +
-            urban_features["road_characteristics"]["density"] +
-            urban_features["amenity_characteristics"]["density"]
-        )
-        base_scores["urban_density"] = min(total_density / 30.0, 1.0)
+        # Calculate urban density from building characteristics if available
+        if "building_characteristics" in urban_features and urban_features["building_characteristics"]:
+            density = urban_features["building_characteristics"].get("density", 0)
+            scores["urban_density"] = min(density / 100.0, 1.0)
+            scores["air_quality"] = 1.0 - min(density / 100.0, 1.0)
         
-        return base_scores
+        return scores
 
     async def _estimate_noise_levels(self, urban_features):
         """Estimate noise levels based on urban features."""
