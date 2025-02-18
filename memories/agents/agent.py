@@ -246,11 +246,16 @@ class Agent:
                             # ... rest of the processing ...
                         else:
                             print("\nNo columns found with similarity distance < 0.5")
+                            print("Falling back to model response...")
+                            
+                            # Get direct response from model as done in N and L0 cases
+                            model_response = self.load_model.get_response(query)
                             return {
                                 "query": query,
                                 "classification": "L1",
-                                "status": "no_matches",
-                                "explanation": "No sufficiently similar columns found (distance threshold: 0.5)"
+                                "status": "fallback_to_model",
+                                "explanation": "No sufficiently similar columns found (distance threshold: 0.5). Using model response instead.",
+                                "response": model_response
                             }
             
             return result
