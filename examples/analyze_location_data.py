@@ -72,80 +72,37 @@ class LocationDataAnalyzer:
         self.con.execute("LOAD spatial;")
     
     def download_overture_data(self, bbox: Dict[str, float]) -> Dict[str, bool]:
-        """Download Overture data for a given bounding box.
-        
-        Args:
-            bbox: Bounding box dictionary with xmin, ymin, xmax, ymax
-            
-        Returns:
-            Dictionary of theme names and their download status
-        """
-        # Themes to download with their specific columns
-        themes = {
-            'buildings': """
-                id,
-                type as building_type,
-                height,
-                bbox.xmin,
-                bbox.ymin,
-                bbox.xmax,
-                bbox.ymax,
-                geometry
-            """,
-            'places': """
-                id,
-                type as place_type,
-                confidence,
-                bbox.xmin,
-                bbox.ymin,
-                bbox.xmax,
-                bbox.ymax,
-                geometry
-            """,
-            'transportation': """
-                id,
-                type as road_type,
-                bbox.xmin,
-                bbox.ymin,
-                bbox.xmax,
-                bbox.ymax,
-                geometry
-            """
-        }
-        
+        """Download Overture data for a given bounding box."""
         results = {}
-        for theme, columns in themes.items():
+        for theme in ['buildings', 'places', 'transportation']:
             theme_dir = self.overture_dir / theme
             theme_dir.mkdir(parents=True, exist_ok=True)
-            output_file = theme_dir / f"{theme}.geojsonseq"
+            input_file = theme_dir / f"{theme}.geojsonseq"
+            
+            if not input_file.exists():
+                logger.warning(f"Theme file not found: {input_file}")
+                results[theme] = False
+                continue
             
             try:
-                # Create optimized query with index hint and feature limit
+                # Create query to filter by bbox
                 query = f"""
-                COPY (
-                    SELECT
-                        {columns}
-                    FROM read_json_auto(
-                        'examples/data/overture/{theme}/{theme}.geojsonseq',
-                        format='newline_delimited'
-                    )
-                    WHERE bbox.xmin >= {bbox['xmin']}
-                    AND bbox.xmin <= {bbox['xmax']}
-                    AND bbox.ymin >= {bbox['ymin']}
-                    AND bbox.ymin <= {bbox['ymax']}
-                    LIMIT 100  -- Limit to 100 features per category
-                ) TO '{output_file}' WITH (FORMAT GDAL, DRIVER 'GeoJSONSeq');
+                SELECT *
+                FROM read_json_auto('{input_file}', format='newline_delimited')
+                WHERE ST_Intersects(
+                    ST_GeomFromGeoJSON(geometry),
+                    ST_GeomFromText('POLYGON(({bbox['xmin']} {bbox['ymin']}, {bbox['xmin']} {bbox['ymax']}, {bbox['xmax']} {bbox['ymax']}, {bbox['xmax']} {bbox['ymin']}, {bbox['xmin']} {bbox['ymin']}))')
+                )
+                LIMIT 100;
                 """
                 
-                # Execute query with optimized memory settings
-                self.con.execute("SET memory_limit='1GB';")  # Reduced memory limit
-                self.con.execute("SET threads=4;")  # Limit thread usage
-                self.con.execute(query)
-                logger.info(f"Successfully downloaded {theme} data to {output_file}")
+                # Execute query and fetch results
+                df = self.con.execute(query).fetchdf()
                 results[theme] = True
+                logger.info(f"Found {len(df)} {theme} features")
                 
             except Exception as e:
-                logger.error(f"Error downloading {theme} data: {e}")
+                logger.error(f"Error loading {theme} data: {e}")
                 results[theme] = False
         
         return results
@@ -170,9 +127,6 @@ class LocationDataAnalyzer:
                 'ymax': bbox[3]
             }
             
-            # Download Overture data
-            download_results = self.download_overture_data(bbox_dict)
-            
             # Load Overture data from downloaded files
             overture_data = {}
             for theme in ['buildings', 'places', 'transportation']:
@@ -182,6 +136,10 @@ class LocationDataAnalyzer:
                         query = f"""
                         SELECT *
                         FROM read_json_auto('{theme_file}', format='newline_delimited')
+                        WHERE ST_Intersects(
+                            ST_GeomFromGeoJSON(geometry),
+                            ST_GeomFromText('POLYGON(({bbox_dict['xmin']} {bbox_dict['ymin']}, {bbox_dict['xmin']} {bbox_dict['ymax']}, {bbox_dict['xmax']} {bbox_dict['ymax']}, {bbox_dict['xmax']} {bbox_dict['ymin']}, {bbox_dict['xmin']} {bbox_dict['ymin']}))')
+                        )
                         LIMIT 1000;
                         """
                         df = self.con.execute(query).fetchdf()
@@ -191,10 +149,11 @@ class LocationDataAnalyzer:
                         logger.warning(f"Error loading {theme} data: {str(e)}")
                         overture_data[theme] = []
                 else:
+                    logger.warning(f"Theme file not found: {theme_file}")
                     overture_data[theme] = []
             
             # Generate simulated data if no real data available
-            if not overture_data or not any(overture_data.values()):
+            if not overture_data or not any(len(features) > 0 for features in overture_data.values()):
                 logger.warning("No Overture data found, using simulated data")
                 overture_data = self._generate_simulated_urban_features()
             
@@ -300,35 +259,36 @@ class LocationDataAnalyzer:
         """Load satellite data from downloaded files."""
         satellite_data = {}
         try:
+            # Set target shape first
+            satellite_data["target_shape"] = (100, 100)  # Fixed size for consistency
+            
             # Load Red band (B04)
             red_path = self.satellite_dir / "B04.tif"
             if red_path.exists():
                 with rasterio.open(red_path) as src:
-                    satellite_data["red"] = src.read(1)
-                    # Set target shape from first band
-                    if "target_shape" not in satellite_data:
-                        satellite_data["target_shape"] = (100, 100)  # Fixed size for consistency
-                    satellite_data["red"] = self._resize_array(
-                        satellite_data["red"], 
-                        satellite_data["target_shape"]
-                    )
-                    logger.info(f"Loaded red band with shape {satellite_data['red'].shape}")
+                    data = src.read(1)
+                    if data is not None and data.size > 0:
+                        satellite_data["red"] = self._resize_array(data, satellite_data["target_shape"])
+                        logger.info(f"Loaded red band with shape {satellite_data['red'].shape}")
+                    else:
+                        logger.warning("Red band data is empty or invalid")
+                        satellite_data["red"] = np.zeros(satellite_data["target_shape"])
             else:
                 # Simulate data if file doesn't exist
                 logger.warning("Red band file not found, using simulated data")
-                satellite_data["target_shape"] = (100, 100)
                 satellite_data["red"] = np.random.normal(1500, 500, satellite_data["target_shape"])
                 
             # Load NIR band (B08)
             nir_path = self.satellite_dir / "B08.tif"
             if nir_path.exists():
                 with rasterio.open(nir_path) as src:
-                    satellite_data["nir"] = src.read(1)
-                    satellite_data["nir"] = self._resize_array(
-                        satellite_data["nir"], 
-                        satellite_data["target_shape"]
-                    )
-                    logger.info(f"Loaded NIR band with shape {satellite_data['nir'].shape}")
+                    data = src.read(1)
+                    if data is not None and data.size > 0:
+                        satellite_data["nir"] = self._resize_array(data, satellite_data["target_shape"])
+                        logger.info(f"Loaded NIR band with shape {satellite_data['nir'].shape}")
+                    else:
+                        logger.warning("NIR band data is empty or invalid")
+                        satellite_data["nir"] = np.zeros(satellite_data["target_shape"])
             else:
                 # Simulate data if file doesn't exist
                 logger.warning("NIR band file not found, using simulated data")
@@ -338,47 +298,29 @@ class LocationDataAnalyzer:
             swir_path = self.satellite_dir / "B11.tif"
             if swir_path.exists():
                 with rasterio.open(swir_path) as src:
-                    satellite_data["swir"] = src.read(1)
-                    satellite_data["swir"] = self._resize_array(
-                        satellite_data["swir"], 
-                        satellite_data["target_shape"]
-                    )
-                    logger.info(f"Loaded SWIR band with shape {satellite_data['swir'].shape}")
+                    data = src.read(1)
+                    if data is not None and data.size > 0:
+                        satellite_data["swir"] = self._resize_array(data, satellite_data["target_shape"])
+                        logger.info(f"Loaded SWIR band with shape {satellite_data['swir'].shape}")
+                    else:
+                        logger.warning("SWIR band data is empty or invalid")
+                        satellite_data["swir"] = np.zeros(satellite_data["target_shape"])
             else:
                 # Simulate data if file doesn't exist
                 logger.warning("SWIR band file not found, using simulated data")
-                satellite_data["swir"] = np.random.normal(1800, 400, satellite_data["target_shape"])
-            
-            # Calculate indices with error handling
-            if all(k in satellite_data for k in ["red", "nir", "swir"]):
-                # Ensure no division by zero
-                epsilon = 1e-10
-                
-                # NDVI (Normalized Difference Vegetation Index)
-                sum_rn = satellite_data["nir"] + satellite_data["red"] + epsilon
-                ndvi = (satellite_data["nir"] - satellite_data["red"]) / sum_rn
-                satellite_data["ndvi"] = np.clip(ndvi, -1, 1)  # Normalize to valid range
-                
-                # NDWI (Normalized Difference Water Index)
-                sum_ns = satellite_data["nir"] + satellite_data["swir"] + epsilon
-                ndwi = (satellite_data["nir"] - satellite_data["swir"]) / sum_ns
-                satellite_data["ndwi"] = np.clip(ndwi, -1, 1)
-                
-                # NDBI (Normalized Difference Built-up Index)
-                sum_sn = satellite_data["swir"] + satellite_data["nir"] + epsilon
-                ndbi = (satellite_data["swir"] - satellite_data["nir"]) / sum_sn
-                satellite_data["ndbi"] = np.clip(ndbi, -1, 1)
-                
-                logger.info("Successfully calculated spectral indices")
-                logger.info(f"NDVI range: [{np.min(ndvi):.2f}, {np.max(ndvi):.2f}]")
-                logger.info(f"NDWI range: [{np.min(ndwi):.2f}, {np.max(ndwi):.2f}]")
-                logger.info(f"NDBI range: [{np.min(ndbi):.2f}, {np.max(ndbi):.2f}]")
+                satellite_data["swir"] = np.random.normal(1800, 550, satellite_data["target_shape"])
             
             return satellite_data
             
         except Exception as e:
-            logger.warning(f"Error loading satellite data: {str(e)}")
-            return self._generate_simulated_satellite_data()
+            logger.error(f"Error loading satellite data: {str(e)}")
+            # Return simulated data in case of error
+            return {
+                "target_shape": (100, 100),
+                "red": np.random.normal(1500, 500, (100, 100)),
+                "nir": np.random.normal(2000, 600, (100, 100)),
+                "swir": np.random.normal(1800, 550, (100, 100))
+            }
     
     def _resize_array(self, array: np.ndarray, target_shape: Tuple[int, int]) -> np.ndarray:
         """Resize array to target shape using simple interpolation."""
@@ -509,10 +451,30 @@ class LocationDataAnalyzer:
     def _calculate_area(self, geometry: Dict[str, Any]) -> float:
         """Calculate area of a geometry in square meters."""
         # Simplified area calculation - in real implementation, use proper geospatial libraries
+        if not isinstance(geometry, dict):
+            return 0.0
+            
         if geometry.get("type") == "Polygon" and "coordinates" in geometry:
-            coords = geometry["coordinates"][0]  # Outer ring
-            return abs(sum(x0*y1 - x1*y0 for ((x0, y0), (x1, y1)) in zip(coords, coords[1:] + [coords[0]]))) / 2
-        return 0
+            coords_list = geometry["coordinates"]
+            if not isinstance(coords_list, list) or not coords_list:
+                return 0.0
+                
+            coords = coords_list[0]  # Outer ring
+            if not isinstance(coords, list) or len(coords) < 3:
+                return 0.0
+                
+            # Ensure each coordinate is a list/tuple with at least 2 elements
+            valid_coords = []
+            for coord in coords:
+                if isinstance(coord, (list, tuple)) and len(coord) >= 2:
+                    valid_coords.append((coord[0], coord[1]))
+                    
+            if len(valid_coords) < 3:
+                return 0.0
+                
+            # Calculate area using shoelace formula
+            return abs(sum(x0*y1 - x1*y0 for ((x0, y0), (x1, y1)) in zip(valid_coords, valid_coords[1:] + [valid_coords[0]]))) / 2
+        return 0.0
     
     def _calculate_road_connectivity(self, transportation: List[Dict[str, Any]]) -> float:
         """Calculate road network connectivity score."""
@@ -524,26 +486,39 @@ class LocationDataAnalyzer:
         dead_ends = set()
         
         for road in transportation:
-            if "geometry" in road and "coordinates" in road["geometry"]:
-                coords = road["geometry"]["coordinates"]
-                start, end = tuple(coords[0]), tuple(coords[-1])
-                
-                # Add to intersections if shared with another road
-                if start in dead_ends:
-                    intersections.add(start)
-                    dead_ends.remove(start)
-                else:
-                    dead_ends.add(start)
-                    
-                if end in dead_ends:
-                    intersections.add(end)
-                    dead_ends.remove(end)
-                else:
-                    dead_ends.add(end)
+            if isinstance(road, dict) and 'geometry' in road:
+                geometry = road['geometry']
+                if isinstance(geometry, dict) and 'coordinates' in geometry:
+                    coords = geometry['coordinates']
+                    if isinstance(coords, list) and len(coords) >= 2:
+                        # Handle both LineString and Polygon types
+                        if isinstance(coords[0], list) and len(coords[0]) >= 2:
+                            # Polygon - use first ring
+                            points = coords[0]
+                        else:
+                            # LineString
+                            points = coords
+                            
+                        # Add start and end points
+                        start = tuple(points[0][:2])  # Take only x,y coordinates
+                        end = tuple(points[-1][:2])
+                        
+                        # Add to intersections if shared with another road
+                        if start in dead_ends:
+                            intersections.add(start)
+                            dead_ends.remove(start)
+                        else:
+                            dead_ends.add(start)
+                            
+                        if end in dead_ends:
+                            intersections.add(end)
+                            dead_ends.remove(end)
+                        else:
+                            dead_ends.add(end)
         
         # Calculate connectivity ratio (intersections / total nodes)
         total_nodes = len(intersections) + len(dead_ends)
-        return len(intersections) / total_nodes if total_nodes > 0 else 0
+        return len(intersections) / total_nodes if total_nodes > 0 else 0.0
     
     def _calculate_amenity_diversity(self, places: List[Dict[str, Any]]) -> float:
         """Calculate Shannon diversity index for amenities."""
