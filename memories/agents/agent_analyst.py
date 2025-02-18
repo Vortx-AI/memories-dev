@@ -37,17 +37,26 @@ class AgentAnalyst:
     def analyze_query(
         self,
         query: str,
-        lat: float,
-        lon: float,
+        geometry: str,
+        geometry_type: str,
         data_type: str,
         parquet_file: str,
         relevant_column: str,
         geometry_column: str = None,
-        geometry_type: str = None,
         extra_params: Dict = None
     ) -> Dict[str, Any]:
         """
         Analyze the query and recommend appropriate functions with parameters.
+
+        Args:
+            query: The natural language query
+            geometry: WKT geometry string for spatial filtering
+            geometry_type: Type of geometry (POINT, LINESTRING, POLYGON)
+            data_type: Type of data being queried
+            parquet_file: Path to the parquet file
+            relevant_column: Column name relevant to the query
+            geometry_column: Name of the geometry column in the parquet file
+            extra_params: Additional parameters for query customization
         """
         try:
             prompt = f"""
@@ -55,14 +64,17 @@ Given a spatial query and data details, recommend appropriate query functions wi
 
 Query: {query}
 Data Type: {data_type}
-Location: ({lat}, {lon})
+Geometry: {geometry}
+Geometry Type: {geometry_type}
 Parquet File: {parquet_file}
 Relevant Column: {relevant_column}
+Geometry Column: {geometry_column if geometry_column else 'geometry'}
 
 Available functions:
 1. nearest_query - Find nearest records (default limit: 5)
-2. within_radius_query - Find records within radius (default radius: 5km)
-3. count_within_radius_query - Count records within radius (default radius: 5km)
+2. within_area_query - Find records within the specified geometry
+3. count_within_area_query - Count records within the specified geometry
+4. exact_match_query - Find exact matches with spatial filtering
 
 Return recommendations in this JSON format:
 {{
@@ -74,9 +86,8 @@ Return recommendations in this JSON format:
                 "parquet_file": "file_path",
                 "column_name": "column_name",
                 "value": "true/false",
-                "target_lat": latitude,
-                "target_lon": longitude,
-                "radius": number_in_km,  // for radius-based queries
+                "geometry": "WKT_string",
+                "geometry_type": "POINT/LINESTRING/POLYGON",
                 "limit": number         // for nearest query
             }},
             "reason": "explanation"
@@ -99,16 +110,19 @@ Note: All filter columns are boolean type, so value should be 'true' or 'false'.
                     
                     result = json.loads(response.strip())
                     
-                    # Set default values for radius and limit if they're strings
+                    # Set default values for limit if it's a string
                     for rec in result.get('recommendations', []):
                         params = rec.get('parameters', {})
-                        if 'radius' in params and not isinstance(params['radius'], (int, float)):
-                            params['radius'] = 5  # Default 5km radius
                         if 'limit' in params and not isinstance(params['limit'], (int, float)):
                             params['limit'] = 5   # Default 5 results
                         # Ensure value is boolean string
                         if 'value' in params:
                             params['value'] = 'true'  # Default to true for boolean columns
+                        # Ensure geometry and geometry_type are set
+                        if 'geometry' not in params:
+                            params['geometry'] = geometry
+                        if 'geometry_type' not in params:
+                            params['geometry_type'] = geometry_type
                     
                     return result
                     
@@ -133,22 +147,24 @@ def main():
     load_model = None  
     analyst = AgentAnalyst(load_model)
 
-    # Example inputs.
+    # Example inputs
     query = "find restaurants near"
-    lat = 12.9716
-    lon = 77.5946
+    geometry = "POLYGON((77.5946 12.9716, 77.5947 12.9716, 77.5947 12.9717, 77.5946 12.9717, 77.5946 12.9716))"
+    geometry_type = "POLYGON"
     data_type = "amenity"
     parquet_file = os.path.join(os.getenv("PROJECT_ROOT", ""), "data", "example.parquet")
     relevant_column = "amenity"
     geometry_column = "geometry"
-    geometry_type = "POINT"
     extra_params = {
-        "radius": 5000,           # used by spatial queries like within_radius_query
         "value": "restaurant",    # used by exact_match_query if needed
         "pattern": "%restaurant%"  # used by like_query if needed
     }
 
-    result = analyst.analyze_query(query, lat, lon, data_type, parquet_file, relevant_column, geometry_column, geometry_type, extra_params)
+    result = analyst.analyze_query(
+        query, geometry, geometry_type, data_type, parquet_file, 
+        relevant_column, geometry_column, extra_params
+    )
+    
     print(result)
     print("\nAnalysis Results:")
     print("=" * 50)
