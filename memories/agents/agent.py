@@ -112,7 +112,9 @@ class Agent:
                 })
             #######################################################
             
-            
+            aoi =  "POLYGON((77.59765625 12.900390625,77.609375 12.900390625,77.609375 12.912109375,77.59765625 12.912109375,77.59765625 12.900390625))"
+
+            ############
             # Step 3: L1 Agent (if classification is L1)
             if result.get('classification') == 'L1':
                 print("\n[Invoking L1 Agent - Similar Column Search]")
