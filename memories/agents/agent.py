@@ -258,6 +258,50 @@ class Agent:
                                 print(f"  Function: {col.get('function_name', 'unknown')}")
                                 print(f"  File Path: {col.get('file_path', 'unknown')}")
                                 print(f"  Distance: {col.get('distance', 0.0):.4f}")
+                                
+                                if col.get('term') in ['ambiance', 'ambience']:
+                                    print("\n[Executing Ambience Analysis Pipeline]")
+                                    print("-" * 50)
+                                    
+                                    try:
+                                        # Get the bbox from earlier context processing
+                                        bbox = result.get('bbox')
+                                        if not bbox:
+                                            print("Error: No bounding box available for analysis")
+                                            continue
+                                                
+                                        # 1. Download Data
+                                        from memories.utils.earth.download_data import download_location_data
+                                        location_data = download_location_data(bbox)
+                                        
+                                        # 2. Analyze Location Data
+                                        from memories.utils.earth.analyze_location_data import analyze_location_data
+                                        analysis_data = analyze_location_data(location_data)
+                                        
+                                        # 3. Run Ambience Analysis
+                                        from memories.utils.earth.ambience_analyzer import analyze_location_ambience
+                                        ambience_result = analyze_location_ambience(
+                                            bbox=bbox,
+                                            location_data=location_data,
+                                            analysis_data=analysis_data
+                                        )
+                                        
+                                        # Print analysis results
+                                        print("\n[Ambience Analysis Results]")
+                                        print("-" * 50)
+                                        for category, details in ambience_result.items():
+                                            print(f"\n{category}:")
+                                            if isinstance(details, dict):
+                                                for key, value in details.items():
+                                                    print(f"  • {key}: {value}")
+                                            else:
+                                                print(f"  • {details}")
+                                        
+                                        # Update result with ambience analysis
+                                        result['ambience_analysis'] = ambience_result
+                                        
+                                    except Exception as e:
+                                        print(f"Error during ambience analysis: {str(e)}")
                         
                         # Use the extracted latitude and longitude from the Context Agent.
                         lat_val = result.get('latitude', 0.0)
