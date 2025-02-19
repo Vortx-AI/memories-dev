@@ -1,4 +1,4 @@
-# Installation Guide for memories-dev, pypi , git based.
+# Installation Guide for memories-dev
 
 ## Prerequisites
 
