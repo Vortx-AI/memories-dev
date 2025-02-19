@@ -32,12 +32,25 @@ extensions = [
     'myst_parser'
 ]
 
-# Only add sphinx-autodoc-typehints for compatible versions
-python_version = platform.python_version()
+# Handle type hints based on Python version
+python_version = packaging_version.parse(platform.python_version())
 sphinx_version = packaging_version.parse(sphinx.__version__)
-if (packaging_version.parse(python_version) >= packaging_version.parse('3.12') and 
-    sphinx_version >= packaging_version.parse('7.2.0')):
+
+# For Python 3.13, we need a newer version of sphinx-autodoc-typehints
+if python_version >= packaging_version.parse('3.13'):
     extensions.append('sphinx_autodoc_typehints')
+    autodoc_typehints = 'description'
+    autodoc_typehints_format = 'fully-qualified'
+    typehints_defaults = 'comma'
+    typehints_use_signature = True
+    typehints_use_signature_return = True
+elif python_version >= packaging_version.parse('3.12') and sphinx_version >= packaging_version.parse('7.2.0'):
+    extensions.append('sphinx_autodoc_typehints')
+    autodoc_typehints = 'description'
+    autodoc_typehints_format = 'short'
+    autodoc_type_aliases = {}
+else:
+    autodoc_typehints = 'none'
 
 # Add any paths that contain templates here
 templates_path = ['_templates']
@@ -136,15 +149,6 @@ autodoc_default_options = {
     'exclude-members': '__weakref__',
     'show-inheritance': True
 }
-
-# Only set these options for newer Python and Sphinx versions
-if (packaging_version.parse(python_version) >= packaging_version.parse('3.12') and 
-    sphinx_version >= packaging_version.parse('7.2.0')):
-    autodoc_typehints = 'description'
-    autodoc_typehints_format = 'short'
-    autodoc_type_aliases = {}
-else:
-    autodoc_typehints = 'none'
 
 autodoc_class_signature = 'separated'
 autodoc_member_order = 'bysource'

@@ -177,7 +177,8 @@ dev = [
 docs = [
     "sphinx>=7.2.6",
     "sphinx-rtd-theme>=2.0.0",
-    "sphinx-autodoc-typehints>=2.0.1; python_version>='3.12'",  # Only for Python 3.12+
+    "sphinx-autodoc-typehints>=2.0.1; python_version<'3.13'",  # For Python <3.13
+    "sphinx-autodoc-typehints>=3.0.0; python_version>='3.13'",  # For Python 3.13+
     "nbsphinx>=0.9.3",
     "pandoc>=2.3",
     "typing-extensions>=4.9.0",
