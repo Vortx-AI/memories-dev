@@ -1,6 +1,7 @@
 # Configuration file for the Sphinx documentation builder.
 import os
 import sys
+import platform
 from packaging import version as packaging_version
 import sphinx
 
@@ -26,14 +27,16 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.autosummary',
-    'sphinx_autodoc_typehints',
     'nbsphinx',
     'sphinx_copybutton',
     'myst_parser'
 ]
 
-# Only add sphinx-autodoc-typehints for Sphinx versions that support it
-if packaging_version.parse(sphinx.__version__) >= packaging_version.parse('7.2.0'):
+# Only add sphinx-autodoc-typehints for compatible versions
+python_version = platform.python_version()
+sphinx_version = packaging_version.parse(sphinx.__version__)
+if (packaging_version.parse(python_version) >= packaging_version.parse('3.12') and 
+    sphinx_version >= packaging_version.parse('7.2.0')):
     extensions.append('sphinx_autodoc_typehints')
 
 # Add any paths that contain templates here
@@ -134,11 +137,14 @@ autodoc_default_options = {
     'show-inheritance': True
 }
 
-# Only set these options for newer Sphinx versions
-if packaging_version.parse(sphinx.__version__) >= packaging_version.parse('7.2.0'):
+# Only set these options for newer Python and Sphinx versions
+if (packaging_version.parse(python_version) >= packaging_version.parse('3.12') and 
+    sphinx_version >= packaging_version.parse('7.2.0')):
     autodoc_typehints = 'description'
     autodoc_typehints_format = 'short'
     autodoc_type_aliases = {}
+else:
+    autodoc_typehints = 'none'
 
 autodoc_class_signature = 'separated'
 autodoc_member_order = 'bysource'

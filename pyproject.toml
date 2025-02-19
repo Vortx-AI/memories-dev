@@ -177,13 +177,15 @@ dev = [
 docs = [
     "sphinx>=7.2.6",
     "sphinx-rtd-theme>=2.0.0",
-    "sphinx-autodoc-typehints>=2.0.1",
+    "sphinx-autodoc-typehints>=2.0.1; python_version>='3.12'",  # Only for Python 3.12+
     "nbsphinx>=0.9.3",
     "pandoc>=2.3",
     "typing-extensions>=4.9.0",
     "docutils>=0.20.1",
     "packaging>=23.2",
-    "furo>=2024.1.29"
+    "furo>=2024.1.29",
+    "sphinx-copybutton>=0.5.2",
+    "myst-parser>=2.0.0"
 ]
 
 [project.urls]
