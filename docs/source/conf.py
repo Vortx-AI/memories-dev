@@ -1,6 +1,9 @@
 # Configuration file for the Sphinx documentation builder.
 import os
 import sys
+from packaging import version as packaging_version
+import sphinx
+
 sys.path.insert(0, os.path.abspath('../..'))
 
 # Project information
@@ -28,6 +31,10 @@ extensions = [
     'sphinx_copybutton',
     'myst_parser'
 ]
+
+# Only add sphinx-autodoc-typehints for Sphinx versions that support it
+if packaging_version.parse(sphinx.__version__) >= packaging_version.parse('7.2.0'):
+    extensions.append('sphinx_autodoc_typehints')
 
 # Add any paths that contain templates here
 templates_path = ['_templates']
@@ -124,11 +131,15 @@ autodoc_default_options = {
     'special-members': '__init__',
     'undoc-members': True,
     'exclude-members': '__weakref__',
-    'show-inheritance': True,
-    'inherited-members': True,
+    'show-inheritance': True
 }
 
-autodoc_typehints = 'description'
+# Only set these options for newer Sphinx versions
+if packaging_version.parse(sphinx.__version__) >= packaging_version.parse('7.2.0'):
+    autodoc_typehints = 'description'
+    autodoc_typehints_format = 'short'
+    autodoc_type_aliases = {}
+
 autodoc_class_signature = 'separated'
 autodoc_member_order = 'bysource'
 autodoc_warningiserror = False
