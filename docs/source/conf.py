@@ -36,15 +36,15 @@ extensions = [
 python_version = packaging_version.parse(platform.python_version())
 sphinx_version = packaging_version.parse(sphinx.__version__)
 
-# For Python 3.13, we need a newer version of sphinx-autodoc-typehints
+# Configure type hints based on Python version
 if python_version >= packaging_version.parse('3.13'):
-    extensions.append('sphinx_autodoc_typehints')
-    autodoc_typehints = 'description'
+    autodoc_typehints = 'none'  # Disable automatic type hints processing
     autodoc_typehints_format = 'fully-qualified'
-    typehints_defaults = 'comma'
-    typehints_use_signature = True
-    typehints_use_signature_return = True
-elif python_version >= packaging_version.parse('3.12') and sphinx_version >= packaging_version.parse('7.2.0'):
+    napoleon_use_param = True
+    napoleon_use_rtype = True
+    napoleon_preprocess_types = True
+    napoleon_type_aliases = None
+elif python_version >= packaging_version.parse('3.12'):
     extensions.append('sphinx_autodoc_typehints')
     autodoc_typehints = 'description'
     autodoc_typehints_format = 'short'
@@ -135,9 +135,6 @@ napoleon_use_admonition_for_examples = True
 napoleon_use_admonition_for_notes = True
 napoleon_use_admonition_for_references = True
 napoleon_use_ivar = False
-napoleon_use_param = True
-napoleon_use_rtype = True
-napoleon_type_aliases = None
 napoleon_attr_annotations = True
 
 # Autodoc settings
