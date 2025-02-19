@@ -54,27 +54,9 @@ submodules:
 # Search configuration
 search:
   ranking:
-    # Core documentation sections
     getting_started/*: 5
     user_guide/*: 4
     api_reference/*: 3
     examples/*: 4
     advanced_topics/*: 3
     contributing/*: 2
-    
-  # Custom search settings
-  settings:
-    min_search_length: 3
-    lang: en
-    prebuild_index: true
-
-# Additional features
-features:
-  # Enable analytics
-  analytics: true
-  # Enable versioning
-  versions: true
-  # Enable documentation comments
-  comments: true
-  # Enable documentation feedback
-  feedback: true
