@@ -20,8 +20,6 @@ build:
       - python -m pip install sphinx-rtd-theme sphinx-copybutton sphinx-tabs
       # Generate API documentation
       - sphinx-apidoc -o docs/source/api_reference memories/
-      # Setup example notebooks
-      - python docs/source/examples/generate_examples.py
 
 # Sphinx configuration
 sphinx:
