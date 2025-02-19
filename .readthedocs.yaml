@@ -1,56 +1,80 @@
 # .readthedocs.yaml
-# Read the Docs configuration file for Earth Memory Synthesis framework
+# Read the Docs configuration file for memories.dev - Collective Memory Infrastructure for AGI
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
 # Required
 version: 2
 
-# Set the OS, Python version and other tools you might need
+# Build configuration
 build:
   os: ubuntu-22.04
   tools:
     python: "3.12"
-    # You can also provide other tool versions:
-    # nodejs: "19"
   jobs:
     pre_build:
-      # Install the package in editable mode
+      # Core setup
       - pip install -e .
-      # Install documentation dependencies
       - pip install -r docs/requirements.txt
-      # Download required NLTK data
-      # Additional pre-build steps for Earth Memory Synthesis
+      # Additional setup for comprehensive documentation
+      - python -m pip install --upgrade pip setuptools wheel
+      - python -m pip install sphinx-rtd-theme sphinx-copybutton sphinx-tabs
+      # Generate API documentation
+      - sphinx-apidoc -o docs/source/api_reference memories/
+      # Setup example notebooks
+      - python docs/source/examples/generate_examples.py
 
-# Build documentation in the docs/source directory with Sphinx
+# Sphinx configuration
 sphinx:
   configuration: docs/source/conf.py
   fail_on_warning: false
   builder: html
 
-# Optionally build your docs in additional formats such as PDF and ePub
+# Documentation formats
 formats:
   - pdf
   - epub
   - htmlzip
 
-# Optionally declare the Python requirements required to build your docs
+# Python package installation
 python:
   install:
     - method: pip
       path: .
       extra_requirements:
         - docs
+        - examples
+        - dev
     - requirements: docs/requirements.txt
 
-# Don't use submodules for documentation
+# Repository configuration
 submodules:
   include: all
   recursive: true
 
-# Search settings
+# Search configuration
 search:
   ranking:
-    # Boost the importance of certain pages in search results
-    api_reference/*: 2
-    user_guide/*: 3
+    # Core documentation sections
+    getting_started/*: 5
+    user_guide/*: 4
+    api_reference/*: 3
     examples/*: 4
+    advanced_topics/*: 3
+    contributing/*: 2
+    
+  # Custom search settings
+  settings:
+    min_search_length: 3
+    lang: en
+    prebuild_index: true
+
+# Additional features
+features:
+  # Enable analytics
+  analytics: true
+  # Enable versioning
+  versions: true
+  # Enable documentation comments
+  comments: true
+  # Enable documentation feedback
+  feedback: true
