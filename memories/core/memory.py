@@ -2,7 +2,7 @@
 
 import os
 import logging
-from typing import Dict, Any, List, Optional, Union, Tuple
+from typing import Dict, Any, List, Optional, Union, Tuple, Generator
 from pathlib import Path
 import json
 import uuid
@@ -27,6 +27,7 @@ from memories.core.memories_index import FAISSStorage
 from memories.config import Config
 from memories.core.hot import HotMemory
 from memories.core.warm import WarmMemory
+from memories.core.unstructured import UnstructuredStorage
 
 # Load environment variables
 load_dotenv()
@@ -315,6 +316,9 @@ class MemoryStore:
             max_size=config.cold_memory_size
         )
         
+        # Initialize unstructured storage
+        self.unstructured_storage = UnstructuredStorage(config.storage_path)
+        
         logger.info(f"[MemoryStore] Project root: {config.storage_path}")
     
     def store(self, data: Dict[str, Any], memory_type: str = "warm") -> None:
@@ -383,6 +387,145 @@ class MemoryStore:
         if memory_type is None or memory_type == "cold":
             self.cold_memory.clear()
 
+    def store_unstructured(self, 
+                          data: Any,
+                          data_type: str,
+                          metadata: Dict[str, Any],
+                          memory_type: str = "cold") -> str:
+        """Store unstructured data in appropriate memory tier.
+        
+        Args:
+            data: The unstructured data to store
+            data_type: Type of data ("binary", "text", or "model")
+            metadata: Metadata associated with the data
+            memory_type: Memory tier to store reference in
+            
+        Returns:
+            str: File ID of stored data
+        """
+        try:
+            # Store the actual data
+            file_id = self.unstructured_storage.store(data, data_type, metadata)
+            
+            # Create reference object
+            reference = {
+                "type": "unstructured_reference",
+                "file_id": file_id,
+                "data_type": data_type,
+                "timestamp": datetime.now().isoformat(),
+                "metadata": metadata
+            }
+            
+            # Store reference in memory tier
+            self.store(reference, memory_type)
+            
+            return file_id
+        except Exception as e:
+            logger.error(f"Failed to store unstructured data: {e}")
+            raise
+
+    def retrieve_unstructured(self, 
+                            file_id: str,
+                            data_type: str) -> Optional[tuple[Any, Dict[str, Any]]]:
+        """Retrieve unstructured data.
+        
+        Args:
+            file_id: ID of the file to retrieve
+            data_type: Type of data to retrieve
+            
+        Returns:
+            Tuple of (data, metadata) if found, None otherwise
+        """
+        try:
+            return self.unstructured_storage.retrieve(file_id, data_type)
+        except Exception as e:
+            logger.error(f"Failed to retrieve unstructured data: {e}")
+            return None
+
+    def stream_unstructured(self,
+                          file_id: str,
+                          data_type: str,
+                          chunk_size: int = 8192) -> Generator[bytes, None, None]:
+        """Stream unstructured data in chunks.
+        
+        Args:
+            file_id: ID of the file to stream
+            data_type: Type of data to stream
+            chunk_size: Size of chunks to yield
+            
+        Yields:
+            Chunks of binary data
+        """
+        try:
+            yield from self.unstructured_storage.stream(file_id, data_type, chunk_size)
+        except Exception as e:
+            logger.error(f"Failed to stream unstructured data: {e}")
+            raise
+
+    def search_unstructured(self, query: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Search for unstructured data references.
+        
+        Args:
+            query: Search criteria
+            
+        Returns:
+            List of matching references
+        """
+        try:
+            results = []
+            base_query = {"type": "unstructured_reference", **query}
+            
+            # Search all memory tiers
+            for memory_type in ["hot", "warm", "cold"]:
+                refs = self.search(base_query, memory_type)
+                if refs:
+                    results.extend(refs)
+            
+            return results
+        except Exception as e:
+            logger.error(f"Failed to search unstructured data: {e}")
+            return []
+
+    def store_unstructured_version(self,
+                                 file_id: str,
+                                 new_data: Any,
+                                 version_metadata: Dict[str, Any],
+                                 memory_type: str = "cold") -> str:
+        """Store a new version of existing unstructured data.
+        
+        Args:
+            file_id: ID of the original file
+            new_data: New version of the data
+            version_metadata: Additional metadata for the new version
+            memory_type: Memory tier to store reference in
+            
+        Returns:
+            str: File ID of the new version
+        """
+        try:
+            new_file_id = self.unstructured_storage.store_version(
+                file_id, new_data, version_metadata)
+            
+            # Get metadata for the new version
+            metadata = self.unstructured_storage._get_metadata(new_file_id)
+            if not metadata:
+                raise ValueError("Failed to get metadata for new version")
+            
+            # Create and store reference
+            reference = {
+                "type": "unstructured_reference",
+                "file_id": new_file_id,
+                "data_type": self.unstructured_storage._get_data_type(new_file_id),
+                "timestamp": datetime.now().isoformat(),
+                "metadata": metadata
+            }
+            
+            self.store(reference, memory_type)
+            return new_file_id
+        except Exception as e:
+            logger.error(f"Failed to store unstructured version: {e}")
+            raise
+
 def encode_geospatial_data(data: Dict[str, Any], encoder: MemoryEncoder) -> torch.Tensor:
     """
     Example function to encode geospatial data.
@@ -447,6 +590,3 @@ def create_memories(artifacts_selection, **kwargs):
     
     # Rest of the create_memories implementation...
     return storage
-
-
-
