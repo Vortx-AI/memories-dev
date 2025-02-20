@@ -196,4 +196,133 @@ async def test_resolution_handling(data_manager, bbox, date_range):
     
     assert 'pc' in results
     assert 'sentinel' in results
-    assert results['sentinel']['resolution'] == 10.0 
+    assert results['sentinel']['resolution'] == 10.0
+
+@pytest.mark.asyncio
+async def test_download_satellite_data(data_manager, bbox, date_range):
+    """Test downloading satellite data."""
+    with patch('memories.data_acquisition.data_manager.SentinelAPI') as mock_sentinel:
+        mock_sentinel.return_value.search.return_value = [
+            {'id': 'test1', 'url': 'http://example.com/1'},
+            {'id': 'test2', 'url': 'http://example.com/2'}
+        ]
+        mock_sentinel.return_value.download.return_value = Path("test.tif")
+        
+        results = await data_manager.download_satellite_data(
+            collection="sentinel-2-l2a",
+            bbox=bbox,
+            start_date=date_range['start_date'],
+            end_date=date_range['end_date']
+        )
+        
+        assert len(results) == 2
+        assert all('id' in item for item in results)
+        assert all('url' in item for item in results)
+
+@pytest.mark.asyncio
+async def test_download_vector_data(data_manager, bbox):
+    """Test downloading vector data."""
+    with patch('memories.data_acquisition.data_manager.OSMDataAPI') as mock_osm:
+        mock_osm.return_value.search.return_value = [
+            {'type': 'Feature', 'geometry': {'type': 'Polygon'}}
+        ]
+        mock_osm.return_value.download.return_value = Path("test.geojson")
+        
+        results = await data_manager.download_vector_data(
+            layer="buildings",
+            bbox=bbox
+        )
+        
+        assert len(results) == 1
+        assert all('type' in item for item in results)
+        assert all('geometry' in item for item in results)
+
+@pytest.mark.asyncio
+async def test_get_location_data(data_manager, bbox, date_range):
+    """Test retrieving location data."""
+    with patch('memories.data_acquisition.data_manager.OvertureAPI') as mock_overture:
+        mock_data = {
+            'type': 'FeatureCollection',
+            'features': [
+                {
+                    'type': 'Feature',
+                    'properties': {'name': 'Test Location'},
+                    'geometry': {'type': 'Point'}
+                }
+            ]
+        }
+        mock_overture.return_value.search.return_value = mock_data
+        
+        result = await data_manager.get_location_data(
+            bbox=bbox,
+            start_date=date_range['start_date'],
+            end_date=date_range['end_date']
+        )
+        
+        assert result['type'] == 'FeatureCollection'
+        assert len(result['features']) == 1
+        assert 'name' in result['features'][0]['properties']
+
+@pytest.mark.asyncio
+async def test_concurrent_downloads(data_manager, bbox, date_range):
+    """Test concurrent download operations."""
+    with patch('memories.data_acquisition.data_manager.SentinelAPI') as mock_sentinel, \
+         patch('memories.data_acquisition.data_manager.OSMDataAPI') as mock_osm:
+        
+        # Mock satellite data
+        mock_sentinel.return_value.search.return_value = [
+            {'id': 'test1', 'url': 'http://example.com/1'}
+        ]
+        mock_sentinel.return_value.download.return_value = Path("test.tif")
+        
+        # Mock vector data
+        mock_osm.return_value.search.return_value = [
+            {'type': 'Feature', 'geometry': {'type': 'Polygon'}}
+        ]
+        mock_osm.return_value.download.return_value = Path("test.geojson")
+        
+        # Test preparing training data which involves concurrent downloads
+        result = await data_manager.prepare_training_data(
+            bbox=bbox,
+            start_date=date_range['start_date'],
+            end_date=date_range['end_date'],
+            satellite_collections=['sentinel-2-l2a'],
+            vector_layers=['buildings']
+        )
+        
+        assert 'satellite_data' in result
+        assert 'vector_data' in result
+        assert len(result['satellite_data']) > 0
+        assert len(result['vector_data']) > 0
+
+@pytest.mark.asyncio
+async def test_cache_invalidation(data_manager, bbox, date_range):
+    """Test cache invalidation and refresh."""
+    # First, add some data to cache
+    cache_key = "test_key"
+    test_data = {"test": "data"}
+    data_manager.save_to_cache(cache_key, test_data)
+    
+    # Verify data is in cache
+    assert data_manager.cache_exists(cache_key)
+    assert data_manager.get_from_cache(cache_key) == test_data
+    
+    # Mock new data fetch
+    with patch('memories.data_acquisition.data_manager.SentinelAPI') as mock_sentinel:
+        mock_sentinel.return_value.search.return_value = [
+            {'id': 'new_test', 'url': 'http://example.com/new'}
+        ]
+        
+        # Force refresh by passing refresh=True
+        result = await data_manager.get_satellite_data(
+            bbox=bbox,
+            start_date=date_range['start_date'],
+            end_date=date_range['end_date'],
+            refresh=True
+        )
+        
+        assert result != test_data
+        assert len(result) > 0
+        
+        # Verify cache was updated
+        assert data_manager.get_from_cache(cache_key) != test_data 

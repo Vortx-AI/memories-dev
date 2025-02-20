@@ -120,3 +120,75 @@ def test_connection_cleanup(test_data_dir, monkeypatch):
     for _ in range(3):
         result = query_multiple_parquet()
         assert result is not None 
+
+def test_list_parquet_files_empty_dir(tmp_path):
+    """Test listing Parquet files in an empty directory."""
+    files = list_parquet_files(str(tmp_path))
+    assert len(files) == 0
+
+def test_list_parquet_files_nested(tmp_path):
+    """Test listing Parquet files in nested directories."""
+    # Create nested directory structure
+    nested_dir = tmp_path / "level1" / "level2"
+    nested_dir.mkdir(parents=True)
+    
+    # Create Parquet files at different levels
+    df = pd.DataFrame({'test': [1, 2, 3]})
+    df.to_parquet(tmp_path / "root.parquet")
+    df.to_parquet(tmp_path / "level1" / "mid.parquet")
+    df.to_parquet(nested_dir / "deep.parquet")
+    
+    files = list_parquet_files(str(tmp_path))
+    assert len(files) == 3
+    assert any("root.parquet" in f for f in files)
+    assert any("mid.parquet" in f for f in files)
+    assert any("deep.parquet" in f for f in files)
+
+def test_list_parquet_files_non_parquet(tmp_path):
+    """Test listing Parquet files when directory contains non-Parquet files."""
+    # Create a mix of Parquet and non-Parquet files
+    df = pd.DataFrame({'test': [1, 2, 3]})
+    df.to_parquet(tmp_path / "data.parquet")
+    
+    # Create some non-Parquet files
+    (tmp_path / "text.txt").write_text("test")
+    (tmp_path / "data.csv").write_text("a,b,c")
+    
+    files = list_parquet_files(str(tmp_path))
+    assert len(files) == 1
+    assert "data.parquet" in files[0]
+
+def test_corrupted_parquet_handling(tmp_path):
+    """Test handling of corrupted Parquet files."""
+    # Create a valid Parquet file
+    df1 = pd.DataFrame({'id': [1, 2, 3], 'value': ['a', 'b', 'c']})
+    df1.to_parquet(tmp_path / "valid.parquet")
+    
+    # Create a corrupted Parquet file
+    (tmp_path / "corrupted.parquet").write_text("This is not a valid Parquet file")
+    
+    # Set environment variable
+    monkeypatch.setenv("GEO_MEMORIES", str(tmp_path))
+    
+    # Test query handling of corrupted file
+    with pytest.raises(Exception) as exc_info:
+        query_multiple_parquet()
+    assert "Parquet file is corrupted" in str(exc_info.value)
+
+def test_list_parquet_files_permissions(tmp_path):
+    """Test handling of permission errors when listing Parquet files."""
+    # Create a directory with restricted permissions
+    restricted_dir = tmp_path / "restricted"
+    restricted_dir.mkdir()
+    df = pd.DataFrame({'test': [1, 2, 3]})
+    df.to_parquet(restricted_dir / "data.parquet")
+    
+    # Remove read permissions (on Unix-like systems)
+    if os.name != 'nt':  # Skip on Windows
+        restricted_dir.chmod(0o000)
+        try:
+            files = list_parquet_files(str(tmp_path))
+            assert len(files) == 0
+        finally:
+            # Restore permissions for cleanup
+            restricted_dir.chmod(0o755) 
