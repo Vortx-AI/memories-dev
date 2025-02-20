@@ -6,6 +6,7 @@ import geopandas as gpd
 from shapely.geometry import box, Polygon
 import os
 import json
+import tempfile
 
 from memories.data_acquisition.sources.overture_local import (
     get_overture_data,

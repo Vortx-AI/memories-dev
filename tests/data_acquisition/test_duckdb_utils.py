@@ -158,7 +158,7 @@ def test_list_parquet_files_non_parquet(tmp_path):
     assert len(files) == 1
     assert "data.parquet" in files[0]
 
-def test_corrupted_parquet_handling(tmp_path):
+def test_corrupted_parquet_handling(tmp_path, monkeypatch):
     """Test handling of corrupted Parquet files."""
     # Create a valid Parquet file
     df1 = pd.DataFrame({'id': [1, 2, 3], 'value': ['a', 'b', 'c']})
