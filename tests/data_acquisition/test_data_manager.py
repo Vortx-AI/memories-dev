@@ -46,15 +46,25 @@ def test_initialization(tmp_path):
 
 @pytest.mark.asyncio
 async def test_get_satellite_data(data_manager):
-    """Test getting satellite data."""
-    mock_pc_items = [{"id": "test_item"}]
+    """Test satellite data acquisition."""
+    # Mock Sentinel API response
+    mock_sentinel_data = {
+        'success': True,
+        'data': np.random.rand(3, 100, 100),  # 3 bands (Red, NIR, SWIR)
+        'metadata': {
+            'scene_id': 'test_scene',
+            'cloud_cover': 5.0,
+            'datetime': '2023-01-01T00:00:00Z',
+            'bands_downloaded': ['B04', 'B08', 'B11'],
+            'failed_bands': [],
+            'recovered_files': []
+        }
+    }
     
-    # Mock the search and download methods
-    data_manager.planetary.search_and_download = AsyncMock(return_value={'sentinel-2-l2a': mock_pc_items})
-    data_manager.sentinel.search = AsyncMock(return_value={"items": []})
-    data_manager.landsat.search = AsyncMock(return_value={"items": []})
+    # Mock the Sentinel API
+    data_manager.sentinel.download_data = AsyncMock(return_value=mock_sentinel_data)
     
-    bbox = [0, 0, 1, 1]
+    bbox = [-122.5, 37.5, -122.0, 38.0]  # San Francisco area
     start_date = "2023-01-01"
     end_date = "2023-01-02"
     
@@ -64,8 +74,12 @@ async def test_get_satellite_data(data_manager):
         end_date=end_date
     )
     
-    assert "pc" in results
-    assert results["pc"]["sentinel-2-l2a"] == mock_pc_items
+    assert results['success'] is True
+    assert 'data' in results
+    assert 'metadata' in results
+    assert results['metadata']['scene_id'] == 'test_scene'
+    assert results['metadata']['cloud_cover'] == 5.0
+    assert len(results['metadata']['bands_downloaded']) == 3
 
 @pytest.mark.asyncio
 async def test_get_vector_data(data_manager, bbox):
@@ -203,16 +217,20 @@ async def test_resolution_handling(data_manager, bbox, date_range):
 async def test_download_satellite_data(data_manager, bbox, date_range):
     """Test downloading satellite data."""
     # Mock satellite data
-    mock_data = np.random.rand(4, 100, 100)  # 4 bands, 100x100 pixels
+    mock_data = np.random.rand(3, 100, 100)  # 3 bands (Red, NIR, SWIR)
     mock_metadata = {
-        "cloud_cover": 9.24,
-        "datetime": "2025-02-20T12:48:05.424634"
+        'scene_id': 'test_scene',
+        'cloud_cover': 5.0,
+        'datetime': '2023-01-01T00:00:00Z',
+        'bands_downloaded': ['B04', 'B08', 'B11'],
+        'failed_bands': [],
+        'recovered_files': []
     }
     
     mock_response = {
-        "success": True,
-        "data": mock_data,
-        "metadata": mock_metadata
+        'success': True,
+        'data': mock_data,
+        'metadata': mock_metadata
     }
     
     # Mock the SentinelAPI
@@ -224,11 +242,13 @@ async def test_download_satellite_data(data_manager, bbox, date_range):
         end_date=date_range['end_date']
     )
     
-    assert "sentinel" in results
-    assert "data" in results["sentinel"]
-    assert "metadata" in results["sentinel"]
-    assert results["sentinel"]["data"].shape == (4, 100, 100)
-    assert results["sentinel"]["metadata"]["cloud_cover"] == 9.24
+    assert results['success'] is True
+    assert 'data' in results
+    assert 'metadata' in results
+    assert results['metadata']['scene_id'] == 'test_scene'
+    assert results['metadata']['cloud_cover'] == 5.0
+    assert len(results['metadata']['bands_downloaded']) == 3
+    assert isinstance(results['data'], list)  # Converted to list for JSON serialization
 
 @pytest.mark.asyncio
 async def test_download_vector_data(data_manager, bbox):
@@ -325,33 +345,67 @@ async def test_concurrent_downloads(data_manager, bbox, date_range):
         assert len(result['vector_data']) > 0
 
 @pytest.mark.asyncio
-async def test_cache_invalidation(data_manager, bbox, date_range):
-    """Test cache invalidation and refresh."""
-    # First, add some data to cache
-    cache_key = "test_key"
-    test_data = {"test": "data"}
-    data_manager.save_to_cache(cache_key, test_data)
+async def test_cache_invalidation(data_manager):
+    """Test that cache invalidation works correctly."""
+    bbox = [-122.5, 37.5, -122.0, 38.0]
+    date_range = {
+        'start_date': '2024-01-01',
+        'end_date': '2024-12-31'
+    }
+
+    # Create two different mock responses
+    mock_response_1 = {
+        'success': True,
+        'data': [[1, 2, 3], [4, 5, 6]],  # Simple list data that can be JSON serialized
+        'metadata': {
+            'scene_id': 'scene_001',
+            'cloud_cover': 5.0,
+            'datetime': '2024-01-15T10:30:00Z'
+        }
+    }
+
+    mock_response_2 = {
+        'success': True,
+        'data': [[7, 8, 9], [10, 11, 12]],  # Different data
+        'metadata': {
+            'scene_id': 'scene_002',
+            'cloud_cover': 10.0,
+            'datetime': '2024-01-16T10:30:00Z'
+        }
+    }
+
+    # Keep track of calls to mock_download_data
+    call_count = 0
+
+    # Mock the download_data method to return different responses
+    async def mock_download_data(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        # First call returns mock_response_1, subsequent calls return mock_response_2
+        return mock_response_1 if call_count == 1 else mock_response_2
+
+    # Patch the download_data method
+    data_manager.sentinel.download_data = mock_download_data
     
-    # Verify data is in cache
-    assert data_manager.cache_exists(cache_key)
-    assert data_manager.get_from_cache(cache_key) == test_data
+    # First call - should get mock_response_1 and cache it
+    result1 = await data_manager.get_satellite_data(
+        bbox=bbox,
+        start_date=date_range['start_date'],
+        end_date=date_range['end_date']
+    )
     
-    # Mock new data fetch
-    with patch('memories.data_acquisition.data_manager.SentinelAPI') as mock_sentinel:
-        mock_sentinel.return_value.search.return_value = [
-            {'id': 'new_test', 'url': 'http://example.com/new'}
-        ]
-        
-        # Force refresh by passing refresh=True
-        result = await data_manager.get_satellite_data(
-            bbox=bbox,
-            start_date=date_range['start_date'],
-            end_date=date_range['end_date'],
-            refresh=True
-        )
-        
-        assert result != test_data
-        assert len(result) > 0
-        
-        # Verify cache was updated
-        assert data_manager.get_from_cache(cache_key) != test_data 
+    # Second call with refresh=True - should get mock_response_2 and use a different cache key
+    result2 = await data_manager.get_satellite_data(
+        bbox=bbox,
+        start_date=date_range['start_date'],
+        end_date=date_range['end_date'],
+        refresh=True
+    )
+    
+    # Verify results are different
+    assert result1['metadata']['scene_id'] != result2['metadata']['scene_id'], "Scene IDs should be different after refresh"
+    assert result1['metadata']['cloud_cover'] != result2['metadata']['cloud_cover'], "Cloud cover should be different after refresh"
+    assert result1['metadata']['datetime'] != result2['metadata']['datetime'], "Datetime should be different after refresh"
+    
+    # Verify that we made exactly two calls to download_data
+    assert call_count == 2, "Should have made exactly two calls to download_data" 
