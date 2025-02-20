@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2025-02-18 🔧 Patch Release
+
+### Fixed 🐛
+- **Cache System**: 
+  - Improved cache invalidation mechanism in DataManager
+  - Fixed JSON serialization of numpy arrays in satellite data
+  - Enhanced cache key generation for refresh operations
+  - Added proper handling of mock responses in tests
+
+### Testing 🧪
+- **Test Improvements**:
+  - Enhanced test_cache_invalidation with deterministic responses
+  - Added call counting for better test control
+  - Improved assertions for cache refresh verification
+  - Added comprehensive test coverage for cache operations
+
 ## [2.0.0] - 2025-02-18 🎉 Production Release
 
 ### Major Changes 🌟
