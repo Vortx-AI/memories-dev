@@ -21,34 +21,41 @@ wheels/
 .installed.cfg
 *.egg
 
+# Documentation
+docs/source/_build/
+docs/_build/
+docs/build/
+
 # Virtual Environment
+venv/
+env/
+ENV/
 .env
 .venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-venv_*/
-.python-version
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-.project
-.pydevproject
-.settings/
+*~
 
 # OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
+
+# Test coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# Cache
+.cache/
+.pytest_cache/
+
+# Logs
+*.log
+logs/
 
 # Project specific
 gunicorn_config.py
@@ -60,7 +67,6 @@ synthetic_satellite.nginx
 !memories/utils/styles/*.json
 
 # Logs and databases
-*.log
 *.sqlite
 *.db
 jupyter.log
@@ -71,23 +77,6 @@ schema_metadata.json
 memories-dev.egg-info/
 dist/
 build/
-
-# Test coverage
-.coverage
-htmlcov/
-.pytest_cache/
-.tox/
-coverage.xml
-*.cover
-.hypothesis/
-
-# Documentation
-docs/_build/
-docs/api/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb_checkpoints/
 
 # Test data directories
 test_cache/
