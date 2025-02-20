@@ -141,8 +141,11 @@ class DataManager:
                 end_date=datetime.strptime(end_date, "%Y-%m-%d"),
                 cloud_cover=cloud_cover
             )
-            if sentinel_results:
-                results["sentinel"] = sentinel_results
+            if sentinel_results and sentinel_results.get("success"):
+                results["sentinel"] = {
+                    "data": sentinel_results["data"],
+                    "metadata": sentinel_results["metadata"]
+                }
             
             # Get Landsat data
             landsat_results = await self.landsat.search(
@@ -157,7 +160,7 @@ class DataManager:
             # Apply resolution if specified
             if resolution is not None:
                 for source, data in results.items():
-                    if isinstance(data, dict) and "items" in data:
+                    if isinstance(data, dict):
                         data["resolution"] = resolution
             
             return results

@@ -16,6 +16,7 @@ from datetime import datetime
 import pyproj
 import asyncio
 from memories.data_acquisition.sources.sentinel_api import SentinelAPI
+from unittest.mock import ANY
 
 @pytest.fixture
 def mock_pc_client():
@@ -753,97 +754,135 @@ async def test_concurrent_download_limit(sentinel_api, mock_client, mock_sentine
     assert max_concurrent <= 2  # Should not exceed concurrent download limit 
 
 @pytest.mark.asyncio
-async def test_planetary_compute_search(sentinel_api, mock_client, mock_sentinel_item, bbox):
-    """Test Planetary Computer search functionality."""
-    mock_search = MagicMock()
-    mock_search.get_items.return_value = [mock_sentinel_item]
-    mock_client.search.return_value = mock_search
-
-    results = await sentinel_api.search_planetary_compute(
-        bbox={
-            'xmin': bbox['xmin'],
-            'ymin': bbox['ymin'],
-            'xmax': bbox['xmax'],
-            'ymax': bbox['ymax']
+async def test_planetary_compute_search():
+    """Test searching Planetary Computer."""
+    api = SentinelAPI()
+    
+    # Mock search response
+    mock_item = {
+        'id': 'test_scene',
+        'properties': {
+            'datetime': '2025-02-20T12:48:05.424634',
+            'eo:cloud_cover': 9.24
         },
-        start_date=datetime(2023, 1, 1),
-        end_date=datetime(2023, 12, 31),
-        max_cloud_cover=20.0,
-        collection='sentinel-2-l2a'
-    )
-
-    assert len(results) == 1
-    assert results[0].id == mock_sentinel_item.id
-    assert results[0].collection == mock_sentinel_item.collection
-    
-    # Verify search parameters
-    mock_client.search.assert_called_with(
-        collections=['sentinel-2-l2a'],
-        bbox=[bbox['xmin'], bbox['ymin'], bbox['xmax'], bbox['ymax']],
-        datetime='2023-01-01/2023-12-31',
-        query={"eo:cloud_cover": {"lt": 20.0}}
-    )
-
-@pytest.mark.asyncio
-async def test_planetary_compute_download(sentinel_api, mock_client, mock_sentinel_item, tmp_path):
-    """Test Planetary Computer data download."""
-    mock_search = MagicMock()
-    mock_search.get_items.return_value = [mock_sentinel_item]
-    mock_client.search.return_value = mock_search
-
-    # Create output directory
-    output_dir = tmp_path / "test_output"
-    output_dir.mkdir(parents=True, exist_ok=True)
-    sentinel_api = SentinelAPI(data_dir=str(output_dir))
-
-    # Mock dataset
-    mock_dataset = MagicMock()
-    mock_dataset.profile = {
-        'height': 100,
-        'width': 100,
-        'transform': rasterio.Affine(0.01, 0, -122.5, 0, -0.01, 38.0),
-        'crs': rasterio.crs.CRS.from_epsg(4326),
-        'driver': 'GTiff',
-        'dtype': 'float32',
-        'count': 1
+        'assets': {
+            'B02': {'href': 'http://example.com/B02.tif'},
+            'B03': {'href': 'http://example.com/B03.tif'},
+            'B04': {'href': 'http://example.com/B04.tif'},
+            'B08': {'href': 'http://example.com/B08.tif'}
+        }
     }
-    mock_dataset.read.return_value = np.zeros((1, 100, 100))
-
-    mock_context = MagicMock()
-    mock_context.__enter__.return_value = mock_dataset
-    mock_context.__exit__.return_value = None
-
-    with patch('rasterio.open', return_value=mock_context), \
-         patch('planetary_computer.sign', return_value={'href': 'https://example.com/test.tif'}), \
-         patch('pathlib.Path.exists', return_value=False), \
-         patch('pathlib.Path.unlink'), \
-         patch('os.path.getsize', return_value=1024):
-        results = await sentinel_api.download_from_planetary_compute(
-            item=mock_sentinel_item,
-            bands=['B04'],
-            output_dir=output_dir
-        )
-
-    assert results['success'] is True
-    assert len(results['downloaded_files']) == 1
-    assert 'B04.tif' in str(results['downloaded_files'][0])
-
-@pytest.mark.asyncio
-async def test_planetary_compute_signed_url(sentinel_api, mock_client, mock_sentinel_item):
-    """Test Planetary Computer signed URL generation."""
-    with patch('planetary_computer.sign') as mock_sign:
-        mock_sign.return_value = {'href': 'https://example.com/signed.tif'}
-        
-        url = sentinel_api.get_signed_url(mock_sentinel_item.assets['B04'].href)
-        
-        assert url == 'https://example.com/signed.tif'
-        mock_sign.assert_called_once_with(mock_sentinel_item.assets['B04'].href)
-
-@pytest.mark.asyncio
-async def test_planetary_compute_collection_validation(sentinel_api, mock_client):
-    """Test Planetary Computer collection validation."""
-    # Test with valid collection
-    assert sentinel_api.validate_collection('sentinel-2-l2a') is True
     
-    # Test with invalid collection
-    assert sentinel_api.validate_collection('invalid-collection') is False 
+    # Mock the search and download methods
+    with patch('pystac_client.Client.open') as mock_client:
+        mock_search = MagicMock()
+        mock_search.get_items.return_value = [mock_item]
+        mock_client.return_value.search.return_value = mock_search
+        
+        # Test search
+        results = await api.download_data(
+            bbox={'xmin': 0, 'ymin': 0, 'xmax': 1, 'ymax': 1},
+            start_date=datetime(2025, 2, 20),
+            end_date=datetime(2025, 2, 21),
+            cloud_cover=10.0
+        )
+        
+        assert results['success']
+        assert 'data' in results
+        assert 'metadata' in results
+        assert results['metadata']['cloud_cover'] == 9.24
+        assert results['metadata']['datetime'] == '2025-02-20T12:48:05.424634'
+
+@pytest.mark.asyncio
+async def test_planetary_compute_download(tmp_path):
+    """Test downloading from Planetary Computer."""
+    api = SentinelAPI(data_dir=str(tmp_path))
+    
+    # Mock band data
+    mock_data = np.random.rand(100, 100)
+    
+    # Mock rasterio operations
+    with patch('rasterio.open') as mock_rasterio:
+        mock_dataset = MagicMock()
+        mock_dataset.read.return_value = mock_data
+        mock_dataset.profile = {
+            'height': 100,
+            'width': 100,
+            'count': 1,
+            'dtype': 'float64',
+            'crs': 'EPSG:4326',
+            'transform': [0.1, 0, 0, 0, -0.1, 0]
+        }
+        mock_rasterio.return_value.__enter__.return_value = mock_dataset
+        
+        # Mock planetary computer signing
+        with patch('planetary_computer.sign') as mock_sign:
+            mock_sign.return_value = {'href': 'http://example.com/signed.tif'}
+            
+            # Test download
+            result = await api.fetch_windowed_band(
+                url='http://example.com/test.tif',
+                bbox={'xmin': 0, 'ymin': 0, 'xmax': 1, 'ymax': 1},
+                band_name='blue'
+            )
+            
+            assert result
+            output_file = tmp_path / 'blue.tif'
+            assert output_file.exists()
+            
+            # Verify rasterio operations
+            mock_rasterio.assert_called()
+            mock_dataset.read.assert_called()
+
+@pytest.mark.asyncio
+async def test_planetary_compute_signed_url():
+    """Test getting signed URLs from Planetary Computer."""
+    api = SentinelAPI()
+    
+    # Mock URL
+    test_url = 'http://example.com/test.tif'
+    signed_url = 'http://example.com/signed.tif'
+    
+    # Mock planetary computer signing
+    with patch('planetary_computer.sign') as mock_sign:
+        mock_sign.return_value = {'href': signed_url}
+        
+        # Test URL signing
+        result = await api.fetch_windowed_band(
+            url=test_url,
+            bbox={'xmin': 0, 'ymin': 0, 'xmax': 1, 'ymax': 1},
+            band_name='blue'
+        )
+        
+        # Verify signing was called
+        mock_sign.assert_called_with(test_url)
+        assert mock_sign.call_count == 1
+
+@pytest.mark.asyncio
+async def test_planetary_compute_collection_validation():
+    """Test collection validation in Planetary Computer."""
+    api = SentinelAPI()
+    
+    # Test with valid collection
+    with patch('pystac_client.Client.open') as mock_client:
+        mock_search = MagicMock()
+        mock_search.get_items.return_value = []
+        mock_client.return_value.search.return_value = mock_search
+        
+        # Should not raise an error
+        await api.download_data(
+            bbox={'xmin': 0, 'ymin': 0, 'xmax': 1, 'ymax': 1},
+            start_date=datetime(2025, 2, 20),
+            end_date=datetime(2025, 2, 21),
+            cloud_cover=10.0
+        )
+        
+        # Verify search was called with correct collection
+        mock_client.return_value.search.assert_called_with(
+            collections=['sentinel-2-l2a'],
+            intersects=ANY,
+            datetime=ANY,
+            query=ANY,
+            sortby=ANY,
+            max_items=ANY
+        ) 

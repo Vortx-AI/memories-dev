@@ -8,6 +8,7 @@ from pathlib import Path
 from memories.data_acquisition.data_manager import DataManager
 from shapely.geometry import box
 from shapely.geometry import Polygon
+import numpy as np
 
 @pytest.fixture
 def data_manager(tmp_path):
@@ -201,23 +202,33 @@ async def test_resolution_handling(data_manager, bbox, date_range):
 @pytest.mark.asyncio
 async def test_download_satellite_data(data_manager, bbox, date_range):
     """Test downloading satellite data."""
-    with patch('memories.data_acquisition.data_manager.SentinelAPI') as mock_sentinel:
-        mock_sentinel.return_value.search.return_value = [
-            {'id': 'test1', 'url': 'http://example.com/1'},
-            {'id': 'test2', 'url': 'http://example.com/2'}
-        ]
-        mock_sentinel.return_value.download.return_value = Path("test.tif")
-        
-        results = await data_manager.download_satellite_data(
-            collection="sentinel-2-l2a",
-            bbox=bbox,
-            start_date=date_range['start_date'],
-            end_date=date_range['end_date']
-        )
-        
-        assert len(results) == 2
-        assert all('id' in item for item in results)
-        assert all('url' in item for item in results)
+    # Mock satellite data
+    mock_data = np.random.rand(4, 100, 100)  # 4 bands, 100x100 pixels
+    mock_metadata = {
+        "cloud_cover": 9.24,
+        "datetime": "2025-02-20T12:48:05.424634"
+    }
+    
+    mock_response = {
+        "success": True,
+        "data": mock_data,
+        "metadata": mock_metadata
+    }
+    
+    # Mock the SentinelAPI
+    data_manager.sentinel.download_data = AsyncMock(return_value=mock_response)
+    
+    results = await data_manager.get_satellite_data(
+        bbox=bbox,
+        start_date=date_range['start_date'],
+        end_date=date_range['end_date']
+    )
+    
+    assert "sentinel" in results
+    assert "data" in results["sentinel"]
+    assert "metadata" in results["sentinel"]
+    assert results["sentinel"]["data"].shape == (4, 100, 100)
+    assert results["sentinel"]["metadata"]["cloud_cover"] == 9.24
 
 @pytest.mark.asyncio
 async def test_download_vector_data(data_manager, bbox):
@@ -240,28 +251,46 @@ async def test_download_vector_data(data_manager, bbox):
 @pytest.mark.asyncio
 async def test_get_location_data(data_manager, bbox, date_range):
     """Test retrieving location data."""
-    with patch('memories.data_acquisition.data_manager.OvertureAPI') as mock_overture:
-        mock_data = {
-            'type': 'FeatureCollection',
-            'features': [
-                {
-                    'type': 'Feature',
-                    'properties': {'name': 'Test Location'},
-                    'geometry': {'type': 'Point'}
-                }
-            ]
-        }
-        mock_overture.return_value.search.return_value = mock_data
-        
-        result = await data_manager.get_location_data(
-            bbox=bbox,
-            start_date=date_range['start_date'],
-            end_date=date_range['end_date']
-        )
-        
-        assert result['type'] == 'FeatureCollection'
-        assert len(result['features']) == 1
-        assert 'name' in result['features'][0]['properties']
+    # Mock Overture response
+    mock_overture_data = {
+        'type': 'FeatureCollection',
+        'features': [
+            {
+                'type': 'Feature',
+                'properties': {'name': 'Test Location'},
+                'geometry': {'type': 'Point', 'coordinates': [-122.4, 37.8]}
+            }
+        ]
+    }
+    
+    # Mock OSM response
+    mock_osm_data = {
+        'type': 'FeatureCollection',
+        'features': [
+            {
+                'type': 'Feature',
+                'properties': {'name': 'Test Building'},
+                'geometry': {'type': 'Polygon', 'coordinates': [[[-122.4, 37.8], [-122.3, 37.8], [-122.3, 37.9], [-122.4, 37.9], [-122.4, 37.8]]]}
+            }
+        ]
+    }
+    
+    # Mock the APIs
+    data_manager.overture.search = AsyncMock(return_value=mock_overture_data)
+    data_manager.osm.search = AsyncMock(return_value=mock_osm_data)
+    
+    results = await data_manager.get_location_data(
+        bbox=bbox,
+        start_date=date_range['start_date'],
+        end_date=date_range['end_date']
+    )
+    
+    assert 'overture' in results
+    assert 'osm' in results
+    assert len(results['overture']['features']) == 1
+    assert len(results['osm']['features']) == 1
+    assert results['overture']['features'][0]['properties']['name'] == 'Test Location'
+    assert results['osm']['features'][0]['properties']['name'] == 'Test Building'
 
 @pytest.mark.asyncio
 async def test_concurrent_downloads(data_manager, bbox, date_range):

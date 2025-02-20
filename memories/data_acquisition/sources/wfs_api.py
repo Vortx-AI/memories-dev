@@ -18,21 +18,28 @@ logger = logging.getLogger(__name__)
 class WFSAPI:
     """Interface for accessing data from WFS services."""
     
-    def __init__(self, cache_dir: str, usgs_url: str = None, geoserver_url: str = None, 
+    def __init__(self, cache_dir: str = None, usgs_url: str = None, geoserver_url: str = None, 
                  mapserver_url: str = None, wfs_version: str = "2.0.0", timeout: int = 30):
         """Initialize WFS API with endpoints and cache directory."""
-        self.cache_dir = Path(cache_dir)
+        self.cache_dir = Path(cache_dir) if cache_dir else Path("data/wfs")
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.timeout = timeout
         
-        # Build endpoints dictionary based on provided URLs
-        self.endpoints = {}
-        if usgs_url:
-            self.endpoints['usgs'] = {'url': usgs_url, 'version': wfs_version}
-        if geoserver_url:
-            self.endpoints['geoserver'] = {'url': geoserver_url, 'version': wfs_version}
-        if mapserver_url:
-            self.endpoints['mapserver'] = {'url': mapserver_url, 'version': wfs_version}
+        # Set default endpoints if none provided
+        self.endpoints = {
+            'usgs': {
+                'url': usgs_url or "https://services.nationalmap.gov/arcgis/services/WFS/MapServer/WFSServer",
+                'version': wfs_version
+            },
+            'geoserver': {
+                'url': geoserver_url or "http://geoserver.org/geoserver/wfs",
+                'version': wfs_version
+            },
+            'mapserver': {
+                'url': mapserver_url or "http://mapserver.org/cgi-bin/wfs",
+                'version': wfs_version
+            }
+        }
         
         self.services = {}
         self._initialize_services()
