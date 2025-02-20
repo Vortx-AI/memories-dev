@@ -29,6 +29,27 @@ from memories.data_acquisition.data_sources import (
 import geopandas as gpd
 from shapely.geometry import Polygon, box
 
+async def download_file(session: aiohttp.ClientSession, url: str, output_path: Path) -> bool:
+    """Download a file from a URL and save it to the specified path.
+    
+    Args:
+        session: aiohttp client session
+        url: URL to download from
+        output_path: Path to save the file to
+        
+    Returns:
+        bool: True if download was successful, False otherwise
+    """
+    try:
+        async with session.get(url) as response:
+            if response.status == 200:
+                content = await response.read()
+                output_path.write_bytes(content)
+                return True
+            return False
+    except Exception:
+        return False
+
 @pytest.fixture
 def pc_source():
     """Create a Planetary Computer data source for testing."""
