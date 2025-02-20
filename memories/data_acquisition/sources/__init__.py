@@ -8,6 +8,7 @@ from .sentinel_api import SentinelAPI
 from .landsat_api import LandsatAPI
 from .overture_api import OvertureAPI
 from .osm_api import OSMDataAPI
+from .wfs_api import WFSAPI
 
 __all__ = [
     'DataSource',
@@ -15,5 +16,6 @@ __all__ = [
     'SentinelAPI',
     'LandsatAPI',
     'OvertureAPI',
-    'OSMDataAPI'
+    'OSMDataAPI',
+    'WFSAPI'
 ]
