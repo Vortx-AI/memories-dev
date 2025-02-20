@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.1] - 2025-02-18 🔧 Patch Release
+## [2.0.1] - 2025-02-20 🔧 Patch Release
 
 ### Fixed 🐛
 - **Cache System**: 
@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved assertions for cache refresh verification
   - Added comprehensive test coverage for cache operations
 
-## [2.0.0] - 2025-02-18 🎉 Production Release
+## [2.0.0] - 2025-02-19 🎉 Production Release
 
 ### Major Changes 🌟
 - **Production-Grade Release**: 

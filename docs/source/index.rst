@@ -3,7 +3,7 @@ Welcome to Memories-Dev's documentation!
 
 Memories-Dev is a powerful Python framework for Earth Memory Synthesis, designed to capture, process, and understand the evolving story of our planet through data. It provides a sophisticated system for synthesizing and managing Earth observations across multiple temporal and spatial scales.
 
-Version: 2.0.0
+Version: 2.0.1
 
 Key Features
 -----------
