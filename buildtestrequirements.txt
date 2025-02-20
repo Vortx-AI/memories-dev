@@ -10,7 +10,7 @@ python-dotenv>=1.0.0
 tqdm>=4.65.0
 pyarrow>=14.0.1
 mercantile>=1.2.1
-owslib>=0.32.1  # Added for WFS/WMS support
+owslib>=0.31.0  # Added for WFS/WMS support
 
 # Note: Version-specific dependencies based on Python version
 # Python <3.13:
