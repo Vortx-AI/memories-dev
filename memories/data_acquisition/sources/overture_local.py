@@ -113,9 +113,10 @@ def get_overture_data(
         con.execute("INSTALL spatial;")
         con.execute("LOAD spatial;")
         
-        # Set up Azure connection
+        # Set up Azure connection with SSL verification disabled for testing
         con.execute("""
             SET azure_storage_connection_string = 'DefaultEndpointsProtocol=https;AccountName=overturemapswestus2;EndpointSuffix=core.windows.net';
+            SET azure_storage_verify_ssl = false;
         """)
         
         # Set latest Overture release

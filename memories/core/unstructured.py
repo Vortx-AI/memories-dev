@@ -219,34 +219,40 @@ class ParquetStorage:
             logger.error(f"Failed to store Parquet data: {e}")
             raise
 
-    def retrieve(self, file_id: str, columns: List[str] = None) -> Optional[tuple[Union[pd.DataFrame, pa.Table], Dict[str, Any]]]:
-        """Retrieve Parquet data and metadata"""
+    def retrieve(self, file_id: str, format: str = None, columns: List[str] = None) -> Any:
+        """
+        Retrieve unstructured data from storage.
+        
+        Args:
+            file_id: Unique identifier for the data
+            format: Optional format to convert data to
+            columns: Optional list of columns to retrieve (for parquet files)
+            
+        Returns:
+            Retrieved data in specified format
+        """
         try:
             file_path = self.storage_path / f"{file_id}.parquet"
             meta_path = self.storage_path / f"{file_id}.meta.json"
             
             if not file_path.exists() or not meta_path.exists():
-                return None
+                raise FileNotFoundError(f"File not found: {file_path}")
                 
             # Read metadata
             with open(meta_path) as f:
                 metadata = json.load(f)
             
-            # Read Parquet data
-            if columns:
-                table = pq.read_table(str(file_path), columns=columns)
-            else:
-                table = pq.read_table(str(file_path))
-                
-            # Convert to pandas if original data was DataFrame
-            if metadata.get("original_type") == "pandas":
-                data = table.to_pandas()
-            else:
-                data = table
-                
-            return data, metadata
+            if format == "parquet":
+                table = pq.read_table(file_path, columns=columns)
+                return table.to_pandas()
+            
+            # Handle other formats...
+            # This part of the code is incomplete and needs to be implemented
+            # to handle other formats (e.g., binary, text, model)
+            # For now, we'll return None as the default implementation
+            return None
         except Exception as e:
-            logger.error(f"Failed to retrieve Parquet data: {e}")
+            logger.error(f"Failed to retrieve unstructured data: {e}")
             return None
 
     def stream(self, file_id: str, batch_size: int = 1000) -> Generator[pd.DataFrame, None, None]:
