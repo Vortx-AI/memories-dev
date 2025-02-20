@@ -183,13 +183,16 @@ class ParquetStorage:
     def store(self, data: Union[pd.DataFrame, pa.Table], metadata: Dict[str, Any]) -> str:
         """Store data in Parquet format with metadata"""
         try:
+            # Generate unique ID
             file_id = str(uuid.uuid4())
             
             # Convert DataFrame to PyArrow Table if needed
             if isinstance(data, pd.DataFrame):
                 table = pa.Table.from_pandas(data)
+                metadata["original_type"] = "pandas"
             else:
                 table = data
+                metadata["original_type"] = "pyarrow"
             
             # Store Parquet file with compression
             file_path = self.storage_path / f"{file_id}.parquet"
@@ -231,9 +234,9 @@ class ParquetStorage:
             
             # Read Parquet data
             if columns:
-                table = pq.read_table(file_path, columns=columns)
+                table = pq.read_table(str(file_path), columns=columns)
             else:
-                table = pq.read_table(file_path)
+                table = pq.read_table(str(file_path))
                 
             # Convert to pandas if original data was DataFrame
             if metadata.get("original_type") == "pandas":
@@ -253,7 +256,7 @@ class ParquetStorage:
             if not file_path.exists():
                 raise FileNotFoundError(f"File not found: {file_path}")
             
-            parquet_file = pq.ParquetFile(file_path)
+            parquet_file = pq.ParquetFile(str(file_path))
             for batch in parquet_file.iter_batches(batch_size=batch_size):
                 yield batch.to_pandas()
         except Exception as e:
@@ -261,33 +264,33 @@ class ParquetStorage:
             raise
 
 class UnstructuredStorage:
-    """Main storage manager for all unstructured data types"""
+    """Unified storage manager for all unstructured data types"""
     
-    def __init__(self, base_path: Path):
-        self.base_path = base_path / "unstructured"
-        self.base_path.mkdir(parents=True, exist_ok=True)
+    def __init__(self, storage_path: Path):
+        self.storage_path = storage_path
+        self.binary_storage = BinaryStorage(storage_path)
+        self.text_storage = TextStorage(storage_path)
+        self.model_storage = ModelStorage(storage_path)
+        self.parquet_storage = ParquetStorage(storage_path)
         
-        self.binary_storage = BinaryStorage(self.base_path)
-        self.text_storage = TextStorage(self.base_path)
-        self.model_storage = ModelStorage(self.base_path)
-        self.parquet_storage = ParquetStorage(self.base_path)
-        
-    def store(self, data: Any, data_type: str, metadata: Dict[str, Any]) -> str:
-        """Store unstructured data of any supported type"""
+    def store(self, data: Union[bytes, str, pd.DataFrame, pa.Table], data_type: str, metadata: Dict[str, Any]) -> str:
+        """Store data of any supported type"""
         try:
             if data_type == "binary":
+                if not isinstance(data, bytes):
+                    raise ValueError("Binary data must be bytes")
                 return self.binary_storage.store(data, metadata)
             elif data_type == "text":
+                if not isinstance(data, str):
+                    raise ValueError("Text data must be string")
                 return self.text_storage.store(data, metadata)
             elif data_type == "model":
-                format = metadata.pop("format", "obj")  # Default to OBJ format
+                if not isinstance(data, bytes):
+                    raise ValueError("Model data must be bytes")
+                format = metadata.get("format", "obj")
                 return self.model_storage.store(data, format, metadata)
             elif data_type == "parquet":
-                if isinstance(data, pd.DataFrame):
-                    metadata["original_type"] = "pandas"
-                elif isinstance(data, pa.Table):
-                    metadata["original_type"] = "pyarrow"
-                else:
+                if not isinstance(data, (pd.DataFrame, pa.Table)):
                     raise ValueError("Parquet data must be DataFrame or PyArrow Table")
                 return self.parquet_storage.store(data, metadata)
             else:
@@ -296,8 +299,8 @@ class UnstructuredStorage:
             logger.error(f"Failed to store unstructured data: {e}")
             raise
 
-    def retrieve(self, file_id: str, data_type: str, **kwargs) -> Optional[tuple[Any, Dict[str, Any]]]:
-        """Retrieve unstructured data of specified type"""
+    def retrieve(self, file_id: str, data_type: str) -> Optional[tuple[Any, Dict[str, Any]]]:
+        """Retrieve data of any supported type"""
         try:
             if data_type == "binary":
                 return self.binary_storage.retrieve(file_id)
@@ -306,102 +309,102 @@ class UnstructuredStorage:
             elif data_type == "model":
                 return self.model_storage.retrieve(file_id)
             elif data_type == "parquet":
-                columns = kwargs.get("columns")
-                return self.parquet_storage.retrieve(file_id, columns)
+                return self.parquet_storage.retrieve(file_id)
             else:
                 raise ValueError(f"Unsupported data type: {data_type}")
         except Exception as e:
             logger.error(f"Failed to retrieve unstructured data: {e}")
             return None
 
-    def stream(self, file_id: str, data_type: str, **kwargs) -> Generator[Any, None, None]:
-        """Stream unstructured data in chunks"""
+    def stream(self, file_id: str, data_type: str, chunk_size: int = 8192) -> Generator[Union[bytes, str], None, None]:
+        """Stream data in chunks"""
         try:
-            if data_type == "parquet":
-                batch_size = kwargs.get("batch_size", 1000)
-                yield from self.parquet_storage.stream(file_id, batch_size)
-            else:
-                chunk_size = kwargs.get("chunk_size", 8192)
-                if data_type == "binary":
-                    file_path = self.binary_storage.storage_path / f"{file_id}.bin"
-                elif data_type == "text":
-                    file_path = self.text_storage.storage_path / f"{file_id}.txt.gz"
-                elif data_type == "model":
-                    meta_path = self.model_storage.storage_path / f"{file_id}.meta.json"
-                    with open(meta_path) as f:
-                        format = json.load(f)["format"]
-                    file_path = self.model_storage.storage_path / f"{file_id}.{format}.gz"
-                else:
-                    raise ValueError(f"Unsupported data type: {data_type}")
-
+            if data_type == "binary":
+                file_path = self.binary_storage.storage_path / f"{file_id}.bin"
                 if not file_path.exists():
-                    raise FileNotFoundError(f"File not found: {file_path}")
-
+                    raise FileNotFoundError(f"File not found: {file_id}")
                 with open(file_path, "rb") as f:
-                    while chunk := f.read(chunk_size):
+                    while True:
+                        chunk = f.read(chunk_size)
+                        if not chunk:
+                            break
+                        yield zlib.decompress(chunk)
+            elif data_type == "text":
+                file_path = self.text_storage.storage_path / f"{file_id}.txt.gz"
+                if not file_path.exists():
+                    raise FileNotFoundError(f"File not found: {file_id}")
+                with gzip.open(file_path, "rt", encoding="utf-8") as f:
+                    while True:
+                        chunk = f.read(chunk_size)
+                        if not chunk:
+                            break
                         yield chunk
+            elif data_type == "model":
+                meta_path = self.model_storage.storage_path / f"{file_id}.meta.json"
+                if not meta_path.exists():
+                    raise FileNotFoundError(f"File not found: {file_id}")
+                with open(meta_path) as f:
+                    metadata = json.load(f)
+                format = metadata.get("format")
+                if not format:
+                    raise ValueError("Format not found in metadata")
+                file_path = self.model_storage.storage_path / f"{file_id}.{format}.gz"
+                if not file_path.exists():
+                    raise FileNotFoundError(f"File not found: {file_id}")
+                with gzip.open(file_path, "rb") as f:
+                    while True:
+                        chunk = f.read(chunk_size)
+                        if not chunk:
+                            break
+                        yield chunk
+            elif data_type == "parquet":
+                return self.parquet_storage.stream(file_id, chunk_size)
+            else:
+                raise ValueError(f"Unsupported data type: {data_type}")
         except Exception as e:
-            logger.error(f"Failed to stream unstructured data: {e}")
+            logger.error(f"Failed to stream data: {e}")
             raise
 
-    def store_version(self, file_id: str, new_data: Any, version_metadata: Dict[str, Any]) -> str:
-        """Store a new version of existing unstructured data"""
+    def store_version(self, parent_id: str, data: Any, metadata: Dict[str, Any]) -> str:
+        """Store a new version of existing data"""
         try:
-            # Get original metadata and data type
-            data_type = self._get_data_type(file_id)
-            original_metadata = self._get_metadata(file_id)
+            # Get parent metadata to determine type
+            parent_meta_paths = list(self.storage_path.glob(f"**/{parent_id}.meta.json"))
+            if not parent_meta_paths:
+                raise ValueError("Original file not found")
             
-            if not original_metadata:
-                raise ValueError(f"Original file not found: {file_id}")
+            with open(parent_meta_paths[0]) as f:
+                parent_metadata = json.load(f)
             
-            # Update version information
-            version_number = original_metadata.get("version", 0) + 1
-            new_metadata = {
-                **original_metadata,
-                "version": version_number,
-                "parent_id": file_id,
-                **version_metadata,
-                "created_at": datetime.now().isoformat()
-            }
+            # Determine data type from parent storage location
+            if "binary" in str(parent_meta_paths[0]):
+                data_type = "binary"
+            elif "text" in str(parent_meta_paths[0]):
+                data_type = "text"
+            elif "models" in str(parent_meta_paths[0]):
+                data_type = "model"
+            elif "parquet" in str(parent_meta_paths[0]):
+                data_type = "parquet"
+            else:
+                raise ValueError("Unknown parent data type")
+            
+            # Update version metadata
+            version_metadata = metadata.copy()
+            version_metadata["parent_id"] = parent_id
+            version_metadata["version"] = parent_metadata.get("version", 0) + 1
+            version_metadata["created_at"] = datetime.now().isoformat()
             
             # Store new version
-            return self.store(new_data, data_type, new_metadata)
+            return self.store(data, data_type, version_metadata)
         except Exception as e:
             logger.error(f"Failed to store version: {e}")
             raise
 
-    def _get_data_type(self, file_id: str) -> Optional[str]:
-        """Determine data type from file ID"""
-        if (self.binary_storage.storage_path / f"{file_id}.bin").exists():
-            return "binary"
-        elif (self.text_storage.storage_path / f"{file_id}.txt.gz").exists():
-            return "text"
-        elif any(p.name.startswith(file_id) for p in self.model_storage.storage_path.glob(f"{file_id}.*")):
-            return "model"
-        return None
-
-    def _get_metadata(self, file_id: str) -> Optional[Dict[str, Any]]:
-        """Get metadata for any data type"""
-        try:
-            data_type = self._get_data_type(file_id)
-            if not data_type:
-                return None
-                
-            meta_path = getattr(self, f"{data_type}_storage").storage_path / f"{file_id}.meta.json"
-            if not meta_path.exists():
-                return None
-                
-            with open(meta_path) as f:
-                return json.load(f)
-        except Exception as e:
-            logger.error(f"Failed to get metadata: {e}")
-            return None
-
     def clear(self) -> None:
         """Clear all unstructured data"""
         try:
-            shutil.rmtree(self.base_path)
-            self.base_path.mkdir(parents=True, exist_ok=True)
+            shutil.rmtree(self.storage_path)
+            self.storage_path.mkdir(parents=True, exist_ok=True)
         except Exception as e:
             logger.error(f"Failed to clear unstructured storage: {e}")
             raise 
