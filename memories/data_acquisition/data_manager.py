@@ -15,6 +15,7 @@ import json
 from datetime import datetime
 import aiohttp
 import logging
+from abc import ABC, abstractmethod
 
 from .sources import (
     PlanetaryCompute,
@@ -26,6 +27,48 @@ from .sources import (
 from ..utils.processors import ImageProcessor, VectorProcessor, DataFusion
 
 logger = logging.getLogger(__name__)
+
+class DataConnector(ABC):
+    @abstractmethod
+    def download_data(self, location: Tuple[float, float], time_range: Tuple[str, str], **params) -> Any:
+        """
+        Download data from the source.
+        
+        Args:
+            location: Tuple of (latitude, longitude)
+            time_range: Tuple of (start_date, end_date)
+            **params: Additional parameters specific to the connector
+            
+        Returns:
+            Downloaded and processed data
+        """
+        pass
+
+class OSMLocalSource(DataConnector):
+    def download_data(self, location: Tuple[float, float], time_range: Tuple[str, str], **params) -> Any:
+        bbox = self._location_to_bbox(location)
+        from memories.data_acquisition.sources.osm_local import get_landuse_data
+        return get_landuse_data(bbox=bbox, **params)
+    
+    def _location_to_bbox(self, location: Tuple[float, float]) -> Tuple[float, float, float, float]:
+        lat, lon = location
+        # Add 0.1 degree buffer around the point
+        return (lon-0.1, lat-0.1, lon+0.1, lat+0.1)
+
+class SentinelConnector(DataConnector):
+    def download_data(self, location: Tuple[float, float], time_range: Tuple[str, str], **params) -> Any:
+        # TODO: Implement Sentinel data download
+        raise NotImplementedError("Sentinel connector not implemented yet")
+
+class LandsatConnector(DataConnector):
+    def download_data(self, location: Tuple[float, float], time_range: Tuple[str, str], **params) -> Any:
+        # TODO: Implement Landsat data download
+        raise NotImplementedError("Landsat connector not implemented yet")
+
+class OvertureConnector(DataConnector):
+    def download_data(self, location: Tuple[float, float], time_range: Tuple[str, str], **params) -> Any:
+        # TODO: Implement Overture data download
+        raise NotImplementedError("Overture connector not implemented yet")
 
 class DataManager:
     """Manages data acquisition and processing from various sources."""
@@ -394,4 +437,98 @@ class DataManager:
             "overture": overture_data,
             "osm": osm_data,
             "satellite": satellite_data
-        } 
+        }
+
+    def get_data(self, 
+                 artifact_type: str, 
+                 source: str, 
+                 location: Tuple[float, float],
+                 time_range: Tuple[str, str],
+                 **params) -> Any:
+        """
+        Get data for a specific artifact type and source
+        
+        Args:
+            artifact_type: Type of data (satellite, landuse, etc.)
+            source: Specific data source (sentinel-2, osm, etc.)
+            location: Tuple of (latitude, longitude)
+            time_range: Tuple of (start_date, end_date)
+            **params: Additional parameters for the connector
+            
+        Returns:
+            Downloaded and processed data
+        """
+        if artifact_type not in self.data_connectors:
+            raise ValueError(f"Unknown artifact type: {artifact_type}")
+            
+        if source not in self.data_connectors[artifact_type]:
+            raise ValueError(f"Unknown source {source} for artifact type {artifact_type}")
+            
+        connector = self.data_connectors[artifact_type][source]
+        
+        try:
+            return connector.download_data(
+                location=location,
+                time_range=time_range,
+                **params
+            )
+        except Exception as e:
+            raise Exception(f"Error downloading data from {source}: {str(e)}")
+
+    def create_memories(self, 
+                       model: Any,
+                       location: Tuple[float, float],
+                       time_range: Tuple[str, str],
+                       artifacts: Dict[str, List[str]]) -> Dict[str, Dict[str, Any]]:
+        """
+        Create memories based on specified artifacts
+        
+        Args:
+            model: The model instance
+            location: Tuple of (latitude, longitude)
+            time_range: Tuple of (start_date, end_date)
+            artifacts: Dictionary mapping artifact types to list of sources
+            
+        Returns:
+            Dictionary of memories organized by artifact type and source
+        """
+        memories = {}
+        
+        for artifact_type, sources in artifacts.items():
+            memories[artifact_type] = {}
+            for source in sources:
+                try:
+                    data = self.get_data(
+                        artifact_type=artifact_type,
+                        source=source,
+                        location=location,
+                        time_range=time_range
+                    )
+                    memories[artifact_type][source] = data
+                except Exception as e:
+                    print(f"Warning: Failed to get data for {artifact_type}/{source}: {str(e)}")
+                    memories[artifact_type][source] = None
+        
+        return memories
+
+def main():
+    """Example usage of DataManager"""
+    data_manager = DataManager(cache_dir="data/cache")
+    
+    # Example usage
+    try:
+        memories = data_manager.create_memories(
+            model=None,  # Replace with actual model
+            location=(37.7749, -122.4194),  # San Francisco
+            time_range=("2024-01-01", "2024-02-01"),
+            artifacts={
+                "satellite": ["sentinel-2"],
+                "landuse": ["osm"]
+            }
+        )
+        print("Successfully created memories:", memories.keys())
+    except Exception as e:
+        print(f"Error creating memories: {str(e)}")
+
+if __name__ == "__main__":
+    main() 
