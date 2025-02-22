@@ -131,17 +131,17 @@ class Agent:
                     print("\nNormalized Location:")
                     print(normalized)
                     
-                    location_info = normalized
+                    # Add location details to classification result
+                    classification_result['location_details'] = location_details
+                    classification_result['normalized_location'] = normalized
             
-            
-            return response
+            return classification_result
             
         except Exception as e:
             self.logger.error(f"Error in process_query: {str(e)}")
             return {
-                "fields": [],
-                "code": "",
-                "execution_result": None,
+                "error": str(e),
+                "classification": None,
                 "response": f"Error: {str(e)}"
             }
     
