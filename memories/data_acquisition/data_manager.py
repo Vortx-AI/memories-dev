@@ -865,22 +865,22 @@ class DataManager:
             return None
 
     def get_embedding(self, text: str) -> np.ndarray:
-        """Get embedding for text by averaging word vectors."""
+        """Get embedding for text by averaging word vectors.
+        
+        If any word in the text is unknown, returns a zero vector.
+        Otherwise returns the average of the word vectors.
+        """
         if self.embeddings is None:
             return None
             
         words = text.lower().split()
-        vectors = []
         
-        # Check if any word in the input text exists in our vocabulary
-        known_words = [word for word in words if word in self.embeddings]
-        
-        if not known_words:
-            # If no known words found, return zeros
+        # Return zeros if any word is unknown
+        if any(word not in self.embeddings for word in words):
             return np.zeros(self.embedding_dim)
         
-        # Get vectors for known words
-        vectors = [self.embeddings[word] for word in known_words]
+        # Get vectors for all words (we know they all exist)
+        vectors = [self.embeddings[word] for word in words]
         
         # Average word vectors to get text embedding
         return np.mean(vectors, axis=0)
