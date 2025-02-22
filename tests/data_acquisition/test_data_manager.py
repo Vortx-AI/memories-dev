@@ -2,6 +2,7 @@
 Test data manager functionality.
 """
 
+import sys
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
 from pathlib import Path
@@ -9,6 +10,12 @@ from memories.data_acquisition.data_manager import DataManager
 from shapely.geometry import box
 from shapely.geometry import Polygon
 import numpy as np
+
+# Skip decorator for gensim-dependent tests
+skip_py313 = pytest.mark.skipif(
+    sys.version_info >= (3, 13),
+    reason="gensim is not compatible with Python 3.13"
+)
 
 @pytest.fixture
 def data_manager(tmp_path):
@@ -424,4 +431,14 @@ async def test_cache_invalidation(data_manager):
     assert result1['metadata']['datetime'] != result2['metadata']['datetime'], "Datetime should be different after refresh"
     
     # Verify that we made exactly two calls to download_data
-    assert call_count == 2, "Should have made exactly two calls to download_data" 
+    assert call_count == 2, "Should have made exactly two calls to download_data"
+
+@skip_py313
+def test_data_manager_with_gensim():
+    # Your test code here
+    pass
+
+# Tests that don't depend on gensim can run normally
+def test_other_functionality():
+    # Your test code here
+    pass 
