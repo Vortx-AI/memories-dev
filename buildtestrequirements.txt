@@ -125,6 +125,10 @@ pandoc>=2.3
 gensim>=4.3.2
 
 # Scientific computing dependencies
-#scipy>=1.15.0  # Updated for Python 3.13 compatibility
-#openblas-devel  # Added OpenBLAS dependency
-scipy-openblas32>=0.3.23
+# For Python 3.13
+scipy>=1.12.0  # Use pre-built wheel instead of building from source
+scipy-openblas64>=0.3.23  # Use 64-bit version since we're on x86_64
+
+# Remove or comment out these lines
+#scipy-openblas32>=0.3.23  # Remove this
+#openblas-devel  # Remove this
