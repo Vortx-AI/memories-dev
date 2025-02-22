@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Dict, Any, Optional, List, Union
+from typing import Dict, Any, Optional, List, Union, Literal
 from dotenv import load_dotenv
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
@@ -19,6 +19,7 @@ from core.memories.agent_capabilities import AGENT_CAPABILITIES
 from .agentic_tool import AgenticTools, APIResponse
 import nltk
 import re
+from memories.models.load_model import LoadModel
 
 # Load environment variables
 load_dotenv()
@@ -243,3 +244,262 @@ class InformationExtractor:
             "location_type": "",
             "coordinates": None
         }
+
+QueryClass = Literal["N", "L0", "L1_2"]
+
+def classify_query(query: str, load_model: Any) -> Dict[str, Union[str, Dict]]:
+    """
+    Classifies the query and returns appropriate response based on classification:
+    N: Direct model response
+    L0: Direct model response
+    L1_2: Extracted location information
+    
+    Args:
+        query (str): The user query to classify
+        load_model (Any): Initialized model instance
+    
+    Returns:
+        Dict containing classification and either response or location info
+    """
+    
+    # First, classify the query
+    classification_prompt = f"""Analyze the following query and classify it into one of these categories:
+    N: Query has NO location component and can be answered by any AI model
+    L0: Query HAS location component but can still be answered without additional data
+    L1_2: Query HAS location component and NEEDS additional geographic data
+
+    Examples:
+    "What is the capital of France?" -> L0 (has location but needs no additional data)
+    "What restaurants are near me?" -> L1_2 (needs actual location data)
+    "How do I write a Python function?" -> N (no location component)
+    "Tell me about Central Park" -> L0 (has location but needs no additional data)
+    "Find cafes within 2km of Times Square" -> L1_2 (needs additional geographic data)
+    
+    Query to classify: "{query}"
+    
+    Return only one of these labels: N, L0, or L1_2
+    """
+    
+    # Get classification from the model
+    response = load_model.get_response(classification_prompt).strip()
+    
+    # Validate and clean response
+    valid_classes = {"N", "L0", "L1_2"}
+    response = response.upper()
+    
+    # Extract classification
+    classification = "N"  # default
+    for valid_class in valid_classes:
+        if valid_class in response:
+            classification = valid_class
+            break
+    
+    # Handle response based on classification
+    if classification in ["N", "L0"]:
+        # For N and L0, get direct response from model
+        answer_prompt = f"""Please provide a clear and concise answer to the following query:
+        
+        Query: {query}
+        
+        Provide only the answer without any additional context or prefixes."""
+        
+        model_response = load_model.get_response(answer_prompt).strip()
+        
+        return {
+            "classification": classification,
+            "response": model_response
+        }
+    
+    else:  # L1_2
+        # For L1_2, extract location information
+        location_prompt = f"""From the following query, extract only the location information. 
+        If coordinates are present, return them. If named locations are present, return them.
+        If relative locations (like "near me") are present, indicate that user location is needed.
+
+        Query: {query}
+        
+        Return only the location information without any additional explanation."""
+        
+        location_info = load_model.get_response(location_prompt).strip()
+        
+        return {
+            "classification": classification,
+            "location_info": location_info
+        }
+
+class LocationExtractor:
+    def __init__(self, load_model: Any):
+        """
+        Initialize the Location Extractor.
+        
+        Args:
+            load_model (Any): The initialized model instance
+        """
+        self.load_model = load_model
+
+    def extract_query_info(self, query: str) -> Dict[str, Any]:
+        """
+        Extract data type and location information from a query.
+        
+        Args:
+            query (str): The user's query
+            
+        Returns:
+            Dict containing data type and location information
+        """
+        try:
+            # Extract data type being requested
+            data_type_prompt = f"""From the following query, what type of data or information is being requested?
+            Examples:
+            "Find restaurants near Central Park" -> restaurants
+            "What is the weather in London?" -> weather
+            "Show me hotels within 5km of the Eiffel Tower" -> hotels
+            "What is the population density in Manhattan?" -> population density
+            
+            Query: {query}
+            
+            Return only the type of data/information being requested, as a single word or short phrase."""
+            
+            data_type = self.load_model.get_response(data_type_prompt).strip()
+            
+            # Extract location and its type
+            location_prompt = f"""From the following query, extract:
+            1. The location mentioned
+            2. The type of location (coordinates, address, landmark, city, state, country, etc.)
+            
+            Examples:
+            "Find cafes near 40.7128, -74.0060" -> Location: 40.7128, -74.0060 | Type: coordinates
+            "Show restaurants in Manhattan" -> Location: Manhattan | Type: city district
+            "What's the weather at the Eiffel Tower?" -> Location: Eiffel Tower | Type: landmark
+            
+            Query: {query}
+            
+            Return in format: Location: <location> | Type: <type>"""
+            
+            location_info = self.load_model.get_response(location_prompt).strip()
+            
+            # Parse location response
+            try:
+                location_parts = location_info.split("|")
+                location = location_parts[0].replace("Location:", "").strip()
+                location_type = location_parts[1].replace("Type:", "").strip()
+            except:
+                location = location_info
+                location_type = "unknown"
+            
+            return {
+                "data_type": data_type,
+                "location_info": {
+                    "location": location,
+                    "location_type": location_type
+                }
+            }
+            
+        except Exception as e:
+            return {
+                "error": f"Error extracting information: {str(e)}",
+                "data_type": None,
+                "location_info": None
+            }
+
+    def is_valid_coordinates(self, location: str) -> bool:
+        """
+        Check if the location string contains valid coordinates.
+        
+        Args:
+            location (str): The location string to check
+            
+        Returns:
+            bool: True if valid coordinates, False otherwise
+        """
+        try:
+            # Remove any whitespace and split by comma
+            parts = location.replace(" ", "").split(",")
+            if len(parts) != 2:
+                return False
+                
+            # Try to convert to float
+            lat, lon = float(parts[0]), float(parts[1])
+            
+            # Check if within valid range
+            return -90 <= lat <= 90 and -180 <= lon <= 180
+        except:
+            return False
+
+    def normalize_location(self, location: str, location_type: str) -> Dict[str, Any]:
+        """
+        Normalize the location information based on its type.
+        
+        Args:
+            location (str): The location string
+            location_type (str): The type of location
+            
+        Returns:
+            Dict containing normalized location information
+        """
+        try:
+            normalized = {
+                "original": location,
+                "type": location_type.lower(),
+                "coordinates": None
+            }
+            
+            # If it's already coordinates, validate and format
+            if location_type.lower() == "coordinates":
+                if self.is_valid_coordinates(location):
+                    lat, lon = map(float, location.replace(" ", "").split(","))
+                    normalized["coordinates"] = {"lat": lat, "lon": lon}
+            
+            return normalized
+            
+        except Exception as e:
+            return {
+                "error": f"Error normalizing location: {str(e)}",
+                "original": location,
+                "type": location_type,
+                "coordinates": None
+            }
+
+def main():
+    """Test the LocationExtractor"""
+    # Initialize the model
+    load_model = LoadModel(
+        use_gpu=True,
+        model_provider="deepseek-ai",
+        deployment_type="deployment",
+        model_name="deepseek-coder-1.3b-base"
+    )
+    
+    # Initialize the extractor
+    extractor = LocationExtractor(load_model)
+    
+    # Test queries
+    test_queries = [
+        "Find restaurants near Central Park",
+        "What's the weather at 40.7128, -74.0060",
+        "Show me hotels in Manhattan",
+        "What's the population density of New York City"
+    ]
+    
+    # Test extraction
+    for query in test_queries:
+        print("\n" + "="*50)
+        print(f"Query: {query}")
+        result = extractor.extract_query_info(query)
+        print("\nExtracted Information:")
+        print(f"Data Type: {result.get('data_type')}")
+        if result.get('location_info'):
+            loc_info = result['location_info']
+            print(f"Location: {loc_info.get('location')}")
+            print(f"Location Type: {loc_info.get('location_type')}")
+            
+            # Test normalization
+            normalized = extractor.normalize_location(
+                loc_info.get('location'),
+                loc_info.get('location_type')
+            )
+            print("\nNormalized Location:")
+            print(normalized)
+
+if __name__ == "__main__":
+    main()
