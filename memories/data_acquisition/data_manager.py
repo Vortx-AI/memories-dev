@@ -864,22 +864,26 @@ class DataManager:
             logger.error(f"Error loading embeddings: {str(e)}")
             return None
 
-    def get_embedding(self, text: str) -> Optional[np.ndarray]:
-        """Get embedding for text using loaded embeddings if available"""
+    def get_embedding(self, text: str) -> np.ndarray:
+        """Get embedding for text by averaging word vectors."""
         if self.embeddings is None:
             return None
             
         words = text.lower().split()
         vectors = []
         
-        for word in words:
-            if word in self.embeddings:
-                vectors.append(self.embeddings[word])
-                
-        if vectors:
-            # Average word vectors to get text embedding
-            return np.mean(vectors, axis=0)
-        return np.zeros(self.embedding_dim)
+        # Check if any word in the input text exists in our vocabulary
+        known_words = [word for word in words if word in self.embeddings]
+        
+        if not known_words:
+            # If no known words found, return zeros
+            return np.zeros(self.embedding_dim)
+        
+        # Get vectors for known words
+        vectors = [self.embeddings[word] for word in known_words]
+        
+        # Average word vectors to get text embedding
+        return np.mean(vectors, axis=0)
 
     def add_to_faiss_index(self, 
                           text: str, 
