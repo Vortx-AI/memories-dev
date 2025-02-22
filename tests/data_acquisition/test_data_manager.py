@@ -336,19 +336,27 @@ def test_bbox_handling(data_manager):
     bbox_from_polygon = data_manager._get_bbox_polygon(polygon_bbox)
     assert isinstance(bbox_from_polygon, Polygon)
     
-    # Test invalid bbox
+    # Test invalid bbox formats
     with pytest.raises(ValueError):
-        data_manager._get_bbox_polygon([0, 0])  # Invalid format
+        data_manager._get_bbox_polygon([-122.5, 37.5])  # Only 2 coordinates instead of 4
+    
+    with pytest.raises(ValueError):
+        data_manager._get_bbox_polygon([-122.5])  # Single coordinate
+        
+    with pytest.raises(ValueError):
+        data_manager._get_bbox_polygon([])  # Empty list
 
 def test_error_handling(data_manager, bbox):
     """Test error handling."""
-    # Test invalid bbox
+    # Test invalid bbox formats
     with pytest.raises(ValueError):
-        data_manager._get_bbox_polygon([0, 0])  # Invalid format
+        data_manager._get_bbox_polygon([-122.5, 37.5, -122.0])  # Missing one coordinate
     
-    # Test invalid layer
     with pytest.raises(ValueError):
-        data_manager._get_bbox_polygon("invalid_bbox")
+        data_manager._get_bbox_polygon("invalid_bbox")  # String instead of coordinates
+        
+    with pytest.raises(ValueError):
+        data_manager._get_bbox_polygon(None)  # None value
 
 @pytest.mark.asyncio
 async def test_resolution_handling(data_manager, bbox, date_range):
