@@ -123,12 +123,6 @@ sphinx-copybutton>=0.5.2
 myst-parser>=0.18.1
 pandoc>=2.3 
 
-# Version-specific dependencies
-# For Python <3.13:
-gensim>=4.3.2,<5.0.0
-# For Python >=3.13:
-#   gensim>=4.4.0  # When available
-
 # Scientific computing dependencies
 # For Python 3.13
 #libopenblas-dev  # System requirement - must be installed via apt

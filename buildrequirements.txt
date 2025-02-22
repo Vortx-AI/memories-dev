@@ -128,5 +128,4 @@ black>=24.1.0
 flake8>=7.0.0
 mypy>=1.8.0
 isort>=5.13.0
-pre-commit>=3.6.0 
-gensim>=4.3.2
+pre-commit>=3.6.0

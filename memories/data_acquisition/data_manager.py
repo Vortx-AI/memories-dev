@@ -21,7 +21,6 @@ import shutil
 import pyarrow as pa
 import pyarrow.parquet as pq
 import faiss
-from gensim.models import KeyedVectors
 import torch
 
 from .sources import (
@@ -80,7 +79,7 @@ class OvertureConnector(DataConnector):
 class DataManager:
     """Manages data acquisition and processing from various sources."""
     
-    def __init__(self, cache_dir: Optional[str] = None, load_glove: bool = True):
+    def __init__(self, cache_dir: Optional[str] = None, load_embeddings: bool = True):
         # Set up storage paths and tiers
         self.project_root = Path(__file__).parents[2]
         
@@ -123,19 +122,19 @@ class DataManager:
         self.catalog_path = self.storage_paths['warm'] / 'data_catalog.json'
         self.catalog = self.load_catalog()
         
-        # Initialize GloVe embeddings and FAISS index only if requested
-        self.glove = None
+        # Initialize embeddings and FAISS index only if requested
+        self.embeddings = None
         self.faiss_index = None
         self.vector_metadata = []
-        self.embedding_dim = 300  # GloVe dimension
+        self.embedding_dim = 300  # Standard embedding dimension
         
-        if load_glove:
+        if load_embeddings:
             try:
-                self.glove = self.load_glove_model()
+                self.embeddings = self.load_embeddings()
                 self.faiss_index = faiss.IndexFlatL2(self.embedding_dim)
             except Exception as e:
-                logger.warning(f"Failed to load GloVe model: {str(e)}")
-                self.glove = None
+                logger.warning(f"Failed to load embeddings: {str(e)}")
+                self.embeddings = None
                 self.faiss_index = None
     
     def setup_logging(self):
@@ -838,27 +837,47 @@ class DataManager:
                 })
         return results
 
-    def load_glove_model(self) -> Optional[KeyedVectors]:
-        """Load GloVe embeddings if available"""
-        glove_path = self.project_root / 'models' / 'glove.6B.300d.txt'
-        if not glove_path.exists():
-            logger.warning("GloVe embeddings not found")
+    def load_embeddings(self) -> Optional[Dict[str, np.ndarray]]:
+        """Load pre-trained word embeddings from numpy file if available"""
+        embeddings_path = self.project_root / 'models' / 'word_embeddings.npy'
+        vocab_path = self.project_root / 'models' / 'vocab.json'
+        
+        if not embeddings_path.exists() or not vocab_path.exists():
+            logger.warning("Word embeddings or vocabulary file not found")
             return None
-        return KeyedVectors.load_word2vec_format(glove_path)
+            
+        try:
+            # Load embeddings matrix
+            embeddings_matrix = np.load(str(embeddings_path))
+            
+            # Load vocabulary
+            with open(vocab_path, 'r') as f:
+                vocab = json.load(f)
+                
+            # Create word-to-vector dictionary
+            embeddings_dict = {word: embeddings_matrix[idx] for word, idx in vocab.items()}
+            
+            logger.info(f"Loaded {len(embeddings_dict)} word embeddings")
+            return embeddings_dict
+            
+        except Exception as e:
+            logger.error(f"Error loading embeddings: {str(e)}")
+            return None
 
     def get_embedding(self, text: str) -> Optional[np.ndarray]:
-        """Get embedding for text using GloVe if available"""
-        if self.glove is None:
+        """Get embedding for text using loaded embeddings if available"""
+        if self.embeddings is None:
             return None
             
         words = text.lower().split()
         vectors = []
+        
         for word in words:
-            try:
-                vectors.append(self.glove[word])
-            except KeyError:
-                continue
+            if word in self.embeddings:
+                vectors.append(self.embeddings[word])
+                
         if vectors:
+            # Average word vectors to get text embedding
             return np.mean(vectors, axis=0)
         return np.zeros(self.embedding_dim)
 
@@ -867,7 +886,7 @@ class DataManager:
                           is_column: bool, 
                           associated_column: str = None) -> None:
         """Add text embedding to FAISS index with metadata if available"""
-        if self.faiss_index is None or self.glove is None:
+        if self.faiss_index is None or self.embeddings is None:
             return
             
         vector = self.get_embedding(text)
@@ -888,7 +907,7 @@ class DataManager:
                            artifact_type: str,
                            source: str) -> None:
         """Index column names and unique values in FAISS if available"""
-        if self.faiss_index is None or self.glove is None:
+        if self.faiss_index is None or self.embeddings is None:
             return
             
         # Index column names
