@@ -33,6 +33,7 @@ jobs:
           grep -v "^gensim" buildtestrequirements.txt > temp_requirements.txt
           pip install -r temp_requirements.txt
         else
+          # For other Python versions, install all requirements
           pip install -r buildtestrequirements.txt
         fi
         pip install -e .
