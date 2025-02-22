@@ -126,9 +126,10 @@ gensim>=4.3.2
 
 # Scientific computing dependencies
 # For Python 3.13
-scipy>=1.12.0  # Use pre-built wheel instead of building from source
+#libopenblas-dev  # System requirement - must be installed via apt
 scipy-openblas64>=0.3.23  # Use 64-bit version since we're on x86_64
+scipy>=1.12.0,<2.0.0  # Use pre-built wheel instead of building from source
 
-# Remove or comment out these lines
-#scipy-openblas32>=0.3.23  # Remove this
-#openblas-devel  # Remove this
+# Remove these lines
+#scipy-openblas32>=0.3.23  # Not needed for 64-bit systems
+#openblas-devel  # Not needed
