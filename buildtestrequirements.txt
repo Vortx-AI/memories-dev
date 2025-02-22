@@ -127,3 +127,4 @@ gensim>=4.3.2
 # Scientific computing dependencies
 #scipy>=1.15.0  # Updated for Python 3.13 compatibility
 #openblas-devel  # Added OpenBLAS dependency
+scipy-openblas32>=0.3.23
