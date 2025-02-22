@@ -13,7 +13,7 @@ import numpy as np
 @pytest.fixture
 def data_manager(tmp_path):
     """Create a data manager instance for testing."""
-    return DataManager(cache_dir=str(tmp_path / "cache"))
+    return DataManager(cache_dir=str(tmp_path / "cache"), load_glove=False)
 
 @pytest.fixture
 def bbox():
@@ -33,16 +33,32 @@ def test_initialization(tmp_path):
     cache_dir = tmp_path / "cache"
     
     dm = DataManager(
-        cache_dir=str(cache_dir)
+        cache_dir=str(cache_dir),
+        load_glove=False
     )
     
-    assert dm.cache_dir == cache_dir
-    assert dm.cache_dir.exists()
+    # Check that storage paths are correctly set up
+    assert dm.storage_paths['hot'] == cache_dir / 'cache'
+    assert dm.storage_paths['warm'] == cache_dir / 'active'
+    assert dm.storage_paths['cold'] == cache_dir / 'archive'
+    assert dm.storage_paths['glacier'] == cache_dir / 'backup'
+    
+    # Check that directories exist
+    assert dm.storage_paths['hot'].exists()
+    assert dm.storage_paths['warm'].exists()
+    assert dm.storage_paths['cold'].exists()
+    assert dm.storage_paths['glacier'].exists()
+    
+    # Check that data sources are initialized
     assert dm.planetary is not None
     assert dm.sentinel is not None
     assert dm.landsat is not None
     assert dm.overture is not None
     assert dm.osm is not None
+    
+    # Check that GloVe and FAISS are not loaded
+    assert dm.glove is None
+    assert dm.faiss_index is None
 
 @pytest.mark.asyncio
 async def test_get_satellite_data(data_manager):

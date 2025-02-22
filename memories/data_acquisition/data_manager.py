@@ -80,7 +80,7 @@ class OvertureConnector(DataConnector):
 class DataManager:
     """Manages data acquisition and processing from various sources."""
     
-    def __init__(self, cache_dir: Optional[str] = None):
+    def __init__(self, cache_dir: Optional[str] = None, load_glove: bool = True):
         # Set up storage paths and tiers
         self.project_root = Path(__file__).parents[2]
         
@@ -123,15 +123,20 @@ class DataManager:
         self.catalog_path = self.storage_paths['warm'] / 'data_catalog.json'
         self.catalog = self.load_catalog()
         
-        # Initialize GloVe embeddings
-        self.glove = self.load_glove_model()
-        
-        # Initialize FAISS index
-        self.embedding_dim = 300  # GloVe dimension
-        self.faiss_index = faiss.IndexFlatL2(self.embedding_dim)
-        
-        # Store metadata for vectors
+        # Initialize GloVe embeddings and FAISS index only if requested
+        self.glove = None
+        self.faiss_index = None
         self.vector_metadata = []
+        self.embedding_dim = 300  # GloVe dimension
+        
+        if load_glove:
+            try:
+                self.glove = self.load_glove_model()
+                self.faiss_index = faiss.IndexFlatL2(self.embedding_dim)
+            except Exception as e:
+                logger.warning(f"Failed to load GloVe model: {str(e)}")
+                self.glove = None
+                self.faiss_index = None
     
     def setup_logging(self):
         """Set up logging configuration"""
@@ -833,17 +838,19 @@ class DataManager:
                 })
         return results
 
-    def load_glove_model(self) -> KeyedVectors:
-        """Load GloVe embeddings"""
+    def load_glove_model(self) -> Optional[KeyedVectors]:
+        """Load GloVe embeddings if available"""
         glove_path = self.project_root / 'models' / 'glove.6B.300d.txt'
         if not glove_path.exists():
-            self.logger.info("Downloading GloVe embeddings...")
-            # Add download code here
-            raise NotImplementedError("Please download GloVe embeddings")
+            logger.warning("GloVe embeddings not found")
+            return None
         return KeyedVectors.load_word2vec_format(glove_path)
 
-    def get_embedding(self, text: str) -> np.ndarray:
-        """Get embedding for text using GloVe"""
+    def get_embedding(self, text: str) -> Optional[np.ndarray]:
+        """Get embedding for text using GloVe if available"""
+        if self.glove is None:
+            return None
+            
         words = text.lower().split()
         vectors = []
         for word in words:
@@ -859,10 +866,15 @@ class DataManager:
                           text: str, 
                           is_column: bool, 
                           associated_column: str = None) -> None:
-        """Add text embedding to FAISS index with metadata"""
+        """Add text embedding to FAISS index with metadata if available"""
+        if self.faiss_index is None or self.glove is None:
+            return
+            
         vector = self.get_embedding(text)
+        if vector is None:
+            return
+            
         vector = vector.reshape(1, -1).astype(np.float32)
-        
         self.faiss_index.add(vector)
         self.vector_metadata.append({
             'text': text,
@@ -875,7 +887,10 @@ class DataManager:
                            data: pd.DataFrame, 
                            artifact_type: str,
                            source: str) -> None:
-        """Index column names and unique values in FAISS"""
+        """Index column names and unique values in FAISS if available"""
+        if self.faiss_index is None or self.glove is None:
+            return
+            
         # Index column names
         for column in data.columns:
             self.add_to_faiss_index(
@@ -894,9 +909,10 @@ class DataManager:
                             associated_column=column
                         )
 
-        self.logger.info(f"Indexed schema for {artifact_type}/{source}: "
-                        f"{len(data.columns)} columns, "
-                        f"{len(self.vector_metadata)} total vectors")
+        if self.faiss_index is not None:
+            self.logger.info(f"Indexed schema for {artifact_type}/{source}: "
+                            f"{len(data.columns)} columns, "
+                            f"{len(self.vector_metadata)} total vectors")
 
     def search_similar(self, query: str, k: int = 5) -> List[Dict]:
         """Search for similar terms in the index"""
