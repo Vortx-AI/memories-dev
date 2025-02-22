@@ -867,8 +867,15 @@ class DataManager:
     def get_embedding(self, text: str) -> np.ndarray:
         """Get embedding for text by averaging word vectors.
         
-        If any word in the text is unknown, returns a zero vector.
-        Otherwise returns the average of the word vectors.
+        If any word in the text is unknown (not in vocabulary), returns a zero vector.
+        Otherwise returns the average of the word vectors for all words.
+        
+        Args:
+            text: Input text to get embedding for
+            
+        Returns:
+            300-dimensional numpy array - either zero vector if any word unknown,
+            or average of word vectors if all words known
         """
         if self.embeddings is None:
             return None
@@ -879,10 +886,8 @@ class DataManager:
         if any(word not in self.embeddings for word in words):
             return np.zeros(self.embedding_dim)
         
-        # Get vectors for all words (we know they all exist)
+        # All words are known, so get their vectors and average
         vectors = [self.embeddings[word] for word in words]
-        
-        # Average word vectors to get text embedding
         return np.mean(vectors, axis=0)
 
     def add_to_faiss_index(self, 
