@@ -52,16 +52,9 @@ opencv-python>=4.8.0
 noise>=1.2.2
 
 # Version-specific dependencies
-# Python <3.12:
 numpy>=1.24.4,<2.0.0
 pandas>=2.0.0
 matplotlib>=3.7.0
-# Python >=3.12:
-# numpy>=1.26.0,<2.0.0
-# pandas>=2.2.0
-# matplotlib>=3.8.0
-
-# Common dependencies across versions
 ipywidgets>=8.0.0
 scikit-learn>=1.3.0
 rasterio>=1.3.8
@@ -72,31 +65,16 @@ xarray>=2023.0.0
 dask>=2024.1.0
 accelerate>=1.3.0
 
-# Python <3.12:
+# Scientific computing dependencies
 scipy>=1.11.0
-# Python >=3.12:
-# scipy>=1.12.0
-
-# FAISS CPU version (GPU version available for Python <3.12)
+scipy-openblas64>=0.3.23  # Use 64-bit version
 faiss-cpu>=1.7.4
 
-# Note: GPU dependencies are now in a separate file: gpu-requirements.txt
-# To install GPU support, run:
-# pip install -r gpu-requirements.txt
-
-# PyTorch Geometric packages
-# These must be installed AFTER PyTorch using:
-# CPU-only:
-#   pip install torch-scatter torch-sparse torch-cluster torch-geometric -f https://data.pyg.org/whl/torch-2.2.0+cpu.html
-# CUDA 11.8:
-#   pip install torch-scatter torch-sparse torch-cluster torch-geometric -f https://data.pyg.org/whl/torch-2.2.0+cu118.html
-# CUDA 12.1:
-#   pip install torch-scatter torch-sparse torch-cluster torch-geometric -f https://data.pyg.org/whl/torch-2.2.0+cu121.html
-# Required versions:
-#   torch-scatter>=2.1.2
-#   torch-sparse>=0.6.18
-#   torch-cluster>=1.6.3
-#   torch-geometric>=2.4.0
+# PyTorch Geometric packages (CPU versions)
+torch-scatter>=2.1.2
+torch-sparse>=0.6.18
+torch-cluster>=1.6.3
+torch-geometric>=2.4.0
 
 # Test dependencies
 pytest>=8.3.4
@@ -121,16 +99,7 @@ sphinx-autodoc-typehints>=2.0.0
 nbsphinx>=0.9.0
 sphinx-copybutton>=0.5.2
 myst-parser>=0.18.1
-pandoc>=2.3 
-
-# Scientific computing dependencies
-# For Python 3.13
-#libopenblas-dev  # System requirement - must be installed via apt
-scipy-openblas64>=0.3.23  # Use 64-bit version since we're on x86_64
-scipy>=1.12.0,<2.0.0  # Use pre-built wheel instead of building from source
-# Remove these lines
-#scipy-openblas32>=0.3.23  # Not needed for 64-bit systems
-#openblas-devel  # Not needed
+pandoc>=2.3
 
 # System dependencies note (for GitHub Actions)
 # Requires: libopenblas-dev, gfortran
