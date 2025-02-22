@@ -23,18 +23,24 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libopenblas-dev gfortran
+        sudo apt-get install -y libopenblas-dev gfortran build-essential python3-dev
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         python -m pip install flake8 pytest
-        if [ -f buildtestrequirements.txt ]; then pip install -r buildtestrequirements.txt; fi
+        if [ "${{ matrix.python-version }}" = "3.13" ]; then
+          # Skip gensim for Python 3.13
+          grep -v "^gensim" buildtestrequirements.txt > temp_requirements.txt
+          pip install -r temp_requirements.txt
+        else
+          pip install -r buildtestrequirements.txt
+        fi
         pip install -e .
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        # exit-zero treats all errors as warnings
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
