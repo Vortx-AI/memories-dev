@@ -80,14 +80,19 @@ class OvertureConnector(DataConnector):
 class DataManager:
     """Manages data acquisition and processing from various sources."""
     
-    def __init__(self):
+    def __init__(self, cache_dir: Optional[str] = None):
         # Set up storage paths and tiers
         self.project_root = Path(__file__).parents[2]
+        
+        # If cache_dir is provided, use it as the base for all storage paths
+        base_path = Path(cache_dir) if cache_dir else self.project_root / 'data'
+        self.cache_dir = base_path  # Store cache_dir as an attribute
+        
         self.storage_paths = {
-            'hot': self.project_root / 'data' / 'cache',     # In-memory/temporary
-            'warm': self.project_root / 'data' / 'active',   # Frequent access
-            'cold': self.project_root / 'data' / 'archive',  # Infrequent access
-            'glacier': self.project_root / 'data' / 'backup' # Long-term storage
+            'hot': base_path / 'cache',     # In-memory/temporary
+            'warm': base_path / 'active',   # Frequent access
+            'cold': base_path / 'archive',  # Infrequent access
+            'glacier': base_path / 'backup' # Long-term storage
         }
         
         # Create storage directories
