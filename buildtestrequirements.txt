@@ -125,5 +125,5 @@ pandoc>=2.3
 gensim>=4.3.2
 
 # Scientific computing dependencies
-scipy>=1.15.0  # Updated for Python 3.13 compatibility
+#scipy>=1.15.0  # Updated for Python 3.13 compatibility
 #openblas-devel  # Added OpenBLAS dependency
