@@ -125,7 +125,7 @@ pandoc>=2.3
 
 # Version-specific dependencies
 # For Python <3.13:
-#   gensim>=4.3.2,<5.0.0
+gensim>=4.3.2,<5.0.0
 # For Python >=3.13:
 #   gensim>=4.4.0  # When available
 
