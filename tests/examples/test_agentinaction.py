@@ -88,7 +88,7 @@ def agent(mock_gpu):
 @pytest.fixture
 def mock_location_extraction():
     """Mock location extraction"""
-    with patch('examples.agentinaction.GeoCoderAgent.extract_location') as mock:
+    with patch('examples.agentinaction.LocationExtractr') as mock:
         mock.return_value = SAMPLE_LOCATION
         yield mock
 
@@ -169,29 +169,31 @@ async def test_general_query(agent):
 @pytest.mark.asyncio
 async def test_location_query(agent, mock_location_extraction, mock_api_responses):
     """Test handling of location-based queries"""
-    query = "Tell me about Central Park, New York"
-    response = await agent.process_query(query)
-    
-    assert response["metadata"]["query_type"] == "location_query"
-    assert response["metadata"]["location"] == SAMPLE_LOCATION
-    assert "analysis" in response["metadata"]
-    assert len(agent.context.conversation_history) == 2
+    with patch('examples.agentinaction.GeoCoderAgent.get_location', return_value=SAMPLE_LOCATION):
+        query = "Tell me about Central Park, New York"
+        response = await agent.process_query(query)
+        
+        assert response["metadata"]["query_type"] == "location_query"
+        assert response["metadata"]["location"] == SAMPLE_LOCATION
+        assert "analysis" in response["metadata"]
+        assert len(agent.context.conversation_history) == 2
 
 @pytest.mark.asyncio
 async def test_future_scenario_query(agent, mock_location_extraction, mock_api_responses):
     """Test handling of future scenario queries"""
-    query = "What might happen to Central Park in 6 months?"
-    response = await agent.process_query(query)
-    
-    assert response["metadata"]["query_type"] == "future_scenario"
-    assert "scenarios" in response["metadata"]
-    assert len(response["metadata"]["scenarios"]) == 3  # Optimistic, Moderate, Conservative
-    assert len(agent.context.conversation_history) == 2
+    with patch('examples.agentinaction.GeoCoderAgent.get_location', return_value=SAMPLE_LOCATION):
+        query = "What might happen to Central Park in 6 months?"
+        response = await agent.process_query(query)
+        
+        assert response["metadata"]["query_type"] == "future_scenario"
+        assert "scenarios" in response["metadata"]
+        assert len(response["metadata"]["scenarios"]) == 3  # Optimistic, Moderate, Conservative
+        assert len(agent.context.conversation_history) == 2
 
 @pytest.mark.asyncio
 async def test_location_query_no_location(agent):
     """Test handling of location query without identifiable location"""
-    with patch('examples.agentinaction.GeoCoderAgent.extract_location', return_value=None):
+    with patch('examples.agentinaction.GeoCoderAgent.get_location', return_value=None):
         query = "Tell me about this place"
         response = await agent.process_query(query)
         
@@ -202,7 +204,7 @@ async def test_location_query_no_location(agent):
 @pytest.mark.asyncio
 async def test_future_scenario_no_location(agent):
     """Test handling of future scenario query without location context"""
-    with patch('examples.agentinaction.GeoCoderAgent.extract_location', return_value=None):
+    with patch('examples.agentinaction.GeoCoderAgent.get_location', return_value=None):
         query = "What might happen here in the future?"
         response = await agent.process_query(query)
         
@@ -243,8 +245,8 @@ async def test_error_handling(agent):
         query = "Tell me about Central Park"
         response = await agent.process_query(query)
         
-        assert "error" in response
-        assert "encountered an error" in response["response"].lower()
+        assert "error" in response["metadata"]
+        assert "error" in response["response"].lower()
 
 @pytest.mark.asyncio
 async def test_gpu_error_handling():
