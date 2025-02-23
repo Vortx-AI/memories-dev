@@ -339,8 +339,8 @@ class IntelligentAgent:
         """Handle general queries without location context"""
         # Process query with model
         response = self.model.generate_response(
-            query=query,
-            context=self.context.conversation_history[-5:] if self.context.conversation_history else []
+            prompt=query,
+            max_length=1000
         )
         
         return {
