@@ -28,7 +28,7 @@ class Config:
             print(f"Added {self.project_root} to Python path")
             
         # Load configuration
-        self.config_path = config_path or os.path.join(self.project_root, 'examples/config/db_config.yml')
+        self.config_path = config_path or os.path.join(self.project_root, 'config/db_config.yml')
         self.config = self._load_config()
         self._setup_directories()
         
