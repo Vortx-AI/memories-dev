@@ -1,5 +1,5 @@
 """
-Hot memory implementation using GPU acceleration.
+Red Hot memory implementation using GPU acceleration.
 """
 
 import json
@@ -15,14 +15,13 @@ from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
-class HotMemory:
-    """Hot memory layer using GPU acceleration for fastest possible access."""
+class RedHotMemory:
+    """Red Hot memory layer using GPU acceleration for fastest possible access."""
     
-    def __init__(self, storage_path: Path, max_size: int):
-        """Initialize hot memory.
+    def __init__(self, max_size: int):
+        """Initialize red hot memory.
         
         Args:
-            storage_path: Path to store GPU state (not used directly, kept for interface consistency)
             max_size: Maximum number of items to store in GPU memory
         """
         self.max_size = max_size
@@ -215,4 +214,4 @@ class HotMemory:
     
     def __del__(self):
         """Destructor to ensure cleanup is performed."""
-        self.cleanup()
+        self.cleanup() 
