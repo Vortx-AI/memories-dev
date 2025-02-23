@@ -146,11 +146,11 @@ py313 = [
 
 # GPU support
 gpu = [
-    "torch>=2.2.0",  # Base requirement, CUDA version handled by install script
+    "torch>=2.2.0",  # Base requirement
     "torchvision>=0.17.0",
     "torchaudio>=2.2.0",
-    "faiss-gpu>=1.7.4",  # Only for Python <3.12
-    "cupy-cuda11x>=12.0.0",
+    "faiss-gpu==1.7.2",  # Fixed version that's known to work
+    "cupy-cuda12x>=12.0.0",  # Updated for CUDA 12.x
     "torch-scatter>=2.1.2",
     "torch-sparse>=0.6.18",
     "torch-cluster>=1.6.3",

@@ -103,11 +103,11 @@ def get_core_deps():
 def get_gpu_packages():
     """Get GPU packages based on Python version and availability."""
     version = sys.version_info[:2]
-    packages = ["cupy-cuda12x>=12.0.0"]  # Base GPU package
+    packages = ["cupy-cuda12x>=12.0.0"]  # Updated for CUDA 12.x
     
     # Only include faiss-gpu for compatible Python versions
     if version < (3, 12):  # faiss-gpu not yet available for 3.12+
-        packages.append("faiss-gpu>=1.7.2")
+        packages.append("faiss-gpu==1.7.2")  # Fixed version that's known to work
     
     return packages
 
