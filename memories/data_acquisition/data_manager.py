@@ -242,7 +242,7 @@ class DataManager:
         # Save FAISS index
         self.save_faiss_index()
 
-    def _get_bbox_polygon(self, bbox: Union[Tuple[float, float, float, float], List[float], Polygon]) -> Union[List[float], Polygon]:
+    def _get_bbox_polygon(self, bbox: Union[Tuple[float, float, float, float], List[float], Dict[str, float], Polygon]) -> Union[List[float], Polygon]:
         """Convert bbox to appropriate format."""
         logger.info(f"Input bbox: {bbox}, type: {type(bbox)}")
         
@@ -259,9 +259,18 @@ class DataManager:
             else:
                 logger.error(f"Invalid bbox length: {len(bbox)}")
                 raise ValueError("Invalid bbox format. Must be [west, south, east, north] or Polygon")
+        elif isinstance(bbox, dict):
+            logger.info("Input is a dictionary")
+            if all(key in bbox for key in ['xmin', 'ymin', 'xmax', 'ymax']):
+                result = [float(bbox['xmin']), float(bbox['ymin']), float(bbox['xmax']), float(bbox['ymax'])]
+                logger.info(f"Converted dict to float list: {result}")
+                return result
+            else:
+                logger.error("Invalid bbox dictionary format")
+                raise ValueError("Invalid bbox dictionary format. Must contain xmin, ymin, xmax, ymax")
         else:
             logger.error(f"Invalid bbox type: {type(bbox)}")
-            raise ValueError("Invalid bbox format. Must be [west, south, east, north] or Polygon")
+            raise ValueError("Invalid bbox format. Must be [west, south, east, north], dict with xmin/ymin/xmax/ymax, or Polygon")
     
     def cache_exists(self, cache_key: str) -> bool:
         """Check if data exists in cache."""

@@ -135,6 +135,25 @@ class LoadModel:
         gc.collect()
         self.logger.info("Model resources cleaned up")
     
+    def generate_response(self, prompt: str, max_length: int = 1000) -> str:
+        """
+        Generate a response using the underlying base model.
+        
+        Args:
+            prompt (str): The input prompt to generate from
+            max_length (int): Maximum length of the generated response
+            
+        Returns:
+            str: The generated response
+            
+        Raises:
+            RuntimeError: If the model is not properly initialized
+        """
+        if not hasattr(self.base_model, 'model') or self.base_model.model is None:
+            raise RuntimeError("Model not initialized properly")
+            
+        return self.base_model.generate(prompt, max_length=max_length)
+    
     def __del__(self):
         """Destructor to ensure connection is closed"""
         if hasattr(self, 'conn'):
