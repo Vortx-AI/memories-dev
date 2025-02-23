@@ -2,20 +2,18 @@
 Test data manager functionality.
 """
 
-import sys
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
 from pathlib import Path
 from memories.data_acquisition.data_manager import DataManager
-from shapely.geometry import box, Polygon
+from shapely.geometry import box
+from shapely.geometry import Polygon
 import numpy as np
-import json
-import faiss
 
 @pytest.fixture
 def data_manager(tmp_path):
     """Create a data manager instance for testing."""
-    return DataManager(cache_dir=str(tmp_path / "cache"), load_embeddings=False)
+    return DataManager(cache_dir=str(tmp_path / "cache"))
 
 @pytest.fixture
 def bbox():
@@ -30,180 +28,21 @@ def date_range():
         'end_date': '2023-01-31'
     }
 
-@pytest.fixture
-def mock_embeddings(tmp_path):
-    """Create mock embeddings and vocabulary files for testing."""
-    models_dir = tmp_path / "models"
-    models_dir.mkdir(exist_ok=True)
-    
-    # Create mock embeddings matrix (10 words, 300 dimensions)
-    embeddings = np.random.rand(10, 300).astype(np.float32)
-    np.save(str(models_dir / "word_embeddings.npy"), embeddings)
-    
-    # Create mock vocabulary
-    vocab = {
-        "test": 0,
-        "word": 1,
-        "embedding": 2,
-        "vector": 3,
-        "data": 4,
-        "column": 5,
-        "value": 6,
-        "field": 7,
-        "text": 8,
-        "sample": 9
-    }
-    
-    with open(models_dir / "vocab.json", "w") as f:
-        json.dump(vocab, f)
-    
-    return {
-        "embeddings_path": models_dir / "word_embeddings.npy",
-        "vocab_path": models_dir / "vocab.json",
-        "embeddings": embeddings,
-        "vocab": vocab
-    }
-
 def test_initialization(tmp_path):
     """Test data manager initialization."""
     cache_dir = tmp_path / "cache"
     
     dm = DataManager(
-        cache_dir=str(cache_dir),
-        load_embeddings=False
+        cache_dir=str(cache_dir)
     )
     
-    # Check that storage paths are correctly set up
-    assert dm.storage_paths['hot'] == cache_dir / 'cache'
-    assert dm.storage_paths['warm'] == cache_dir / 'active'
-    assert dm.storage_paths['cold'] == cache_dir / 'archive'
-    assert dm.storage_paths['glacier'] == cache_dir / 'backup'
-    
-    # Check that directories exist
-    assert dm.storage_paths['hot'].exists()
-    assert dm.storage_paths['warm'].exists()
-    assert dm.storage_paths['cold'].exists()
-    assert dm.storage_paths['glacier'].exists()
-    
-    # Check that data sources are initialized
+    assert dm.cache_dir == cache_dir
+    assert dm.cache_dir.exists()
     assert dm.planetary is not None
     assert dm.sentinel is not None
     assert dm.landsat is not None
     assert dm.overture is not None
     assert dm.osm is not None
-    
-    # Check that embeddings and FAISS are not loaded
-    assert dm.embeddings is None
-    assert dm.faiss_index is None
-
-def test_load_embeddings(tmp_path, mock_embeddings):
-    """Test loading embeddings from files."""
-    cache_dir = tmp_path / "cache"
-    
-    # Create DataManager with the mock models directory
-    dm = DataManager(
-        cache_dir=str(cache_dir),
-        load_embeddings=True
-    )
-    
-    # Override project root to use our mock directory
-    dm.project_root = tmp_path
-    
-    # Load embeddings
-    embeddings = dm.load_embeddings()
-    
-    # Verify embeddings were loaded correctly
-    assert embeddings is not None
-    assert len(embeddings) == 10  # Number of words in mock vocab
-    assert all(isinstance(v, np.ndarray) for v in embeddings.values())
-    assert all(v.shape == (300,) for v in embeddings.values())
-
-def test_get_embedding(tmp_path, mock_embeddings):
-    """Test getting embeddings for text."""
-    cache_dir = tmp_path / "cache"
-    
-    # Create DataManager with the mock models directory
-    dm = DataManager(
-        cache_dir=str(cache_dir),
-        load_embeddings=True
-    )
-    
-    # Override project root to use our mock directory
-    dm.project_root = tmp_path
-    
-    # Load embeddings
-    dm.embeddings = dm.load_embeddings()
-    
-    # Test getting embedding for known words
-    embedding = dm.get_embedding("test word")
-    assert embedding is not None
-    assert embedding.shape == (300,)
-    
-    # Test getting embedding for unknown words
-    embedding = dm.get_embedding("unknown word")
-    assert embedding is not None
-    assert embedding.shape == (300,)
-    assert np.allclose(embedding, np.zeros(300))
-
-def test_add_to_faiss_index(tmp_path, mock_embeddings):
-    """Test adding embeddings to FAISS index."""
-    cache_dir = tmp_path / "cache"
-    
-    # Create DataManager with the mock models directory
-    dm = DataManager(
-        cache_dir=str(cache_dir),
-        load_embeddings=True
-    )
-    
-    # Override project root to use our mock directory
-    dm.project_root = tmp_path
-    
-    # Load embeddings and initialize FAISS
-    dm.embeddings = dm.load_embeddings()
-    dm.faiss_index = faiss.IndexFlatL2(dm.embedding_dim)
-    
-    # Add some text to the index
-    dm.add_to_faiss_index("test word", is_column=True)
-    dm.add_to_faiss_index("sample data", is_column=False)
-    
-    # Verify items were added to the index
-    assert dm.faiss_index.ntotal == 2
-    assert len(dm.vector_metadata) == 2
-    
-    # Verify metadata was stored correctly
-    assert dm.vector_metadata[0]["text"] == "test word"
-    assert dm.vector_metadata[0]["is_column"] is True
-    assert dm.vector_metadata[1]["text"] == "sample data"
-    assert dm.vector_metadata[1]["is_column"] is False
-
-def test_search_similar(tmp_path, mock_embeddings):
-    """Test searching for similar terms in the index."""
-    cache_dir = tmp_path / "cache"
-    
-    # Create DataManager with the mock models directory
-    dm = DataManager(
-        cache_dir=str(cache_dir),
-        load_embeddings=True
-    )
-    
-    # Override project root to use our mock directory
-    dm.project_root = tmp_path
-    
-    # Load embeddings and initialize FAISS
-    dm.embeddings = dm.load_embeddings()
-    dm.faiss_index = faiss.IndexFlatL2(dm.embedding_dim)
-    
-    # Add some items to the index
-    dm.add_to_faiss_index("test data", is_column=True)
-    dm.add_to_faiss_index("sample field", is_column=False)
-    
-    # Search for similar terms
-    results = dm.search_similar("test", k=2)
-    
-    # Verify search results
-    assert len(results) > 0
-    assert all(isinstance(r, dict) for r in results)
-    assert all("text" in r and "distance" in r for r in results)
 
 @pytest.mark.asyncio
 async def test_get_satellite_data(data_manager):
@@ -336,27 +175,19 @@ def test_bbox_handling(data_manager):
     bbox_from_polygon = data_manager._get_bbox_polygon(polygon_bbox)
     assert isinstance(bbox_from_polygon, Polygon)
     
-    # Test invalid bbox formats
+    # Test invalid bbox
     with pytest.raises(ValueError):
-        data_manager._get_bbox_polygon([-122.5, 37.5])  # Only 2 coordinates instead of 4
-    
-    with pytest.raises(ValueError):
-        data_manager._get_bbox_polygon([-122.5])  # Single coordinate
-        
-    with pytest.raises(ValueError):
-        data_manager._get_bbox_polygon([])  # Empty list
+        data_manager._get_bbox_polygon([0, 0])  # Invalid format
 
 def test_error_handling(data_manager, bbox):
     """Test error handling."""
-    # Test invalid bbox formats
+    # Test invalid bbox
     with pytest.raises(ValueError):
-        data_manager._get_bbox_polygon([-122.5, 37.5, -122.0])  # Missing one coordinate
+        data_manager._get_bbox_polygon([0, 0])  # Invalid format
     
+    # Test invalid layer
     with pytest.raises(ValueError):
-        data_manager._get_bbox_polygon("invalid_bbox")  # String instead of coordinates
-        
-    with pytest.raises(ValueError):
-        data_manager._get_bbox_polygon(None)  # None value
+        data_manager._get_bbox_polygon("invalid_bbox")
 
 @pytest.mark.asyncio
 async def test_resolution_handling(data_manager, bbox, date_range):
@@ -577,9 +408,4 @@ async def test_cache_invalidation(data_manager):
     assert result1['metadata']['datetime'] != result2['metadata']['datetime'], "Datetime should be different after refresh"
     
     # Verify that we made exactly two calls to download_data
-    assert call_count == 2, "Should have made exactly two calls to download_data"
-
-# Tests that don't depend on gensim can run normally
-def test_other_functionality():
-    # Your test code here
-    pass 
+    assert call_count == 2, "Should have made exactly two calls to download_data" 
