@@ -23,16 +23,13 @@ logger.setLevel(logging.DEBUG)  # Set to DEBUG level to see more information
 class SentinelAPI:
     """Interface for accessing Sentinel-2 data using Planetary Computer."""
     
-    def __init__(self, data_dir: str = None, max_concurrent_downloads: int = 4):
+    def __init__(self, data_dir: str = None):
         """Initialize the Sentinel-2 interface.
         
         Args:
             data_dir: Optional directory for storing downloaded data
-            max_concurrent_downloads: Maximum number of concurrent downloads
         """
         self.data_dir = Path(data_dir) if data_dir else Path("examples/data/satellite")
-        self.max_concurrent_downloads = max_concurrent_downloads
-        self.semaphore = asyncio.Semaphore(max_concurrent_downloads)
         
     async def fetch_windowed_band(
         self,
@@ -197,9 +194,7 @@ class SentinelAPI:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         cloud_cover: float = 10.0,
-        bands: Optional[Dict[str, str]] = None,
-        chunk_size: int = 8192,
-        max_concurrent_downloads: int = 4
+        bands: Optional[Dict[str, str]] = None
     ) -> Dict[str, Any]:
         """Download satellite imagery for a given bounding box.
         
@@ -209,8 +204,6 @@ class SentinelAPI:
             end_date: Optional end date (defaults to now)
             cloud_cover: Maximum cloud cover percentage
             bands: Optional dictionary of band IDs to names
-            chunk_size: Size of chunks for streaming downloads
-            max_concurrent_downloads: Maximum number of concurrent downloads
             
         Returns:
             Dictionary with download results and metadata
@@ -255,253 +248,99 @@ class SentinelAPI:
                 max_items=1
             )
             
-            # Get items
             items = list(search.get_items())
+            
             if not items:
-                logger.warning("No scenes found matching criteria")
+                logger.warning("No suitable imagery found")
                 return {
-                    "success": False,
-                    "error": "No scenes found",
-                    "status": "no_data"
+                    "status": "no_data",
+                    "message": "No suitable imagery found for the given parameters",
+                    "parameters": {
+                        "bbox": bbox,
+                        "time_range": time_range,
+                        "cloud_cover": cloud_cover
+                    }
                 }
-                
+            
             item = items[0]
             logger.info(f"\nFound scene from {item.properties['datetime']}")
             logger.info(f"Cloud cover: {item.properties['eo:cloud_cover']}%")
             logger.info(f"Scene ID: {item.id}")
             
-            # Default bands if not specified
-            if not bands:
-                bands = {
-                    "B02": "blue",
-                    "B03": "green",
-                    "B04": "red",
-                    "B08": "nir"
-                }
+            # Download relevant bands
+            bands = bands or {
+                "B04": "Red",
+                "B08": "NIR",
+                "B11": "SWIR"
+            }
             
-            # Track recovered files
-            recovered_files = []
-            failed_bands = []
-            successful_bands = []
-            
-            # Download each band
-            download_tasks = []
+            tasks = []
             for band_id, band_name in bands.items():
-                if band_id in item.assets:
-                    url = item.assets[band_id].href
-                    output_file = self.data_dir / f"{band_name}.tif"
+                if band_id not in item.assets:
+                    logger.warning(f"Warning: Band {band_id} not found in scene")
+                    continue
                     
-                    # Check for partial downloads
-                    if output_file.exists() and output_file.stat().st_size > 0:
-                        recovered_files.append(output_file.name)
-                        successful_bands.append(band_id)
-                        continue
-                        
-                    task = self.fetch_windowed_band(url, bbox, band_name)
-                    download_tasks.append((band_id, task))
-                else:
-                    logger.warning(f"Band {band_id} not found in assets")
-                    failed_bands.append(band_id)
+                asset = item.assets[band_id]
+                logger.info(f"\nProcessing {band_name} band ({band_id})...")
+                logger.info(f"Asset href: {asset.href[:100]}...")
+                
+                task = self.fetch_windowed_band(asset.href, bbox, band_id, self.data_dir)
+                tasks.append(task)
+            
+            if not tasks:
+                logger.warning("No valid bands to download")
+                return {"error": "No valid bands to download"}
             
             # Wait for all downloads to complete
-            for band_id, task in download_tasks:
-                try:
-                    result = await task
-                    if result:
-                        successful_bands.append(band_id)
-                    else:
-                        failed_bands.append(band_id)
-                except Exception as e:
-                    logger.error(f"Error downloading {band_id}: {str(e)}")
-                    failed_bands.append(band_id)
-            
-            # Check results
-            success = len(successful_bands) > 0
-            
-            if success:
-                # Load and merge bands
-                band_data = {}
-                for band_name in bands.values():
-                    band_file = self.data_dir / f"{band_name}.tif"
-                    if band_file.exists():
-                        with rasterio.open(band_file) as src:
-                            band_data[band_name] = src.read(1)
-                            
-                # Stack bands into a single array
-                if band_data:
-                    data = np.stack(list(band_data.values()))
+            try:
+                results = await asyncio.gather(*tasks)
+                
+                # Save metadata if all downloads succeeded
+                if all(results):
+                    metadata = {
+                        "datetime": item.properties["datetime"],
+                        "cloud_cover": item.properties["eo:cloud_cover"],
+                        "satellite": item.properties["platform"],
+                        "scene_id": item.id,
+                        "bbox": bbox_list,
+                        "utm_zone": utm_zone,
+                        "bands_downloaded": list(bands.keys())
+                    }
                     
-                    # Normalize to 0-1 range
-                    data = (data - data.min()) / (data.max() - data.min())
+                    metadata_file = self.data_dir / "metadata.txt"
+                    with open(metadata_file, 'w') as f:
+                        for key, value in metadata.items():
+                            f.write(f"{key}: {value}\n")
+                    
+                    logger.info(f"\nSatellite data downloaded to: {self.data_dir}")
+                    logger.info(f"Metadata saved to: {metadata_file}")
                     
                     return {
                         "success": True,
-                        "data": data,
-                        "metadata": {
-                            "scene_id": item.id,
-                            "cloud_cover": item.properties.get("eo:cloud_cover"),
-                            "datetime": item.properties.get("datetime"),
-                            "bands_downloaded": successful_bands,
-                            "failed_bands": failed_bands,
-                            "recovered_files": recovered_files,
-                            "chunk_size": chunk_size
-                        }
+                        "metadata": metadata,
+                        "data_dir": str(self.data_dir)
                     }
-            
-            return {
-                "success": False,
-                "error": "Failed to download or process bands",
-                "failed_bands": failed_bands,
-                "recovered_files": recovered_files
-            }
+                else:
+                    return {
+                        "error": "Some band downloads failed",
+                        "failed_bands": [
+                            band_id for band_id, result in zip(bands.keys(), results)
+                            if not result
+                        ]
+                    }
+            except asyncio.CancelledError:
+                logger.info("\nDownload cancelled by user. Cleaning up...")
+                # Clean up any partially downloaded files
+                for band_id in bands.keys():
+                    file_path = self.data_dir / f"{band_id}.tif"
+                    if file_path.exists():
+                        try:
+                            file_path.unlink()
+                            logger.info(f"Removed partial download: {file_path}")
+                        except:
+                            pass
+                raise
                 
         except Exception as e:
             logger.error(f"Error during satellite data download: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e),
-                "status": "error"
-            }
-
-    def validate_collection(self, collection: str) -> bool:
-        """Validate if a collection is supported.
-        
-        Args:
-            collection: Collection name to validate
-            
-        Returns:
-            bool: True if collection is supported
-        """
-        return collection in ["sentinel-2-l2a"]
-        
-    def get_signed_url(self, url: str) -> str:
-        """Get signed URL for Planetary Computer asset.
-        
-        Args:
-            url: Asset URL to sign
-            
-        Returns:
-            str: Signed URL
-        """
-        signed = pc.sign(url)
-        if isinstance(signed, dict) and 'href' in signed:
-            return signed['href']
-        return signed
-        
-    async def search_planetary_compute(
-        self,
-        bbox: Dict[str, float],
-        start_date: datetime,
-        end_date: datetime,
-        cloud_cover: float = 10.0
-    ) -> Dict[str, Any]:
-        """Search Planetary Computer for scenes.
-        
-        Args:
-            bbox: Bounding box dictionary with xmin, ymin, xmax, ymax
-            start_date: Start date
-            end_date: End date
-            cloud_cover: Maximum cloud cover percentage
-            
-        Returns:
-            Dict containing search results
-        """
-        # Convert bbox to geometry
-        bbox_list = [bbox['xmin'], bbox['ymin'], bbox['xmax'], bbox['ymax']]
-        aoi = box(*bbox_list)
-        
-        # Set up date range
-        time_range = f"{start_date.strftime('%Y-%m-%d')}/{end_date.strftime('%Y-%m-%d')}"
-        
-        try:
-            # Initialize Planetary Computer client
-            catalog = pystac_client.Client.open(
-                "https://planetarycomputer.microsoft.com/api/stac/v1",
-                modifier=pc.sign_inplace
-            )
-            
-            # Search for scenes
-            search = catalog.search(
-                collections=["sentinel-2-l2a"],
-                intersects=aoi,
-                datetime=time_range,
-                query={"eo:cloud_cover": {"lt": cloud_cover}},
-                sortby=["-datetime"],
-                max_items=1
-            )
-            
-            items = list(search.get_items())
-            return {
-                "success": True,
-                "items": items,
-                "metadata": {
-                    "total_items": len(items),
-                    "cloud_cover_threshold": cloud_cover,
-                    "time_range": time_range
-                }
-            }
-            
-        except Exception as e:
-            logger.error(f"Error searching Planetary Computer: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
-            
-    async def download_from_planetary_compute(
-        self,
-        item: Dict[str, Any],
-        bands: List[str],
-        output_dir: Path
-    ) -> Dict[str, Any]:
-        """Download data from Planetary Computer.
-        
-        Args:
-            item: STAC item to download
-            bands: List of bands to download
-            output_dir: Output directory
-            
-        Returns:
-            Dict containing download results
-        """
-        try:
-            output_dir.mkdir(parents=True, exist_ok=True)
-            downloaded_bands = []
-            failed_bands = []
-            
-            for band in bands:
-                if band in item['assets']:
-                    url = item['assets'][band]['href']
-                    output_file = output_dir / f"{band}.tif"
-                    
-                    try:
-                        signed_url = self.get_signed_url(url)
-                        async with self.semaphore:
-                            success = await self.fetch_windowed_band(
-                                signed_url,
-                                {'xmin': -180, 'ymin': -90, 'xmax': 180, 'ymax': 90},  # Full extent
-                                band,
-                                output_dir
-                            )
-                            
-                        if success:
-                            downloaded_bands.append(band)
-                        else:
-                            failed_bands.append(band)
-                            
-                    except Exception as e:
-                        logger.error(f"Error downloading band {band}: {str(e)}")
-                        failed_bands.append(band)
-                        
-            return {
-                "success": len(downloaded_bands) > 0,
-                "downloaded_bands": downloaded_bands,
-                "failed_bands": failed_bands
-            }
-            
-        except Exception as e:
-            logger.error(f"Error downloading from Planetary Computer: {str(e)}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"error": str(e)}

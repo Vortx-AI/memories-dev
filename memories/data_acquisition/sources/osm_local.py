@@ -1,93 +1,60 @@
 import os
 import osmnx as ox
 import geopandas as gpd
-from shapely.geometry import box, Polygon
+from shapely.geometry import box
 import numpy as np
 import pandas as pd
+import cudf  # GPU-accelerated processing
 from pathlib import Path
 import json
 import pyarrow.parquet as pq
-from typing import Dict, List, Any, Union, Tuple, Optional
-import logging
+from typing import Dict, List, Any
 
-logger = logging.getLogger(__name__)
-
-# Try to import cudf for GPU acceleration
-try:
-    import cudf
-    HAS_CUDF = True
-except ImportError:
-    logger.warning("cudf not available. GPU acceleration will be disabled.")
-    HAS_CUDF = False
-
-# Define ALL possible landuse tags
-ALL_TAGS = {
-    'landuse': [
-        'residential', 'commercial', 'industrial', 'retail', 'agricultural',
-        'forest', 'grass', 'farmland', 'farm', 'meadow', 'vineyard', 'orchard',
-        'cemetery', 'garages', 'military', 'railway', 'education', 'institutional',
-        'religious', 'civic', 'hospital', 'parking', 'quarry', 'landfill',
-        'brownfield', 'greenfield', 'construction', 'allotments', 'recreation_ground',
-        'conservation', 'reservoir', 'basin', 'village_green', 'plant_nursery',
-        'greenhouse_horticulture', 'farmyard', 'port', 'logistics', 'salt_pond',
-        'aquaculture', 'flowerbed'
-    ],
-    'leisure': [
-        'park', 'garden', 'playground', 'sports_centre', 'stadium', 'pitch',
-        'swimming_pool', 'recreation_ground', 'golf_course', 'track',
-        'nature_reserve', 'dog_park', 'fitness_station'
-    ],
-    'amenity': [
-        'school', 'university', 'college', 'hospital', 'clinic', 'marketplace',
-        'place_of_worship', 'community_centre', 'library', 'theatre',
-        'public_building', 'townhall', 'police', 'fire_station', 'prison'
-    ],
-    'natural': [
-        'wood', 'grassland', 'heath', 'scrub', 'wetland', 'marsh', 'bog',
-        'swamp', 'water', 'beach', 'sand', 'bare_rock'
-    ],
-    'area': 'yes'
-}
-
-def get_landuse_data(
-    bbox: Optional[Union[Tuple[float, float, float, float], List[float], Polygon]] = None,
-    tags: Optional[Dict[str, List[str]]] = None,
-    save_path: str = "landuse.geoparquet"
-) -> Optional[gpd.GeoDataFrame]:
+def get_all_landuse_data(save_path="india_landuse.geoparquet"):
     """
-    Fetch landuse data from OSM for a specific bbox and/or tags.
-    
-    Args:
-        bbox: Optional bounding box as (west, south, east, north) or Polygon
-        tags: Optional dictionary of OSM tags to fetch. If None, fetches all tags
-        save_path: Path to save the GeoParquet file
-        
-    Returns:
-        GeoDataFrame containing the landuse data
+    Fetch ALL landuse data from OSM for India, including:
+    - All landuse types (residential, commercial, industrial, etc.)
+    - Parks and recreational areas
+    - Agricultural and forest areas
+    - Educational and institutional areas
+    - And all other landuse classifications
     """
-    print("Downloading landuse data...")
+    print("Downloading comprehensive land-use data for India...")
     
-    # Use all tags if none specified
-    if tags is None:
-        tags = ALL_TAGS.copy()
-    
+    # Define ALL possible landuse tags we want to capture
+    tags = {
+        'landuse': [
+            'residential', 'commercial', 'industrial', 'retail', 'agricultural',
+            'forest', 'grass', 'farmland', 'farm', 'meadow', 'vineyard', 'orchard',
+            'cemetery', 'garages', 'military', 'railway', 'education', 'institutional',
+            'religious', 'civic', 'hospital', 'parking', 'quarry', 'landfill',
+            'brownfield', 'greenfield', 'construction', 'allotments', 'recreation_ground',
+            'conservation', 'reservoir', 'basin', 'village_green', 'plant_nursery',
+            'greenhouse_horticulture', 'farmyard', 'port', 'logistics', 'salt_pond',
+            'aquaculture', 'flowerbed'
+        ],
+        # Additional tags that often indicate landuse
+        'leisure': [
+            'park', 'garden', 'playground', 'sports_centre', 'stadium', 'pitch',
+            'swimming_pool', 'recreation_ground', 'golf_course', 'track',
+            'nature_reserve', 'dog_park', 'fitness_station'
+        ],
+        'amenity': [
+            'school', 'university', 'college', 'hospital', 'clinic', 'marketplace',
+            'place_of_worship', 'community_centre', 'library', 'theatre',
+            'public_building', 'townhall', 'police', 'fire_station', 'prison'
+        ],
+        'natural': [
+            'wood', 'grassland', 'heath', 'scrub', 'wetland', 'marsh', 'bog',
+            'swamp', 'water', 'beach', 'sand', 'bare_rock'
+        ],
+        # Ensure we get polygons
+        'area': 'yes'
+    }
+
     try:
-        # Handle bbox input
-        if bbox is not None:
-            if isinstance(bbox, (tuple, list)):
-                # Convert bbox to polygon
-                west, south, east, north = bbox
-                bbox_polygon = box(west, south, east, north)
-            elif isinstance(bbox, Polygon):
-                bbox_polygon = bbox
-            else:
-                raise ValueError("bbox must be tuple/list of coordinates or Polygon")
-            
-            # Fetch data using OSMnx with bbox
-            gdf = ox.features_from_polygon(bbox_polygon, tags=tags)
-        else:
-            # Fetch data for India if no bbox specified
-            gdf = ox.features_from_place("India", tags=tags)
+        # Fetch data using OSMnx with all our tags
+        gdf = ox.features_from_place("India", tags=tags)
         
         # Filter for polygon geometries only
         gdf = gdf[gdf.geometry.type.isin(['Polygon', 'MultiPolygon'])]
@@ -136,22 +103,6 @@ def get_landuse_data(
     except Exception as e:
         print(f"Error fetching landuse data: {str(e)}")
         return None
-
-def get_specific_tags(tag_categories: List[str]) -> Dict[str, List[str]]:
-    """
-    Get specific tag categories from ALL_TAGS.
-    
-    Args:
-        tag_categories: List of tag categories to include (e.g. ['landuse', 'leisure'])
-        
-    Returns:
-        Dictionary containing only the specified tag categories
-    """
-    return {
-        category: ALL_TAGS[category]
-        for category in tag_categories
-        if category in ALL_TAGS
-    }
 
 def index_osm_parquet(base_path: str = "./osm_data") -> Dict[str, List[str]]:
     """
@@ -210,7 +161,7 @@ def index_osm_parquet(base_path: str = "./osm_data") -> Dict[str, List[str]]:
     return results
 
 if __name__ == "__main__":
-    gdf = get_landuse_data()
+    gdf = get_all_landuse_data()
     
     if gdf is not None:
         # Additional validation
@@ -225,19 +176,17 @@ if __name__ == "__main__":
             centroid = row.geometry.centroid
             print(f"Landuse: {row['landuse_type']}, Location: ({centroid.y:.6f}, {centroid.x:.6f})")
 
-        # GPU Processing with cuDF if available
-        if HAS_CUDF:
-            print("Loading data into GPU for processing...")
-            gdf_cudf = cudf.from_pandas(gdf)
+# GPU Processing with cuDF
+print("Loading data into GPU for processing...")
+gdf_cudf = cudf.from_pandas(gdf)
 
-            # Example GPU query: Filter only parks
-            gdf_parks = gdf_cudf[gdf_cudf["landuse_type"] == "leisure_park"]
+# Example GPU query: Filter only parks
+gdf_parks = gdf_cudf[gdf_cudf["landuse_type"] == "leisure_park"]
 
-            # Convert back to Pandas if needed
-            gdf_parks_pd = gdf_parks.to_pandas()
-            print("Filtered parks dataset:")
-            print(gdf_parks_pd.head())
+# Convert back to Pandas if needed
+gdf_parks_pd = gdf_parks.to_pandas()
+print("Filtered parks dataset:")
+print(gdf_parks_pd.head())
 
 # Run the analysis
 error_details = index_osm_parquet()
-

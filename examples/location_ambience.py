@@ -113,7 +113,11 @@ class LocationAnalyzer:
         """
         self.data_manager = data_manager
         self.memory_store = memory_store
-        self.overture_api = OvertureAPI()
+        
+        # Get data directory from data_manager's config
+        self.config = data_manager.config
+        self.overture_api = OvertureAPI(data_dir=self.config.config['data']['overture_path'])
+        
         self.text_processor = TextProcessor()
         self.image_processor = ImageProcessor()
 
@@ -122,16 +126,55 @@ class LocationAnalyzer:
         try:
             if location_data is None:
                 return {
-                    "error": "Missing bbox data",
+                    "error": "Missing location data",
                     "location_id": "unknown",
                     "timestamp": None
                 }
             
-            if not isinstance(location_data, dict) or 'bbox' not in location_data:
-                raise ValueError("Missing bbox data")
+            if not isinstance(location_data, dict):
+                return {
+                    "error": "Invalid location data format",
+                    "location_id": "unknown",
+                    "timestamp": None
+                }
             
-            # Get Overture data for urban features
-            overture_data = await self.overture_api.search(location_data['bbox'])
+            if 'bbox' not in location_data:
+                return {
+                    "error": "Missing bbox data",
+                    "location_id": location_data.get("id", "unknown"),
+                    "timestamp": None
+                }
+            
+            bbox = location_data['bbox']
+            if not isinstance(bbox, dict) or not all(k in bbox for k in ['xmin', 'ymin', 'xmax', 'ymax']):
+                return {
+                    "error": "Invalid bbox format. Must be dictionary with xmin, ymin, xmax, ymax",
+                    "location_id": location_data.get("id", "unknown"),
+                    "timestamp": None
+                }
+            
+            # First ensure data is downloaded
+            logger.info(f"Downloading Overture data for bbox: {bbox}")
+            download_result = self.overture_api.download_data(bbox)
+            if not any(download_result.values()):
+                logger.error("Failed to download Overture data")
+                return {
+                    "error": "Failed to download Overture data",
+                    "location_id": location_data.get("id", "unknown"),
+                    "timestamp": None
+                }
+            
+            # Now search the downloaded data
+            logger.info(f"Searching Overture data for bbox: {bbox}")
+            overture_data = await self.overture_api.search(bbox)
+            
+            if not overture_data or not any(overture_data.values()):
+                logger.warning("No Overture data found for location")
+                overture_data = {
+                    "buildings": [],
+                    "places": [],
+                    "transportation": []
+                }
             
             insights = await self._analyze_location_data(location_data, overture_data)
             return {
@@ -143,31 +186,66 @@ class LocationAnalyzer:
             logger.error(f"Error analyzing location: {str(e)}")
             return {
                 "error": str(e), 
-                "location_id": location_data.get("id", "unknown"), 
+                "location_id": location_data.get("id", "unknown") if isinstance(location_data, dict) else "unknown", 
                 "timestamp": None
             }
 
     async def _analyze_location_data(self, location, overture_data):
         """Analyze location data with both Overture and satellite data."""
-        urban_features = await self._analyze_urban_features(overture_data)
-        env_scores = await self._calculate_environmental_scores(urban_features)
-        noise_levels = await self._estimate_noise_levels(urban_features)
-        
-        ambience_score = await self._calculate_ambience_score(env_scores, urban_features, noise_levels)
-        recommendations = await self._generate_recommendations(
-            env_scores=env_scores, 
-            urban_features=urban_features, 
-            noise_levels=noise_levels,
-            ambience_score=ambience_score
-        )
-        
-        return {
-            "scores": ambience_score,
-            "urban_features": urban_features,
-            "environmental_scores": env_scores,
-            "noise_levels": noise_levels,
-            "recommendations": recommendations
-        }
+        try:
+            # Analyze urban features
+            urban_features = await self._analyze_urban_features(overture_data)
+            
+            # Calculate environmental scores
+            env_scores = await self._calculate_environmental_scores(urban_features)
+            
+            # Estimate noise levels
+            noise_levels = await self._estimate_noise_levels(urban_features)
+            
+            # Calculate overall ambience score
+            ambience_score = await self._calculate_ambience_score(
+                env_scores=env_scores,
+                urban_features=urban_features,
+                noise_levels=noise_levels
+            )
+            
+            # Generate recommendations
+            recommendations = await self._generate_recommendations(
+                env_scores=env_scores,
+                urban_features=urban_features,
+                noise_levels=noise_levels,
+                ambience_score=ambience_score
+            )
+            
+            return {
+                "scores": ambience_score,
+                "urban_features": urban_features,
+                "environmental_scores": env_scores,
+                "noise_levels": noise_levels,
+                "recommendations": recommendations
+            }
+        except Exception as e:
+            logger.error(f"Error in _analyze_location_data: {e}")
+            return {
+                "scores": 0.0,
+                "urban_features": {
+                    "building_characteristics": {"count": 0, "density": 0.0, "types": {}},
+                    "road_characteristics": {"count": 0, "density": 0.0, "types": {}},
+                    "amenity_characteristics": {"count": 0, "density": 0.0, "types": {}}
+                },
+                "environmental_scores": {
+                    "green_space": 0.0,
+                    "air_quality": 0.0,
+                    "water_bodies": 0.0,
+                    "urban_density": 0.0
+                },
+                "noise_levels": {
+                    "average": 0.0,
+                    "peak": 0.0,
+                    "variability": 0.0
+                },
+                "recommendations": ["Unable to analyze location due to error: " + str(e)]
+            }
 
     async def _analyze_urban_features(self, overture_data):
         """Analyze urban features from Overture data."""
@@ -310,7 +388,7 @@ def simulate_location_data() -> Dict[str, Any]:
     return {
         "id": str(uuid.uuid4()),
         "name": "SF Financial District",
-        "bbox": [SF_BBOX['xmin'], SF_BBOX['ymin'], SF_BBOX['xmax'], SF_BBOX['ymax']],
+        "bbox": SF_BBOX,  # Use the dictionary format directly
         "type": "commercial"
     }
 
@@ -320,15 +398,19 @@ async def main():
     config = Config()
     setup_directories(config)
     
-    # Download required data
+    # Download required data first
     logger.info("=== Downloading Required Data ===")
     download_results = await download_location_data(config, SF_BBOX)
+    
+    if not all(download_results.get("overture", {}).values()):
+        logger.error("Failed to download Overture data. Please ensure data is downloaded before analysis.")
+        return
     
     # Initialize memory store with paths in examples directory
     memory_store = MemoryStore(config)
     
     # Create location analyzer
-    data_manager = DataManager(cache_dir=config.config['data']['raw_path'])
+    data_manager = DataManager(config=config)  # Pass config instead of just cache_dir
     analyzer = LocationAnalyzer(data_manager, memory_store)
     
     # Analyze the Financial District location

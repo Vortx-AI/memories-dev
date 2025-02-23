@@ -314,8 +314,10 @@ class OSMDataAPI(DataSource):
         """Get the boundary polygon for a place."""
         query = f"""
             [out:json][timeout:25];
+            area[name="{place_name}"]->.searchArea;
             (
-                way[name="{place_name}"][boundary=administrative];
+                way(area.searchArea)[boundary=administrative];
+                relation(area.searchArea)[boundary=administrative];
             );
             out body;
             >;
@@ -332,30 +334,21 @@ class OSMDataAPI(DataSource):
                     response.raise_for_status()
                     data = await response.json()
                     
-                    # First collect all nodes
-                    nodes = {}
+                    # Process boundary data
+                    features = []
                     for element in data.get("elements", []):
-                        if element["type"] == "node":
-                            nodes[element["id"]] = element
-                    
-                    # Then find administrative boundary ways
-                    for element in data.get("elements", []):
-                        if (element.get("type") == "way" and 
-                            element.get("tags", {}).get("boundary") == "administrative"):
-                            node_refs = element.get("nodes", [])
-                            if node_refs:
+                        if element.get("type") == "way":
+                            nodes = element.get("nodes", [])
+                            if nodes:
                                 coords = []
-                                for node_id in node_refs:
-                                    if node_id in nodes:
-                                        node = nodes[node_id]
+                                for node_id in nodes:
+                                    node = next((n for n in data["elements"] if n["type"] == "node" and n["id"] == node_id), None)
+                                    if node:
                                         coords.append([node["lon"], node["lat"]])
                                 
-                                if coords and coords[0] != coords[-1]:
-                                    coords.append(coords[0])  # Close the polygon
-                                
-                                if len(coords) >= 4:  # Need at least 4 points for a valid polygon
+                                if coords and coords[0] == coords[-1]:
                                     return Polygon(coords)
-        
+            
         except Exception as e:
             print(f"Error getting boundary for {place_name}: {e}")
         

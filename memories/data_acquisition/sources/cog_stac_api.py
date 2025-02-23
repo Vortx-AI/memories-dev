@@ -12,7 +12,6 @@ import rasterio
 from rasterio.warp import transform_bounds
 from shapely.geometry import box, Polygon
 import pystac_client
-import pystac
 import xarray as xr
 import fsspec
 import dask.array as da
@@ -331,7 +330,7 @@ class COGSTACAPI:
     
     def _check_collection_extent(
         self,
-        collection: pystac.Collection,
+        collection: pystac_client.Collection,
         bbox: Tuple[float, float, float, float],
         start_date: str,
         end_date: str

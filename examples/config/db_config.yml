@@ -1,18 +1,27 @@
 database:
-  path: "./data/db"
-  name: "water_bodies.db"
+  path: "examples/data/db"
+  name: "memories.db"
 
 data:
-  raw_path: "./data/raw"
+  raw_path: "examples/data/raw"
   processed_path: "./data/processed"
-  overture_path: "./data/overture"
-  satellite_path: "./data/satellite"
+  overture_path: "examples/data/overture"
+  satellite_path: "examples/data/satellite"
   location_data_path: "./data/location_data"
 
 memory:
-  hot_size: 50
-  warm_size: 200
-  cold_size: 1000
+  hot:
+    max_size: 1000
+    redis_url: "redis://localhost:6379"
+    redis_db: 0
+  warm:
+    max_size: 10000
+    redis_url: "redis://localhost:6379"
+    redis_db: 1
+  cold:
+    max_size: 100000
+  glacier:
+    max_size: 1000000
 
 redis:
   url: "redis://localhost:6379"

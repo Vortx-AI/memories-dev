@@ -147,90 +147,53 @@ class Config:
 logger = logging.getLogger(__name__)
 
 class ColdMemory:
-    """Cold memory layer using DuckDB for efficient storage and querying."""
+    """Cold memory layer using compressed file-based storage."""
     
     def __init__(self, storage_path: Path, max_size: int):
         """Initialize cold memory.
         
         Args:
-            storage_path: Path to store DuckDB database
+            storage_path: Path to store data files
             max_size: Maximum number of items to store
         """
         self.storage_path = storage_path
         self.max_size = max_size
-        self.db_file = storage_path / "cold_memory.duckdb"
         
         # Create storage directory
         self.storage_path.mkdir(parents=True, exist_ok=True)
-        
-        # Initialize DuckDB connection
-        try:
-            self.conn = duckdb.connect(str(self.db_file))
-            self._init_db()
-            logger.info(f"Initialized cold memory at {storage_path}")
-        except Exception as e:
-            logger.error(f"Failed to initialize DuckDB: {e}")
-            self.conn = None
-    
-    def _init_db(self):
-        """Initialize database schema."""
-        try:
-            # Create table if not exists
-            self.conn.execute("""
-                CREATE TABLE IF NOT EXISTS cold_data (
-                    timestamp VARCHAR PRIMARY KEY,
-                    data JSON,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            # Create index on timestamp
-            self.conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_timestamp 
-                ON cold_data(timestamp)
-            """)
-        except Exception as e:
-            logger.error(f"Failed to initialize database schema: {e}")
-            raise
+        logger.info(f"Initialized cold memory at {storage_path}")
     
     def store(self, data: Dict[str, Any]) -> None:
-        """Store data in DuckDB.
+        """Store data in a compressed file.
         
         Args:
             data: Data to store
         """
-        if not self.conn:
-            logger.error("DuckDB connection not available")
-            return
-        
         try:
-            # Use timestamp as key
+            # Use timestamp as filename
             timestamp = data.get("timestamp", "")
             if not timestamp:
                 logger.error("Data must have a timestamp")
                 return
             
-            # Store data
-            self.conn.execute("""
-                INSERT OR REPLACE INTO cold_data (timestamp, data)
-                VALUES (?, ?)
-            """, [timestamp, json.dumps(data)])
+            filename = self.storage_path / f"{timestamp}.json.gz"
             
-            # Maintain max size by removing oldest entries
-            self.conn.execute(f"""
-                DELETE FROM cold_data 
-                WHERE timestamp IN (
-                    SELECT timestamp 
-                    FROM cold_data 
-                    ORDER BY created_at DESC 
-                    OFFSET {self.max_size}
-                )
-            """)
+            # Store as compressed JSON
+            with gzip.open(filename, "wt") as f:
+                json.dump(data, f, indent=2)
+            
+            # Maintain max size by removing oldest files
+            files = list(self.storage_path.glob("*.json.gz"))
+            if len(files) > self.max_size:
+                # Sort by modification time and remove oldest
+                files.sort(key=lambda x: x.stat().st_mtime)
+                for old_file in files[:-self.max_size]:
+                    old_file.unlink()
         except Exception as e:
-            logger.error(f"Failed to store data in DuckDB: {e}")
+            logger.error(f"Failed to store data in file: {e}")
     
     def retrieve(self, query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Retrieve data from DuckDB.
+        """Retrieve data from compressed files.
         
         Args:
             query: Query to match against stored data
@@ -238,90 +201,50 @@ class ColdMemory:
         Returns:
             Retrieved data or None if not found
         """
-        if not self.conn:
-            logger.error("DuckDB connection not available")
-            return None
-        
         try:
-            # Use timestamp for direct lookup if provided
+            # Use timestamp as filename if provided
             if "timestamp" in query:
-                result = self.conn.execute("""
-                    SELECT data 
-                    FROM cold_data 
-                    WHERE timestamp = ?
-                """, [query["timestamp"]]).fetchone()
-                
-                if result:
-                    return json.loads(result[0])
+                filename = self.storage_path / f"{query['timestamp']}.json.gz"
+                if filename.exists():
+                    with gzip.open(filename, "rt") as f:
+                        return json.load(f)
             
-            # Otherwise, search through JSON data
-            conditions = []
-            params = []
-            for k, v in query.items():
-                conditions.append(f"json_extract(data, '$.{k}') = ?")
-                params.append(str(v))
-            
-            if conditions:
-                where_clause = " AND ".join(conditions)
-                result = self.conn.execute(f"""
-                    SELECT data 
-                    FROM cold_data 
-                    WHERE {where_clause}
-                    LIMIT 1
-                """, params).fetchone()
-                
-                if result:
-                    return json.loads(result[0])
+            # Otherwise, search through all files
+            for file in self.storage_path.glob("*.json.gz"):
+                with gzip.open(file, "rt") as f:
+                    data = json.load(f)
+                    # Check if all query items match
+                    if all(data.get(k) == v for k, v in query.items()):
+                        return data
             
             return None
         except Exception as e:
-            logger.error(f"Failed to retrieve data from DuckDB: {e}")
+            logger.error(f"Failed to retrieve data from file: {e}")
             return None
     
     def retrieve_all(self) -> List[Dict[str, Any]]:
-        """Retrieve all data from DuckDB.
+        """Retrieve all data from compressed files.
         
         Returns:
             List of all stored data
         """
-        if not self.conn:
-            logger.error("DuckDB connection not available")
-            return []
-        
         try:
-            results = self.conn.execute("""
-                SELECT data 
-                FROM cold_data 
-                ORDER BY created_at DESC
-            """).fetchall()
-            
-            return [json.loads(row[0]) for row in results]
+            result = []
+            for file in self.storage_path.glob("*.json.gz"):
+                with gzip.open(file, "rt") as f:
+                    result.append(json.load(f))
+            return result
         except Exception as e:
-            logger.error(f"Failed to retrieve all data from DuckDB: {e}")
+            logger.error(f"Failed to retrieve all data from files: {e}")
             return []
     
     def clear(self) -> None:
-        """Clear all data from DuckDB."""
-        if not self.conn:
-            logger.error("DuckDB connection not available")
-            return
-        
+        """Clear all data files."""
         try:
-            self.conn.execute("DELETE FROM cold_data")
+            shutil.rmtree(self.storage_path)
+            self.storage_path.mkdir(parents=True, exist_ok=True)
         except Exception as e:
-            logger.error(f"Failed to clear DuckDB: {e}")
-    
-    def cleanup(self) -> None:
-        """Clean up resources."""
-        if hasattr(self, 'conn') and self.conn:
-            try:
-                self.conn.close()
-            except Exception as e:
-                logger.error(f"Failed to close DuckDB connection: {e}")
-    
-    def __del__(self):
-        """Destructor to ensure cleanup is performed."""
-        self.cleanup()
+            logger.error(f"Failed to clear files: {e}")
 
 # Test code with more verbose output
 if __name__ == "__main__":

@@ -18,140 +18,147 @@ logger = logging.getLogger(__name__)
 class WFSAPI:
     """Interface for accessing data from WFS services."""
     
-    def __init__(self, cache_dir: str = None, usgs_url: str = None, geoserver_url: str = None, 
-                 mapserver_url: str = None, wfs_version: str = "2.0.0", timeout: int = 30):
-        """Initialize WFS API with endpoints and cache directory."""
-        self.cache_dir = Path(cache_dir) if cache_dir else Path("data/wfs")
+    def __init__(
+        self,
+        cache_dir: Optional[str] = None,
+        timeout: int = 30
+    ):
+        """
+        Initialize WFS client.
+        
+        Args:
+            cache_dir: Directory for caching data
+            timeout: Timeout for WFS requests in seconds
+        """
+        self.cache_dir = Path(cache_dir) if cache_dir else Path.home() / ".wfs_cache"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.timeout = timeout
         
-        # Set default endpoints if none provided
+        # Define available WFS endpoints
         self.endpoints = {
-            'usgs': {
-                'url': usgs_url or "https://services.nationalmap.gov/arcgis/services/WFS/MapServer/WFSServer",
-                'version': wfs_version
+            "usgs": {
+                "url": "https://services.nationalmap.gov/arcgis/services/WFS/MapServer/WFSServer",
+                "version": "2.0.0"
             },
-            'geoserver': {
-                'url': geoserver_url or "http://geoserver.org/geoserver/wfs",
-                'version': wfs_version
+            "geoserver": {
+                "url": "http://geoserver.org/geoserver/wfs",
+                "version": "2.0.0"
             },
-            'mapserver': {
-                'url': mapserver_url or "http://mapserver.org/cgi-bin/wfs",
-                'version': wfs_version
+            "mapserver": {
+                "url": "http://mapserver.org/cgi-bin/wfs",
+                "version": "2.0.0"
             }
         }
         
-        self.services = {}
-        self._initialize_services()
+        # Initialize WFS clients
+        self.services = self._init_services()
     
-    def _initialize_services(self):
-        """Initialize WFS services with retry logic."""
+    def _init_services(self) -> Dict:
+        """Initialize WFS service connections."""
+        services = {}
         for name, config in self.endpoints.items():
             try:
-                service = WebFeatureService(
-                    url=config['url'],
-                    version=config['version'],
-                    timeout=self.timeout,
-                    verify=False  # Disable SSL verification for testing
+                services[name] = WebFeatureService(
+                    url=config["url"],
+                    version=config["version"],
+                    timeout=self.timeout
                 )
-                self.services[name] = service
+                logger.info(f"Successfully initialized WFS service: {name}")
             except Exception as e:
-                logger.error(f"Failed to initialize WFS service {name}: {str(e)}")
-                # Keep the endpoint config but mark service as unavailable
-                self.services[name] = None
+                logger.error(f"Failed to initialize WFS service {name}: {e}")
+        return services
     
     def get_features(
         self,
         bbox: Union[Tuple[float, float, float, float], Polygon],
         layers: List[str],
-        service_name: str,
+        service_name: Optional[str] = None,
         max_features: int = 1000,
         output_format: str = "GeoJSON"
-    ) -> Dict[str, gpd.GeoDataFrame]:
+    ) -> Dict:
         """
-        Get vector features from a WFS service.
+        Get vector features from WFS services.
         
         Args:
             bbox: Bounding box or Polygon
             layers: List of layers to fetch
-            service_name: Name of the service to use (usgs, geoserver, or mapserver)
+            service_name: Optional specific service to use
             max_features: Maximum number of features to return
             output_format: Output format (GeoJSON, GML, etc.)
             
         Returns:
-            Dictionary mapping layer names to GeoDataFrames containing the features
+            Dictionary containing vector data by layer
         """
-        # Validate bbox format
-        if isinstance(bbox, (list, tuple)):
-            if len(bbox) != 4:
-                raise ValueError("Bounding box must be a tuple/list of 4 coordinates (minx, miny, maxx, maxy)")
-            bbox = list(float(x) for x in bbox)  # Convert to list of floats
-        elif isinstance(bbox, Polygon):
-            bbox = list(bbox.bounds)  # Convert to list
-        else:
-            raise ValueError("Bounding box must be a tuple/list of coordinates or a Polygon")
+        # Convert bbox to coordinates
+        if isinstance(bbox, Polygon):
+            bbox = bbox.bounds
         
-        if service_name not in self.services:
-            logger.error(f"Service {service_name} not found or not initialized")
-            return {}
-            
-        service = self.services[service_name]
         results = {}
+        services_to_try = (
+            {service_name: self.services[service_name]}
+            if service_name and service_name in self.services
+            else self.services
+        )
         
-        try:
-            # Get available layers
-            available_layers = list(service.contents)
-            logger.info(f"Available layers in {service_name}: {available_layers}")
-            
-            # Filter requested layers
-            layers_to_fetch = [
-                layer for layer in layers
-                if layer in available_layers
-            ]
-            
-            if not layers_to_fetch:
-                logger.warning(f"No requested layers available in {service_name}")
-                return {}
-            
-            for layer in layers_to_fetch:
-                try:
-                    # Get layer info
-                    layer_info = service.contents[layer]
-                    
-                    # Check if bbox is within layer bounds
-                    if not self._is_bbox_valid(bbox, layer_info.boundingBoxWGS84):
-                        logger.warning(
-                            f"Bbox {bbox} outside layer bounds for {layer}"
-                        )
-                        continue
-                    
-                    # Request features
-                    response = service.getfeature(
-                        typename=layer,
-                        bbox=bbox,
-                        maxfeatures=max_features,
-                        outputFormat=output_format
-                    )
-                    
-                    # Parse response
-                    if output_format == "GeoJSON":
-                        features = json.loads(response.read())
-                        gdf = gpd.GeoDataFrame.from_features(features)
-                    else:
-                        # Handle other formats if needed
-                        logger.warning(
-                            f"Output format {output_format} not fully supported"
-                        )
-                        continue
-                    
-                    if not gdf.empty:
-                        results[layer] = gdf
+        for name, service in services_to_try.items():
+            try:
+                # Get available layers
+                available_layers = list(service.contents)
+                logger.info(f"Available layers in {name}: {available_layers}")
+                
+                # Filter requested layers
+                layers_to_fetch = [
+                    layer for layer in layers
+                    if layer in available_layers
+                ]
+                
+                if not layers_to_fetch:
+                    logger.warning(f"No requested layers available in {name}")
+                    continue
+                
+                service_results = {}
+                for layer in layers_to_fetch:
+                    try:
+                        # Get layer info
+                        layer_info = service.contents[layer]
                         
-                except Exception as e:
-                    logger.error(f"Error fetching layer {layer} from {service_name}: {e}")
-            
-        except Exception as e:
-            logger.error(f"Error accessing WFS service {service_name}: {e}")
+                        # Check if bbox is within layer bounds
+                        if not self._is_bbox_valid(bbox, layer_info.boundingBoxWGS84):
+                            logger.warning(
+                                f"Bbox {bbox} outside layer bounds for {layer}"
+                            )
+                            continue
+                        
+                        # Request features
+                        response = service.getfeature(
+                            typename=layer,
+                            bbox=bbox,
+                            maxfeatures=max_features,
+                            outputFormat=output_format
+                        )
+                        
+                        # Parse response
+                        if output_format == "GeoJSON":
+                            features = json.loads(response.read())
+                            gdf = gpd.GeoDataFrame.from_features(features)
+                        else:
+                            # Handle other formats if needed
+                            logger.warning(
+                                f"Output format {output_format} not fully supported"
+                            )
+                            continue
+                        
+                        if not gdf.empty:
+                            service_results[layer] = gdf
+                            
+                    except Exception as e:
+                        logger.error(f"Error fetching layer {layer} from {name}: {e}")
+                
+                if service_results:
+                    results[name] = service_results
+                
+            except Exception as e:
+                logger.error(f"Error accessing WFS service {name}: {e}")
         
         return results
     
@@ -175,55 +182,62 @@ class WFSAPI:
     def get_layer_info(
         self,
         layer: str,
-        service_name: str
+        service_name: Optional[str] = None
     ) -> Optional[Dict]:
         """Get detailed information about a layer."""
-        if service_name not in self.services:
-            logger.error(f"Service {service_name} not found or not initialized")
-            return None
-            
-        service = self.services[service_name]
-        try:
-            if layer in service.contents:
-                layer_info = service.contents[layer]
-                return {
-                    "title": layer_info.title,
-                    "abstract": layer_info.abstract,
-                    "keywords": layer_info.keywords,
-                    "bbox": layer_info.boundingBoxWGS84,
-                    "crs": layer_info.crsOptions,
-                    "properties": [
-                        getattr(op, 'name', op).replace("MagicMock name='", "").replace("'", "").split(".")[0]
-                        for op in layer_info.properties
-                    ] if hasattr(layer_info, "properties") else []
-                }
-        except Exception as e:
-            logger.error(f"Error getting layer info from {service_name}: {e}")
+        services_to_check = (
+            {service_name: self.services[service_name]}
+            if service_name and service_name in self.services
+            else self.services
+        )
+        
+        for name, service in services_to_check.items():
+            try:
+                if layer in service.contents:
+                    layer_info = service.contents[layer]
+                    return {
+                        "service": name,
+                        "title": layer_info.title,
+                        "abstract": layer_info.abstract,
+                        "keywords": layer_info.keywords,
+                        "bbox": layer_info.boundingBoxWGS84,
+                        "crs": layer_info.crsOptions,
+                        "properties": [
+                            op.name for op in layer_info.properties
+                        ] if hasattr(layer_info, "properties") else []
+                    }
+            except Exception as e:
+                logger.error(f"Error getting layer info from {name}: {e}")
         
         return None
     
     def get_available_layers(
         self,
-        service_name: str
-    ) -> List[str]:
-        """Get available layers from a WFS service."""
-        if service_name not in self.services:
-            logger.error(f"Service {service_name} not found or not initialized")
-            return []
-            
-        service = self.services[service_name]
-        try:
-            return list(service.contents.keys())
-        except Exception as e:
-            logger.error(f"Error getting layers from {service_name}: {e}")
-            return []
+        service_name: Optional[str] = None
+    ) -> Dict[str, List[str]]:
+        """Get available layers from WFS services."""
+        results = {}
+        
+        services_to_check = (
+            {service_name: self.services[service_name]}
+            if service_name and service_name in self.services
+            else self.services
+        )
+        
+        for name, service in services_to_check.items():
+            try:
+                results[name] = list(service.contents.keys())
+            except Exception as e:
+                logger.error(f"Error getting layers from {name}: {e}")
+        
+        return results
     
     def download_to_file(
         self,
         bbox: Union[Tuple[float, float, float, float], Polygon],
         layers: List[str],
         output_dir: str,
-        service_name: str,
+        service_name: Optional[str] = None,
         format: str = "GeoJSON"
     ) -> Dict[str, Path]:
         """
@@ -233,7 +247,7 @@ class WFSAPI:
             bbox: Bounding box or Polygon
             layers: List of layers to fetch
             output_dir: Directory to save files
-            service_name: Name of the service to use
+            service_name: Optional specific service to use
             format: Output format
             
         Returns:
@@ -250,10 +264,11 @@ class WFSAPI:
         output_dir.mkdir(parents=True, exist_ok=True)
         
         file_paths = {}
-        for layer_name, gdf in results.items():
-            if not gdf.empty:
-                file_path = output_dir / f"{layer_name}.geojson"
-                gdf.to_file(file_path, driver="GeoJSON")
-                file_paths[layer_name] = file_path
+        for service_name, service_data in results.items():
+            for layer_name, gdf in service_data.items():
+                if not gdf.empty:
+                    file_path = output_dir / f"{service_name}_{layer_name}.geojson"
+                    gdf.to_file(file_path, driver="GeoJSON")
+                    file_paths[f"{service_name}_{layer_name}"] = file_path
         
         return file_paths 

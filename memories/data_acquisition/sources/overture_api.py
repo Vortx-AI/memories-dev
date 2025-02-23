@@ -5,7 +5,7 @@ Overture Maps data source using DuckDB to read from local GeoJSONSeq files.
 import os
 import logging
 import duckdb
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union
 from pathlib import Path
 from datetime import datetime
 
@@ -151,24 +151,31 @@ class OvertureAPI:
             logger.error(f"Error during data download: {str(e)}")
             return {theme: False for theme in self.THEMES.keys()}
 
-    async def search(self, bbox: List[float]) -> Dict[str, Any]:
+    async def search(self, bbox: Union[List[float], Dict[str, float]]) -> Dict[str, Any]:
         """
         Search Overture data within the given bounding box.
         
         Args:
-            bbox: Bounding box [min_lon, min_lat, max_lon, max_lat]
+            bbox: Bounding box as either:
+                 - List [min_lon, min_lat, max_lon, max_lat]
+                 - Dict with keys 'xmin', 'ymin', 'xmax', 'ymax'
             
         Returns:
             Dictionary containing buildings, places, and transportation features
         """
         try:
+            # Convert bbox to dictionary format if it's a list
+            if isinstance(bbox, (list, tuple)):
+                bbox_dict = {
+                    "xmin": bbox[0],
+                    "ymin": bbox[1],
+                    "xmax": bbox[2],
+                    "ymax": bbox[3]
+                }
+            else:
+                bbox_dict = bbox
+            
             # First, download the data if it doesn't exist
-            bbox_dict = {
-                "xmin": bbox[0],
-                "ymin": bbox[1],
-                "xmax": bbox[2],
-                "ymax": bbox[3]
-            }
             download_results = self.download_data(bbox_dict)
             
             if not any(download_results.values()):
@@ -176,7 +183,7 @@ class OvertureAPI:
                 return {theme: [] for theme in self.THEMES.keys()}
             
             # Convert bbox to WKT polygon
-            bbox_wkt = f"POLYGON(({bbox[0]} {bbox[1]}, {bbox[0]} {bbox[3]}, {bbox[2]} {bbox[3]}, {bbox[2]} {bbox[1]}, {bbox[0]} {bbox[1]}))"
+            bbox_wkt = f"POLYGON(({bbox_dict['xmin']} {bbox_dict['ymin']}, {bbox_dict['xmin']} {bbox_dict['ymax']}, {bbox_dict['xmax']} {bbox_dict['ymax']}, {bbox_dict['xmax']} {bbox_dict['ymin']}, {bbox_dict['xmin']} {bbox_dict['ymin']}))"
             bbox_expr = f"ST_GeomFromText('{bbox_wkt}')"
             
             results = {}

@@ -1,77 +1,63 @@
 """
-Warm memory implementation using Redis.
+Warm memory implementation using file-based storage.
 """
 
 import json
 import logging
 from typing import Dict, Any, Optional, List
 from pathlib import Path
-import redis
+import shutil
 
 logger = logging.getLogger(__name__)
 
 class WarmMemory:
-    """Warm memory layer using Redis for fast access."""
+    """Warm memory layer using file-based storage."""
     
-    def __init__(self, redis_url: str, redis_db: int, max_size: int):
+    def __init__(self, storage_path: Path, max_size: int):
         """Initialize warm memory.
         
         Args:
-            redis_url: Redis connection URL
-            redis_db: Redis database number
+            storage_path: Path to store data files
             max_size: Maximum number of items to store
         """
-        self.redis_url = redis_url
-        self.redis_db = redis_db
+        self.storage_path = storage_path
         self.max_size = max_size
-        self.using_redis = True
         
-        # Connect to Redis
-        try:
-            self.redis_client = redis.from_url(redis_url, db=redis_db)
-            logger.info("Successfully connected to Redis")
-        except Exception as e:
-            logger.error(f"Failed to connect to Redis: {e}")
-            self.redis_client = None
-            self.using_redis = False
+        # Create storage directory
+        self.storage_path.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Initialized warm memory at {storage_path}")
     
     def store(self, data: Dict[str, Any]) -> None:
-        """Store data in Redis.
+        """Store data in a file.
         
         Args:
             data: Data to store
         """
-        if not self.using_redis or not self.redis_client:
-            logger.error("Redis connection not available")
-            return
-        
         try:
-            # Use timestamp as key
-            key = data.get("timestamp", "")
-            if not key:
+            # Use timestamp as filename
+            timestamp = data.get("timestamp", "")
+            if not timestamp:
                 logger.error("Data must have a timestamp")
                 return
             
-            # Ensure data is a dictionary before storing
-            if not isinstance(data, dict):
-                logger.error("Data must be a dictionary")
-                return
+            filename = self.storage_path / f"{timestamp}.json"
             
             # Store as JSON
-            self.redis_client.set(key, json.dumps(data))
+            with open(filename, "w") as f:
+                json.dump(data, f, indent=2)
             
-            # Maintain max size by removing oldest entries
-            keys = [k.decode('utf-8') for k in self.redis_client.keys("*")]
-            if len(keys) > self.max_size:
-                # Sort by timestamp and remove oldest
-                sorted_keys = sorted(keys)
-                for old_key in sorted_keys[:-self.max_size]:
-                    self.redis_client.delete(old_key)
+            # Maintain max size by removing oldest files
+            files = list(self.storage_path.glob("*.json"))
+            if len(files) > self.max_size:
+                # Sort by modification time and remove oldest
+                files.sort(key=lambda x: x.stat().st_mtime)
+                for old_file in files[:-self.max_size]:
+                    old_file.unlink()
         except Exception as e:
-            logger.error(f"Failed to store data in Redis: {e}")
+            logger.error(f"Failed to store data in file: {e}")
     
     def retrieve(self, query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Retrieve data from Redis.
+        """Retrieve data from files.
         
         Args:
             query: Query to match against stored data
@@ -79,98 +65,47 @@ class WarmMemory:
         Returns:
             Retrieved data or None if not found
         """
-        if not self.using_redis or not self.redis_client:
-            logger.error("Redis connection not available")
-            return None
-        
         try:
-            # Use timestamp as key if provided
+            # Use timestamp as filename if provided
             if "timestamp" in query:
-                key = query["timestamp"]
-                data = self.redis_client.get(key)
-                if data:
-                    try:
-                        decoded_data = json.loads(data.decode('utf-8'))
-                        if isinstance(decoded_data, dict):
-                            return decoded_data
-                        else:
-                            logger.error(f"Invalid data structure for key {key}: not a dictionary")
-                    except json.JSONDecodeError:
-                        logger.error(f"Failed to decode JSON for key {key}")
-                        return None
+                filename = self.storage_path / f"{query['timestamp']}.json"
+                if filename.exists():
+                    with open(filename) as f:
+                        return json.load(f)
             
-            # Otherwise, search through all keys
-            for key in self.redis_client.keys("*"):
-                data = self.redis_client.get(key)
-                if data:
-                    try:
-                        decoded_data = json.loads(data.decode('utf-8'))
-                        if isinstance(decoded_data, dict):
-                            # Check if all query items match
-                            if all(decoded_data.get(k) == v for k, v in query.items()):
-                                return decoded_data
-                    except json.JSONDecodeError:
-                        logger.error(f"Failed to decode JSON for key {key}")
-                        continue
+            # Otherwise, search through all files
+            for file in self.storage_path.glob("*.json"):
+                with open(file) as f:
+                    data = json.load(f)
+                    # Check if all query items match
+                    if all(data.get(k) == v for k, v in query.items()):
+                        return data
             
             return None
         except Exception as e:
-            logger.error(f"Failed to retrieve data from Redis: {e}")
+            logger.error(f"Failed to retrieve data from file: {e}")
             return None
     
     def retrieve_all(self) -> List[Dict[str, Any]]:
-        """Retrieve all data from Redis.
+        """Retrieve all data from files.
         
         Returns:
             List of all stored data
         """
-        if not self.using_redis or not self.redis_client:
-            logger.error("Redis connection not available")
-            return []
-        
         try:
             result = []
-            # Get all keys and decode them from bytes
-            keys = [k.decode('utf-8') for k in self.redis_client.keys("*")]
-            
-            # Get data for each key
-            for key in keys:
-                data = self.redis_client.get(key)
-                if data:
-                    try:
-                        # Decode bytes to string and parse JSON
-                        decoded_data = json.loads(data.decode('utf-8'))
-                        if isinstance(decoded_data, dict):
-                            result.append(decoded_data)
-                        else:
-                            logger.error(f"Invalid data structure for key {key}: not a dictionary")
-                    except json.JSONDecodeError:
-                        logger.error(f"Failed to decode JSON for key {key}")
-                        continue
+            for file in self.storage_path.glob("*.json"):
+                with open(file) as f:
+                    result.append(json.load(f))
             return result
         except Exception as e:
-            logger.error(f"Failed to retrieve all data from Redis: {e}")
+            logger.error(f"Failed to retrieve all data from files: {e}")
             return []
     
     def clear(self) -> None:
-        """Clear all data from Redis."""
-        if not self.using_redis or not self.redis_client:
-            logger.error("Redis connection not available")
-            return
-        
+        """Clear all data files."""
         try:
-            self.redis_client.flushdb()
+            shutil.rmtree(self.storage_path)
+            self.storage_path.mkdir(parents=True, exist_ok=True)
         except Exception as e:
-            logger.error(f"Failed to clear Redis: {e}")
-    
-    def cleanup(self) -> None:
-        """Clean up resources."""
-        if self.using_redis and hasattr(self, 'redis_client'):
-            try:
-                self.redis_client.close()
-            except Exception as e:
-                logger.error(f"Failed to close Redis connection: {e}")
-    
-    def __del__(self):
-        """Destructor to ensure cleanup is performed."""
-        self.cleanup()
+            logger.error(f"Failed to clear files: {e}")
