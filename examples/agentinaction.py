@@ -172,7 +172,7 @@ class IntelligentAgent:
     async def _handle_location_query(self, query: str) -> Dict[str, Any]:
         """Handle queries requiring location context"""
         # Extract location from query
-        location_info = self.LocationExtractor(query)
+        location_info = LocationExtractor(query)
         
         if not location_info:
             return {
@@ -284,7 +284,7 @@ class IntelligentAgent:
         # Get current location context or extract from query
         location = self.context.location
         if not location:
-            location_info = self.LocationExtractor(query)
+            location_info = LocationExtractor(query)
             if location_info:
                 location = location_info
             else:
