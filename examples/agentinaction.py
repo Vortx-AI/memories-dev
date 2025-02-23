@@ -22,7 +22,7 @@ from memories import MemoryStore, Config, LoadModel
 from memories.data_acquisition.sources.overture_api import OvertureAPI
 from memories.data_acquisition.sources.sentinel_api import SentinelAPI
 from memories.agents.agent import Agent
-from memories.agents.agent_geocoder import GeoCoderAgent
+from memories.agents.agent_context import LocationExtractor
 from memories.utils.text import TextProcessor
 from memories.core import HotMemory, WarmMemory
 
@@ -171,7 +171,7 @@ class IntelligentAgent:
     async def _handle_location_query(self, query: str) -> Dict[str, Any]:
         """Handle queries requiring location context"""
         # Extract location from query
-        location_info = self.geocoder.extract_location(query)
+        location_info = self.geocoder.LocationExtractor(query)
         
         if not location_info:
             return {
@@ -283,7 +283,7 @@ class IntelligentAgent:
         # Get current location context or extract from query
         location = self.context.location
         if not location:
-            location_info = self.geocoder.extract_location(query)
+            location_info = self.geocoder.LocationExtractor(query)
             if location_info:
                 location = location_info
             else:
