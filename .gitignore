@@ -88,3 +88,5 @@ traffic_cache/
 data/
 *_cache/
 *_data/
+
+examples/data/

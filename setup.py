@@ -67,7 +67,7 @@ def get_core_deps():
         "geopy>=2.4.1",
         "folium>=0.15.1",
         "rtree>=1.1.0",
-        "owslib>=0.32.1",
+        "owslib>=0.31.0",
         "aiohttp>=3.9.0",
         "fsspec>=2024.2.0",
         "cryptography>=42.0.0",

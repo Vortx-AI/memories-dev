@@ -58,7 +58,7 @@ dependencies = [
     "geopy>=2.4.1",  # Added for geocoding support
     "folium>=0.15.1",  # Added for map visualization
     "rtree>=1.1.0",  # Added for spatial indexing
-    "owslib>=0.32.1",  # Added for WFS/WMS support
+    "owslib>=0.31.0",  # Added for WFS/WMS support
     
     # Image Processing
     "pillow>=10.0.0",

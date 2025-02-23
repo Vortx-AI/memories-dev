@@ -15,8 +15,7 @@ from pydantic import BaseModel, Field
 import tempfile
 import requests
 from urllib.parse import quote
-from core.memories.agent_capabilities import AGENT_CAPABILITIES
-from .agentic_tool import AgenticTools, APIResponse
+
 import nltk
 import re
 from memories.models.load_model import LoadModel
@@ -123,18 +122,18 @@ class DeepSeekLLM(LLM, BaseModel):
 
 class LocationInfo:
     def __init__(self):
-        self.tools = AgenticTools()
+        #self.tools = AgenticTools()
         self.logger = logging.getLogger(__name__)
     
     def get_address_from_coords(self, lat: float, lon: float) -> Dict[str, Any]:
         """Get address details from coordinates."""
-        response = self.tools.reverse_geocode(lat, lon)
-        return response.data if response.status == "success" else {"error": response.error}
+        #response = self.tools.reverse_geocode(lat, lon)
+        #return response.data if response.status == "success" else {"error": response.error}
     
     def get_coords_from_address(self, address: str) -> Dict[str, Any]:
         """Get coordinates and details from address."""
-        response = self.tools.forward_geocode(address)
-        return response.data if response.status == "success" else {"error": response.error}
+        #response = self.tools.forward_geocode(address)
+        #return response.data if response.status == "success" else {"error": response.error}
 
 class InformationExtractor:
     def __init__(self, model: str = None):
@@ -163,22 +162,22 @@ class InformationExtractor:
             
             # Extract query terms for nearby searches
             query_term = None
-            if any(keyword in query.lower() for keyword in ["near", "nearby", "around"]):
-                for category, terms in AGENT_CAPABILITIES["query_terms"].items():
-                    for term in terms:
-                        if term in query.lower():
-                            query_term = {
-                                "category": category,
-                                "term": term
-                            }
-                            break
-                    if query_term:
-                        break
+            #if any(keyword in query.lower() for keyword in ["near", "nearby", "around"]):
+                #for category, terms in AGENT_CAPABILITIES["query_terms"].items():
+                    #for term in terms:
+                        #if term in query.lower():
+                           # query_term = {
+                                #"category": category,
+                                #"term": term
+                            #}
+                            #break
+                    #if query_term:
+                        #break
             
             return {
-                "location": location_info,
-                "query_term": query_term,
-                "original_query": query
+                "location": '',
+                "query_term": '',
+                "original_query": ''
             }
             
         except Exception as e:
