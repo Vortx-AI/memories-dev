@@ -74,7 +74,7 @@ def agent(mock_gpu):
     with patch('examples.agentinaction.LoadModel') as mock_model, \
          patch('examples.agentinaction.OvertureAPI'), \
          patch('examples.agentinaction.SentinelAPI'), \
-         patch('examples.agentinaction.AgentGeocoder'), \
+         patch('examples.agentinaction.GeoCoderAgent'), \
          patch('examples.agentinaction.TextProcessor'):
         
         # Configure mock model
@@ -88,7 +88,7 @@ def agent(mock_gpu):
 @pytest.fixture
 def mock_location_extraction():
     """Mock location extraction"""
-    with patch('examples.agentinaction.AgentGeocoder.extract_location') as mock:
+    with patch('examples.agentinaction.GeoCoderAgent.extract_location') as mock:
         mock.return_value = SAMPLE_LOCATION
         yield mock
 
@@ -191,7 +191,7 @@ async def test_future_scenario_query(agent, mock_location_extraction, mock_api_r
 @pytest.mark.asyncio
 async def test_location_query_no_location(agent):
     """Test handling of location query without identifiable location"""
-    with patch('examples.agentinaction.AgentGeocoder.extract_location', return_value=None):
+    with patch('examples.agentinaction.GeoCoderAgent.extract_location', return_value=None):
         query = "Tell me about this place"
         response = await agent.process_query(query)
         
@@ -202,7 +202,7 @@ async def test_location_query_no_location(agent):
 @pytest.mark.asyncio
 async def test_future_scenario_no_location(agent):
     """Test handling of future scenario query without location context"""
-    with patch('examples.agentinaction.AgentGeocoder.extract_location', return_value=None):
+    with patch('examples.agentinaction.GeoCoderAgent.extract_location', return_value=None):
         query = "What might happen here in the future?"
         response = await agent.process_query(query)
         

@@ -307,7 +307,8 @@ class MemoryStore:
         )
         
         self.warm_memory = WarmMemory(
-            storage_path=config.storage_path / "warm",
+            redis_url=config.redis_url,
+            redis_db=config.redis_db,
             max_size=config.warm_memory_size
         )
         

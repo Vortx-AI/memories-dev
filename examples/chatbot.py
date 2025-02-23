@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from memories.agents.agent import Agent
 from memories.models.load_model import LoadModel
-from memories.agents.agent_geocoder import AgentGeocoder  # For location validation
+from memories.agents.agent_geocoder import GeoCoderAgent  # For location validation
 import logging
 import os
 from dotenv import load_dotenv
@@ -111,7 +111,7 @@ class LocationAwareChatbot:
             modalities={},  # Will be expanded for location data
             memories={}
         )
-        self.geocoder = AgentGeocoder()
+        self.geocoder = GeoCoderAgent()
     
     def set_location(self, location_input: str) -> Dict[str, Any]:
         """

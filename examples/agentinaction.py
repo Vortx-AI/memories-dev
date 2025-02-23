@@ -22,7 +22,7 @@ from memories import MemoryStore, Config, LoadModel
 from memories.data_acquisition.sources.overture_api import OvertureAPI
 from memories.data_acquisition.sources.sentinel_api import SentinelAPI
 from memories.agents.agent import Agent
-from memories.agents.agent_geocoder import AgentGeocoder
+from memories.agents.agent_geocoder import GeoCoderAgent
 from memories.utils.text import TextProcessor
 from memories.core import HotMemory, WarmMemory
 
@@ -48,36 +48,24 @@ class IntelligentAgent:
     def __init__(self, openai_api_key: Optional[str] = None):
         """Initialize the intelligent agent with all necessary components"""
         # Load configuration
-        self.config = Config()
-        self.memory_store = MemoryStore()
+        self.config = Config()  # This will automatically look for config/db_config.yml
+        self.memory_store = MemoryStore(self.config)
         
         # Initialize models with proper GPU configuration
         try:
-            # Try DeepSeek first
-            try:
+            # Initialize OpenAI model
+            if openai_api_key:
+                os.environ["OPENAI_API_KEY"] = openai_api_key
                 self.model = LoadModel(
-                    use_gpu=True,
-                    model_provider="deepseek-ai",
-                    deployment_type="local",
-                    model_name="deepseek-coder-6.7b"
+                    use_gpu=False,  # Not needed for API
+                    model_provider="openai",
+                    deployment_type="api",
+                    model_name="gpt-4",
+                    api_key=openai_api_key
                 )
-                logger.info("Successfully initialized DeepSeek model")
-            except Exception as e:
-                logger.warning(f"Failed to initialize DeepSeek model: {str(e)}")
-                
-                # Fall back to OpenAI if API key is provided
-                if openai_api_key:
-                    os.environ["OPENAI_API_KEY"] = openai_api_key
-                    self.model = LoadModel(
-                        use_gpu=False,  # Not needed for API
-                        model_provider="openai",
-                        deployment_type="api",
-                        model_name="gpt-4",
-                        api_key=openai_api_key
-                    )
-                    logger.info("Successfully initialized OpenAI model")
-                else:
-                    raise ValueError("Neither DeepSeek model nor OpenAI API key available")
+                logger.info("Successfully initialized OpenAI model")
+            else:
+                raise ValueError("OpenAI API key not provided")
             
             # Configure device
             if torch.cuda.is_available():
@@ -98,7 +86,7 @@ class IntelligentAgent:
         # Initialize APIs
         self.overture_api = OvertureAPI()
         self.sentinel_api = SentinelAPI()
-        self.geocoder = AgentGeocoder()
+        self.geocoder = GeoCoderAgent()
         
         # Initialize context and processors
         self.context = AgentContext()
@@ -420,7 +408,14 @@ class IntelligentAgent:
 async def main():
     """Run an interactive session with the agent"""
     print("\nInitializing Intelligent Agent...")
-    agent = IntelligentAgent()
+    
+    # Get OpenAI API key from environment
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        print("Error: OPENAI_API_KEY environment variable not set")
+        return
+    
+    agent = IntelligentAgent(openai_api_key=openai_api_key)
     
     print("\nAgent initialized! Type 'quit' to exit.")
     print("Example commands:")

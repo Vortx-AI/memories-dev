@@ -1,0 +1,17 @@
+database:
+  path: ./data/db
+  name: memories.db
+
+redis:
+  url: redis://localhost:6379
+  db: 0
+
+memory:
+  hot_size: 1000
+  warm_size: 10000
+  cold_size: 100000
+
+data:
+  storage: ./data/storage
+  models: ./data/models
+  cache: ./data/cache 
