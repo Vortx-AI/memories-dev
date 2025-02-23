@@ -1,217 +1,174 @@
 """
-Hot memory implementation using GPU acceleration.
+Hot memory implementation using Redis.
 """
 
 import json
 import logging
-from typing import Dict, Any, Optional, List, Tuple
-import numpy as np
-from pathlib import Path
-from datetime import datetime
-import cupy as cp
-import cudf
-import cuspatial
-from sentence_transformers import SentenceTransformer
+from typing import Dict, Any, Optional, List
+import redis
 
 logger = logging.getLogger(__name__)
 
 class HotMemory:
-    """Hot memory layer using GPU acceleration for fastest possible access."""
+    """Hot memory layer using Redis for fast access."""
     
-    def __init__(self, storage_path: Path, max_size: int):
+    def __init__(self, redis_url: str, redis_db: int, max_size: int):
         """Initialize hot memory.
         
         Args:
-            storage_path: Path to store GPU state (not used directly, kept for interface consistency)
-            max_size: Maximum number of items to store in GPU memory
+            redis_url: Redis connection URL
+            redis_db: Redis database number
+            max_size: Maximum number of items to store
         """
+        self.redis_url = redis_url
+        self.redis_db = redis_db
         self.max_size = max_size
+        self.using_redis = True
         
-        # Initialize GPU components
+        # Connect to Redis
         try:
-            # Check CUDA availability
-            if not cp.cuda.is_available():
-                raise RuntimeError("CUDA is not available")
-            
-            # Initialize GPU memory
-            self.device = cp.cuda.Device(0)  # Use first GPU
-            self.device.use()
-            
-            # Initialize sentence transformer on GPU
-            self.model = SentenceTransformer('all-MiniLM-L6-v2', device=f'cuda:{self.device.id}')
-            self.vector_dim = self.model.get_sentence_embedding_dimension()
-            
-            # Initialize storage
-            self.vectors = cp.zeros((max_size, self.vector_dim), dtype=cp.float32)
-            self.metadata = []
-            self.current_size = 0
-            
-            logger.info("Successfully initialized GPU memory")
+            self.redis_client = redis.from_url(redis_url, db=redis_db)
+            logger.info("Successfully connected to Redis")
         except Exception as e:
-            logger.error(f"Failed to initialize GPU memory: {e}")
-            raise
-    
-    def _get_embedding(self, text: str) -> cp.ndarray:
-        """Get embedding for text using GPU-accelerated sentence transformer."""
-        try:
-            # Get embedding on GPU
-            with cp.cuda.Device(self.device.id):
-                embedding = self.model.encode(text, convert_to_tensor=True)
-                return cp.asarray(embedding.cpu().numpy())
-        except Exception as e:
-            logger.error(f"Failed to get embedding: {e}")
-            return cp.zeros(self.vector_dim, dtype=cp.float32)
-    
-    def _similarity_search(self, query_vector: cp.ndarray, k: int = 5) -> List[Tuple[int, float]]:
-        """Perform GPU-accelerated similarity search."""
-        try:
-            with cp.cuda.Device(self.device.id):
-                # Compute distances using GPU
-                distances = cp.sum((self.vectors[:self.current_size] - query_vector) ** 2, axis=1)
-                
-                # Get top k indices
-                if k > self.current_size:
-                    k = self.current_size
-                indices = cp.argsort(distances)[:k]
-                
-                # Convert to CPU and return with distances
-                return list(zip(
-                    indices.get().tolist(),
-                    distances[indices].get().tolist()
-                ))
-        except Exception as e:
-            logger.error(f"Failed to perform similarity search: {e}")
-            return []
+            logger.error(f"Failed to connect to Redis: {e}")
+            self.redis_client = None
+            self.using_redis = False
     
     def store(self, data: Dict[str, Any]) -> None:
-        """Store data in GPU memory.
+        """Store data in Redis.
         
         Args:
             data: Data to store
         """
+        if not self.using_redis or not self.redis_client:
+            logger.error("Redis connection not available")
+            return
+        
         try:
             # Use timestamp as key
-            timestamp = data.get("timestamp", "")
-            if not timestamp:
+            key = data.get("timestamp", "")
+            if not key:
                 logger.error("Data must have a timestamp")
                 return
             
-            # Store text fields in GPU memory
-            text_fields = []
-            for k, v in data.items():
-                if isinstance(v, str) and len(v.strip()) > 0:
-                    text_fields.append((k, v))
+            # Ensure data is a dictionary before storing
+            if not isinstance(data, dict):
+                logger.error("Data must be a dictionary")
+                return
             
-            for field_name, text in text_fields:
-                if self.current_size >= self.max_size:
-                    # Remove oldest entry
-                    self.vectors = cp.roll(self.vectors, -1, axis=0)
-                    self.metadata.pop(0)
-                    self.current_size -= 1
-                
-                # Get embedding and store in GPU memory
-                vector = self._get_embedding(text)
-                self.vectors[self.current_size] = vector
-                
-                # Store metadata
-                self.metadata.append({
-                    'timestamp': timestamp,
-                    'field': field_name,
-                    'text': text,
-                    'data': data,
-                    'index': self.current_size,
-                    'created_at': datetime.now().isoformat()
-                })
-                
-                self.current_size += 1
-                
+            # Store as JSON
+            self.redis_client.set(key, json.dumps(data))
+            
+            # Maintain max size by removing oldest entries
+            keys = [k.decode('utf-8') for k in self.redis_client.keys("*")]
+            if len(keys) > self.max_size:
+                # Sort by timestamp and remove oldest
+                sorted_keys = sorted(keys)
+                for old_key in sorted_keys[:-self.max_size]:
+                    self.redis_client.delete(old_key)
         except Exception as e:
-            logger.error(f"Failed to store data in GPU memory: {e}")
+            logger.error(f"Failed to store data in Redis: {e}")
     
     def retrieve(self, query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Retrieve data from GPU memory.
+        """Retrieve data from Redis.
         
         Args:
-            query: Query to match against stored data. If contains 'text_search',
-                  performs similarity search using GPU acceleration.
+            query: Query to match against stored data
             
         Returns:
             Retrieved data or None if not found
         """
+        if not self.using_redis or not self.redis_client:
+            logger.error("Redis connection not available")
+            return None
+        
         try:
-            # Check for text similarity search
-            if 'text_search' in query:
-                text = query['text_search']
-                vector = self._get_embedding(text)
-                
-                # Perform GPU-accelerated similarity search
-                results = self._similarity_search(vector, k=5)
-                
-                if results:
-                    # Get most similar result
-                    idx, distance = results[0]
-                    if idx < len(self.metadata):
-                        data = self.metadata[idx]['data'].copy()
-                        data['similarity_score'] = float(1 / (1 + distance))
-                        return data
-            
-            # Use timestamp for direct lookup
+            # Use timestamp as key if provided
             if "timestamp" in query:
-                timestamp = query["timestamp"]
-                for meta in self.metadata:
-                    if meta['timestamp'] == timestamp:
-                        return meta['data']
+                key = query["timestamp"]
+                data = self.redis_client.get(key)
+                if data:
+                    try:
+                        decoded_data = json.loads(data.decode('utf-8'))
+                        if isinstance(decoded_data, dict):
+                            return decoded_data
+                        else:
+                            logger.error(f"Invalid data structure for key {key}: not a dictionary")
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to decode JSON for key {key}")
+                        return None
             
-            # Otherwise, search through metadata
-            for meta in self.metadata:
-                if all(meta['data'].get(k) == v for k, v in query.items()):
-                    return meta['data']
+            # Otherwise, search through all keys
+            for key in self.redis_client.keys("*"):
+                data = self.redis_client.get(key)
+                if data:
+                    try:
+                        decoded_data = json.loads(data.decode('utf-8'))
+                        if isinstance(decoded_data, dict):
+                            # Check if all query items match
+                            if all(decoded_data.get(k) == v for k, v in query.items()):
+                                return decoded_data
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to decode JSON for key {key}")
+                        continue
             
             return None
         except Exception as e:
-            logger.error(f"Failed to retrieve data from GPU memory: {e}")
+            logger.error(f"Failed to retrieve data from Redis: {e}")
             return None
     
     def retrieve_all(self) -> List[Dict[str, Any]]:
-        """Retrieve all data from GPU memory.
+        """Retrieve all data from Redis.
         
         Returns:
             List of all stored data
         """
+        if not self.using_redis or not self.redis_client:
+            logger.error("Redis connection not available")
+            return []
+        
         try:
-            # Get unique data entries by timestamp
-            seen = set()
             result = []
-            for meta in self.metadata:
-                timestamp = meta['timestamp']
-                if timestamp not in seen:
-                    seen.add(timestamp)
-                    result.append(meta['data'])
+            # Get all keys and decode them from bytes
+            keys = [k.decode('utf-8') for k in self.redis_client.keys("*")]
+            
+            # Get data for each key
+            for key in keys:
+                data = self.redis_client.get(key)
+                if data:
+                    try:
+                        # Decode bytes to string and parse JSON
+                        decoded_data = json.loads(data.decode('utf-8'))
+                        if isinstance(decoded_data, dict):
+                            result.append(decoded_data)
+                        else:
+                            logger.error(f"Invalid data structure for key {key}: not a dictionary")
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to decode JSON for key {key}")
+                        continue
             return result
         except Exception as e:
-            logger.error(f"Failed to retrieve all data from GPU memory: {e}")
+            logger.error(f"Failed to retrieve all data from Redis: {e}")
             return []
     
     def clear(self) -> None:
-        """Clear all data from GPU memory."""
+        """Clear all data from Redis."""
+        if not self.using_redis or not self.redis_client:
+            logger.error("Redis connection not available")
+            return
+        
         try:
-            with cp.cuda.Device(self.device.id):
-                self.vectors.fill(0)
-                self.metadata = []
-                self.current_size = 0
+            self.redis_client.flushdb()
         except Exception as e:
-            logger.error(f"Failed to clear GPU memory: {e}")
+            logger.error(f"Failed to clear Redis: {e}")
     
     def cleanup(self) -> None:
-        """Clean up GPU resources."""
-        try:
-            with cp.cuda.Device(self.device.id):
-                # Clear GPU memory
-                self.vectors = None
-                cp.get_default_memory_pool().free_all_blocks()
-                cp.get_default_pinned_memory_pool().free_all_blocks()
-        except Exception as e:
-            logger.error(f"Failed to cleanup GPU resources: {e}")
+        """Clean up resources."""
+        if self.using_redis and hasattr(self, 'redis_client'):
+            try:
+                self.redis_client.close()
+            except Exception as e:
+                logger.error(f"Failed to close Redis connection: {e}")
     
     def __del__(self):
         """Destructor to ensure cleanup is performed."""
