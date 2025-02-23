@@ -27,7 +27,10 @@ from memories.utils.text import TextProcessor
 from memories.core import HotMemory, WarmMemory
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -46,42 +49,52 @@ class IntelligentAgent:
     """Advanced agent combining chat, location analysis, and scenario generation"""
     
     def __init__(self, openai_api_key: Optional[str] = None):
-        """Initialize the intelligent agent with all necessary components"""
-        # Load configuration
-        self.config = Config()  # This will automatically look for config/db_config.yml
-        self.memory_store = MemoryStore(self.config)
+        """Initialize the intelligent agent with model and memory store."""
+        self.logger = logging.getLogger(__name__)
         
-        # Initialize models with proper GPU configuration
+        # Set up GPU if available
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if self.device.type == "cuda":
+            torch.cuda.empty_cache()
+        
+        # Initialize model - try local installation first, then OpenAI
         try:
-            # Initialize OpenAI model
-            if openai_api_key:
-                os.environ["OPENAI_API_KEY"] = openai_api_key
-                self.model = LoadModel(
-                    use_gpu=False,  # Not needed for API
-                    model_provider="openai",
-                    deployment_type="api",
-                    model_name="gpt-4",
-                    api_key=openai_api_key
-                )
-                logger.info("Successfully initialized OpenAI model")
-            else:
-                raise ValueError("OpenAI API key not provided")
-            
-            # Configure device
-            if torch.cuda.is_available():
-                device = torch.device("cuda")
-                torch.cuda.empty_cache()  # Clear GPU cache
-                logger.info(f"Using GPU: {torch.cuda.get_device_name(0)}")
-                logger.info(f"CUDA Version: {torch.version.cuda}")
-            else:
-                device = torch.device("cpu")
-                logger.info("GPU not available, using CPU")
-            
-            self.device = device
-            
+            # Try loading local DeepSeek model first
+            self.model = LoadModel(
+                use_gpu=self.device.type == "cuda",
+                model_provider="deepseek-ai",
+                deployment_type="local",
+                model_name="deepseek-coder-6.7b"
+            )
+            self.logger.info("Successfully initialized local DeepSeek model")
         except Exception as e:
-            logger.error(f"Error initializing model: {str(e)}")
-            raise RuntimeError("Failed to initialize model. Please check model configuration and API key availability.")
+            self.logger.warning(f"Failed to load local model: {str(e)}")
+            
+            # Fall back to OpenAI if API key is provided
+            if openai_api_key:
+                try:
+                    self.model = LoadModel(
+                        use_gpu=False,  # OpenAI API doesn't use local GPU
+                        model_provider="openai",
+                        deployment_type="api",
+                        model_name="gpt-4",
+                        api_key=openai_api_key
+                    )
+                    self.logger.info("Successfully initialized OpenAI model")
+                except Exception as e:
+                    raise RuntimeError(f"Failed to initialize OpenAI model: {str(e)}")
+            else:
+                raise RuntimeError(
+                    "No local model found and no OpenAI API key provided. "
+                    "Please either install a local model or provide an OpenAI API key."
+                )
+        
+        # Set up directories and initialize components
+        self._setup_directories()
+        self.context = AgentContext()
+        
+        self.logger.info(f"Agent initialized with model: {self.model.model_provider}/{self.model.model_name}")
+        self.logger.info(f"Using device: {self.device}")
         
         # Initialize APIs
         self.overture_api = OvertureAPI()
@@ -89,11 +102,7 @@ class IntelligentAgent:
         self.geocoder = GeoCoderAgent()
         
         # Initialize context and processors
-        self.context = AgentContext()
         self.text_processor = TextProcessor()
-        
-        # Create data directories
-        self._setup_directories()
     
     def _setup_directories(self):
         """Create necessary directories for data storage"""
