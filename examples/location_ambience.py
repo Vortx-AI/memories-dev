@@ -17,7 +17,7 @@ from typing import Dict, List, Any, Tuple
 from pathlib import Path
 from dotenv import load_dotenv
 from memories import MemoryStore, Config
-from memories.agents import BaseAgent
+from memories.models import BaseModel
 from memories.utils.text import TextProcessor
 from memories.data_acquisition.sources.overture_api import OvertureAPI
 from memories.data_acquisition.sources.sentinel_api import SentinelAPI

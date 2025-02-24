@@ -67,14 +67,13 @@ pip install -r requirements.txt
 All examples follow a similar pattern:
 
 1. Initialize a memory store
-2. Create a specialized agent
-3. Process data and generate insights
-4. Store results in appropriate memory tiers
+2. Process data and generate insights
+3. Store results in appropriate memory tiers
 
 Example:
 ```python
 from memories import MemoryStore, Config
-from examples.property_analyzer import PropertyAgent
+from examples.property_analyzer import Property
 
 # Initialize memory store
 config = Config(
@@ -85,11 +84,11 @@ config = Config(
 )
 memory_store = MemoryStore(config)
 
-# Create agent
-agent = PropertyAgent(memory_store)
+
+property = Property(memory_store)
 
 # Process data
-insights = await agent.analyze_property(property_data)
+insights = await property.analyze_property(property_data)
 ```
 
 ## Data Storage

@@ -14,7 +14,7 @@ import numpy as np
 from dotenv import load_dotenv
 from pathlib import Path
 from memories import MemoryStore, Config
-from memories.agents import BaseAgent
+from memories.models import BaseModel
 from memories.utils.text import TextProcessor
 from memories.data_acquisition.sources.overture_api import OvertureAPI
 from memories.data_acquisition.sources.planetary_compute import PlanetaryCompute

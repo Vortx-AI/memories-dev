@@ -1,5 +1,5 @@
 """
-Response Generation Agent for generating natural language responses.
+Response Generation module for generating natural language responses.
 """
 
 import os
@@ -16,7 +16,7 @@ from langchain.callbacks.manager import CallbackManagerForLLMRun
 from pydantic import BaseModel, Field
 import tempfile
 import json
-from memories.agents.agent_base import BaseAgent
+from memories.models.model_base import BaseModel
 
 # Load environment variables
 load_dotenv()
@@ -116,16 +116,16 @@ class DeepSeekLLM(LLM, BaseModel):
             self._cleanup()
             raise
 
-class ResponseGenerationAgent(BaseAgent):
-    """Agent specialized in generating natural language responses."""
+class ResponseGeneration(BaseModel):
+    """Module specialized in generating natural language responses."""
     
     def __init__(self, model: Optional[Any] = None):
-        """Initialize ResponseGenerationAgent with LangChain and DeepSeek.
+        """Initialize ResponseGeneration with LangChain and DeepSeek.
         
         Args:
             model: Optional LLM model for response generation
         """
-        super().__init__(name="response_generation_agent", model=model)
+        super().__init__(name="response_generation", model=model)
         
         # Initialize DeepSeek model
         offload_folder = os.path.join(
@@ -171,7 +171,7 @@ Your conversational response:"""
         self.response_chain = LLMChain(llm=self.llm, prompt=self.response_prompt)
 
     def get_capabilities(self) -> List[str]:
-        """Return the capabilities of this agent."""
+        """Return the capabilities of this module."""
         return [
             "Generate natural language responses from data",
             "Format technical results into conversational text",
@@ -222,7 +222,7 @@ Your conversational response:"""
             }
             
         except Exception as e:
-            self.logger.error(f"Error in ResponseGenerationAgent: {str(e)}")
+            self.logger.error(f"Error in ResponseGeneration: {str(e)}")
             return {
                 "status": "error",
                 "error": str(e),
@@ -249,21 +249,20 @@ Your conversational response:"""
             
             # Convert data to string if it's not already
             if not isinstance(data, str):
-                data = str(data)
-            
-            # Generate response using LLM
-            response = self.response_chain.invoke({
-                "query": query,
-                "code_result": data
-            })["text"]
+                data = json.dumps(data, indent=2)
+                
+            # Generate response using LangChain
+            response = self.response_chain.run(
+                query=query,
+                code_result=data
+            )
             
             return response.strip()
             
         except Exception as e:
             self.logger.error(f"Error formatting response: {str(e)}")
-            return f"I apologize, but I encountered an error while formatting the response: {str(e)}"
-
+            return f"I apologize, but I had trouble formatting the response: {str(e)}"
+            
     def requires_model(self) -> bool:
-        """This agent requires a model for response generation."""
-        return True
-        
+        """Override this method to indicate if the module requires a model."""
+        return True 

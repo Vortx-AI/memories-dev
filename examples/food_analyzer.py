@@ -15,7 +15,7 @@ from textblob import TextBlob
 from dotenv import load_dotenv
 from memories import MemoryStore, Config
 from memories.core import HotMemory, WarmMemory, ColdMemory
-from memories.agents import BaseAgent
+from memories.models import BaseModel
 from memories.utils.text import TextProcessor
 
 # Configure logging
@@ -25,11 +25,11 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
-class FoodAnalyzerAgent(BaseAgent):
-    """Agent specialized in food and restaurant analysis."""
+class FoodAnalyzer(BaseModel):
+    """ specialized in food and restaurant analysis."""
     
     def __init__(self, memory_store: MemoryStore):
-        super().__init__(name="food_analyzer_agent")
+        super().__init__(name="food_analyzer")
         self.memory_store = memory_store
         self.text_processor = TextProcessor()
         
@@ -219,8 +219,8 @@ def main():
     
     memory_store = MemoryStore(config)
     
-    # Initialize agent
-    agent = FoodAnalyzerAgent(memory_store)
+    # Initialize 
+    food_analyzer = FoodAnalyzer(memory_store)
     
     # Analyze multiple restaurants
     for _ in range(3):
@@ -231,7 +231,7 @@ def main():
         logger.info(f"Cuisine Type: {restaurant_data['cuisine_type']}")
         
         # Perform analysis
-        insights = agent.analyze_restaurant(restaurant_data)
+        insights = food_analyzer.analyze_restaurant(restaurant_data)
         
         # Log results
         logger.info("\nAnalysis Results:")

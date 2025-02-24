@@ -1,5 +1,5 @@
 """
-Query understanding agent for handling query classification and location extraction.
+Query understanding module for handling query classification and location extraction.
 """
 
 from typing import Dict, Any, Optional
@@ -7,30 +7,30 @@ import logging
 from dotenv import load_dotenv
 import os
 
-from memories.utils.agents.context_utils import classify_query
-from memories.utils.agents.location_utils import normalize_location, is_valid_coordinates
-from memories.utils.agents.nlp_utils import initialize_nltk, extract_location_entities
+from memories.utils.context_utils import classify_query
+from memories.utils.location_utils import normalize_location, is_valid_coordinates
+from memories.utils.nlp_utils import initialize_nltk, extract_location_entities
 from memories.models.load_model import LoadModel
-from memories.agents.agent_base import BaseAgent
+from memories.models.model_base import BaseModel
 
 # Load environment variables
 load_dotenv()
 
-class QueryUnderstandingAgent(BaseAgent):
-    """Agent for handling query understanding and classification."""
+class QueryUnderstanding(BaseModel):
+    """Module for handling query understanding and classification."""
     
     def __init__(self, model: Optional[LoadModel] = None):
-        """Initialize the Query Understanding Agent.
+        """Initialize the Query Understanding module.
         
         Args:
             model (Optional[LoadModel]): Model instance for language processing
         """
-        super().__init__(name="query_understanding_agent", model=model)
+        super().__init__(name="query_understanding", model=model)
         self.logger = logging.getLogger(__name__)
         initialize_nltk()
     
     def requires_model(self) -> bool:
-        """This agent requires a model for classification."""
+        """This module requires a model for classification."""
         return True
     
     def classify_query(self, query: str) -> Dict[str, Any]:
@@ -72,8 +72,8 @@ class QueryUnderstandingAgent(BaseAgent):
                 "response": f"Error: {str(e)}"
             }
 
-class LocationExtractor(BaseAgent):
-    """Agent for extracting and processing location information."""
+class LocationExtractor(BaseModel):
+    """Module for extracting and processing location information."""
     
     def __init__(self, model: Optional[LoadModel] = None):
         """Initialize the Location Extractor.
@@ -86,7 +86,7 @@ class LocationExtractor(BaseAgent):
         initialize_nltk()
     
     def requires_model(self) -> bool:
-        """This agent requires a model for processing."""
+        """This module requires a model for processing."""
         return True
     
     def extract_query_info(self, query: str) -> Dict[str, Any]:
@@ -133,4 +133,4 @@ class LocationExtractor(BaseAgent):
             return {
                 "error": str(e),
                 "data_type": "error"
-            }
+            } 

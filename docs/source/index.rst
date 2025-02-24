@@ -21,12 +21,12 @@ Key Features
   - Contextual Understanding
   - Adaptive Learning from Historical Patterns
 
-- Specialized Analysis Agents
+- Specialized Analysis 
   - Property Analysis: Understanding urban development patterns
   - Location Ambience: Environmental and social context synthesis
   - Traffic Patterns: Transportation network evolution
   - Water Bodies: Hydrological system monitoring
-  - Custom Agent Framework for specialized applications
+ 
 
 Example Applications
 ------------------

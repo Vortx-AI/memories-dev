@@ -1,5 +1,5 @@
 """
-Tools for location processing that can be used by agents.
+Tools for location processing that can be used .
 """
 
 from typing import Dict, Any, List, Tuple, Optional

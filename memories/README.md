@@ -22,7 +22,6 @@ memories.dev is a groundbreaking framework for building and managing collective 
 
 ```python
 from memories_dev import MemorySystem
-from memories_dev.agents import Agent
 from memories_dev.models import ModelRegistry
 
 # Initialize the memory system
@@ -32,12 +31,7 @@ memory_system = MemorySystem(
     embedding_model="text-embedding-3-small"
 )
 
-# Create an agent with memory access
-agent = Agent(
-    memory_system=memory_system,
-    model_name="gpt-4",  # Default model for reasoning
-    capabilities=["analysis", "synthesis"]
-)
+
 
 # Store a memory
 memory_id = memory_system.store(
@@ -56,11 +50,7 @@ relevant_memories = memory_system.query(
     time_range=("2024-01-01", "2024-03-15")
 )
 
-# Agent reasoning with memory context
-analysis = agent.analyze(
-    query="Evaluate the impact of environmental policies",
-    context_memories=relevant_memories
-)
+
 ```
 
 ## 🏗️ Installation
@@ -120,7 +110,6 @@ pip install memories-dev[gpu]
 
 ### Available Now
 - Memory store implementations
-- Basic agent system
 - Core memory operations
 - Unit test framework
 - Development environment setup
@@ -142,16 +131,16 @@ memories-dev/
 │   └── notebooks/        # Jupyter notebooks
 │
 ├── memories_dev/         # Main package
-│   ├── agents/          # Agent System
-│   │   ├── core/       # Core agent functionality
-│   │   │   ├── base.py     # Base agent classes
-│   │   │   └── registry.py # Agent registry
+│   ├── models/           # Models
+│   │   ├── core/       # Core functionality
+│   │   │   ├── base.py     # Base  classes
+│   │   │   └── registry.py #  registry
 │   │   ├── memory/     # Memory integration
 │   │   │   ├── context.py  # Context management
 │   │   │   └── retrieval.py# Memory retrieval
-│   │   └── specialized/# Specialized agents
-│   │       ├── analysis.py # Analysis agents
-│   │       └── synthesis.py# Synthesis agents
+│   │   └── specialized/# Specialized 
+│   │       ├── analysis.py # Analysis 
+│   │       └── synthesis.py# Synthesis 
 │   │
 │   ├── data_acquisition/# Data Collection
 │   │   ├── satellite/   # Satellite data handlers

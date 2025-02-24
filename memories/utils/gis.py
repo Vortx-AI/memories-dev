@@ -1,32 +1,35 @@
+"""
+GIS module for handling geographic information system operations.
+"""
+
 import os
 from typing import Dict, Any, List, Optional
 from dotenv import load_dotenv
 import logging
-from .agentic_tool import AgenticTools, APIResponse, APIType
-from .memories_index import FAISSStorage
-from memories.agents import BaseAgent
+
+from memories.models.model_base import BaseModel
 
 # Load environment variables
 load_dotenv()
 
-class GISAgent(BaseAgent):
-    """Agent specialized in GIS operations."""
+class GIS(BaseModel):
+    """Module specialized in GIS operations."""
     
     def __init__(self, memory_store: Any = None, model: Optional[LoadModel] = None):
-        """Initialize the GIS Agent with API capabilities and FAISS storage.
+        """Initialize the GIS module with API capabilities and FAISS storage.
         
         Args:
             memory_store: Optional memory store for persistence
             model: Optional model for ML operations
         """
-        super().__init__(memory_store=memory_store, name="gis_agent", model=model)
-        self.tools = AgenticTools()
+        super().__init__(memory_store=memory_store, name="gis", model=model)
+        
         
         # Initialize FAISS storage
         project_root = os.getenv("PROJECT_ROOT")
         if project_root is None:
             raise ValueError("PROJECT_ROOT environment variable is not set")
-        self.storage = FAISSStorage(directory=os.path.join(project_root, "faiss_data"))
+        #self.storage = FAISSStorage(directory=os.path.join(project_root, "faiss_data"))
     
     def get_api_for_field(self, field: str) -> str:
         """
@@ -197,9 +200,9 @@ class GISAgent(BaseAgent):
             return "3"  # Default to API 3 on error
     
     async def process(self, *args, **kwargs) -> Dict[str, Any]:
-        """Process data using this agent.
+        """Process data using this module.
         
-        This method implements the required abstract method from BaseAgent.
+        This method implements the required abstract method from BaseModel.
         It serves as a wrapper around query method.
         
         Args:
@@ -248,91 +251,87 @@ class GISAgent(BaseAgent):
         Returns:
             Response data from the appropriate API
         """
-        # Get the context value
-        context_value = context.get('term', '')
-        
-        # Determine which API to use
-        api_id = self.determine_api(context_value)
-        
-        # Call the appropriate API based on api_id
-        if api_id == "1":
-            # Reverse geocoding
-            response = self.tools.reverse_geocode(lat, lon)
-            return {
-                'status': response.status,
-                'api_id': APIType.NOMINATIM_REVERSE.value,
-                'data': response.data,
-                'error': response.error
-            }
+        try:
+            # Determine which API to use based on context
+            api_id = self.determine_api(str(context))
             
-        elif api_id == "2":
-            # Forward geocoding
-            response = self.tools.forward_geocode(context_value)
-            return {
-                'status': response.status,
-                'api_id': APIType.NOMINATIM_SEARCH.value,
-                'data': response.data,
-                'error': response.error
-            }
+            # Query the appropriate API
+            if api_id == "1":
+                response = self.tools.reverse_geocode(lat, lon)
+            elif api_id == "2":
+                response = self.tools.forward_geocode(f"{lat},{lon}")
+            else:  # api_id == "3" or default
+                response = self.tools.query_overpass(lat, lon, context, 500)
             
-        else:  # api_id == "3" or default
-            # Overpass query
-            response = self.tools.query_overpass(lat, lon, context, 500)
-            if response.status == "error":
+            # Format the response
+            if response.status == "success":
                 return {
-                    'status': 'error',
-                    'error': response.error,
-                    'api_id': APIType.OVERPASS.value,
-                    'query': {
-                        'lat': lat,
-                        'lon': lon,
-                        'term': context_value
-                    }
+                    "status": "success",
+                    "data": response.data,
+                    "api_used": api_id,
+                    "error": None
                 }
-            return response.data
-    
+            else:
+                return {
+                    "status": "error",
+                    "error": response.error,
+                    "api_used": api_id,
+                    "data": None
+                }
+                
+        except Exception as e:
+            self.logger.error(f"Error in query: {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "api_used": None,
+                "data": None
+            }
+
     def format_response(self, response_data: Dict[str, Any]) -> str:
-        """Format the API response into a readable string"""
-        if response_data.get('status') == 'error':
-            return f"Error: {response_data.get('error')}"
+        """
+        Format the response data into a readable string
         
-        api_id = response_data.get('api_id')
-        
-        if api_id == APIType.NOMINATIM_REVERSE.value:
-            # Format reverse geocoding response
-            address = response_data.get('data', {}).get('address', {})
-            return f"Location: {', '.join(str(v) for v in address.values() if v)}"
+        Args:
+            response_data: Dictionary containing response data
             
-        elif api_id == APIType.NOMINATIM_SEARCH.value:
-            # Format forward geocoding response
-            places = response_data.get('data', [])
-            if not places:
-                return "No locations found"
-            return "\n".join([f"- {place.get('display_name', '')}" for place in places[:3]])
+        Returns:
+            Formatted string representation of the data
+        """
+        try:
+            if response_data.get("status") == "error":
+                return f"Error: {response_data.get('error', 'Unknown error')}"
             
-        else:  # APIType.OVERPASS.value
-            # Format Overpass response
-            features = response_data.get('features', [])
-            if not features:
-                return "No features found in the specified area"
+            data = response_data.get("data", {})
+            api_used = response_data.get("api_used", "unknown")
             
-            response_parts = [f"Found {len(features)} features nearby:"]
-            for feature in features:
-                feature_type = feature.get('type', '')
-                tags = feature.get('tags', {})
-                location = feature.get('location', {})
+            if not data:
+                return "No data found"
+            
+            # Format based on API type
+            if api_used == "1":
+                return f"Location: {data.get('display_name', 'Unknown')}"
+            elif api_used == "2":
+                if isinstance(data, list) and data:
+                    return f"Location: {data[0].get('display_name', 'Unknown')}"
+                return "No location data found"
+            else:  # api_used == "3" or default
+                features = data.get("features", [])
+                if not features:
+                    return "No features found"
+                    
+                result = []
+                for feature in features[:5]:  # Limit to first 5 features
+                    name = feature.get("properties", {}).get("name", "Unnamed")
+                    tags = feature.get("tags", {})
+                    result.append(f"- {name}: {tags}")
                 
-                feature_desc = f"\n- {feature_type.capitalize()}"
-                if tags:
-                    for key, value in tags.items():
-                        feature_desc += f"\n  * {key}: {value}"
-                if location:
-                    feature_desc += f"\n  * location: {location.get('lat')}, {location.get('lon')}"
+                return "\n".join(result)
                 
-                response_parts.append(feature_desc)
-            
-            return "\n".join(response_parts)
+        except Exception as e:
+            self.logger.error(f"Error formatting response: {str(e)}")
+            return f"Error formatting response: {str(e)}"
 
     def requires_model(self) -> bool:
-        """This agent requires a model for advanced operations."""
-        return True
+        """This module does not require a model."""
+        return False 

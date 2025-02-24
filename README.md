@@ -57,14 +57,14 @@ The system is built on three core pillars:
 
 1. **Memory Formation Pipeline**: Processes raw data into structured memories
 2. **Query Pipeline**: Efficient retrieval and context assembly
-3. **Agent System**: Intelligent reasoning and synthesis
+
 
 ## Quick Start
 
 ```python
 from memories.models.load_model import LoadModel
 from memories.core.memory import MemoryStore
-from memories.agents.agent import Agent
+
 
 
 # Initialize with advanced models
@@ -98,12 +98,7 @@ synthetic_data = vx.generate_synthetic(
     climate_factors=True
 )
 
-# AGI reasoning with memories
-insights = Agent(
-    query="Analyze urban development patterns and environmental impact",
-    context_memories=memories,
-    synthetic_scenarios=synthetic_data
-)
+
 ```
 
 ## 📊 Data Acquisition
@@ -367,21 +362,16 @@ graph TD
 ```
 
 
-### Agent System
+### System
 
 ```mermaid
 graph TD
     %% Node Styles
-    classDef agent fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    
     classDef memory fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
     classDef task fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
 
-    %% Agent Components
-    subgraph "🤖 Agent System"
-        A1["🧠 Reasoning Engine"]:::agent
-        A2["🔄 Memory Integration"]:::agent
-        A3["📊 Analysis Engine"]:::agent
-    end
+   
 
     %% Memory Access
     subgraph "💾 Memory Access"
@@ -479,7 +469,6 @@ graph TD
 
     %% Core Modules
     C1["🧠 Memory Core"]:::core
-    C2["🤖 Agent Core"]:::core
     C3["📡 Data Core"]:::core
 
     %% Dependencies

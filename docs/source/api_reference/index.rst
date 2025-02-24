@@ -6,7 +6,6 @@ API Reference
    :caption: Contents:
 
    memory_store
-   agents
    config
    models
    load_model
@@ -25,13 +24,6 @@ Memory System
    :undoc-members:
    :show-inheritance:
 
-Agent System
-~~~~~~~~~~
-
-.. automodule:: memories.agents.agent
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 Models
 ~~~~~

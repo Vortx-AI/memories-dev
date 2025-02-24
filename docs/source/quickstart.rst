@@ -10,7 +10,7 @@ Here's a simple example to get you started with memories-dev:
 
     from memories.models.load_model import LoadModel
     from memories.core.memory import MemoryStore
-    from memories.agents.agent import Agent
+    
 
     # Initialize with advanced models
     load_model = LoadModel(
@@ -41,12 +41,7 @@ Here's a simple example to get you started with memories-dev:
         climate_factors=True
     )
 
-    # AGI reasoning with memories
-    insights = Agent(
-        query="Analyze urban development patterns and environmental impact",
-        context_memories=memories,
-        synthetic_scenarios=synthetic_data
-    )
+    
 
 Key Features
 -----------
@@ -73,14 +68,3 @@ Key Features
         location_radius_km=10
     )
 
-3. Agent Integration
-~~~~~~~~~~~~~~~~~~
-
-.. code-block:: python
-
-    # Use agents for analysis
-    agent = Agent(
-        query="Analyze patterns",
-        context_memories=memories
-    )
-    insights = agent.analyze() 

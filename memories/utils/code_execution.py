@@ -1,5 +1,5 @@
 """
-Code execution agent for safely executing generated code.
+Code execution module for safely executing generated code.
 """
 
 import logging
@@ -10,16 +10,16 @@ import numpy as np
 from io import StringIO
 import sys
 from contextlib import redirect_stdout
-from memories.agents.agent_base import BaseAgent
+from memories.models.model_base import BaseModel
 
-class CodeExecutionAgent(BaseAgent):
+class CodeExecution(BaseModel):
     def __init__(self, model=None):
-        """Initialize the Code Execution Agent.
+        """Initialize the Code Execution module.
         
         Args:
             model: Optional model instance
         """
-        super().__init__(name="code_execution_agent", model=model)
+        super().__init__(name="code_execution", model=model)
         self.logger = logging.getLogger(__name__)
         
         # Define allowed_modules for safety checks
@@ -33,7 +33,7 @@ class CodeExecutionAgent(BaseAgent):
         self._initialize_tools()
     
     def get_capabilities(self) -> List[str]:
-        """Return a list of high-level capabilities this agent provides."""
+        """Return a list of high-level capabilities this module provides."""
         return [
             "Execute Python code safely",
             "Run queries on data",
@@ -43,11 +43,11 @@ class CodeExecutionAgent(BaseAgent):
         ]
     
     def requires_model(self) -> bool:
-        """This agent does not require a model."""
+        """This module does not require a model."""
         return False
     
     def _initialize_tools(self):
-        """Initialize the tools this agent can use."""
+        """Initialize the tools this module can use."""
         self.register_tool(
             "execute_code",
             self.execute_code,
@@ -68,7 +68,7 @@ class CodeExecutionAgent(BaseAgent):
         )
     
     async def process(self, goal: str, **kwargs) -> Dict[str, Any]:
-        """Process a goal using this agent."""
+        """Process a goal using this module."""
         try:
             # Create a plan
             plan = self.plan(goal)

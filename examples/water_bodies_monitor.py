@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 from shapely.geometry import box
 from memories import MemoryStore, Config
 from memories.core import HotMemory, WarmMemory, ColdMemory
-from memories.agents.agent_base import BaseAgent
+from memories.models import BaseModel
 from memories.utils.text import TextProcessor
 from memories.data_acquisition.sources.overture_api import OvertureAPI
 from memories.data_acquisition.sources.sentinel_api import SentinelAPI
@@ -55,17 +55,17 @@ def setup_directories(config):
         logger.info(f"Creating directory: {path}")
         Path(path).mkdir(parents=True, exist_ok=True)
 
-class WaterBodyAgent(BaseAgent):
-    """Agent specialized in water body analysis."""
+class WaterBody(BaseModel):
+    """ specialized in water body analysis."""
     
     def __init__(self, memory_store: MemoryStore, config: Config):
-        """Initialize the Water Body Agent.
+        """Initialize t.
         
         Args:
             memory_store: Memory store instance
             config: Configuration instance
         """
-        super().__init__(name="water_body_agent", memory_store=memory_store)
+        super().__init__(name="water_body", memory_store=memory_store)
         self.text_processor = TextProcessor()
         self.image_processor = ImageProcessor()
         self.vector_processor = VectorProcessor()
@@ -82,7 +82,7 @@ class WaterBodyAgent(BaseAgent):
         self._initialize_tools()
     
     def get_capabilities(self) -> List[str]:
-        """Return a list of high-level capabilities this agent provides."""
+        """Return a list of high-level capabilities this model provides."""
         return [
             "Analyze water bodies using satellite data",
             "Process water quality metrics",
@@ -92,7 +92,7 @@ class WaterBodyAgent(BaseAgent):
         ]
     
     def _initialize_tools(self):
-        """Initialize the tools this agent can use."""
+        """Initialize the tools this model can use."""
         self.register_tool(
             "analyze_water_body",
             self.analyze_water_body,
@@ -113,7 +113,7 @@ class WaterBodyAgent(BaseAgent):
         )
     
     async def process(self, goal: str, **kwargs) -> Dict[str, Any]:
-        """Process a goal using this agent."""
+        """Process a goal ."""
         try:
             # Create a plan
             plan = self.plan(goal)
@@ -360,8 +360,8 @@ async def main():
     # Initialize memory store with config
     memory_store = MemoryStore(config)
     
-    # Initialize water body agent
-    agent = WaterBodyAgent(memory_store, config)
+    # Initialize water body 
+    water_body = WaterBody(memory_store, config)
     
     # Define area of interest (Bangalore lakes)
     bbox = box(77.4, 12.8, 77.8, 13.2)
@@ -379,7 +379,7 @@ async def main():
     try:
         # Download Overture data first
         print("\nDownloading Overture data for the specified area...")
-        download_results = agent.overture_api.download_data(bbox_dict)
+        download_results = water_body.overture_api.download_data(bbox_dict)
         
         if download_results.get('base', False):
             print("✅ Successfully downloaded base theme data (includes water features)")
@@ -388,7 +388,7 @@ async def main():
             
         # Process water bodies
         print("\nAnalyzing water bodies...")
-        insights = await agent.process(
+        insights = await water_body.process(
             goal="analyze water bodies in area",
             bbox=bbox,
             start_date=start_date,

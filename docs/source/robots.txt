@@ -1,4 +1,4 @@
-User-agent: *
+User: *
 Allow: /
 Sitemap: https://memories-dev.readthedocs.io/sitemap.xml
 

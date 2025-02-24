@@ -1,5 +1,5 @@
 """
-Code generation agent for handling code generation and analysis.
+Code generation module for handling code generation and analysis.
 """
 
 import os
@@ -13,24 +13,24 @@ import duckdb
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from memories.models.api_connector import get_connector
-from memories.agents.agent_base import BaseAgent
+from memories.models.model_base import BaseModel
 
 # Load environment variables
 load_dotenv()
 
-class CodeGenerationAgent(BaseAgent):
+class CodeGeneration(BaseModel):
     def __init__(self, model=None, offload_folder: Optional[str] = None):
-        """Initialize the Code Generation Agent.
+        """Initialize the Code Generation module.
         
         Args:
             model: Optional model instance
             offload_folder: Optional folder for offloading data
         """
-        super().__init__(name="code_generation_agent", model=model)
+        super().__init__(name="code_generation", model=model)
         self.logger = logging.getLogger(__name__)
         
         # Load API knowledge base
-        knowledge_path = os.path.join(os.getenv('PROJECT_ROOT', '.'), 'memories', 'agents', 'knowledge-base.json')
+        knowledge_path = os.path.join(os.getenv('PROJECT_ROOT', '.'), 'memories', 'utils', 'knowledge-base.json')
         try:
             with open(knowledge_path, 'r') as f:
                 self.knowledge_base = json.load(f)
@@ -67,7 +67,7 @@ class CodeGenerationAgent(BaseAgent):
         self._initialize_tools()
     
     def get_capabilities(self) -> List[str]:
-        """Return a list of high-level capabilities this agent provides."""
+        """Return a list of high-level capabilities this module provides."""
         return [
             "Generate Python code from natural language queries",
             "Process queries using API documentation",
@@ -77,11 +77,11 @@ class CodeGenerationAgent(BaseAgent):
         ]
     
     def requires_model(self) -> bool:
-        """This agent requires a model for code generation."""
+        """This module requires a model for code generation."""
         return True
     
     def _initialize_tools(self):
-        """Initialize the tools this agent can use."""
+        """Initialize the tools this module can use."""
         self.register_tool(
             "process_query",
             self.process_query,
@@ -102,7 +102,7 @@ class CodeGenerationAgent(BaseAgent):
         )
     
     async def process(self, goal: str, **kwargs) -> Dict[str, Any]:
-        """Process a goal using this agent."""
+        """Process a goal using this module."""
         try:
             # Create a plan
             plan = self.plan(goal)
@@ -216,10 +216,10 @@ Response:"""
             return "location: , location_info: unknown"
             
 
-class AgentAnalyst:
+class ModelAnalyst:
     def __init__(self, load_model: Any):
         """
-        Initialize Agent Analyst.
+        Initialize Model Analyst.
 
         Args:
             load_model: An LLM instance or similar component used for generating code.
@@ -259,87 +259,53 @@ class AgentAnalyst:
         extra_params: Dict = None
     ) -> Dict[str, Any]:
         """
-        Analyze the query and recommend appropriate functions with parameters.
+        Analyze a query and generate appropriate code for spatial analysis.
+        
+        Args:
+            query: User's query
+            geometry: Geometry string
+            geometry_type: Type of geometry
+            data_type: Type of data
+            parquet_file: Path to parquet file
+            relevant_column: Column to analyze
+            geometry_column: Optional geometry column
+            extra_params: Additional parameters
+            
+        Returns:
+            Dict containing generated code and analysis
         """
         try:
-            prompt = f"""
-Given a spatial query and data details, recommend appropriate query functions with parameters.
-
+            # Format the prompt
+            prompt = f"""Generate Python code to analyze spatial data based on:
 Query: {query}
-Data Type: {data_type}
 Geometry: {geometry}
-Geometry Type: {geometry_type}
-Parquet File: {parquet_file}
-Relevant Column: {relevant_column}
-Geometry Column: {geometry_column if geometry_column else 'geometry'}
-
-Available functions:
-1. nearest_query - Find nearest records (default limit: 5)
-2. within_area_query - Find records within the specified geometry
-3. count_within_area_query - Count records within the specified geometry
-4. exact_match_query - Find exact matches with spatial filtering
-
-Return recommendations in this JSON format:
-{{
-    "status": "success",
-    "recommendations": [
-        {{
-            "function_name": "function_name",
-            "parameters": {{
-                "parquet_file": "file_path",
-                "column_name": "column_name",
-                "value": "true/false",
-                "geometry": "WKT_string",
-                "geometry_type": "POINT/LINESTRING/POLYGON",
-                "limit": number         // for nearest query
-            }},
-            "reason": "explanation"
-        }}
-    ]
-}}
-
-Note: All filter columns are boolean type, so value should be 'true' or 'false'.
+Type: {geometry_type}
+Data: {data_type}
+File: {parquet_file}
+Column: {relevant_column}
 """
-            # Get response from model
-            response = self.load_model.get_response(prompt)
-            
-            # Parse the response
-            try:
-                if isinstance(response, str):
-                    if "```json" in response:
-                        response = response.split("```json")[1].split("```")[0]
-                    elif "```" in response:
-                        response = response.split("```")[1].split("```")[0]
-                    
-                    result = json.loads(response.strip())
-                    
-                    # Set default values for limit if it's a string
-                    for rec in result.get('recommendations', []):
-                        params = rec.get('parameters', {})
-                        if 'limit' in params and not isinstance(params['limit'], (int, float)):
-                            params['limit'] = 5   # Default 5 results
-                        # Ensure value is boolean string
-                        if 'value' in params:
-                            params['value'] = 'true'  # Default to true for boolean columns
-                        # Ensure geometry and geometry_type are set
-                        if 'geometry' not in params:
-                            params['geometry'] = geometry
-                        if 'geometry_type' not in params:
-                            params['geometry_type'] = geometry_type
-                    
-                    return result
-                    
-            except json.JSONDecodeError as e:
-                return {
-                    'status': 'error',
-                    'error': f'Failed to parse response: {str(e)}',
-                    'response': response
-                }
+            if geometry_column:
+                prompt += f"Geometry Column: {geometry_column}\n"
+            if extra_params:
+                prompt += f"Extra Parameters: {json.dumps(extra_params)}\n"
                 
-        except Exception as e:
+            # Generate code
+            code = self.clean_generated_code(self.load_model.generate(prompt))
+            
             return {
-                'status': 'error',
-                'error': str(e)
+                "status": "success",
+                "code": code,
+                "analysis": {
+                    "query_type": "spatial",
+                    "geometry_type": geometry_type,
+                    "data_type": data_type
+                }
             }
             
-        
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e),
+                "code": None,
+                "analysis": None
+            } 

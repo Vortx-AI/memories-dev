@@ -156,7 +156,7 @@ After installation, you can verify the setup with these examples:
 
     from memories.models.load_model import LoadModel
     from memories.core.memory import MemoryStore
-    from memories.agents.agent import Agent
+    
 
     # Basic initialization
     def test_basic_setup():

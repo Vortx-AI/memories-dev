@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 from memories.config import Config
 from memories import MemoryStore
 from memories.core import HotMemory, WarmMemory, ColdMemory
-from memories.agents import BaseAgent
+from memories.models import BaseModel
 from memories.utils.text import TextProcessor
 
 # Configure logging
@@ -26,18 +26,18 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
-class AmbienceAnalyzerAgent(BaseAgent):
-    """Agent specialized in location ambience analysis."""
+class AmbienceAnalyzer(BaseModel):
+    """ specialized in location ambience analysis."""
     
     def __init__(self, memory_store: MemoryStore):
-        super().__init__(name="ambience_analyzer_agent")
+        super().__init__(name="ambience_analyzer")
         self.memory_store = memory_store
         self.text_processor = TextProcessor()
         
     async def process(self, *args, **kwargs):
-        """Process data using this agent.
+        """Process data .
         
-        This method implements the required abstract method from BaseAgent.
+        This method implements the required abstract method from BaseModel.
         It serves as a wrapper around analyze_location.
         """
         if not args and not kwargs:
@@ -300,8 +300,8 @@ def main():
     
     memory_store = MemoryStore(config)
     
-    # Initialize agent
-    agent = AmbienceAnalyzerAgent(memory_store)
+    # Initialize 
+    ambiance = AmbienceAnalyzer(memory_store)
     
     # Analyze multiple locations
     for _ in range(3):
@@ -312,7 +312,7 @@ def main():
         logger.info(f"Type: {location_data['type']}")
         
         # Perform analysis
-        insights = agent.analyze_location(location_data)
+        insights = ambiance.analyze_location(location_data)
         
         # Log results
         logger.info("\nAmbience Profile:")

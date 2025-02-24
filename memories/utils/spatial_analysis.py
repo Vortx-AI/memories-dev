@@ -1,26 +1,26 @@
 """
-Spatial Analysis Agent for processing geometric and spatial data.
+Spatial Analysis module for processing geometric and spatial data.
 """
 
 from typing import Dict, Any, Optional, List
 import logging
 from memories.utils.earth.geometry_retriever import GeometryExtractor
-from memories.agents.agent_base import BaseAgent
+from memories.models.model_base import BaseModel
 
-class SpatialAnalysisAgent(BaseAgent):
-    """Agent specialized in geometry and spatial data processing."""
+class SpatialAnalysis(BaseModel):
+    """Module specialized in geometry and spatial data processing."""
     
     def __init__(self, model: Optional[Any] = None):
-        """Initialize SpatialAnalysisAgent with GeometryExtractor
+        """Initialize SpatialAnalysis with GeometryExtractor
         
         Args:
             model: Optional LLM model for advanced spatial analysis
         """
-        super().__init__(name="spatial_analysis_agent", model=model)
+        super().__init__(name="spatial_analysis", model=model)
         self.geometry_retriever = GeometryExtractor()
 
     def get_capabilities(self) -> List[str]:
-        """Return the capabilities of this agent."""
+        """Return the capabilities of this module."""
         return [
             "Extract and analyze geometric features from locations",
             "Calculate distances and spatial relationships",
@@ -80,7 +80,7 @@ class SpatialAnalysisAgent(BaseAgent):
             }
             
         except Exception as e:
-            self.logger.error(f"Error in SpatialAnalysisAgent: {str(e)}")
+            self.logger.error(f"Error in SpatialAnalysis: {str(e)}")
             return {
                 "status": "error",
                 "error": str(e),
@@ -184,18 +184,18 @@ class SpatialAnalysisAgent(BaseAgent):
             }
 
     def requires_model(self) -> bool:
-        """This agent can operate with or without a model."""
+        """This module can operate with or without a model."""
         return False
 
     def __str__(self) -> str:
-        """String representation of SpatialAnalysisAgent"""
-        return "SpatialAnalysisAgent(GeometryExtractor)"
+        """String representation of SpatialAnalysis"""
+        return "SpatialAnalysis(GeometryExtractor)"
 
 
 def main():
-    """Example usage of SpatialAnalysisAgent"""
-    # Initialize agent
-    agent = SpatialAnalysisAgent()
+    """Example usage of SpatialAnalysis"""
+    # Initialize module
+    spatial = SpatialAnalysis()
     
     # Example location info
     location_info = {
@@ -205,7 +205,7 @@ def main():
     }
     
     # Process location
-    result = agent.process_location(location_info)
+    result = spatial.process_location(location_info)
     
     # Print results
     print("\nGeometry Results:")
@@ -222,4 +222,4 @@ def main():
             print(f"Distance: {feature['properties']['distance_meters']:.1f}m")
 
 if __name__ == "__main__":
-    main()
+    main() 

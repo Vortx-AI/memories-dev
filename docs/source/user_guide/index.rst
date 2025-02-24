@@ -6,7 +6,6 @@ User Guide
    :caption: Contents:
 
    memory_system
-   agents
    data_sources
    advanced_features
 
@@ -39,17 +38,12 @@ Core Concepts
    - Memory retrieval
    - Memory updates
 
-2. Agents
-   - Agent types
-   - Agent capabilities
-   - Custom agents
-
-3. Data Sources
+2. Data Sources
    - Satellite data
    - Sensor data
    - Real-time streams
 
-4. Advanced Features
+3. Advanced Features
    - Custom memory stores
    - Advanced querying
    - Performance optimization 

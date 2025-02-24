@@ -11,7 +11,7 @@ The Property Analyzer example demonstrates how to analyze real estate properties
 .. code-block:: python
 
     from memories import MemoryStore, Config
-    from examples.property_analyzer import PropertyAgent
+    from examples.property_analyzer import Property
 
     # Initialize memory store
     config = Config(
@@ -22,11 +22,11 @@ The Property Analyzer example demonstrates how to analyze real estate properties
     )
     memory_store = MemoryStore(config)
 
-    # Create agent
-    agent = PropertyAgent(memory_store)
+    # Create memory
+    property = Property(memory_store)
 
     # Analyze property
-    insights = await agent.analyze_property(property_data)
+    insights = await property.analyze_property(property_data)
 
 Key features:
 - Property condition analysis using satellite imagery
@@ -79,10 +79,10 @@ The Water Bodies Monitor tracks changes in water bodies using satellite data.
 
 .. code-block:: python
 
-    from examples.water_bodies_monitor import WaterBodyAgent
+    from examples.water_bodies_monitor import WaterBody
 
-    agent = WaterBodyAgent(memory_store)
-    insights = await agent.analyze_water_body(water_body_data)
+    water_body = WaterBody(memory_store)
+    insights = await water_body.analyze_water_body(water_body_data)
 
 Features:
 - Water body change detection
@@ -99,16 +99,13 @@ All examples follow these common patterns:
     - Configure storage paths and memory tiers
     - Initialize appropriate memory store
 
-2. Agent Creation
-    - Create specialized agents for specific analysis tasks
-    - Configure data sources and processors
 
-3. Data Processing
+2. Data Processing
     - Collect data from various sources
     - Process and analyze data
     - Generate insights
 
-4. Memory Management
+3. Memory Management
     - Store insights in appropriate memory tiers
     - Retrieve and update stored information
     - Clean up old or irrelevant data

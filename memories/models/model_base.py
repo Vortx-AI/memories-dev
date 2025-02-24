@@ -1,5 +1,5 @@
 """
-Base agent implementation for the memories system.
+Base model implementation for the memories system.
 """
 
 from abc import ABC, abstractmethod
@@ -9,8 +9,8 @@ from dataclasses import dataclass
 from memories.models.load_model import LoadModel
 
 @dataclass
-class AgentState:
-    """Represents the current state of an agent."""
+class ModelState:
+    """Represents the current state of a model."""
     status: str = "idle"  # idle, planning, executing, completed, error
     current_goal: Optional[str] = None
     current_plan: Optional[List[str]] = None
@@ -20,7 +20,7 @@ class AgentState:
     error: Optional[str] = None
 
 class Tool:
-    """Represents a tool that an agent can use."""
+    """Represents a tool that a model can use."""
     
     def __init__(self, name: str, func: Callable, description: str, required_args: Set[str]):
         """
@@ -52,16 +52,16 @@ class Tool:
             raise ValueError(f"Missing required arguments: {missing}")
         return self.func(*args, **kwargs)
 
-class BaseAgent(ABC):
-    """Base class for all agents in the memories system."""
+class BaseModel(ABC):
+    """Base class for all models in the memories system."""
     
-    def __init__(self, memory_store: Any = None, name: str = "base_agent", model: Optional[LoadModel] = None):
-        """Initialize the base agent.
+    def __init__(self, memory_store: Any = None, name: str = "base_model", model: Optional[LoadModel] = None):
+        """Initialize the base model.
         
         Args:
-            memory_store: The memory store to use for this agent.
-            name: Name identifier for the agent.
-            model: LoadModel instance for agents that need ML capabilities.
+            memory_store: The memory store to use for this model.
+            name: Name identifier for the model.
+            model: LoadModel instance for models that need ML capabilities.
         """
         # Setup logging
         logging.basicConfig(
@@ -74,11 +74,11 @@ class BaseAgent(ABC):
         self.memory_store = memory_store
         self.name = name
         self.tools: Dict[str, Tool] = {}
-        self.state = AgentState(memory={})
+        self.state = ModelState(memory={})
         
         # Validate model requirement
         if self.requires_model() and model is None:
-            raise ValueError(f"Agent {self.name} requires a model but none was provided")
+            raise ValueError(f"Model {self.name} requires a model but none was provided")
         self.model = model
         
         # Initialize tools
@@ -86,11 +86,11 @@ class BaseAgent(ABC):
     
     @abstractmethod
     def get_capabilities(self) -> List[str]:
-        """Return a list of high-level capabilities this agent provides."""
+        """Return a list of high-level capabilities this model provides."""
         pass
     
     def can_handle_goal(self, goal: str) -> bool:
-        """Check if this agent can handle the given goal."""
+        """Check if this model can handle the given goal."""
         return any(tool.can_handle(goal) for tool in self.tools.values())
     
     def plan(self, goal: str) -> List[str]:
@@ -165,16 +165,16 @@ class BaseAgent(ABC):
             }
     
     def requires_model(self) -> bool:
-        """Override this method to indicate if the agent requires a model."""
+        """Override this method to indicate if the model requires a model."""
         return False
     
     def _initialize_tools(self):
-        """Initialize the tools this agent can use. Override in subclasses."""
+        """Initialize the tools this model can use. Override in subclasses."""
         pass
     
     def register_tool(self, name: str, func: Callable, description: str, required_args: Set[str] = None):
         """
-        Register a new tool for the agent to use.
+        Register a new tool for the model to use.
         
         Args:
             name: Name of the tool
@@ -219,7 +219,7 @@ class BaseAgent(ABC):
     @abstractmethod
     async def process(self, goal: str, **kwargs) -> Dict[str, Any]:
         """
-        Process a goal using this agent.
+        Process a goal using this model.
         
         Args:
             goal: The goal to achieve
@@ -231,18 +231,18 @@ class BaseAgent(ABC):
         pass
     
     def cleanup(self):
-        """Clean up any resources used by the agent."""
+        """Clean up any resources used by the model."""
         if self.model:
             self.model.cleanup()
     
-    def get_state(self) -> AgentState:
-        """Get the current state of the agent."""
+    def get_state(self) -> ModelState:
+        """Get the current state of the model."""
         return self.state
     
     def reset_state(self):
-        """Reset the agent's state."""
-        self.state = AgentState(memory={})
+        """Reset the model's state."""
+        self.state = ModelState(memory={})
     
     def __str__(self) -> str:
-        """String representation of the agent."""
+        """String representation of the model."""
         return f"{self.__class__.__name__}(name={self.name}, status={self.state.status})" 

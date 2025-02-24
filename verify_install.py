@@ -258,7 +258,7 @@ def test_basic_functionality() -> bool:
             # Test geocoding functionality
             try:
                 from geopy.geocoders import Nominatim
-                geolocator = Nominatim(user_agent="memories-dev-test")
+                geolocator = Nominatim(user="memories-dev-test")
                 logger.info("  ✅ Geocoding functionality available")
             except Exception as e:
                 logger.error(f"  ❌ Geocoding test failed: {str(e)}")

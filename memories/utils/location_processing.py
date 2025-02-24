@@ -1,5 +1,5 @@
 """
-Location processing agent for handling location filtering, geocoding, and location-based operations.
+Location processing module for handling location filtering, geocoding, and location-based operations.
 """
 
 from typing import Dict, Any, Optional, Union, List, Tuple, Set
@@ -8,8 +8,8 @@ from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut
 from geopy.location import Location
 
-from memories.utils.agents.location_utils import normalize_location, is_valid_coordinates, extract_coordinates
-from memories.utils.agents.location_tools import (
+from memories.utils.location_utils import normalize_location, is_valid_coordinates, extract_coordinates
+from memories.utils.location_tools import (
     filter_by_distance,
     filter_by_type,
     sort_locations_by_distance,
@@ -17,23 +17,23 @@ from memories.utils.agents.location_tools import (
     cluster_locations
 )
 from memories.models.load_model import LoadModel
-from memories.agents import BaseAgent
+from memories.models.model_base import BaseModel
 
-class LocationProcessingAgent(BaseAgent):
-    """Agent for handling location processing, filtering, and geocoding operations."""
+class LocationProcessing(BaseModel):
+    """Module for handling location processing, filtering, and geocoding operations."""
     
     def __init__(self, model: Optional[LoadModel] = None):
-        """Initialize the Location Processing Agent.
+        """Initialize the Location Processing module.
         
         Args:
             model (Optional[LoadModel]): Model instance for processing
         """
-        super().__init__(name="location_processing_agent", model=model)
+        super().__init__(name="location_processing", model=model)
         self.logger = logging.getLogger(__name__)
-        self.geolocator = Nominatim(user_agent="memories_agent")
+        self.geolocator = Nominatim(user="memories_module")
     
     def get_capabilities(self) -> List[str]:
-        """Return a list of high-level capabilities this agent provides."""
+        """Return a list of high-level capabilities this module provides."""
         return [
             "Filter locations by distance from a point",
             "Filter locations by type",
@@ -47,7 +47,7 @@ class LocationProcessingAgent(BaseAgent):
         ]
     
     def requires_model(self) -> bool:
-        """This agent requires a model for processing."""
+        """This module requires a model for processing."""
         return True
     
     def _initialize_tools(self):

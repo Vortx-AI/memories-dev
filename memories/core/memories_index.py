@@ -104,7 +104,7 @@ class ColumnFilter:
     """Filter patterns and validators for different column types"""
     
     def __init__(self):
-        self.geolocator = Nominatim(user_agent="column_search_agent")
+        self.geolocator = Nominatim(user="column_search")
         
         # Regex patterns
         self.coord_patterns = [
@@ -149,8 +149,8 @@ class ColumnFilter:
             
         return ColumnTypes.GENERAL
 
-class ColumnSearchAgent:
-    """Agent for intelligent database column search with geographic filters"""
+class ColumnSearch:
+    """intelligent database column search with geographic filters"""
     
     def __init__(self, storage_path: str = "data/column_memory"):
         self.storage_path = Path(storage_path)
