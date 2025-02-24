@@ -7,9 +7,16 @@ This module handles all data acquisition, processing, and storage operations for
 ```
 data_acquisition/
 ├── sources/            # Source-specific implementations
+│   ├── __init__.py    # Source exports
+│   ├── base.py        # Base classes
+│   ├── sentinel_api.py # Sentinel-2 data source
+│   ├── landsat_api.py # Landsat data source
+│   ├── wfs_api.py     # WFS data source
+│   ├── osm_api.py     # OpenStreetMap API
+│   ├── overture_api.py # Overture Maps API
+│   └── planetary_compute.py # Microsoft Planetary Computer
 ├── __init__.py        # Module initialization
 ├── data_manager.py    # Core data management functionality
-├── data_sources.py    # Data source abstractions and implementations
 └── README.md          # Module documentation
 ```
 
@@ -30,22 +37,42 @@ Key features:
 - Error handling and logging
 - Flexible bbox input (tuples, lists, or Polygon objects)
 
-### Data Sources (`data_sources.py`)
-Implements various data source connectors and abstractions:
-
-#### Base Class
-- `DataSource`: Abstract base class defining the interface for all data sources
+### Data Sources (`sources/`)
+The module provides several data source implementations:
 
 #### Satellite Data Sources
-- `SentinelDataSource`: Handles Sentinel-2 L2A data
+- `SentinelAPI`: Sentinel-2 L2A data
+  - 10m resolution bands (B02, B03, B04, B08)
+  - 20m resolution bands (B05-B07, B8A, B11, B12)
   - Cloud cover filtering
-  - Band selection and merging
-  - COG (Cloud Optimized GeoTIFF) support
+  - Quality indicators
   
-- `LandsatDataSource`: Handles Landsat Collection 2 Level 2 data
-  - Surface reflectance products
-  - Multi-band download and processing
+- `LandsatAPI`: Landsat Collection 2 Level 2
+  - Surface reflectance bands (SR_B2-SR_B7)
+  - Quality assessment
+  - 30m resolution
+  
+- `PlanetaryCompute`: Microsoft Planetary Computer
+  - Multiple collections support
   - STAC API integration
+  - Cloud-optimized access
+
+#### Vector Data Sources
+- `OvertureAPI`: Overture Maps Foundation
+  - Building footprints
+  - Transportation networks
+  - Land use data
+  - Global coverage
+
+- `OSMAPI`: OpenStreetMap
+  - Buildings, roads, POIs
+  - Land use and natural features
+  - Real-time updates
+  
+- `WFSAPI`: Web Feature Service
+  - Standard OGC WFS support
+  - Vector data queries
+  - Custom layer support
 
 ## Usage Examples
 
@@ -176,11 +203,41 @@ except Exception as e:
 ## Testing
 
 Tests are located in `tests/data_acquisition/` and cover:
+
+### Test Files
+- `test_data_manager.py`: Tests for the data manager functionality
+- `test_data_sources.py`: Tests for the data sources module
+- `test_sources.py`: Tests for individual source implementations
+
+### Test Coverage
 - Unit tests for each component
 - Integration tests for data flow
 - Mock tests for external APIs
 - Cache management tests
 - Error handling scenarios
 - Performance benchmarks
+- Concurrent operations
+- Resource cleanup
 
-For running tests, see the test documentation in the tests directory. 
+### Running Tests
+```bash
+# Run all data acquisition tests
+python -m pytest tests/data_acquisition/
+
+# Run specific test file
+python -m pytest tests/data_acquisition/test_data_manager.py
+
+# Run with coverage report
+python -m pytest tests/data_acquisition/ --cov=memories.data_acquisition
+```
+
+### Test Requirements
+Required packages for running tests are listed in `requirements-test.txt`:
+- pytest
+- pytest-asyncio
+- pytest-cov
+- aiohttp
+- numpy
+- rasterio
+- shapely
+- pystac-client 
