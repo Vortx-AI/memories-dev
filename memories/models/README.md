@@ -37,7 +37,7 @@ To add support for a new model provider:
         "your-model-name": {
             "name": "provider/model-name",
             "provider": "your-provider",
-            "type": "local",  // or "api"
+            "type": "local",  # or "api"
             "config": {
                 "max_length": 2048,
                 "temperature": 0.7,
