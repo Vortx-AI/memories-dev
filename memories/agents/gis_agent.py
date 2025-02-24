@@ -4,24 +4,22 @@ from dotenv import load_dotenv
 import logging
 from .agentic_tool import AgenticTools, APIResponse, APIType
 from .memories_index import FAISSStorage
+from memories.agents import BaseAgent
 
 # Load environment variables
 load_dotenv()
 
-class GISAgent:
-    def __init__(self, model: str = None):
+class GISAgent(BaseAgent):
+    """Agent specialized in GIS operations."""
+    
+    def __init__(self, memory_store: Any = None, model: Optional[LoadModel] = None):
         """Initialize the GIS Agent with API capabilities and FAISS storage.
         
         Args:
-            model (str, optional): The model to use for GIS operations. Defaults to None.
+            memory_store: Optional memory store for persistence
+            model: Optional model for ML operations
         """
-        # Setup logging
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-        self.logger = logging.getLogger(__name__)
-        self.model = model
+        super().__init__(memory_store=memory_store, name="gis_agent", model=model)
         self.tools = AgenticTools()
         
         # Initialize FAISS storage
@@ -198,7 +196,47 @@ class GISAgent:
             self.logger.error(f"Error determining API: {e}")
             return "3"  # Default to API 3 on error
     
-    def query(self, lat: float, lon: float, context: Dict[str, str]) -> Dict[str, Any]:
+    async def process(self, *args, **kwargs) -> Dict[str, Any]:
+        """Process data using this agent.
+        
+        This method implements the required abstract method from BaseAgent.
+        It serves as a wrapper around query method.
+        
+        Args:
+            lat: Latitude
+            lon: Longitude
+            context: Dictionary containing search context
+            
+        Returns:
+            Dict[str, Any]: Processing results
+        """
+        lat = kwargs.get('lat')
+        lon = kwargs.get('lon')
+        context = kwargs.get('context', {})
+        
+        if lat is None or lon is None:
+            return {
+                "status": "error",
+                "error": "Latitude and longitude are required",
+                "data": None
+            }
+            
+        try:
+            result = await self.query(lat, lon, context)
+            return {
+                "status": "success" if result.get('status') != 'error' else "error",
+                "data": result if result.get('status') != 'error' else None,
+                "error": result.get('error')
+            }
+        except Exception as e:
+            self.logger.error(f"Error in process: {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "data": None
+            }
+
+    async def query(self, lat: float, lon: float, context: Dict[str, str]) -> Dict[str, Any]:
         """
         Query location based on context using the appropriate API
         
@@ -294,3 +332,7 @@ class GISAgent:
                 response_parts.append(feature_desc)
             
             return "\n".join(response_parts)
+
+    def requires_model(self) -> bool:
+        """This agent requires a model for advanced operations."""
+        return True

@@ -13,7 +13,8 @@ import numpy as np
 import pandas as pd
 from textblob import TextBlob
 from dotenv import load_dotenv
-from memories import MemoryStore, Config
+from memories.config import Config
+from memories import MemoryStore
 from memories.core import HotMemory, WarmMemory, ColdMemory
 from memories.agents import BaseAgent
 from memories.utils.text import TextProcessor
@@ -32,6 +33,21 @@ class AmbienceAnalyzerAgent(BaseAgent):
         super().__init__(name="ambience_analyzer_agent")
         self.memory_store = memory_store
         self.text_processor = TextProcessor()
+        
+    async def process(self, *args, **kwargs):
+        """Process data using this agent.
+        
+        This method implements the required abstract method from BaseAgent.
+        It serves as a wrapper around analyze_location.
+        """
+        if not args and not kwargs:
+            raise ValueError("No location data provided")
+            
+        location_data = args[0] if args else kwargs.get("location_data")
+        if not location_data:
+            raise ValueError("Location data is required")
+            
+        return self.analyze_location(location_data)
         
     def analyze_location(self, location_data):
         """Analyze location data and generate ambience insights."""

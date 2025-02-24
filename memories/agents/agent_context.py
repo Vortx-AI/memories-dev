@@ -2,16 +2,11 @@ import os
 import sys
 from typing import Dict, Any, Optional, List, Union, Literal
 from dotenv import load_dotenv
-from transformers import AutoTokenizer, AutoModelForCausalLM
-import torch
-import gc
 import logging
 from datetime import datetime
 from langchain.llms.base import LLM
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain.callbacks.manager import CallbackManagerForLLMRun
-from pydantic import BaseModel, Field
 import tempfile
 import requests
 from urllib.parse import quote
@@ -19,106 +14,48 @@ from urllib.parse import quote
 import nltk
 import re
 from memories.models.load_model import LoadModel
+from memories.models.api_connector import get_connector
 
 # Load environment variables
 load_dotenv()
 
-class DeepSeekLLM(LLM, BaseModel):
-    model_name: str = Field(default="deepseek-ai/deepseek-coder-1.3b-base")
-    temperature: float = Field(default=0.7)
-    max_tokens: int = Field(default=2048)
-    top_p: float = Field(default=0.95)
-    verbose: bool = Field(default=False)
-    tokenizer: Any = Field(default=None)
-    model: Any = Field(default=None)
-    logger: Any = Field(default=None)
-    offload_folder: str = Field(default=None)
-    
-    class Config:
-        arbitrary_types_allowed = True
-    
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._setup_logging()
-        self._initialize_model()
-        
-    def _setup_logging(self):
-        logging.basicConfig(
-            level=logging.INFO if self.verbose else logging.WARNING,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
+class AgentContext:
+    def __init__(self):
+        """Initialize the Information Extraction system."""
         self.logger = logging.getLogger(__name__)
         
-    def _initialize_model(self):
-        if self.offload_folder is None:
-            self.offload_folder = tempfile.mkdtemp()
-            
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        # Initialize the Deepseek connector
+        self.llm = get_connector("deepseek", os.getenv("DEEPSEEK_API_KEY"))
         
-        if torch.cuda.is_available():
-            dtype = torch.float16
-            device_map = {
-                "": torch.cuda.current_device()
-            }
-        else:
-            dtype = torch.float32
-            device_map = "cpu"
-            
-        self.model = AutoModelForCausalLM.from_pretrained(
-            self.model_name,
-            torch_dtype=dtype,
-            device_map=device_map,
-            low_cpu_mem_usage=True,
-            offload_folder=self.offload_folder
+        self.location_prompt = PromptTemplate(
+            input_variables=["user_query"],
+            template="""Extract location information as a text string in the following format:
+location: <place>, location_info: <type>
+
+Types:
+point = coordinates (12.345, 67.890)
+city = city name
+state = state name
+country = country name
+address = full address
+polygon = area coordinates
+unknown = no location found (use empty string)
+
+Query: {user_query}
+Response:"""
         )
-    
-    def _cleanup(self):
-        try:
-            gc.collect()
-            if torch.cuda.is_available():
-                with torch.cuda.device('cuda'):
-                    torch.cuda.empty_cache()
-                    torch.cuda.ipc_collect()
-        except Exception as e:
-            self.logger.warning(f"Error during cleanup: {str(e)}")
-            
-    @property
-    def _llm_type(self) -> str:
-        return "deepseek"
         
-    def _call(
-        self,
-        prompt: str,
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[CallbackManagerForLLMRun] = None,
-        **kwargs: Any,
-    ) -> str:
+        self.location_chain = LLMChain(llm=self.llm, prompt=self.location_prompt)
+
+    def process_query(self, user_query: str) -> str:
+        """Process the query to extract location and information type."""
         try:
-            self._cleanup()
-            inputs = self.tokenizer(prompt, return_tensors="pt")
-            if torch.cuda.is_available():
-                inputs = {k: v.cuda() for k, v in inputs.items()}
-            
-            with torch.no_grad():
-                outputs = self.model.generate(
-                    **inputs,
-                    max_new_tokens=self.max_tokens,
-                    temperature=self.temperature,
-                    top_p=self.top_p,
-                    do_sample=True,
-                    pad_token_id=self.tokenizer.eos_token_id
-                )
-            
-            response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            response = response[len(prompt):].strip()
-            
-            self._cleanup()
-            return response
+            location_response = self.location_chain.invoke({"user_query": user_query})["text"]
+            return location_response
             
         except Exception as e:
-            self.logger.error(f"Error during generation: {str(e)}")
-            self._cleanup()
-            raise
+            self.logger.error(f"Error processing query: {str(e)}")
+            return "location: , location_info: unknown"
 
 class LocationInfo:
     def __init__(self):

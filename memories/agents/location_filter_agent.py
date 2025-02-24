@@ -1,11 +1,53 @@
 import logging
 import os
 from typing import Dict, Any, List
+from memories.agents import BaseAgent
 
-class LocationFilterAgent:
-    def __init__(self):
+class LocationFilterAgent(BaseAgent):
+    """Agent specialized in filtering location-based data."""
+    
+    def __init__(self, memory_store: Any = None):
         """Initialize the Location Filter Agent."""
-        self.logger = logging.getLogger(__name__)
+        super().__init__(memory_store=memory_store, name="location_filter_agent")
+
+    async def process(self, *args, **kwargs) -> Dict[str, Any]:
+        """Process data using this agent.
+        
+        This method implements the required abstract method from BaseAgent.
+        It serves as a wrapper around filter_by_location.
+        
+        Args:
+            location_type: String specifying the type of location
+            
+        Returns:
+            Dict[str, Any]: Processing results
+        """
+        location_type = kwargs.get('location_type', args[0] if args else None)
+        
+        if not location_type:
+            return {
+                "status": "error",
+                "error": "No location type provided",
+                "data": None
+            }
+            
+        try:
+            fields = self.filter_by_location(location_type)
+            return {
+                "status": "success",
+                "data": {
+                    "fields": fields,
+                    "location_type": location_type
+                },
+                "error": None
+            }
+        except Exception as e:
+            self.logger.error(f"Error in process: {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "data": None
+            }
 
     def filter_by_location(self, location_type: str) -> List[str]:
         """
@@ -71,4 +113,8 @@ class LocationFilterAgent:
             
         except Exception as e:
             self.logger.error(f"Error getting filtered values: {str(e)}")
-            return [] 
+            return []
+
+    def requires_model(self) -> bool:
+        """This agent does not require a model."""
+        return False 

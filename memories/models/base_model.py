@@ -3,6 +3,10 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from dotenv import load_dotenv
 import os
 import logging
+import json
+from pathlib import Path
+from typing import Dict, Any, Optional, List
+import gc
 from diffusers import StableDiffusionPipeline
 
 # Configure logging
@@ -17,189 +21,226 @@ class BaseModel:
     _instance = None
     _initialized = False
     
-    # Comprehensive model mappings (only HuggingFace compatible models)
-    MODEL_MAPPINGS = {
-        # DeepSeek Models (HF compatible)
-        "deepseek-coder-small": "deepseek-ai/deepseek-coder-1.3b-base",
-        "deepseek-coder-medium": "deepseek-ai/deepseek-coder-6.7b",
-        "deepseek-coder-large": "deepseek-ai/deepseek-coder-33b",
-        "deepseek-math": "deepseek-ai/deepseek-math-7b-base",
-        "deepseek-llm-small": "deepseek-ai/deepseek-llm-7b-base",
-        "deepseek-llm-large": "deepseek-ai/deepseek-llm-67b-base",
-
-        # Meta/Llama Models (HF compatible)
-        "llama-2-7b": "meta-llama/Llama-2-7b",
-        "llama-2-13b": "meta-llama/Llama-2-13b",
-        "llama-2-70b": "meta-llama/Llama-2-70b",
-        "llama-2-7b-chat": "meta-llama/Llama-2-7b-chat",
-        "llama-2-13b-chat": "meta-llama/Llama-2-13b-chat",
-        "llama-2-70b-chat": "meta-llama/Llama-2-70b-chat",
-        "code-llama-7b": "codellama/CodeLlama-7b-hf",
-        "code-llama-13b": "codellama/CodeLlama-13b-hf",
-        "code-llama-34b": "codellama/CodeLlama-34b-hf",
-
-        # Mistral Models (HF compatible)
-        "mistral-7b": "mistralai/Mistral-7B-v0.1",
-        "mistral-8x7b": "mistralai/Mixtral-8x7B-v0.1",
-
-        # HuggingFace Open Models
-        "falcon-7b": "tiiuae/falcon-7b",
-        "falcon-40b": "tiiuae/falcon-40b",
-        "falcon-180b": "tiiuae/falcon-180B",
-        "mpt-7b": "mosaicml/mpt-7b",
-        "mpt-30b": "mosaicml/mpt-30b",
-        "stable-diffusion-2": "stabilityai/stable-diffusion-2",
-        "stable-diffusion-xl": "stabilityai/stable-diffusion-xl-base-1.0",
-        
-        # Default fallback
-        "default": "deepseek-ai/deepseek-coder-1.3b-base"
-    }
-    
-    # Add provider-specific mappings for easy lookup
-    PROVIDER_GROUPS = {
-        "deepseek": ["deepseek-coder-small", "deepseek-coder-medium", "deepseek-coder-large", 
-                    "deepseek-math", "deepseek-llm-small", "deepseek-llm-large"],
-        "llama": ["llama-2-7b", "llama-2-13b", "llama-2-70b", "llama-2-7b-chat",
-                 "llama-2-13b-chat", "llama-2-70b-chat", "code-llama-7b",
-                 "code-llama-13b", "code-llama-34b"],
-        "mistral": ["mistral-7b", "mistral-8x7b"],
-        "huggingface": ["falcon-7b", "falcon-40b", "falcon-180b", "mpt-7b", 
-                       "mpt-30b", "stable-diffusion-2", "stable-diffusion-xl"]
-    }
-
-    @classmethod
-    def get_model_path(cls, provider: str, model_key: str) -> str:
-        """Get the full model path/identifier for a given provider and model key"""
-        if model_key not in cls.MODEL_MAPPINGS:
-            raise ValueError(f"Unknown model key: {model_key}")
-        if provider not in cls.PROVIDER_GROUPS:
-            raise ValueError(f"Unknown provider: {provider}")
-        if model_key not in cls.PROVIDER_GROUPS[provider]:
-            raise ValueError(f"Model {model_key} not available for provider {provider}")
-        return cls.MODEL_MAPPINGS[model_key]
-
-    @classmethod
-    def list_providers(cls) -> list:
-        """List all available providers"""
-        return list(cls.PROVIDER_GROUPS.keys())
-
-    @classmethod
-    def list_models(cls, provider: str = None) -> list:
-        """List all available models, optionally filtered by provider"""
-        if provider:
-            if provider not in cls.PROVIDER_GROUPS:
-                raise ValueError(f"Unknown provider: {provider}")
-            return cls.PROVIDER_GROUPS[provider]
-        return list(cls.MODEL_MAPPINGS.keys())
-
-    @classmethod
-    def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-    
     def __init__(self):
-        if not self._initialized:
+        """Initialize the base model."""
+        if not BaseModel._initialized:
             self.model = None
             self.tokenizer = None
-            self._initialized = True
-            # Load environment variables
-            load_dotenv()
-            self.hf_token = os.getenv('HF_TOKEN')
-            if not self.hf_token:
-                print("Warning: HF_TOKEN not found in environment variables")
+            self.config = self._load_config()
+            self.hf_token = os.getenv("HF_TOKEN")
+            BaseModel._initialized = True
     
     @classmethod
     def get_instance(cls):
-        return cls() if cls._instance is None else cls._instance
+        """Get singleton instance of BaseModel."""
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
     
-    def initialize_model(self, model: str, use_gpu: bool = True):
-        """Initialize the model and tokenizer
+    def _load_config(self) -> Dict[str, Any]:
+        """Load model configuration from JSON file."""
+        try:
+            config_path = Path(__file__).parent / "config" / "model_config.json"
+            with open(config_path, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading model config: {str(e)}")
+            return {}
+    
+    def get_model_config(self, model_name: str) -> Dict[str, Any]:
+        """Get configuration for a specific model."""
+        return self.config.get("models", {}).get(model_name, {})
+    
+    def initialize_model(self, model: str, use_gpu: bool = True) -> bool:
+        """Initialize a model with the specified configuration.
         
         Args:
-            model (str): Key name of the model to load from MODEL_MAPPINGS
-            use_gpu (bool): Whether to use GPU if available
+            model: Model identifier from config
+            use_gpu: Whether to use GPU if available
+            
+        Returns:
+            bool: True if initialization successful, False otherwise
         """
         try:
+            # Clean up any existing model
+            self.cleanup()
+            
+            # Get model configuration
+            model_config = self.get_model_config(model)
+            if not model_config:
+                logger.error(f"No configuration found for model: {model}")
+                return False
+            
             # Determine device
             device = "cuda" if use_gpu and torch.cuda.is_available() else "cpu"
+            if device == "cpu" and not self.config["global_config"]["fallback_to_cpu"]:
+                logger.error("GPU requested but not available and fallback_to_cpu is False")
+                return False
             
-            # Resolve model name from mappings if it's a key
-            model_identifier = self.MODEL_MAPPINGS.get(model, model)
-            print(f"Resolved model identifier: {model_identifier}")
+            # Get model parameters
+            config = model_config["config"]
+            model_name = model_config["name"]
             
-            # Load tokenizer with auth token
+            # Set up model parameters
+            model_kwargs = {
+                "use_auth_token": self.hf_token if self.config["global_config"]["use_auth_token"] else None,
+                "torch_dtype": getattr(torch, config.get("torch_dtype", "float32")),
+                "device_map": config.get("device_map", "auto") if device == "cuda" else None,
+                "trust_remote_code": config.get("trust_remote_code", True)
+            }
+            
+            # Load tokenizer and model
             self.tokenizer = AutoTokenizer.from_pretrained(
-                model_identifier,
-                use_auth_token=self.hf_token,
-                trust_remote_code=True
+                model_name,
+                use_auth_token=model_kwargs["use_auth_token"],
+                trust_remote_code=model_kwargs["trust_remote_code"]
             )
             
-            # Load model with auth token
             self.model = AutoModelForCausalLM.from_pretrained(
-                model_identifier,
-                use_auth_token=self.hf_token,
-                torch_dtype=torch.float16 if device == "cuda" else torch.float32,
-                device_map="auto" if device == "cuda" else None,
-                trust_remote_code=True
+                model_name,
+                **model_kwargs
             )
             
             if device == "cpu":
                 self.model = self.model.to(device)
-                
-            print(f"Model initialized on {device}")
+            
+            logger.info(f"Model {model_name} initialized successfully on {device}")
             return True
             
         except Exception as e:
-            print(f"Error initializing model: {str(e)}")
+            logger.error(f"Error initializing model: {str(e)}")
+            self.cleanup()
             return False
     
-    def generate(self, prompt, max_length=1000):
-        """Generate text using the model"""
+    def generate(self, prompt: str, **kwargs) -> str:
+        """Generate text using the model with configured parameters.
+        
+        Args:
+            prompt: Input prompt
+            **kwargs: Override default generation parameters
+            
+        Returns:
+            str: Generated text
+        """
         if self.model is None or self.tokenizer is None:
             raise ValueError("Model not initialized. Call initialize_model first.")
-            
-        inputs = self.tokenizer(prompt, return_tensors="pt")
-        inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
         
-        outputs = self.model.generate(
-            **inputs,
-            max_length=max_length,
-            num_return_sequences=1,
-            pad_token_id=self.tokenizer.eos_token_id
+        try:
+            # Get current model's config
+            current_model = next(
+                (name for name, cfg in self.config["models"].items() 
+                 if cfg["name"] == self.model.config._name_or_path),
+                self.config["default_model"]
+            )
+            model_config = self.get_model_config(current_model)["config"]
+            
+            # Prepare generation config
+            gen_config = {
+                "max_length": model_config.get("max_length", 1000),
+                "temperature": model_config.get("temperature", 0.7),
+                "top_p": model_config.get("top_p", 0.95),
+                "top_k": model_config.get("top_k", 50),
+                "repetition_penalty": model_config.get("repetition_penalty", 1.1),
+                "pad_token_id": self.tokenizer.eos_token_id,
+                "do_sample": True
+            }
+            
+            # Override with any provided kwargs
+            gen_config.update(kwargs)
+            
+            # Generate
+            inputs = self.tokenizer(prompt, return_tensors="pt")
+            inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
+            
+            with torch.no_grad():
+                outputs = self.model.generate(**inputs, **gen_config)
+            
+            return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            
+        except Exception as e:
+            logger.error(f"Error during generation: {str(e)}")
+            raise
+    
+    def cleanup(self):
+        """Clean up model resources."""
+        if hasattr(self, 'model') and self.model is not None:
+            del self.model
+            self.model = None
+        if hasattr(self, 'tokenizer') and self.tokenizer is not None:
+            del self.tokenizer
+            self.tokenizer = None
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
+        gc.collect()
+        logger.info("Model resources cleaned up")
+    
+    @classmethod
+    def get_model_path(cls, provider: str, model_key: str) -> str:
+        """Get the full model path/identifier for a given provider and model key"""
+        instance = cls.get_instance()
+        if model_key not in instance.config["models"]:
+            raise ValueError(f"Unknown model key: {model_key}")
+            
+        model_config = instance.config["models"][model_key]
+        if model_config["provider"] != provider:
+            raise ValueError(f"Model {model_key} not available for provider {provider}")
+            
+        return model_config["name"]
+
+    @classmethod
+    def list_providers(cls) -> List[str]:
+        """List all available providers"""
+        instance = cls.get_instance()
+        return instance.config["supported_providers"]
+
+    @classmethod
+    def list_models(cls, provider: str = None) -> List[str]:
+        """List all available models, optionally filtered by provider"""
+        instance = cls.get_instance()
+        if provider:
+            if provider not in instance.config["supported_providers"]:
+                raise ValueError(f"Unknown provider: {provider}")
+            return [
+                name for name, cfg in instance.config["models"].items()
+                if cfg["provider"] == provider
+            ]
+        return list(instance.config["models"].keys())
+
+def load_stable_diffusion_model():
+    """
+    Preloads the Stable Diffusion model into the global `pipe` variable.
+    """
+    global pipe
+
+    if pipe is not None:
+        logger.info("Stable Diffusion model already loaded; skipping.")
+        return
+
+    try:
+        instance = BaseModel.get_instance()
+        model_config = instance.get_model_config("stable-diffusion-2")
+        
+        if not model_config:
+            raise ValueError("No configuration found for Stable Diffusion model")
+        
+        config = model_config["config"]
+        model_name = model_config["name"]
+        
+        pipe = StableDiffusionPipeline.from_pretrained(
+            model_name,
+            **config
         )
         
-        return self.tokenizer.decode(outputs[0], skip_special_tokens=True) 
-    
-    def load_stable_diffusion_model():
-        """
-        Preloads the Stable Diffusion model into the global `pipe` variable.
-        """
-        global pipe
-
-        if pipe is not None:
-            logger.info("Stable Diffusion model already loaded; skipping.")
-            return
-
-        hf_cache_dir = os.getenv("CACHE_DIR", ".cache/huggingface")
-        stable_diffusion_model = os.getenv("STABLE_DIFFUSION_MODEL", "CompVis/stable-diffusion-v1-4")
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-
-        logger.info(f"Loading Stable Diffusion model '{stable_diffusion_model}' on device: {device}")
-        try:
-            pipe = StableDiffusionPipeline.from_pretrained(
-                stable_diffusion_model,
-                variant="fp16",  # Updated from revision="fp16"
-                torch_dtype=torch.float16,
-                use_auth_token=True,
-                cache_dir=hf_cache_dir,
-            )
-            pipe = pipe.to(device)
-            logger.info("Stable Diffusion model loaded successfully.")
-        except Exception as e:
-            logger.error(f"Failed to load Stable Diffusion model: {e}")
-            pipe = None
-            raise RuntimeError("Failed to load Stable Diffusion model. Ensure proper environment setup and access.") from e
+        if torch.cuda.is_available():
+            pipe = pipe.to("cuda")
+            
+        logger.info("Stable Diffusion model loaded successfully.")
+        
+    except Exception as e:
+        logger.error(f"Failed to load Stable Diffusion model: {e}")
+        pipe = None
+        raise RuntimeError("Failed to load Stable Diffusion model. Ensure proper environment setup and access.") from e
 
 def unload_stable_diffusion_model():
     """

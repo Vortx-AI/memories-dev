@@ -1,18 +1,48 @@
 from typing import Dict, Any
 import logging
 from memories.utils.earth.geometry_retriever import GeometryExtractor
+from memories.agents import BaseAgent
 
-class AgentGeometry:
-    def __init__(self):
+class AgentGeometry(BaseAgent):
+    """Agent specialized in geometry processing."""
+    
+    def __init__(self, memory_store: Any = None):
         """Initialize AgentGeometry with GeometryExtractor"""
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-        self.logger = logging.getLogger(__name__)
+        super().__init__(memory_store=memory_store, name="geometry_agent")
         self.geometry_retriever = GeometryExtractor()
 
-    def process_location(self, location_info: Dict[str, Any], radius_meters: float = 1000) -> Dict[str, Any]:
+    async def process(self, *args, **kwargs) -> Dict[str, Any]:
+        """Process data using this agent.
+        
+        This method implements the required abstract method from BaseAgent.
+        It serves as a wrapper around process_location.
+        
+        Args:
+            location_info: Dict containing location information
+            radius_meters: Optional float for search radius
+            
+        Returns:
+            Dict[str, Any]: Processing results
+        """
+        location_info = kwargs.get('location_info', args[0] if args else None)
+        radius_meters = kwargs.get('radius_meters', 1000)
+        
+        if not location_info:
+            return {
+                "status": "error",
+                "error": "No location information provided",
+                "data": None
+            }
+            
+        result = await self.process_location(location_info, radius_meters)
+        
+        return {
+            "status": "success" if "error" not in result else "error",
+            "data": result if "error" not in result else None,
+            "error": result.get("error")
+        }
+
+    async def process_location(self, location_info: Dict[str, Any], radius_meters: float = 1000) -> Dict[str, Any]:
         """
         Process location information and retrieve geometries
         
@@ -59,6 +89,10 @@ class AgentGeometry:
                 "error": str(e),
                 "location_info": location_info
             }
+
+    def requires_model(self) -> bool:
+        """This agent does not require a model."""
+        return False
 
     def __str__(self) -> str:
         """String representation of AgentGeometry"""

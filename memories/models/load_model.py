@@ -7,13 +7,14 @@ from dotenv import load_dotenv
 import logging
 import tempfile
 import gc
-from transformers import AutoTokenizer, AutoModelForCausalLM
 import uuid
-import duckdb
+import json
 
+from memories.models.base_model import BaseModel
+from memories.models.api_connector import get_connector
 
-from memories.agents.agent_query_context import LocationExtractor
-from memories.agents.agent_coder import CodeGenerator
+# Load environment variables
+load_dotenv()
 
 class LoadModel:
     def __init__(self, 
@@ -32,130 +33,94 @@ class LoadModel:
             model_name (str): Short name of the model from BaseModel.MODEL_MAPPINGS
             api_key (str): API key for the model provider (required for API deployment type)
         """
+        # Setup logging
+        self.instance_id = str(uuid.uuid4())
+        self.logger = logging.getLogger(__name__)
+        
+        # Load configuration
+        self.config = self._load_config()
+        
+        # Set default values from config if not provided
         if not all([model_provider, deployment_type, model_name]):
-            raise ValueError("model_provider, deployment_type, and model_name are required")
+            default_model = self.config["default_model"]
+            default_config = self.config["models"][default_model]
+            model_provider = model_provider or default_config["provider"]
+            deployment_type = deployment_type or default_config["type"]
+            model_name = model_name or default_model
+        
+        # Validate inputs
+        if deployment_type not in self.config["deployment_types"]:
+            raise ValueError(f"deployment_type must be one of: {self.config['deployment_types']}")
             
-        if deployment_type not in ["deployment", "api"]:
-            raise ValueError("deployment_type must be either 'deployment' or 'api'")
+        if model_provider not in self.config["supported_providers"]:
+            raise ValueError(f"model_provider must be one of: {self.config['supported_providers']}")
             
         if deployment_type == "api" and not api_key:
             raise ValueError("api_key is required for API deployment type")
-            
-        self.instance_id = str(uuid.uuid4())
-        self.logger = logging.getLogger(__name__)
+        
+        # Store configuration
         self.use_gpu = use_gpu and torch.cuda.is_available()
         self.model_provider = model_provider
         self.deployment_type = deployment_type
         self.model_name = model_name
         self.api_key = api_key
         
-        # Initialize DuckDB connection
-        self.db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'memories.db')
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-        self.conn = duckdb.connect(self.db_path)
-        
-        # Create models table if it doesn't exist
-        self.conn.execute("""
-            CREATE TABLE IF NOT EXISTS models (
-                instance_id VARCHAR PRIMARY KEY,
-                model_provider VARCHAR,
-                model_name VARCHAR,
-                deployment_type VARCHAR,
-                use_gpu BOOLEAN,
-                api_key VARCHAR,
-                model_path VARCHAR,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        if use_gpu and not torch.cuda.is_available():
-            self.logger.warning("GPU requested but not available. Falling back to CPU.")
-        
-        # Initialize base_model
-        from memories.models.base_model import BaseModel
-        self.base_model = BaseModel.get_instance()
-        
-        # Clean up any existing model resources first
-        if hasattr(self, 'base_model'):
-            self.cleanup()
-        
-        try:
-            self.model_path = model_name
-            if deployment_type == "deployment":
-                self.model_path = f"{model_provider}/{model_name}"
-            self.logger.info(f"Resolved model path: {self.model_path}")
-            
-            # Store model details in DuckDB
-            self.conn.execute("""
-                INSERT INTO models (
-                    instance_id,
-                    model_provider,
-                    model_name,
-                    deployment_type,
-                    use_gpu,
-                    api_key,
-                    model_path
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                self.instance_id,
-                model_provider,
-                model_name,
-                deployment_type,
-                use_gpu,
-                api_key,
-                self.model_path
-            ))
-            
-        except Exception as e:
-            self.logger.error(f"Error initializing model: {str(e)}")
-            raise
-        
-        # Initialize the model if using deployment type
+        # Initialize appropriate model interface
         if deployment_type == "deployment":
-            success = self.base_model.initialize_model(
-                model=self.model_path,
-                use_gpu=self.use_gpu
-            )
+            self.base_model = BaseModel.get_instance()
+            success = self.base_model.initialize_model(model_name, use_gpu)
             if not success:
-                raise RuntimeError("Failed to initialize model")
-                
-        self.logger.info(f"Model loaded successfully with instance ID: {self.instance_id}")
+                raise RuntimeError(f"Failed to initialize model: {model_name}")
+        else:  # api
+            self.api_connector = get_connector(model_provider, api_key)
     
-    def cleanup(self):
-        """Clean up model resources"""
-        if hasattr(self.base_model, 'model'):
-            del self.base_model.model
-            self.base_model.model = None
-        if hasattr(self.base_model, 'tokenizer'):
-            del self.base_model.tokenizer
-            self.base_model.tokenizer = None
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            torch.cuda.ipc_collect()
-        gc.collect()
-        self.logger.info("Model resources cleaned up")
+    def _load_config(self) -> Dict[str, Any]:
+        """Load model configuration."""
+        try:
+            config_path = Path(__file__).parent / "config" / "model_config.json"
+            with open(config_path, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            self.logger.error(f"Error loading config: {str(e)}")
+            return {}
     
-    def generate_response(self, prompt: str, max_length: int = 1000) -> str:
+    def get_response(self, prompt: str, **kwargs) -> str:
         """
-        Generate a response using the underlying base model.
+        Generate a response using either local model or API.
         
         Args:
-            prompt (str): The input prompt to generate from
-            max_length (int): Maximum length of the generated response
+            prompt: The input prompt
+            **kwargs: Additional generation parameters
             
         Returns:
             str: The generated response
-            
-        Raises:
-            RuntimeError: If the model is not properly initialized
         """
-        if not hasattr(self.base_model, 'model') or self.base_model.model is None:
-            raise RuntimeError("Model not initialized properly")
+        try:
+            self.logger.info(f"Generating response for prompt: {prompt[:100]}...")
+            self.logger.info(f"Using deployment type: {self.deployment_type}")
+            self.logger.info(f"Additional parameters: {kwargs}")
             
-        return self.base_model.generate(prompt, max_length=max_length)
+            if self.deployment_type == "deployment":
+                self.logger.info("Using base model for generation")
+                response = self.base_model.generate(prompt, **kwargs)
+            else:
+                self.logger.info(f"Using {self.model_provider} API connector for generation")
+                response = self.api_connector.generate(prompt, **kwargs)
+            
+            self.logger.info(f"Response generated successfully. Length: {len(response)}")
+            return response
+            
+        except Exception as e:
+            self.logger.error(f"Error generating response: {str(e)}", exc_info=True)
+            return f"Error: {str(e)}"
     
-    def __del__(self):
-        """Destructor to ensure connection is closed"""
-        if hasattr(self, 'conn'):
-            self.conn.close()
+    def cleanup(self):
+        """Clean up model resources."""
+        if self.deployment_type == "deployment" and hasattr(self, 'base_model'):
+            self.base_model.cleanup()
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
+        self.logger.info("Model resources cleaned up")
 

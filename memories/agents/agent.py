@@ -46,6 +46,15 @@ class Agent:
         # Define the offload_folder path (handled internally in CodeGenerator)
         # Hence, no need to define it here unless other agents require it
         
+        # Initialize load_model
+        from memories.models.load_model import LoadModel
+        self.load_model = LoadModel(
+            use_gpu=True,
+            model_provider="deepseek-ai",
+            deployment_type="deployment",
+            model_name="deepseek-coder-1.3b-base"
+        )
+        
         # Initialize agents
         self.agents = {
             "context": LocationExtractor(),
@@ -87,71 +96,52 @@ class Agent:
             print(f"Starting query processing: {query}")
             print("="*50)
             
-            # Step 1: Extract location using LocationExtractor with up to 5 attempts.
-            max_attempts = 5
-            attempt = 0
-            location = ""
-            location_type = ""
-            while attempt < max_attempts:
-                print(f"\n🔍 INVOKING LOCATION EXTRACTOR, Attempt {attempt+1}")
-                location_info = self.agents["context"].process_query(query)
-                print(f"Extracted Location Info: {location_info}")
-                location, location_type = self._parse_location_info(location_info)
-                
-                if location:  # Successfully extracted location
-                    break
-                attempt += 1
-            
-            if not location:
-                print("No location found after 5 attempts.")
-                return {
-                    "fields": [],
-                    "code": "",
-                    "execution_result": None,
-                    "response": "No location found"
-                }
-            
-            # Step 2: Get geometries using AgentGeometry
-            print("\n🌍 INVOKING GEOMETRY AGENT")
+            # Step 1: Classify the query using AgentContext
+            print("\n🔍 CLASSIFYING QUERY")
             print("---------------------------")
-            geometry_info = self.agents["geometry_agent"].process_location(location_info)
-            print(f"Found {len(geometry_info.get('features', []))} geometries")
+            from memories.agents.agent_context import AgentContext, LocationExtractor
+            context_agent = AgentContext()
+            classification_result = context_agent.classify_query(query)
+            print(f"Query Classification: {classification_result}")
+
+            print("Classification Agent Response:")
+            print(f"• Classification: {classification_result.get('classification', '')}")
+            print(f"• Explanation: {classification_result.get('explanation', '')}")
+            if 'processing_hint' in classification_result:
+                print(f"• Processing Hint: {classification_result.get('processing_hint', '')}")
+
+            # If classification is L1_2, extract detailed location info
+            if classification_result.get('classification') in ['L1', 'L1_2','L2']:
+                print("\n🔍 EXTRACTING LOCATION DETAILS")
+                print("---------------------------")
+                location_extractor = LocationExtractor(self.load_model)
+                location_details = location_extractor.extract_query_info(query)
+                print("Location Details:")
+                print(f"• Data Type: {location_details.get('data_type', '')}")
+                if location_details.get('location_info'):
+                    loc_info = location_details['location_info']
+                    print(f"• Location: {loc_info.get('location', '')}")
+                    print(f"• Location Type: {loc_info.get('location_type', '')}")
+                    
+                    # Normalize the location
+                    normalized = location_extractor.normalize_location(
+                        loc_info.get('location', ''),
+                        loc_info.get('location_type', '')
+                    )
+                    print("\nNormalized Location:")
+                    print(normalized)
+                    
+                    # Add location details to classification result
+                    classification_result['location_details'] = location_details
+                    classification_result['normalized_location'] = normalized
             
-            # Step 3: Generate code using CodeGenerator
-            print("\n🔍 INVOKING CODE GENERATOR")
-            print("---------------------------")
-            generated_code = self.agents["coder"].process_query(query, memories)
-            print(f"Generated Code:\n{generated_code}")
-            
-            # Step 4: Execute the generated code
-            print("\n🔍 EXECUTING GENERATED CODE")
-            print("---------------------------")
-            execution_result = self.agents["executor"].execute_code(generated_code)
-            print(f"Execution Result: {execution_result}")
-            
-            # Step 5: Format the final response using ResponseAgent
-            print("\n🔍 FORMATTING RESPONSE")
-            print("---------------------------")
-            final_response = self.agents["response"].format_response(query, execution_result)
-            print(f"Final Response: {final_response}")
-            
-            response = {
-                "query": query,
-                "location": location_info,
-                "geometry": geometry_info,
-                "code": generated_code,
-                "execution_result": execution_result,
-                "response": final_response
-            }
-            
-            return response
+            return classification_result
             
         except Exception as e:
             self.logger.error(f"Error in process_query: {str(e)}")
             return {
-                "fields": [],
-                "code": "",
-                "execution_result": None,
+                "error": str(e),
+                "classification": None,
                 "response": f"Error: {str(e)}"
             }
     
@@ -230,3 +220,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

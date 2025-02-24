@@ -1,6 +1,6 @@
 import subprocess
 import torch
-from memories.models.llama.llama import llama_vision_extraction
+
 import logging
 from typing import Dict, Optional
 
@@ -70,12 +70,4 @@ def get_gpu_utilization() -> Optional[float]:
         logger.error(f"Error checking GPU utilization: {e}")
         return None
 
-if __name__ == "__main__":
-    print("Checking GPU memory before running the script...\n")
-    check_gpu_memory()
 
-    # Example usage
-    image_path = "/path/to/image.jpg"
-    prompt = "Describe this image"
-    result = llama_vision_extraction(image_path, prompt)
-    print(f"Generated Description: {result}")

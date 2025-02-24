@@ -2,36 +2,21 @@ import os
 import logging
 from typing import Dict, Any, Optional, List, Union, Tuple
 from dotenv import load_dotenv
-from transformers import AutoTokenizer, AutoModelForCausalLM
-import torch
-import gc
-from langchain.llms.base import LLM
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-from langchain.callbacks.manager import CallbackManagerForLLMRun
-from pydantic import BaseModel, Field
 import tempfile
 import json
 from pathlib import Path
 import duckdb
-
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+from memories.models.api_connector import get_connector
 
 # Load environment variables
 load_dotenv()
 
 def generate_code(query: str, available_fields: List[str]) -> str:
     """Generate Python code based on the query and available fields."""
-    offload_folder = os.path.join(tempfile.gettempdir(), 'deepseek_offload')
-    os.makedirs(offload_folder, exist_ok=True)
-    
-    llm = DeepSeekLLM(
-        model_name=os.getenv("DEEPEEKS_MODEL_NAME", "deepseek-ai/deepseek-coder-1.3b-base"),
-        temperature=0.7,
-        max_tokens=150,
-        top_p=0.95,
-        verbose=True,
-        offload_folder=offload_folder
-    )
+    # Initialize the Deepseek connector
+    llm = get_connector("deepseek", os.getenv("DEEPSEEK_API_KEY"))
     
     prompt = PromptTemplate(
         input_variables=["user_query", "available_fields"],
@@ -49,114 +34,12 @@ def generate_code(query: str, available_fields: List[str]) -> str:
         logging.error(f"Error generating code: {str(e)}")
         return f"# Error: {str(e)}"
 
-# Define DeepSeekLLM only once
-class DeepSeekLLM(LLM, BaseModel):
-    model_name: str = Field(default="deepseek-ai/deepseek-coder-1.3b-base")
-    temperature: float = Field(default=0.7)
-    max_tokens: int = Field(default=150)
-    top_p: float = Field(default=0.95)
-    verbose: bool = Field(default=False)
-    tokenizer: Any = Field(default=None)
-    model: Any = Field(default=None)
-    logger: Any = Field(default=None)
-    offload_folder: str = Field(default=None)
-    
-    class Config:
-        arbitrary_types_allowed = True
-    
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._setup_logging()
-        self._initialize_model()
-        
-    def _setup_logging(self):
-        logging.basicConfig(
-            level=logging.INFO if self.verbose else logging.WARNING,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-        self.logger = logging.getLogger(__name__)
-        
-    def _initialize_model(self):
-        if self.offload_folder is None:
-            self.offload_folder = os.path.join(tempfile.gettempdir(), 'deepseek_offload')
-        os.makedirs(self.offload_folder, exist_ok=True)
-            
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        
-        if torch.cuda.is_available():
-            dtype = torch.float16
-            device_map = {
-                "": torch.cuda.current_device()
-            }
-        else:
-            dtype = torch.float32
-            device_map = "cpu"
-            
-        self.model = AutoModelForCausalLM.from_pretrained(
-            self.model_name,
-            torch_dtype=dtype,
-            device_map=device_map,
-            low_cpu_mem_usage=True,
-            offload_folder=self.offload_folder
-        )
-    
-    def _cleanup(self):
-        try:
-            gc.collect()
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-                torch.cuda.ipc_collect()
-        except Exception as e:
-            self.logger.warning(f"Error during cleanup: {str(e)}")
-            
-    @property
-    def _llm_type(self) -> str:
-        return "deepseek"
-        
-    def _call(
-        self,
-        prompt: str,
-        stop: Optional[List[str]] = None,
-        run_manager: Optional[Any] = None,
-        **kwargs: Any,
-    ) -> str:
-        try:
-            self._cleanup()
-            inputs = self.tokenizer(prompt, return_tensors="pt")
-            if torch.cuda.is_available():
-                inputs = {k: v.cuda() for k, v in inputs.items()}
-            
-            with torch.no_grad():
-                outputs = self.model.generate(
-                    **inputs,
-                    max_new_tokens=self.max_tokens,
-                    temperature=self.temperature,
-                    top_p=self.top_p,
-                    do_sample=True,
-                    pad_token_id=self.tokenizer.eos_token_id
-                )
-            
-            response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            response = response[len(prompt):].strip()
-            
-            self._cleanup()
-            return response
-            
-        except Exception as e:
-            self.logger.error(f"Error during generation: {str(e)}")
-            self._cleanup()
-            raise
-
 class CodeGenerator:
     def __init__(self, offload_folder: Optional[str] = None):
         """Initialize the Code Generation system with API-based knowledge base."""
-        if offload_folder is None:
-            offload_folder = os.path.join(tempfile.gettempdir(), 'deepseek_offload')
-        os.makedirs(offload_folder, exist_ok=True)
-        
         self.logger = logging.getLogger(__name__)
         
-        # Load API knowledge base (using the provided APIs instead of a database)
+        # Load API knowledge base
         knowledge_path = os.path.join(os.getenv('PROJECT_ROOT', '.'), 'memories', 'agents', 'knowledge-base.json')
         try:
             with open(knowledge_path, 'r') as f:
@@ -165,14 +48,8 @@ class CodeGenerator:
             self.logger.error(f"Error loading knowledge base: {str(e)}")
             raise
         
-        self.llm = DeepSeekLLM(
-            model_name=os.getenv("DEEPEEKS_MODEL_NAME", "deepseek-ai/deepseek-coder-1.3b-base"),
-            temperature=0.7,
-            max_tokens=2048,
-            top_p=0.95,
-            verbose=True,
-            offload_folder=offload_folder
-        )
+        # Initialize the Deepseek connector
+        self.llm = get_connector("deepseek", os.getenv("DEEPSEEK_API_KEY"))
         
         # Update prompt to instruct the LLM to generate code that calls the provided APIs.
         self.code_prompt = PromptTemplate(
@@ -260,14 +137,7 @@ class LocationExtractor:
         )
         os.makedirs(offload_folder, exist_ok=True)
         
-        self.llm = DeepSeekLLM(
-            model_name=os.getenv("DEEPEEKS_MODEL_NAME", "deepseek-ai/deepseek-coder-1.3b-base"),
-            temperature=0.7,
-            max_tokens=50,
-            top_p=0.95,
-            verbose=True,
-            offload_folder=offload_folder
-        )
+        self.llm = get_connector("deepseek", os.getenv("DEEPSEEK_API_KEY"))
         
         self.location_prompt = PromptTemplate(
             input_variables=["user_query"],

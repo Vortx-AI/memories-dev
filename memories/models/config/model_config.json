@@ -9,20 +9,264 @@
                 "temperature": 0.7,
                 "top_p": 0.95,
                 "top_k": 50,
-                "repetition_penalty": 1.1
+                "repetition_penalty": 1.1,
+                "use_gpu": true,
+                "batch_size": 1,
+                "device_map": "auto",
+                "torch_dtype": "float16",
+                "trust_remote_code": true
+            }
+        },
+        "deepseek-coder-small": {
+            "name": "deepseek-ai/deepseek-coder-1.3b-base",
+            "provider": "deepseek-ai",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "deepseek-coder-medium": {
+            "name": "deepseek-ai/deepseek-coder-6.7b",
+            "provider": "deepseek-ai",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "deepseek-coder-large": {
+            "name": "deepseek-ai/deepseek-coder-33b",
+            "provider": "deepseek-ai",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "llama-2-7b": {
+            "name": "meta-llama/Llama-2-7b",
+            "provider": "meta",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "llama-2-13b": {
+            "name": "meta-llama/Llama-2-13b",
+            "provider": "meta",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "llama-2-70b": {
+            "name": "meta-llama/Llama-2-70b",
+            "provider": "meta",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "code-llama-7b": {
+            "name": "codellama/CodeLlama-7b-hf",
+            "provider": "meta",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "code-llama-13b": {
+            "name": "codellama/CodeLlama-13b-hf",
+            "provider": "meta",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "code-llama-34b": {
+            "name": "codellama/CodeLlama-34b-hf",
+            "provider": "meta",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "mistral-7b": {
+            "name": "mistralai/Mistral-7B-v0.1",
+            "provider": "mistral",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "mistral-8x7b": {
+            "name": "mistralai/Mixtral-8x7B-v0.1",
+            "provider": "mistral",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "falcon-7b": {
+            "name": "tiiuae/falcon-7b",
+            "provider": "huggingface",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "falcon-40b": {
+            "name": "tiiuae/falcon-40b",
+            "provider": "huggingface",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "falcon-180b": {
+            "name": "tiiuae/falcon-180B",
+            "provider": "huggingface",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "mpt-7b": {
+            "name": "mosaicml/mpt-7b",
+            "provider": "huggingface",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "mpt-30b": {
+            "name": "mosaicml/mpt-30b",
+            "provider": "huggingface",
+            "type": "local",
+            "config": {
+                "max_length": 2048,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "stable-diffusion-2": {
+            "name": "stabilityai/stable-diffusion-2",
+            "provider": "huggingface",
+            "type": "local",
+            "config": {
+                "variant": "fp16",
+                "torch_dtype": "float16",
+                "use_auth_token": true
+            }
+        },
+        "stable-diffusion-xl": {
+            "name": "stabilityai/stable-diffusion-xl-base-1.0",
+            "provider": "huggingface",
+            "type": "local",
+            "config": {
+                "variant": "fp16",
+                "torch_dtype": "float16",
+                "use_auth_token": true
+            }
+        },
+        "claude-3": {
+            "name": "claude-3-opus-20240229",
+            "provider": "anthropic",
+            "type": "api",
+            "config": {
+                "max_length": 4096,
+                "temperature": 0.7,
+                "top_p": 0.95
+            }
+        },
+        "gpt-4": {
+            "name": "gpt-4-turbo-preview",
+            "provider": "openai",
+            "type": "api",
+            "config": {
+                "max_length": 4096,
+                "temperature": 0.7,
+                "top_p": 0.95
             }
         }
+    },
+    "provider_groups": {
+        "deepseek": [
+            "deepseek-r1-zero",
+            "deepseek-coder-small",
+            "deepseek-coder-medium",
+            "deepseek-coder-large"
+        ],
+        "meta": [
+            "llama-2-7b",
+            "llama-2-13b",
+            "llama-2-70b",
+            "code-llama-7b",
+            "code-llama-13b",
+            "code-llama-34b"
+        ],
+        "mistral": [
+            "mistral-7b",
+            "mistral-8x7b"
+        ],
+        "huggingface": [
+            "falcon-7b",
+            "falcon-40b",
+            "falcon-180b",
+            "mpt-7b",
+            "mpt-30b",
+            "stable-diffusion-2",
+            "stable-diffusion-xl"
+        ]
     },
     "default_model": "deepseek-r1-zero",
     "supported_providers": [
         "deepseek-ai",
         "anthropic",
         "openai",
-        "google"
+        "google",
+        "meta",
+        "mistral",
+        "huggingface"
     ],
     "deployment_types": [
         "local",
         "api",
         "cloud"
-    ]
+    ],
+    "global_config": {
+        "cache_dir": "./cache/models",
+        "offload_dir": "./cache/offload",
+        "log_level": "INFO",
+        "use_auth_token": true,
+        "fallback_to_cpu": true
+    }
 } 

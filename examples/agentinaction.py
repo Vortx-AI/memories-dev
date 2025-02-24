@@ -58,43 +58,19 @@ class IntelligentAgent:
         if self.device.type == "cuda":
             torch.cuda.empty_cache()
         
-        # Initialize model - try local installation first, then OpenAI
-        try:
-            # Try loading local DeepSeek model first
-            self.model = LoadModel(
-                use_gpu=self.device.type == "cuda",
-                model_provider="deepseek-ai",
-                deployment_type="local",
-                model_name="deepseek-coder-6.7b"
-            )
-            self.logger.info("Successfully initialized local DeepSeek model")
-        except Exception as e:
-            self.logger.warning(f"Failed to load local model: {str(e)}")
-            
-            # Fall back to OpenAI if API key is provided
-            if openai_api_key:
-                try:
-                    self.model = LoadModel(
-                        use_gpu=False,  # OpenAI API doesn't use local GPU
-                        model_provider="openai",
-                        deployment_type="api",
-                        model_name="gpt-4",
-                        api_key=openai_api_key
-                    )
-                    self.logger.info("Successfully initialized OpenAI model")
-                except Exception as e:
-                    raise RuntimeError(f"Failed to initialize OpenAI model: {str(e)}")
-            else:
-                raise RuntimeError(
-                    "No local model found and no OpenAI API key provided. "
-                    "Please either install a local model or provide an OpenAI API key."
-                )
+        # Initialize model using LoadModel
+        self.model = LoadModel(
+            model_provider="openai",
+            deployment_type="api",
+            model_name="gpt-4",
+            api_key=openai_api_key
+        )
+        self.logger.info("Model initialized successfully")
         
         # Set up directories and initialize components
         self._setup_directories()
         self.context = AgentContext()
         
-        self.logger.info(f"Agent initialized with model: {self.model.model_provider}/{self.model.model_name}")
         self.logger.info(f"Using device: {self.device}")
         
         # Initialize APIs
