@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """
-Example script demonstrating data download using Overture and Sentinel APIs.
-Uses direct HTTP downloads for Overture data - no AWS CLI required.
+Example script demonstrating data download using Overture API with direct S3 access and bbox filtering.
+Downloads both Overture Maps data and Sentinel imagery for San Francisco Financial District.
 """
 
 import os
 import sys
-import asyncio
 from pathlib import Path
 from memories.data_acquisition.sources.overture_api import OvertureAPI
 from memories.data_acquisition.sources.sentinel_api import SentinelAPI
@@ -42,96 +41,71 @@ async def main():
         # Get paths from config
         paths = config.config['data_acquisition']['paths']
         
+        # Initialize APIs
+        overture_api = OvertureAPI(data_dir=paths['overture'])
+        sentinel_api = SentinelAPI(data_dir=paths['satellite'])
+        
         try:
-            # Initialize APIs with config paths - use AWS for Overture
-            print("\n=== Downloading Overture Maps Data from AWS S3 ===")
-            print("Note: Using direct HTTP downloads - no AWS CLI required")
+            # Download Overture data
+            print("\n=== Downloading Overture Maps Data from S3 ===")
+            print("Note: Using DuckDB for direct S3 access and bbox filtering")
             
-            overture_api = OvertureAPI(data_dir=paths['overture'], use_azure=False)
-            sentinel_api = SentinelAPI(data_dir=paths['satellite'])
-            
-            # First download the data
+            # Download the data with bbox filtering
             download_results = overture_api.download_data(SF_BBOX)
             
             if any(download_results.values()):
-                print("\nSuccessfully downloaded Overture data from AWS:")
+                print("\nSuccessfully downloaded filtered Overture data:")
                 for theme, success in download_results.items():
                     status = "✅" if success else "❌"
                     print(f"{status} {theme}")
                 
-                # Now search within the downloaded data
+                # Now search within the downloaded filtered data
                 print("\nSearching within downloaded data...")
                 overture_results = await overture_api.search(SF_BBOX)
                 
                 if overture_results and any(len(features) > 0 for features in overture_results.values()):
                     print("\nFound features in downloaded data:")
                     
-                    # Count features by theme and type
-                    theme_counts = {}
+                    # Count features by theme
                     for theme, features in overture_results.items():
                         if not features:
                             continue
-                            
-                        theme_counts[theme] = {
-                            'total': len(features),
-                            'types': {}
-                        }
-                        
-                        # Count subtypes within each theme
-                        for feature in features:
-                            if theme == 'buildings':
-                                btype = feature.get('building_type', 'unknown')
-                                theme_counts[theme]['types'][btype] = theme_counts[theme]['types'].get(btype, 0) + 1
-                            elif theme == 'places':
-                                ptype = feature.get('place_type', 'unknown')
-                                theme_counts[theme]['types'][ptype] = theme_counts[theme]['types'].get(ptype, 0) + 1
-                            elif theme == 'transportation':
-                                rtype = feature.get('road_type', 'unknown')
-                                theme_counts[theme]['types'][rtype] = theme_counts[theme]['types'].get(rtype, 0) + 1
-                    
-                    # Print theme statistics
-                    print("\nFeature counts by theme:")
-                    for theme, counts in theme_counts.items():
                         print(f"\n{theme.title()}:")
-                        print(f"  • Total: {counts['total']}")
-                        if counts['types']:
-                            print("  • Types:")
-                            for type_name, type_count in counts['types'].items():
-                                print(f"    - {type_name}: {type_count}")
+                        print(f"  • Total features: {len(features)}")
                 else:
                     print("\nNo features found in the downloaded data")
             else:
-                print("\nFailed to download any Overture data from AWS")
-        
+                print("\nFailed to download any Overture data")
+            
+            # Download satellite data
+            print("\n=== Downloading Sentinel Imagery ===")
+            satellite_results = await sentinel_api.download_data(
+                bbox=SF_BBOX,
+                cloud_cover=10.0,
+                bands={
+                    "B04": "Red",
+                    "B08": "NIR",
+                    "B11": "SWIR"
+                }
+            )
+            
+            if satellite_results and 'success' in satellite_results:
+                print("\nSuccessfully downloaded satellite data:")
+                metadata = satellite_results['metadata']
+                print(f"- Scene ID: {metadata['scene_id']}")
+                print(f"- Date: {metadata['datetime']}")
+                print(f"- Cloud cover: {metadata['cloud_cover']}%")
+                print(f"- Bands downloaded: {', '.join(metadata['bands_downloaded'])}")
+                print(f"- Data directory: {satellite_results['data_dir']}")
+            else:
+                error_msg = satellite_results.get('error', 'Unknown error')
+                print(f"\nFailed to download satellite data: {error_msg}")
+            
         except Exception as e:
             print(f"\n❌ Error: {e}")
             print("\nPlease check your internet connection and try again.")
             return
             
-        # Download satellite data
-        print("\n=== Downloading Satellite Imagery ===")
-        satellite_results = await sentinel_api.download_data(
-            bbox=SF_BBOX,
-            cloud_cover=10.0,
-            bands={
-                "B04": "Red",
-                "B08": "NIR",
-                "B11": "SWIR"
-            }
-        )
-        
-        if satellite_results and 'success' in satellite_results:
-            print("\nSuccessfully downloaded satellite data:")
-            metadata = satellite_results['metadata']
-            print(f"- Scene ID: {metadata['scene_id']}")
-            print(f"- Date: {metadata['datetime']}")
-            print(f"- Cloud cover: {metadata['cloud_cover']}%")
-            print(f"- Bands downloaded: {', '.join(metadata['bands_downloaded'])}")
-            print(f"- Data directory: {satellite_results['data_dir']}")
-        else:
-            error_msg = satellite_results.get('error', 'Unknown error')
-            print(f"\nFailed to download satellite data: {error_msg}")
-        
         print("\n🎉 Download complete!")
         
     except Exception as e:
@@ -145,4 +119,5 @@ if __name__ == "__main__":
         print(f"Added {project_root} to Python path")
         sys.path.append(project_root)
     
+    import asyncio
     asyncio.run(main()) 

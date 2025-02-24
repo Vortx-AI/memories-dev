@@ -1,151 +1,83 @@
 """
-Overture Maps data source using AWS CLI/AzCopy for downloads and DuckDB for local processing.
+Overture Maps data source using DuckDB for direct S3 access and filtering.
 """
 
 import os
 import logging
 import duckdb
-import shutil
-import subprocess
-from typing import Dict, Any, List, Union
 from pathlib import Path
-from datetime import datetime
+from typing import Dict, List, Union, Any
 
 logger = logging.getLogger(__name__)
 
 class OvertureAPI:
-    """Interface for accessing Overture Maps data using AWS CLI/AzCopy."""
+    """Interface for accessing Overture Maps data using DuckDB's S3 integration."""
     
     # Latest Overture release
-    OVERTURE_RELEASE = "2025-01-22.0"
+    OVERTURE_RELEASE = "2024-09-18.0"
     
-    # Base URLs without theme= prefix
-    AWS_S3_BASE = f"s3://overturemaps-us-west-2/release/{OVERTURE_RELEASE}/theme="
-    AZURE_BLOB_BASE = f"https://overturemapswestus2.dfs.core.windows.net/release/{OVERTURE_RELEASE}/theme="
+    # Theme configurations with exact type paths
+    THEMES = {
+        "buildings": ["building"],      # theme=buildings/type=building/*
+        "places": ["place"],           # theme=places/type=place/*
+        "transportation": ["segment"],  # theme=transportation/type=segment/*
+        "base": ["water", "land"],     # theme=base/type=water/*, theme=base/type=land/*
+        "divisions": ["division_area"]  # theme=divisions/type=division_area/*
+    }
     
-    # Available themes
-    THEMES = [
-        "addresses",
-        "base",
-        "buildings",
-        "divisions",
-        "places",
-        "transportation"
-    ]
-    
-    def __init__(self, data_dir: str = None, use_azure: bool = True):
+    def __init__(self, data_dir: str = None):
         """Initialize the Overture Maps interface.
         
         Args:
             data_dir: Directory for storing downloaded data
-            use_azure: Whether to use Azure (True) or AWS (False) as the data source
         """
         self.data_dir = Path(data_dir) if data_dir else Path("data/overture")
-        self.use_azure = use_azure
+        self.data_dir.mkdir(parents=True, exist_ok=True)
         
-        # Check for required tools
-        if not use_azure:
-            self._check_aws_cli()
-        else:
-            self._check_azcopy()
+        try:
+            # Initialize DuckDB connection
+            self.con = duckdb.connect(database=":memory:")
+            
+            # Try to load extensions if already installed
+            try:
+                self.con.execute("LOAD spatial;")
+                self.con.execute("LOAD httpfs;")
+            except duckdb.Error:
+                # If loading fails, install and then load
+                logger.info("Installing required DuckDB extensions...")
+                self.con.execute("INSTALL spatial;")
+                self.con.execute("INSTALL httpfs;")
+                self.con.execute("LOAD spatial;")
+                self.con.execute("LOAD httpfs;")
+            
+            # Configure S3 access
+            self.con.execute("SET s3_region='us-west-2';")
+            self.con.execute("SET enable_http_metadata_cache=true;")
+            self.con.execute("SET enable_object_cache=true;")
+            
+            # Test the connection by running a simple query
+            test_query = "SELECT 1;"
+            self.con.execute(test_query)
+            logger.info("DuckDB connection and extensions initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"Error initializing DuckDB: {e}")
+            raise RuntimeError(f"Failed to initialize DuckDB: {e}")
+    
+    def get_s3_path(self, theme: str, type_name: str) -> str:
+        """Get the S3 path for a theme and type.
         
-        # Initialize DuckDB connection for local processing
-        self.con = duckdb.connect(database=":memory:")
-        self.con.execute("INSTALL spatial;")
-        self.con.execute("LOAD spatial;")
-    
-    def _check_aws_cli(self):
-        """Check if AWS CLI is installed and accessible."""
-        try:
-            subprocess.run(['aws', '--version'], 
-                         stdout=subprocess.PIPE, 
-                         stderr=subprocess.PIPE,
-                         check=True)
-        except FileNotFoundError:
-            raise RuntimeError(
-                "AWS CLI not found. Please install it first:\n"
-                "  - macOS: brew install awscli\n"
-                "  - Linux: sudo apt-get install awscli\n"
-                "  - Windows: https://aws.amazon.com/cli/"
-            )
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"AWS CLI check failed: {e}")
-    
-    def _check_azcopy(self):
-        """Check if AzCopy is installed and accessible."""
-        try:
-            subprocess.run(['azcopy', '--version'], 
-                         stdout=subprocess.PIPE, 
-                         stderr=subprocess.PIPE,
-                         check=True)
-        except FileNotFoundError:
-            raise RuntimeError(
-                "AzCopy not found. Please install it first:\n"
-                "  - Download from: https://aka.ms/downloadazcopy"
-            )
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"AzCopy check failed: {e}")
-    
-    def _download_with_aws(self, theme: str, theme_dir: Path) -> bool:
-        """Download theme data using AWS CLI."""
-        try:
-            # Download files directly without listing first
-            s3_path = f"{self.AWS_S3_BASE}{theme}"
-            cmd = [
-                "aws", "s3", "cp",
-                "--region", "us-west-2",
-                "--no-sign-request",
-                "--recursive",
-                s3_path,
-                str(theme_dir)
-            ]
+        Args:
+            theme: Theme name
+            type_name: Type name within theme
             
-            logger.info(f"Downloading from AWS: {' '.join(cmd)}")
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-            logger.info(f"Download output:\n{result.stdout}")
-            
-            # Verify files were downloaded
-            all_files = list(theme_dir.rglob("*"))
-            parquet_files = list(theme_dir.rglob("*.parquet"))
-            logger.info(f"Found {len(all_files)} total files, {len(parquet_files)} parquet files in {theme_dir}")
-            
-            if not parquet_files:
-                logger.error(f"No parquet files downloaded for theme {theme}")
-                return False
-                
-            return True
-            
-        except subprocess.CalledProcessError as e:
-            logger.error(f"AWS CLI download failed for theme='{theme}': {e}\nOutput: {e.stderr}")
-            return False
-        except Exception as e:
-            logger.error(f"Error downloading from AWS: {e}")
-            return False
-    
-    def _download_with_azcopy(self, theme: str, theme_dir: Path) -> bool:
-        """Download theme data using AzCopy."""
-        try:
-            azure_path = f"{self.AZURE_BLOB_BASE}{theme}"
-            cmd = [
-                "azcopy", "copy",
-                azure_path,
-                str(theme_dir),
-                "--recursive"
-            ]
-            
-            logger.info(f"Downloading from Azure: {' '.join(cmd)}")
-            subprocess.run(cmd, check=True, capture_output=True, text=True)
-            return True
-            
-        except subprocess.CalledProcessError as e:
-            logger.error(f"AzCopy download failed for theme='{theme}': {e}\nOutput: {e.stderr}")
-            return False
-        except Exception as e:
-            logger.error(f"Error downloading from Azure: {e}")
-            return False
+        Returns:
+            S3 path string
+        """
+        return f"s3://overturemaps-us-west-2/release/{self.OVERTURE_RELEASE}/theme={theme}/type={type_name}/*"
     
     def download_theme(self, theme: str, bbox: Dict[str, float]) -> bool:
-        """Download a theme using AWS CLI or AzCopy.
+        """Download theme data directly from S3 with bbox filtering.
         
         Args:
             theme: Theme name
@@ -158,51 +90,94 @@ class OvertureAPI:
             logger.error(f"Invalid theme: {theme}")
             return False
             
-        theme_dir = self.data_dir / theme
-        theme_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Remove existing files if they exist
-        if theme_dir.exists():
-            logger.info(f"Cleaning existing theme directory: {theme_dir}")
-            shutil.rmtree(theme_dir)
-            theme_dir.mkdir(parents=True)
-        
         try:
-            if self.use_azure:
-                return self._download_with_azcopy(theme, theme_dir)
-            else:
-                return self._download_with_aws(theme, theme_dir)
+            # Create output directory
+            theme_dir = self.data_dir / theme
+            theme_dir.mkdir(parents=True, exist_ok=True)
+            
+            results = []
+            for type_name in self.THEMES[theme]:
+                s3_path = self.get_s3_path(theme, type_name)
+                output_file = theme_dir / f"{type_name}_filtered.parquet"
+                
+                # Test S3 access
+                test_query = f"""
+                SELECT COUNT(*) 
+                FROM read_parquet('{s3_path}', filename=true, hive_partitioning=1)
+                LIMIT 1
+                """
+                
+                try:
+                    logger.info(f"Testing S3 access for {theme}/{type_name}...")
+                    self.con.execute(test_query)
+                except Exception as e:
+                    logger.error(f"Failed to access S3 path for {theme}/{type_name}: {e}")
+                    continue
+                
+                # Query to filter and download data
+                query = f"""
+                COPY (
+                    SELECT 
+                        id, 
+                        names.primary AS primary_name,
+                        ST_AsText(geometry) as geometry,
+                        *
+                    FROM 
+                        read_parquet('{s3_path}', filename=true, hive_partitioning=1)
+                    WHERE 
+                        bbox.xmin >= {bbox['xmin']}
+                        AND bbox.xmax <= {bbox['xmax']}
+                        AND bbox.ymin >= {bbox['ymin']}
+                        AND bbox.ymax <= {bbox['ymax']}
+                ) TO '{output_file}' (FORMAT 'parquet');
+                """
+                
+                logger.info(f"Downloading filtered data for {theme}/{type_name}...")
+                try:
+                    self.con.execute(query)
+                    
+                    # Verify the file was created and has content
+                    if output_file.exists() and output_file.stat().st_size > 0:
+                        count_query = f"SELECT COUNT(*) as count FROM read_parquet('{output_file}')"
+                        count = self.con.execute(count_query).fetchone()[0]
+                        logger.info(f"Saved {count} features for {theme}/{type_name}")
+                        results.append(True)
+                    else:
+                        logger.warning(f"No features found for {theme}/{type_name}")
+                        results.append(False)
+                except Exception as e:
+                    logger.error(f"Error downloading {theme}/{type_name}: {e}")
+                    results.append(False)
+            
+            return any(results)  # Return True if any type was downloaded successfully
+                
         except Exception as e:
             logger.error(f"Error downloading {theme} data: {e}")
             return False
     
     def download_data(self, bbox: Dict[str, float]) -> Dict[str, bool]:
-        """Download all themes for a given bounding box.
+        """Download all theme data for a given bounding box.
         
         Args:
             bbox: Bounding box dictionary with xmin, ymin, xmax, ymax
             
         Returns:
-            Dictionary of theme names and their download status
+            Dictionary with download status for each theme
         """
         try:
-            # Create data directory
-            self.data_dir.mkdir(parents=True, exist_ok=True)
-            
-            # Download themes
             results = {}
             for theme in self.THEMES:
-                logger.info(f"\nDownloading {theme}...")
+                logger.info(f"\nDownloading {theme} data...")
                 results[theme] = self.download_theme(theme, bbox)
-            
             return results
+            
         except Exception as e:
             logger.error(f"Error during data download: {str(e)}")
             return {theme: False for theme in self.THEMES}
     
     async def search(self, bbox: Union[List[float], Dict[str, float]]) -> Dict[str, Any]:
         """
-        Search Overture data within the given bounding box.
+        Search downloaded data within the given bounding box.
         
         Args:
             bbox: Bounding box as either:
@@ -224,60 +199,55 @@ class OvertureAPI:
             else:
                 bbox_dict = bbox
             
-            # Convert bbox to WKT polygon for spatial filtering
-            bbox_wkt = f"POLYGON(({bbox_dict['xmin']} {bbox_dict['ymin']}, {bbox_dict['xmin']} {bbox_dict['ymax']}, {bbox_dict['xmax']} {bbox_dict['ymax']}, {bbox_dict['xmax']} {bbox_dict['ymin']}, {bbox_dict['xmin']} {bbox_dict['ymin']}))"
-            bbox_expr = f"ST_GeomFromText('{bbox_wkt}')"
-            
             results = {}
             
             for theme in self.THEMES:
                 theme_dir = self.data_dir / theme
                 if not theme_dir.exists():
-                    logger.warning(f"Theme directory not found: {theme_dir}")
+                    logger.warning(f"No data directory found for theme {theme}")
                     results[theme] = []
                     continue
                 
-                # Look for downloaded parquet files
-                parquet_files = list(theme_dir.glob("**/*.parquet"))  # Search recursively
-                if not parquet_files:
-                    logger.warning(f"No parquet files found in {theme_dir} or subdirectories")
-                    results[theme] = []
-                    continue
+                theme_results = []
+                for type_name in self.THEMES[theme]:
+                    parquet_file = theme_dir / f"{type_name}_filtered.parquet"
+                    if not parquet_file.exists():
+                        logger.warning(f"No data file found for {theme}/{type_name}")
+                        continue
+                        
+                    try:
+                        query = f"""
+                        SELECT 
+                            id,
+                            names.primary AS primary_name,
+                            geometry,
+                            *
+                        FROM read_parquet('{parquet_file}')
+                        """
+                        
+                        df = self.con.execute(query).fetchdf()
+                        if not df.empty:
+                            theme_results.extend(df.to_dict('records'))
+                            logger.info(f"Found {len(df)} features in {parquet_file.name}")
+                    except Exception as e:
+                        logger.warning(f"Error reading {parquet_file}: {str(e)}")
                 
-                logger.info(f"Found {len(parquet_files)} parquet files for {theme}")
-                
-                # Create query to filter by bbox
-                parquet_paths = [str(f) for f in parquet_files]
-                parquet_list = "', '".join(parquet_paths)
-                query = f"""
-                SELECT *
-                FROM read_parquet(
-                    ['{parquet_list}']
-                )
-                WHERE ST_Intersects(
-                    ST_GeomFromGeoJSON(geometry),
-                    {bbox_expr}
-                )
-                LIMIT 1000;
-                """
-                
-                try:
-                    # Execute query and fetch results
-                    logger.info(f"Executing query for {theme}...")
-                    df = self.con.execute(query).fetchdf()
-                    results[theme] = df.to_dict('records')
-                    logger.info(f"Found {len(results[theme])} {theme} features")
-                except Exception as e:
-                    logger.warning(f"Error querying {theme}: {str(e)}")
-                    results[theme] = []
+                results[theme] = theme_results
+                if theme_results:
+                    logger.info(f"Found total {len(theme_results)} features for theme {theme}")
+                else:
+                    logger.warning(f"No features found for theme {theme}")
             
             return results
             
         except Exception as e:
-            logger.error(f"Error searching Overture data: {str(e)}")
+            logger.error(f"Error searching data: {str(e)}")
             return {theme: [] for theme in self.THEMES}
     
     def __del__(self):
         """Clean up DuckDB connection."""
         if hasattr(self, 'con'):
-            self.con.close()
+            try:
+                self.con.close()
+            except:
+                pass
