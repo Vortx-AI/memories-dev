@@ -16,14 +16,28 @@ class OvertureAPI:
     # Latest Overture release
     OVERTURE_RELEASE = "2024-09-18.0"
     
-    # Theme configurations with exact type paths
+    # Theme configurations with exact type paths and required columns
     THEMES = {
-        "buildings": ["building"],      # theme=buildings/type=building/*
-        "places": ["place"],           # theme=places/type=place/*
-        "transportation": ["segment"],  # theme=transportation/type=segment/*
-        "base": ["water", "land"],     # theme=base/type=water/*, theme=base/type=land/*
-        "divisions": ["division_area"], # theme=divisions/type=division_area/*
-        "addresses": ["address"]        # theme=addresses/type=address/*
+        "buildings": {
+            "types": ["building"],
+            "required_columns": ["id", "geometry", "height"]
+        },
+        "places": {
+            "types": ["place"],
+            "required_columns": ["id", "geometry", "category"]
+        },
+        "transportation": {
+            "types": ["segment"],
+            "required_columns": ["id", "geometry", "type"]
+        },
+        "base": {
+            "types": ["water", "land"],
+            "required_columns": ["id", "geometry"]
+        },
+        "divisions": {
+            "types": ["division_area"],
+            "required_columns": ["id", "geometry", "admin_level"]
+        }
     }
     
     # Data source configurations
@@ -69,11 +83,12 @@ class OvertureAPI:
                 self.con.execute("LOAD spatial;")
                 self.con.execute("LOAD httpfs;")
             
+            # Configure memory settings
+            self.con.execute("SET memory_limit='1GB';")
+            
             # Configure S3/Azure access if needed
             if not use_azure:
                 self.con.execute("SET s3_region='us-west-2';")
-                self.con.execute("SET enable_http_metadata_cache=true;")
-                self.con.execute("SET enable_object_cache=true;")
             
             # Test the connection by running a simple query
             test_query = "SELECT 1;"
@@ -119,7 +134,7 @@ class OvertureAPI:
             theme_dir.mkdir(parents=True, exist_ok=True)
             
             results = []
-            for type_name in self.THEMES[theme]:
+            for type_name in self.THEMES[theme]["types"]:
                 s3_path = self.get_s3_path(theme, type_name)
                 output_file = theme_dir / f"{type_name}_filtered.parquet"
                 
@@ -198,6 +213,14 @@ class OvertureAPI:
             logger.error(f"Error during data download: {str(e)}")
             return {theme: False for theme in self.THEMES}
     
+    def validate_theme(self, theme: str, data: dict) -> bool:
+        """Validate that the data has required columns for the theme."""
+        if theme not in self.THEMES:
+            return False
+            
+        required_columns = self.THEMES[theme]["required_columns"]
+        return all(col in data for col in required_columns)
+            
     async def search(self, bbox: Union[List[float], Dict[str, float]]) -> Dict[str, Any]:
         """
         Search downloaded data within the given bounding box.
@@ -224,13 +247,13 @@ class OvertureAPI:
             
             all_features = []
             
-            for theme in self.THEMES:
+            for theme, config in self.THEMES.items():
                 theme_dir = self.data_dir / theme
                 if not theme_dir.exists():
                     logger.warning(f"No data directory found for theme {theme}")
                     continue
                 
-                for type_name in self.THEMES[theme]:
+                for type_name in config["types"]:
                     parquet_file = theme_dir / f"{type_name}_filtered.parquet"
                     if not parquet_file.exists():
                         logger.warning(f"No data file found for {theme}/{type_name}")
@@ -241,7 +264,7 @@ class OvertureAPI:
                         SELECT 
                             id,
                             names.primary AS primary_name,
-                            geometry,
+                            ST_AsText(geometry) as geometry,
                             *
                         FROM read_parquet('{parquet_file}')
                         """
@@ -249,11 +272,14 @@ class OvertureAPI:
                         df = self.con.execute(query).fetchdf()
                         if not df.empty:
                             features = df.to_dict('records')
+                            valid_features = []
                             for feature in features:
-                                feature['theme'] = theme
-                                feature['type'] = type_name
-                            all_features.extend(features)
-                            logger.info(f"Found {len(df)} features in {parquet_file.name}")
+                                if self.validate_theme(theme, feature):
+                                    feature['theme'] = theme
+                                    feature['type'] = type_name
+                                    valid_features.append(feature)
+                            all_features.extend(valid_features)
+                            logger.info(f"Found {len(valid_features)} valid features in {parquet_file.name}")
                     except Exception as e:
                         logger.warning(f"Error reading {parquet_file}: {str(e)}")
             

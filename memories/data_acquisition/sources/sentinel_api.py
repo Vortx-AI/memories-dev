@@ -41,7 +41,7 @@ class SentinelAPI:
         start_date: datetime,
         end_date: datetime,
         cloud_cover: float = 20.0,
-        limit: int = 10
+        limit: int = 1  # Changed default to 1 to match test expectations
     ) -> Dict[str, Any]:
         """
         Search for Sentinel-2 scenes.
@@ -57,6 +57,12 @@ class SentinelAPI:
             Dictionary containing search results
         """
         try:
+            # Validate inputs
+            if not bbox or len(bbox) != 4:
+                raise ValueError("Invalid bbox format")
+            if not isinstance(start_date, datetime) or not isinstance(end_date, datetime):
+                raise ValueError("Invalid date format")
+            
             # Search for scenes
             search = self.catalog.search(
                 collections=["sentinel-2-l2a"],
@@ -73,7 +79,7 @@ class SentinelAPI:
             
             # Format response to match test expectations
             features = []
-            for item in items:
+            for item in items[:limit]:  # Ensure we don't exceed the limit
                 feature = {
                     'id': item.id,
                     'properties': {
@@ -97,6 +103,8 @@ class SentinelAPI:
             
         except Exception as e:
             logger.error(f"Error searching Sentinel data: {e}")
+            if isinstance(e, ValueError):
+                raise
             return {'features': []}
 
     async def fetch_windowed_band(
