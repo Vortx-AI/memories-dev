@@ -6,7 +6,7 @@ import os
 from typing import Dict, Any, List, Optional
 from dotenv import load_dotenv
 import logging
-
+from memories.models.load_model import LoadModel
 from memories.models.model_base import BaseModel
 
 # Load environment variables

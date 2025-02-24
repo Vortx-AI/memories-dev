@@ -9,6 +9,7 @@ import numpy as np
 import aiohttp
 import rasterio
 from datetime import datetime
+import asyncio
 from memories.data_acquisition.data_sources import (
     DataSource,
     SentinelDataSource,
