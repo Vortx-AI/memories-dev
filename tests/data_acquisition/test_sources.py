@@ -10,7 +10,7 @@ import aiohttp
 import json
 from datetime import datetime
 from shapely.geometry import box
-
+import asyncio
 from memories.data_acquisition.sources import (
     WFSAPI,
     SentinelAPI,
