@@ -1,7 +1,7 @@
 # Memories Agents Framework
 
 ## Overview
-The Memories Agents Framework provides a collection of specialized agents that work together to process and analyze location-based data. Each agent is designed with specific capabilities and can use various tools to achieve its goals.
+The Memories Agents Framework provides a collection of specialized agents that work together . Each agent is designed with specific capabilities and can use various tools to achieve its goals.
 
 ## Architecture
 
