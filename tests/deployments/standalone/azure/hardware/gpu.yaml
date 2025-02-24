@@ -1,0 +1,14 @@
+gpu:
+  enabled: true
+  sku: NC24ads_A100_v4
+  memory:
+    min: 16
+    max: 64
+  cuda:
+    version: "8.0"
+    compute_capability: "8.0"
+  optimization:
+    power_management: true
+    clock_speeds:
+      memory: 1215
+      graphics: 1410 

@@ -1,0 +1,13 @@
+memory:
+  ram:
+    min: 32
+    max: 64
+  swap:
+    enabled: true
+    size: 8
+  persistent_disk:
+    enabled: true
+    type: pd-ssd
+  iops:
+    baseline: 6000
+    burst: 12000 

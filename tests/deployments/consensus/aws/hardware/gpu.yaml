@@ -1,0 +1,9 @@
+gpu:
+  enabled: false
+  instance_types:
+    - p3.2xlarge
+    - p3.8xlarge
+  gpu_memory:
+    min: 16
+    max: 64
+  cuda_compute: "7.0" 

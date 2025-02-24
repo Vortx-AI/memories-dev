@@ -1,0 +1,149 @@
+version: '1.0'
+
+deployment_type: swarmed
+provider: azure
+
+edge:
+  type: cdn
+  profile:
+    enabled: true
+    sku: Standard
+    ttl: 3600
+
+cloud:
+  type: redis-cache
+  instance:
+    sku: Premium
+    capacity: 3
+    family: P
+    version: 6
+
+synchronization:
+  strategy: multi-master
+  replication_topology: mesh
+  conflict_resolution: vector-clocks
+
+distribution:
+  edge_locations:
+    - region: eastus
+      zones:
+        - 1
+        - 2
+    - region: westus
+      zones:
+        - 1
+        - 2
+
+infrastructure:
+  instance_type: Standard_D8s_v3
+  machine_type: Standard_D8s_v3
+  vm_size: Standard_D8s_v3
+  ami_id: null
+  region: eastus
+  availability_zones:
+    - 1
+    - 2
+  zones:
+    - 1
+    - 2
+  subnet_type: private
+  availability: zone-redundant
+  image:
+    publisher: Canonical
+    offer: UbuntuServer
+    sku: 18.04-LTS
+    version: latest
+
+monitoring:
+  enabled: true
+  metrics:
+    - name: "CPUUtilization"
+      period: 300
+      threshold:
+        warning: 80
+        critical: 90
+    - name: "MemoryUtilization"
+      period: 300
+      threshold:
+        warning: 80
+        critical: 90
+  cloud_monitoring:
+    enabled: true
+    metrics:
+      collection_interval: 30s
+      retention_days: 90
+  azure_monitor:
+    enabled: true
+    metrics:
+      - name: Percentage CPU
+        aggregation: Average
+        interval: PT5M
+      - name: Available Memory Bytes
+        aggregation: Average
+        interval: PT5M
+
+security:
+  vpc:
+    enabled: true
+    cidr: 10.0.0.0/16
+  security_groups:
+    - name: swarmed-nodes
+      description: Security group for swarmed nodes
+      rules:
+        - protocol: tcp
+          from_port: 22
+          to_port: 22
+          cidr: 10.0.0.0/16
+        - protocol: tcp
+          from_port: 9000
+          to_port: 9000
+          cidr: 10.0.0.0/16
+  firewall_rules:
+    - name: allow-ssh
+      direction: INGRESS
+      priority: 1000
+      source_ranges: ["10.0.0.0/16"]
+      allow:
+        - protocol: tcp
+          ports: ["22"]
+    - name: allow-swarmed
+      direction: INGRESS
+      priority: 1000
+      source_ranges: ["10.0.0.0/16"]
+      allow:
+        - protocol: tcp
+          ports: ["9000"]
+  ssh:
+    allowed_ips: "${ALLOWED_IPS}"
+    key_pair: "${KEY_PAIR_NAME}"
+  encryption:
+    at_rest: true
+    in_transit: true
+  vnet:
+    enabled: true
+    address_space: 10.0.0.0/16
+  network_security_groups:
+    - name: swarmed-nodes-nsg
+      rules:
+        - name: allow-ssh
+          priority: 100
+          direction: Inbound
+          access: Allow
+          protocol: Tcp
+          source_port_range: "*"
+          destination_port_range: "22"
+          source_address_prefix: "10.0.0.0/16"
+        - name: allow-swarmed
+          priority: 110
+          direction: Inbound
+          access: Allow
+          protocol: Tcp
+          source_port_range: "*"
+          destination_port_range: "9000"
+          source_address_prefix: "10.0.0.0/16"
+
+backup:
+  enabled: true
+  retention_days: 30
+  schedule: 0 0 * * *
+  type: snapshot 

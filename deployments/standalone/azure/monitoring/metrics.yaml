@@ -1,0 +1,201 @@
+version: '1.0'
+
+# Standalone Monitoring Configuration
+monitoring:
+  # System-level Metrics
+  system:
+    collection_interval: 30s
+    retention_period: 30d
+    
+    metrics:
+      cpu:
+        - name: usage_percent
+          type: gauge
+          labels: [core, mode]
+          thresholds:
+            warning: 75
+            critical: 90
+        - name: load_average
+          type: gauge
+          intervals: [1m, 5m, 15m]
+      
+      memory:
+        - name: usage_bytes
+          type: gauge
+          labels: [type]
+          thresholds:
+            warning: 80
+            critical: 90
+        - name: swap_usage
+          type: gauge
+          thresholds:
+            warning: 20
+            critical: 50
+      
+      disk:
+        - name: usage_percent
+          type: gauge
+          labels: [device, mount_point]
+          thresholds:
+            warning: 75
+            critical: 90
+        - name: io_operations
+          type: counter
+          labels: [device, operation]
+        - name: io_latency
+          type: histogram
+          buckets: [1, 5, 10, 50, 100, 500]
+      
+      network:
+        - name: throughput_bytes
+          type: counter
+          labels: [interface, direction]
+        - name: connections
+          type: gauge
+          labels: [state, protocol]
+
+  # Application-level Metrics
+  application:
+    collection_interval: 10s
+    retention_period: 7d
+    
+    metrics:
+      performance:
+        - name: response_time
+          type: histogram
+          buckets: [0.01, 0.05, 0.1, 0.5, 1.0]
+          labels: [endpoint, method]
+        - name: request_rate
+          type: gauge
+          labels: [endpoint, status]
+        - name: error_rate
+          type: gauge
+          labels: [endpoint, error_type]
+      
+      database:
+        - name: connection_pool
+          type: gauge
+          labels: [pool_name]
+          thresholds:
+            warning: 80
+            critical: 90
+        - name: query_duration
+          type: histogram
+          buckets: [0.001, 0.005, 0.01, 0.05, 0.1]
+          labels: [query_type]
+
+  # Hardware-specific Metrics
+  hardware:
+    collection_interval: 60s
+    retention_period: 90d
+    
+    metrics:
+      temperature:
+        - name: cpu_temp
+          type: gauge
+          thresholds:
+            warning: 70
+            critical: 85
+        - name: disk_temp
+          type: gauge
+          labels: [device]
+          thresholds:
+            warning: 45
+            critical: 55
+      
+      power:
+        - name: consumption_watts
+          type: gauge
+          labels: [component]
+        - name: efficiency
+          type: gauge
+          labels: [power_supply]
+
+# Alerts Configuration
+alerts:
+  handlers:
+    - type: email
+      recipients: ["ops@memories-app.com"]
+    - type: slack
+      channel: "#standalone-alerts"
+    - type: pagerduty
+      service_key: "${PAGERDUTY_KEY}"
+  
+  rules:
+    system:
+      - name: high_cpu_usage
+        condition: "cpu_usage_percent > 90"
+        duration: 5m
+        severity: critical
+      - name: memory_pressure
+        condition: "memory_usage_bytes > 85"
+        duration: 10m
+        severity: warning
+    
+    application:
+      - name: high_error_rate
+        condition: "error_rate > 0.05"
+        duration: 1m
+        severity: critical
+      - name: slow_responses
+        condition: "response_time{quantile='0.95'} > 1.0"
+        duration: 5m
+        severity: warning
+
+# Dashboard Configuration
+dashboards:
+  system_overview:
+    refresh: 1m
+    panels:
+      - title: CPU Usage
+        type: graph
+        metrics: [cpu_usage_percent]
+      - title: Memory Usage
+        type: graph
+        metrics: [memory_usage_bytes]
+      - title: Disk IO
+        type: graph
+        metrics: [io_operations]
+  
+  application_performance:
+    refresh: 30s
+    panels:
+      - title: Response Times
+        type: heatmap
+        metrics: [response_time]
+      - title: Error Rates
+        type: graph
+        metrics: [error_rate]
+      - title: Request Rate
+        type: graph
+        metrics: [request_rate]
+
+# Logging Configuration
+logging:
+  system:
+    level: info
+    retention: 30d
+    format: json
+  
+  application:
+    level: info
+    retention: 7d
+    format: json
+    fields:
+      - timestamp
+      - level
+      - service
+      - message
+      - trace_id
+
+# Performance Profiling
+profiling:
+  enabled: true
+  interval: 1h
+  retention: 7d
+  types:
+    - cpu
+    - memory
+    - goroutine
+    - block
+    - mutex 

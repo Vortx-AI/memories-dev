@@ -1,0 +1,178 @@
+version: '1.0'
+
+# Alert Manager Configuration for Standalone Deployment
+alert_manager:
+  global:
+    resolve_timeout: 5m
+    smtp_smarthost: 'smtp.memories-app.com:587'
+    smtp_from: 'alerts@memories-app.com'
+    smtp_auth_username: '${SMTP_USERNAME}'
+    smtp_auth_password: '${SMTP_PASSWORD}'
+    slack_api_url: '${SLACK_WEBHOOK_URL}'
+    pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+
+  templates:
+    - '/etc/alertmanager/template/*.tmpl'
+
+  route:
+    receiver: 'team-ops'
+    group_by: ['alertname', 'cluster', 'service']
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h
+    
+    routes:
+      - match:
+          severity: critical
+        receiver: 'team-ops-pagerduty'
+        group_wait: 30s
+        repeat_interval: 1h
+      
+      - match:
+          severity: warning
+        receiver: 'team-ops-slack'
+        group_wait: 1m
+        repeat_interval: 2h
+      
+      - match:
+          severity: info
+        receiver: 'team-ops-email'
+        group_wait: 5m
+        repeat_interval: 12h
+
+  inhibit_rules:
+    - source_match:
+        severity: 'critical'
+      target_match:
+        severity: 'warning'
+      equal: ['alertname', 'cluster', 'service']
+
+  receivers:
+    - name: 'team-ops'
+      email_configs:
+        - to: 'ops@memories-app.com'
+          send_resolved: true
+      slack_configs:
+        - channel: '#ops-alerts'
+          send_resolved: true
+          title: '{{ template "slack.default.title" . }}'
+          text: '{{ template "slack.default.text" . }}'
+
+    - name: 'team-ops-pagerduty'
+      pagerduty_configs:
+        - service_key: '${PAGERDUTY_SERVICE_KEY}'
+          send_resolved: true
+          description: '{{ template "pagerduty.default.description" . }}'
+          client: 'Memories App Alertmanager'
+          client_url: '{{ template "pagerduty.default.clientURL" . }}'
+          severity: '{{ if eq .Status "firing" }}{{ .CommonLabels.severity }}{{ else }}resolved{{ end }}'
+
+    - name: 'team-ops-slack'
+      slack_configs:
+        - channel: '#ops-alerts'
+          send_resolved: true
+          title: '{{ template "slack.default.title" . }}'
+          text: '{{ template "slack.default.text" . }}'
+          actions:
+            - type: button
+              text: 'View in Grafana'
+              url: '{{ (index .Alerts 0).Annotations.dashboard }}'
+
+    - name: 'team-ops-email'
+      email_configs:
+        - to: 'ops@memories-app.com'
+          send_resolved: true
+          headers:
+            subject: '{{ template "email.default.subject" . }}'
+          html: '{{ template "email.default.html" . }}'
+
+# Alert Rules
+rules:
+  groups:
+    - name: standalone.rules
+      rules:
+        # System Health
+        - alert: HighCPUUsage
+          expr: avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) > 0.8
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: High CPU usage detected
+            description: CPU usage is above 80% for 5 minutes
+            dashboard: ${GRAFANA_URL}/d/system-overview
+
+        - alert: MemoryExhaustion
+          expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Memory nearly exhausted
+            description: Memory usage is above 90%
+            dashboard: ${GRAFANA_URL}/d/system-overview
+
+        # Application Health
+        - alert: HighErrorRate
+          expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: High error rate detected
+            description: Error rate is above 5% for 2 minutes
+            dashboard: ${GRAFANA_URL}/d/application-errors
+
+        - alert: SlowResponses
+          expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Slow response times detected
+            description: 95th percentile of response times is above 1s
+            dashboard: ${GRAFANA_URL}/d/application-latency
+
+        # Database Health
+        - alert: HighDatabaseConnections
+          expr: max_over_time(pg_stat_activity_count[5m]) > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: High number of database connections
+            description: Database connections are above 80% of maximum
+            dashboard: ${GRAFANA_URL}/d/database-metrics
+
+        # Storage Health
+        - alert: DiskSpaceRunningOut
+          expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes > 0.85
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Disk space running low
+            description: Disk usage is above 85%
+            dashboard: ${GRAFANA_URL}/d/storage-metrics
+
+        # Network Health
+        - alert: NetworkErrors
+          expr: rate(node_network_transmit_errs_total[5m]) + rate(node_network_receive_errs_total[5m]) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Network errors detected
+            description: Network interface is reporting errors
+            dashboard: ${GRAFANA_URL}/d/network-overview
+
+        # Service Health
+        - alert: ServiceDown
+          expr: up == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: Service is down
+            description: Service {{ $labels.job }} has been down for more than 1 minute
+            dashboard: ${GRAFANA_URL}/d/service-health 

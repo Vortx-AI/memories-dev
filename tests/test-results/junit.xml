@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="14" skipped="0" tests="46" time="1.164" timestamp="2025-02-24T15:30:39.389930+05:30" hostname="avijeets-MacBook-Air.local"><testcase classname="deployments.consensus.test_consensus_config.TestConsensusConfig" name="test_aws_config" time="0.006" /><testcase classname="deployments.consensus.test_consensus_config.TestConsensusConfig" name="test_azure_config" time="0.004" /><testcase classname="deployments.consensus.test_consensus_config.TestConsensusConfig" name="test_gcp_config" time="0.004" /><testcase classname="deployments.consensus.test_consensus_config.TestConsensusConfig" name="test_invalid_min_nodes[aws]" time="0.005" /><testcase classname="deployments.consensus.test_consensus_config.TestConsensusConfig" name="test_invalid_min_nodes[azure]" time="0.005" /><testcase classname="deployments.consensus.test_consensus_config.TestConsensusConfig" name="test_invalid_min_nodes[gcp]" time="0.004" /><testcase classname="deployments.consensus.test_consensus_config.TestConsensusConfig" name="test_invalid_algorithm[aws]" time="0.005" /><testcase classname="deployments.consensus.test_consensus_config.TestConsensusConfig" name="test_invalid_algorithm[azure]" time="0.004" /><testcase classname="deployments.consensus.test_consensus_config.TestConsensusConfig" name="test_invalid_algorithm[gcp]" time="0.004" /><testcase classname="deployments.consensus.test_consensus_config.TestConsensusConfig" name="test_invalid_quorum_size[aws]" time="0.004" /><testcase classname="deployments.consensus.test_consensus_config.TestConsensusConfig" name="test_invalid_quorum_size[azure]" time="0.004" /><testcase classname="deployments.consensus.test_consensus_config.TestConsensusConfig" name="test_invalid_quorum_size[gcp]" time="0.004" /><testcase classname="deployments.consensus.test_consensus_config.TestConsensusConfig" name="test_aws_consensus_config" time="0.004" /><testcase classname="deployments.consensus.test_consensus_config.TestConsensusConfig" name="test_azure_consensus_config" time="0.004" /><testcase classname="deployments.consensus.test_consensus_config.TestConsensusConfig" name="test_gcp_consensus_config" time="0.004" /><testcase classname="deployments.standalone.gcp.test_config.TestGCPStandaloneConfig" name="test_cpu_model_validation" time="0.040" /><testcase classname="deployments.standalone.gcp.test_config.TestGCPStandaloneConfig" name="test_gpu_specs_validation" time="0.046" /><testcase classname="deployments.standalone.gcp.test_config.TestGCPStandaloneConfig" name="test_memory_settings_validation" time="0.042" /><testcase classname="deployments.standalone.gcp.test_config.TestGCPStandaloneConfig" name="test_network_settings_validation" time="0.049" /><testcase classname="deployments.standalone.gcp.test_config.TestGCPStandaloneConfig" name="test_security_settings_validation" time="0.046" /><testcase classname="deployments.swarmed.test_swarmed_config.TestSwarmedConfig" name="test_aws_swarmed_config" time="0.007" /><testcase classname="deployments.swarmed.test_swarmed_config.TestSwarmedConfig" name="test_azure_swarmed_config" time="0.006" /><testcase classname="deployments.swarmed.test_swarmed_config.TestSwarmedConfig" name="test_gcp_swarmed_config" time="0.006" /><testcase classname="deployments.swarmed.test_swarmed_config.TestSwarmedConfig" name="test_invalid_swarm_settings" time="0.007" /><testcase classname="deployments.swarmed.test_swarmed_config.TestSwarmedConfig" name="test_invalid_node_configuration" time="0.007" /><testcase classname="deployments.test_deployments.TestStandaloneDeployments" name="test_standalone_main_config[aws]" time="0.017" /><testcase classname="deployments.test_deployments.TestStandaloneDeployments" name="test_standalone_main_config[azure]" time="0.024" /><testcase classname="deployments.test_deployments.TestStandaloneDeployments" name="test_standalone_main_config[gcp]" time="0.022" /><testcase classname="deployments.test_deployments.TestStandaloneDeployments" name="test_standalone_hardware_configs[aws]" time="0.016"><failure message="AssertionError: assert False&#10; +  where False = validate_hardware_configs('standalone', 'aws')&#10; +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105a34510&gt;.validate_hardware_configs">self = &lt;tests.deployments.test_deployments.TestStandaloneDeployments object at 0x10591e060&gt;
+deployment_validator = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105a34510&gt;
+provider = 'aws'
+
+    @pytest.mark.parametrize("provider", ["aws", "azure", "gcp"])
+    def test_standalone_hardware_configs(self, deployment_validator, provider):
+&gt;       assert deployment_validator.validate_hardware_configs("standalone", provider)
+E       AssertionError: assert False
+E        +  where False = validate_hardware_configs('standalone', 'aws')
+E        +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105a34510&gt;.validate_hardware_configs
+
+deployments/test_deployments.py:205: AssertionError</failure></testcase><testcase classname="deployments.test_deployments.TestStandaloneDeployments" name="test_standalone_hardware_configs[azure]" time="0.023"><failure message="AssertionError: assert False&#10; +  where False = validate_hardware_configs('standalone', 'azure')&#10; +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105a34c30&gt;.validate_hardware_configs">self = &lt;tests.deployments.test_deployments.TestStandaloneDeployments object at 0x1059cd6d0&gt;
+deployment_validator = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105a34c30&gt;
+provider = 'azure'
+
+    @pytest.mark.parametrize("provider", ["aws", "azure", "gcp"])
+    def test_standalone_hardware_configs(self, deployment_validator, provider):
+&gt;       assert deployment_validator.validate_hardware_configs("standalone", provider)
+E       AssertionError: assert False
+E        +  where False = validate_hardware_configs('standalone', 'azure')
+E        +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105a34c30&gt;.validate_hardware_configs
+
+deployments/test_deployments.py:205: AssertionError</failure></testcase><testcase classname="deployments.test_deployments.TestStandaloneDeployments" name="test_standalone_hardware_configs[gcp]" time="0.023"><failure message="AssertionError: assert False&#10; +  where False = validate_hardware_configs('standalone', 'gcp')&#10; +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x1059531d0&gt;.validate_hardware_configs">self = &lt;tests.deployments.test_deployments.TestStandaloneDeployments object at 0x1058af9b0&gt;
+deployment_validator = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x1059531d0&gt;
+provider = 'gcp'
+
+    @pytest.mark.parametrize("provider", ["aws", "azure", "gcp"])
+    def test_standalone_hardware_configs(self, deployment_validator, provider):
+&gt;       assert deployment_validator.validate_hardware_configs("standalone", provider)
+E       AssertionError: assert False
+E        +  where False = validate_hardware_configs('standalone', 'gcp')
+E        +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x1059531d0&gt;.validate_hardware_configs
+
+deployments/test_deployments.py:205: AssertionError</failure></testcase><testcase classname="deployments.test_deployments.TestConsensusDeployments" name="test_consensus_main_config[aws]" time="0.031" /><testcase classname="deployments.test_deployments.TestConsensusDeployments" name="test_consensus_main_config[azure]" time="0.011" /><testcase classname="deployments.test_deployments.TestConsensusDeployments" name="test_consensus_main_config[gcp]" time="0.007"><failure message="assert False&#10; +  where False = validate_required_sections({'backup': {'enabled': True, 'retention_days': 30, 'schedule': '0 0 * * *', 'type': 'snapshot'}, 'deployment_type': 'consensus', 'infrastructure': {'image': 'ubuntu-2004-focal-v20220204', 'machine_type': 'n2-standard-8', 'region': 'us-central1', 'zones': ['us-central1-a', 'us-central1-b', 'us-central1-c']}, 'monitoring': {'cloud_monitoring': {'enabled': True, 'metrics': [{'filter': 'resource.type = &quot;gce_instance&quot;', 'interval': '300s', 'name': 'compute.googleapis.com/instance/cpu/utilization'}, {'filter': 'resource.type = &quot;gce_instance&quot;', 'interval': '300s', 'name': 'compute.googleapis.com/instance/memory/utilization'}]}}, ...}, ['cluster', 'consensus', 'state', 'communication'])&#10; +    where validate_required_sections = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x1059ab350&gt;.validate_required_sections">self = &lt;tests.deployments.test_deployments.TestConsensusDeployments object at 0x10591e190&gt;
+deployment_validator = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x1059ab350&gt;
+provider = 'gcp'
+
+    @pytest.mark.parametrize("provider", ["aws", "azure", "gcp"])
+    def test_consensus_main_config(self, deployment_validator, provider):
+        config = deployment_validator.load_config("consensus", provider, "config/config.yaml")
+    
+        # Validate deployment type and provider
+        assert deployment_validator.validate_deployment_type(config, "consensus")
+        assert deployment_validator.validate_provider(config, provider)
+    
+        # Validate required sections specific to consensus deployment
+        required_sections = [
+            "cluster",
+            "consensus",
+            "state",
+            "communication"
+        ]
+&gt;       assert deployment_validator.validate_required_sections(config, required_sections)
+E       assert False
+E        +  where False = validate_required_sections({'backup': {'enabled': True, 'retention_days': 30, 'schedule': '0 0 * * *', 'type': 'snapshot'}, 'deployment_type': 'consensus', 'infrastructure': {'image': 'ubuntu-2004-focal-v20220204', 'machine_type': 'n2-standard-8', 'region': 'us-central1', 'zones': ['us-central1-a', 'us-central1-b', 'us-central1-c']}, 'monitoring': {'cloud_monitoring': {'enabled': True, 'metrics': [{'filter': 'resource.type = "gce_instance"', 'interval': '300s', 'name': 'compute.googleapis.com/instance/cpu/utilization'}, {'filter': 'resource.type = "gce_instance"', 'interval': '300s', 'name': 'compute.googleapis.com/instance/memory/utilization'}]}}, ...}, ['cluster', 'consensus', 'state', 'communication'])
+E        +    where validate_required_sections = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x1059ab350&gt;.validate_required_sections
+
+deployments/test_deployments.py:223: AssertionError</failure></testcase><testcase classname="deployments.test_deployments.TestConsensusDeployments" name="test_consensus_hardware_configs[aws]" time="0.031"><failure message="AssertionError: assert False&#10; +  where False = validate_hardware_configs('consensus', 'aws')&#10; +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x1059ab850&gt;.validate_hardware_configs">self = &lt;tests.deployments.test_deployments.TestConsensusDeployments object at 0x10591e2c0&gt;
+deployment_validator = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x1059ab850&gt;
+provider = 'aws'
+
+    @pytest.mark.parametrize("provider", ["aws", "azure", "gcp"])
+    def test_consensus_hardware_configs(self, deployment_validator, provider):
+&gt;       assert deployment_validator.validate_hardware_configs("consensus", provider)
+E       AssertionError: assert False
+E        +  where False = validate_hardware_configs('consensus', 'aws')
+E        +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x1059ab850&gt;.validate_hardware_configs
+
+deployments/test_deployments.py:227: AssertionError</failure></testcase><testcase classname="deployments.test_deployments.TestConsensusDeployments" name="test_consensus_hardware_configs[azure]" time="0.011"><failure message="AssertionError: assert False&#10; +  where False = validate_hardware_configs('consensus', 'azure')&#10; +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105ad4e60&gt;.validate_hardware_configs">self = &lt;tests.deployments.test_deployments.TestConsensusDeployments object at 0x1059ce0f0&gt;
+deployment_validator = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105ad4e60&gt;
+provider = 'azure'
+
+    @pytest.mark.parametrize("provider", ["aws", "azure", "gcp"])
+    def test_consensus_hardware_configs(self, deployment_validator, provider):
+&gt;       assert deployment_validator.validate_hardware_configs("consensus", provider)
+E       AssertionError: assert False
+E        +  where False = validate_hardware_configs('consensus', 'azure')
+E        +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105ad4e60&gt;.validate_hardware_configs
+
+deployments/test_deployments.py:227: AssertionError</failure></testcase><testcase classname="deployments.test_deployments.TestConsensusDeployments" name="test_consensus_hardware_configs[gcp]" time="0.007"><failure message="AssertionError: assert False&#10; +  where False = validate_hardware_configs('consensus', 'gcp')&#10; +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105ad56d0&gt;.validate_hardware_configs">self = &lt;tests.deployments.test_deployments.TestConsensusDeployments object at 0x1058aecf0&gt;
+deployment_validator = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105ad56d0&gt;
+provider = 'gcp'
+
+    @pytest.mark.parametrize("provider", ["aws", "azure", "gcp"])
+    def test_consensus_hardware_configs(self, deployment_validator, provider):
+&gt;       assert deployment_validator.validate_hardware_configs("consensus", provider)
+E       AssertionError: assert False
+E        +  where False = validate_hardware_configs('consensus', 'gcp')
+E        +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105ad56d0&gt;.validate_hardware_configs
+
+deployments/test_deployments.py:227: AssertionError</failure></testcase><testcase classname="deployments.test_deployments.TestSwarmedDeployments" name="test_swarmed_main_config[aws]" time="0.052"><failure message="AssertionError: assert False&#10; +  where False = validate_required_sections({'backup': {'enabled': True, 'retention_days': 30, 'schedule': '0 0 * * *', 'type': 'snapshot'}, 'caching': {'invalidation': {'propagation_delay': 300, 'strategy': 'hierarchical'}, 'layers': [{'name': 'edge', 'ttl': '1h', 'type': 'cloudfront'}, {'engine': 'redis', 'name': 'regional', 'node_type': 'cache.r5.xlarge', 'type': 'elasticache'}, {'name': 'application', 'size': '1Gi', 'type': 'local'}]}, 'cloud': {'cluster': {'engine': 'redis', 'engine_version': '6.x', 'node_type': 'cache.r5.xlarge', 'num_cache_nodes': 3}, 'type': 'elasticache'}, 'cloud_integration': {'providers': {'aws': {'services': [{'name': 'elasticache', 'role': 'memory-store'}, {'name': 'cloudfront', 'role': 'edge-delivery'}]}, 'azure': {'services': [{'name': 'redis-cache', 'role': 'memory-store'}, {'name': 'cdn', 'role': 'edge-delivery'}]}, 'gcp': {'services': [{'name': 'memorystore', 'role': 'memory-store'}, {'name': 'cloud-cdn', 'role': 'edge-delivery'}]}}, 'synchronization': {'conflict_resolution': 'vector-clocks', 'replication_topology': 'mesh', 'strategy': 'multi-master'}}, ...}, ['edge', 'cloud', 'synchronization', 'distribution'])&#10; +    where validate_required_sections = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105a8e7b0&gt;.validate_required_sections">self = &lt;tests.deployments.test_deployments.TestSwarmedDeployments object at 0x105976210&gt;
+deployment_validator = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105a8e7b0&gt;
+provider = 'aws'
+
+    @pytest.mark.parametrize("provider", ["aws", "azure", "gcp"])
+    def test_swarmed_main_config(self, deployment_validator, provider):
+        config = deployment_validator.load_config("swarmed", provider, "config/config.yaml")
+    
+        # Validate deployment type and provider
+        assert deployment_validator.validate_deployment_type(config, "swarmed")
+        assert deployment_validator.validate_provider(config, provider)
+    
+        # Validate required sections specific to swarmed deployment
+        required_sections = [
+            "edge",
+            "cloud",
+            "synchronization",
+            "distribution"
+        ]
+&gt;       assert deployment_validator.validate_required_sections(config, required_sections)
+E       AssertionError: assert False
+E        +  where False = validate_required_sections({'backup': {'enabled': True, 'retention_days': 30, 'schedule': '0 0 * * *', 'type': 'snapshot'}, 'caching': {'invalidation': {'propagation_delay': 300, 'strategy': 'hierarchical'}, 'layers': [{'name': 'edge', 'ttl': '1h', 'type': 'cloudfront'}, {'engine': 'redis', 'name': 'regional', 'node_type': 'cache.r5.xlarge', 'type': 'elasticache'}, {'name': 'application', 'size': '1Gi', 'type': 'local'}]}, 'cloud': {'cluster': {'engine': 'redis', 'engine_version': '6.x', 'node_type': 'cache.r5.xlarge', 'num_cache_nodes': 3}, 'type': 'elasticache'}, 'cloud_integration': {'providers': {'aws': {'services': [{'name': 'elasticache', 'role': 'memory-store'}, {'name': 'cloudfront', 'role': 'edge-delivery'}]}, 'azure': {'services': [{'name': 'redis-cache', 'role': 'memory-store'}, {'name': 'cdn', 'role': 'edge-delivery'}]}, 'gcp': {'services': [{'name': 'memorystore', 'role': 'memory-store'}, {'name': 'cloud-cdn', 'role': 'edge-delivery'}]}}, 'synchronization': {'conflict_resolution': 'vector-clocks', 'replication_topology': 'mesh', 'strategy': 'multi-master'}}, ...}, ['edge', 'cloud', 'synchronization', 'distribution'])
+E        +    where validate_required_sections = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105a8e7b0&gt;.validate_required_sections
+
+deployments/test_deployments.py:245: AssertionError</failure></testcase><testcase classname="deployments.test_deployments.TestSwarmedDeployments" name="test_swarmed_main_config[azure]" time="0.011" /><testcase classname="deployments.test_deployments.TestSwarmedDeployments" name="test_swarmed_main_config[gcp]" time="0.010" /><testcase classname="deployments.test_deployments.TestSwarmedDeployments" name="test_swarmed_hardware_configs[aws]" time="0.051"><failure message="AssertionError: assert False&#10; +  where False = validate_hardware_configs('swarmed', 'aws')&#10; +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x1059f99d0&gt;.validate_hardware_configs">self = &lt;tests.deployments.test_deployments.TestSwarmedDeployments object at 0x10591e520&gt;
+deployment_validator = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x1059f99d0&gt;
+provider = 'aws'
+
+    @pytest.mark.parametrize("provider", ["aws", "azure", "gcp"])
+    def test_swarmed_hardware_configs(self, deployment_validator, provider):
+&gt;       assert deployment_validator.validate_hardware_configs("swarmed", provider)
+E       AssertionError: assert False
+E        +  where False = validate_hardware_configs('swarmed', 'aws')
+E        +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x1059f99d0&gt;.validate_hardware_configs
+
+deployments/test_deployments.py:249: AssertionError</failure></testcase><testcase classname="deployments.test_deployments.TestSwarmedDeployments" name="test_swarmed_hardware_configs[azure]" time="0.010"><failure message="AssertionError: assert False&#10; +  where False = validate_hardware_configs('swarmed', 'azure')&#10; +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x1059f9a90&gt;.validate_hardware_configs">self = &lt;tests.deployments.test_deployments.TestSwarmedDeployments object at 0x1059ceb10&gt;
+deployment_validator = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x1059f9a90&gt;
+provider = 'azure'
+
+    @pytest.mark.parametrize("provider", ["aws", "azure", "gcp"])
+    def test_swarmed_hardware_configs(self, deployment_validator, provider):
+&gt;       assert deployment_validator.validate_hardware_configs("swarmed", provider)
+E       AssertionError: assert False
+E        +  where False = validate_hardware_configs('swarmed', 'azure')
+E        +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x1059f9a90&gt;.validate_hardware_configs
+
+deployments/test_deployments.py:249: AssertionError</failure></testcase><testcase classname="deployments.test_deployments.TestSwarmedDeployments" name="test_swarmed_hardware_configs[gcp]" time="0.010"><failure message="AssertionError: assert False&#10; +  where False = validate_hardware_configs('swarmed', 'gcp')&#10; +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105a42780&gt;.validate_hardware_configs">self = &lt;tests.deployments.test_deployments.TestSwarmedDeployments object at 0x1058afac0&gt;
+deployment_validator = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105a42780&gt;
+provider = 'gcp'
+
+    @pytest.mark.parametrize("provider", ["aws", "azure", "gcp"])
+    def test_swarmed_hardware_configs(self, deployment_validator, provider):
+&gt;       assert deployment_validator.validate_hardware_configs("swarmed", provider)
+E       AssertionError: assert False
+E        +  where False = validate_hardware_configs('swarmed', 'gcp')
+E        +    where validate_hardware_configs = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105a42780&gt;.validate_hardware_configs
+
+deployments/test_deployments.py:249: AssertionError</failure></testcase><testcase classname="deployments.test_deployments.TestCrossProviderCompatibility" name="test_cross_provider_config_compatibility[standalone]" time="0.059"><failure message="AssertionError: Provider aws missing keys in infrastructure: {'vm_size', 'machine_type', 'availability', 'image'}&#10;assert not {'availability', 'image', 'machine_type', 'vm_size'}">self = &lt;tests.deployments.test_deployments.TestCrossProviderCompatibility object at 0x1059760d0&gt;
+deployment_validator = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105a42ba0&gt;
+deployment_type = 'standalone'
+
+    @pytest.mark.parametrize("deployment_type", ["standalone", "consensus", "swarmed"])
+    def test_cross_provider_config_compatibility(self, deployment_validator, deployment_type):
+        configs = {}
+        for provider in ["aws", "azure", "gcp"]:
+            try:
+                configs[provider] = deployment_validator.load_config(
+                    deployment_type, provider, "config/config.yaml"
+                )
+            except FileNotFoundError:
+                pytest.skip(f"Config not found for {provider} {deployment_type}")
+    
+        # Verify common sections across providers
+        common_sections = [
+            "infrastructure",
+            "monitoring",
+            "security",
+            "backup"
+        ]
+    
+        for section in common_sections:
+            section_keys = set()
+            for provider, config in configs.items():
+                if section in config:
+                    section_keys.update(config[section].keys())
+    
+            # Verify each provider has the common keys
+            for provider, config in configs.items():
+                if section in config:
+                    provider_keys = set(config[section].keys())
+                    missing_keys = section_keys - provider_keys
+&gt;                   assert not missing_keys, f"Provider {provider} missing keys in {section}: {missing_keys}"
+E                   AssertionError: Provider aws missing keys in infrastructure: {'vm_size', 'machine_type', 'availability', 'image'}
+E                   assert not {'availability', 'image', 'machine_type', 'vm_size'}
+
+deployments/test_deployments.py:282: AssertionError</failure></testcase><testcase classname="deployments.test_deployments.TestCrossProviderCompatibility" name="test_cross_provider_config_compatibility[consensus]" time="0.044"><failure message="AssertionError: Provider aws missing keys in infrastructure: {'vm_size', 'machine_type', 'image', 'zones'}&#10;assert not {'image', 'machine_type', 'vm_size', 'zones'}">self = &lt;tests.deployments.test_deployments.TestCrossProviderCompatibility object at 0x105976490&gt;
+deployment_validator = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105aa4a50&gt;
+deployment_type = 'consensus'
+
+    @pytest.mark.parametrize("deployment_type", ["standalone", "consensus", "swarmed"])
+    def test_cross_provider_config_compatibility(self, deployment_validator, deployment_type):
+        configs = {}
+        for provider in ["aws", "azure", "gcp"]:
+            try:
+                configs[provider] = deployment_validator.load_config(
+                    deployment_type, provider, "config/config.yaml"
+                )
+            except FileNotFoundError:
+                pytest.skip(f"Config not found for {provider} {deployment_type}")
+    
+        # Verify common sections across providers
+        common_sections = [
+            "infrastructure",
+            "monitoring",
+            "security",
+            "backup"
+        ]
+    
+        for section in common_sections:
+            section_keys = set()
+            for provider, config in configs.items():
+                if section in config:
+                    section_keys.update(config[section].keys())
+    
+            # Verify each provider has the common keys
+            for provider, config in configs.items():
+                if section in config:
+                    provider_keys = set(config[section].keys())
+                    missing_keys = section_keys - provider_keys
+&gt;                   assert not missing_keys, f"Provider {provider} missing keys in {section}: {missing_keys}"
+E                   AssertionError: Provider aws missing keys in infrastructure: {'vm_size', 'machine_type', 'image', 'zones'}
+E                   assert not {'image', 'machine_type', 'vm_size', 'zones'}
+
+deployments/test_deployments.py:282: AssertionError</failure></testcase><testcase classname="deployments.test_deployments.TestCrossProviderCompatibility" name="test_cross_provider_config_compatibility[swarmed]" time="0.064"><failure message="AssertionError: Provider aws missing keys in infrastructure: {'vm_size', 'machine_type', 'image', 'zones'}&#10;assert not {'image', 'machine_type', 'vm_size', 'zones'}">self = &lt;tests.deployments.test_deployments.TestCrossProviderCompatibility object at 0x10591e650&gt;
+deployment_validator = &lt;tests.deployments.test_deployments.DeploymentValidator object at 0x105aa4370&gt;
+deployment_type = 'swarmed'
+
+    @pytest.mark.parametrize("deployment_type", ["standalone", "consensus", "swarmed"])
+    def test_cross_provider_config_compatibility(self, deployment_validator, deployment_type):
+        configs = {}
+        for provider in ["aws", "azure", "gcp"]:
+            try:
+                configs[provider] = deployment_validator.load_config(
+                    deployment_type, provider, "config/config.yaml"
+                )
+            except FileNotFoundError:
+                pytest.skip(f"Config not found for {provider} {deployment_type}")
+    
+        # Verify common sections across providers
+        common_sections = [
+            "infrastructure",
+            "monitoring",
+            "security",
+            "backup"
+        ]
+    
+        for section in common_sections:
+            section_keys = set()
+            for provider, config in configs.items():
+                if section in config:
+                    section_keys.update(config[section].keys())
+    
+            # Verify each provider has the common keys
+            for provider, config in configs.items():
+                if section in config:
+                    provider_keys = set(config[section].keys())
+                    missing_keys = section_keys - provider_keys
+&gt;                   assert not missing_keys, f"Provider {provider} missing keys in {section}: {missing_keys}"
+E                   AssertionError: Provider aws missing keys in infrastructure: {'vm_size', 'machine_type', 'image', 'zones'}
+E                   assert not {'image', 'machine_type', 'vm_size', 'zones'}
+
+deployments/test_deployments.py:282: AssertionError</failure></testcase></testsuite></testsuites>

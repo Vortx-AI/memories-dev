@@ -1,0 +1,9 @@
+gpu:
+  enabled: false
+  vm_sizes:
+    - Standard_NC24ads_A100_v4
+    - Standard_NC48ads_A100_v4
+  gpu_memory:
+    min: 40
+    max: 80
+  cuda_compute: "8.0" 

@@ -1,0 +1,6 @@
+pyyaml==6.0.1
+google-cloud-compute==2.11.1
+google-cloud-monitoring==2.15.1
+pytest==7.4.3
+pytest-cov==4.1.0
+pytest-xdist==3.3.1 

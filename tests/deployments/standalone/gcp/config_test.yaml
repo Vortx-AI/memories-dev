@@ -1,0 +1,235 @@
+version: '1.0'
+
+# Test Configuration for GCP Standalone Deployment
+test_suites:
+  # Hardware Configuration Tests
+  hardware_tests:
+    cpu:
+      intel:
+        - name: "verify_cpu_model_specs"
+          test: "validate_cpu_model"
+          params:
+            model: "ice_lake_8380"
+            expected:
+              cores: 40
+              threads: 80
+              base_frequency: "2.3GHz"
+        
+        - name: "verify_machine_config"
+          test: "validate_machine_type"
+          params:
+            type: "c2_standard_60"
+            expected:
+              vcpus: 60
+              memory: "240GB"
+      
+      amd:
+        - name: "verify_epyc_specs"
+          test: "validate_cpu_model"
+          params:
+            model: "epyc_7763"
+            expected:
+              cores: 64
+              threads: 128
+              base_frequency: "2.45GHz"
+        
+        - name: "verify_machine_config"
+          test: "validate_machine_type"
+          params:
+            type: "n2d_standard_224"
+            expected:
+              vcpus: 224
+              memory: "896GB"
+    
+    gpu:
+      - name: "verify_a100_config"
+        test: "validate_gpu_specs"
+        params:
+          model: "a100"
+          expected:
+            memory: "80GB"
+            cuda_cores: 6912
+            tensor_cores: 432
+      
+      - name: "verify_cuda_config"
+        test: "validate_cuda_settings"
+        params:
+          version: "12.2"
+          expected:
+            compute_mode: "Default"
+            mig_enabled: true
+    
+    memory:
+      - name: "verify_memory_config"
+        test: "validate_memory_settings"
+        params:
+          type: "ddr5"
+          expected:
+            speed: "4800MHz"
+            channels: 8
+            ecc: true
+      
+      - name: "verify_numa_config"
+        test: "validate_numa_settings"
+        params:
+          expected:
+            nodes: 8
+            memory_per_node: "150GB"
+
+  # Infrastructure Tests
+  infrastructure_tests:
+    - name: "verify_machine_type"
+      test: "validate_instance_type"
+      params:
+        type: "a2-highgpu-8g"
+        expected:
+          gpu_count: 8
+          gpu_type: "nvidia_a100"
+    
+    - name: "verify_availability"
+      test: "validate_zone_config"
+      params:
+        expected_zones:
+          - "us-central1-a"
+          - "us-central1-b"
+          - "us-central1-c"
+
+  # Storage Tests
+  storage_tests:
+    - name: "verify_disk_config"
+      test: "validate_disk_settings"
+      params:
+        disk_type: "pd-ssd"
+        expected:
+          boot_size: "256GB"
+          nvme_cache_size: "1024GB"
+          persistent_data_size: "2048GB"
+    
+    - name: "verify_disk_performance"
+      test: "validate_disk_performance"
+      params:
+        expected:
+          iops_read: 15000
+          iops_write: 15000
+          throughput_read: "240MB/s"
+          throughput_write: "240MB/s"
+
+  # Network Tests
+  network_tests:
+    - name: "verify_vpc_config"
+      test: "validate_network_settings"
+      params:
+        expected:
+          network: "standalone-vpc"
+          subnet: "standalone-subnet"
+          ip_range: "10.0.0.0/16"
+    
+    - name: "verify_firewall_rules"
+      test: "validate_firewall_config"
+      params:
+        expected_rules:
+          - name: "allow-internal"
+            source: "10.0.0.0/16"
+          - name: "allow-health-checks"
+            ports: ["80", "443"]
+
+  # Security Tests
+  security_tests:
+    - name: "verify_service_account"
+      test: "validate_service_account"
+      params:
+        expected_scopes:
+          - "compute-rw"
+          - "storage-rw"
+          - "logging-write"
+          - "monitoring-write"
+    
+    - name: "verify_shielded_instance"
+      test: "validate_security_settings"
+      params:
+        expected:
+          secure_boot: true
+          vtpm: true
+          integrity_monitoring: true
+
+  # Performance Tests
+  performance_tests:
+    - name: "verify_cpu_performance"
+      test: "validate_cpu_settings"
+      params:
+        expected:
+          governor: "performance"
+          numa_policy: "strict"
+    
+    - name: "verify_memory_performance"
+      test: "validate_memory_settings"
+      params:
+        expected:
+          huge_pages: "enabled"
+          transparent_hugepages: "always"
+    
+    - name: "verify_network_performance"
+      test: "validate_network_performance"
+      params:
+        expected:
+          tcp_bbr: true
+          jumbo_frames: true
+          bandwidth: "100Gbps"
+
+  # Monitoring Tests
+  monitoring_tests:
+    - name: "verify_metrics_collection"
+      test: "validate_monitoring_config"
+      params:
+        expected:
+          interval: "30s"
+          retention_days: 90
+    
+    - name: "verify_alert_policies"
+      test: "validate_alert_config"
+      params:
+        expected_alerts:
+          - name: "high_gpu_usage"
+            threshold: 90
+          - name: "high_memory_usage"
+            threshold: 85
+
+# Test Execution Settings
+execution:
+  parallel: true
+  max_retries: 3
+  timeout: 30m
+  
+  dependencies:
+    pre_test:
+      - "verify_gcp_credentials"
+      - "verify_project_access"
+    
+    post_test:
+      - "cleanup_test_resources"
+      - "generate_test_report"
+
+# Test Reporting
+reporting:
+  format: "junit"
+  output_dir: "/tmp/test-results"
+  
+  notifications:
+    slack:
+      channel: "#deployment-tests"
+      on_failure: true
+    
+    email:
+      recipients: ["ops@memories-app.com"]
+      on_failure: true
+
+# Test Environment
+environment:
+  gcp_project: "${GCP_PROJECT_ID}"
+  region: "us-central1"
+  service_account: "${TEST_SERVICE_ACCOUNT}"
+  
+  cleanup:
+    enabled: true
+    retain_logs: true
+    retention_period: "7d" 

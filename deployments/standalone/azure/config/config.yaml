@@ -1,0 +1,303 @@
+version: '1.0'
+
+# Azure Standalone Deployment Configuration
+deployment_type: standalone
+provider: azure
+
+# Infrastructure Configuration
+infrastructure:
+  instance_type: Standard_D8s_v3
+  machine_type: Standard_D8s_v3
+  vm_size: Standard_D8s_v3
+  ami_id: null
+  image:
+    publisher: microsoft-dsvm
+    offer: ubuntu-hpc
+    sku: 2004
+    version: latest
+  region: westus2
+  availability_zones: ["1", "2", "3"]
+  zones: ["1", "2", "3"]
+  subnet_type: private
+  availability: "zone-redundant"
+  
+  high_availability:
+    enabled: true
+    multi_az: true
+    instances: 3
+
+# Operating System Configuration
+os:
+  type: ubuntu
+  version: "20.04"
+  updates:
+    automatic: true
+    security_only: true
+  
+  hardening:
+    enabled: true
+    profile: cis-level-1
+    
+  packages:
+    required:
+      - nvidia-driver-535
+      - cuda-toolkit-12-2
+      - docker-ce
+      - prometheus-node-exporter
+      - azure-cli
+
+# Memory Management
+memory:
+  configuration:
+    total_capacity: 1.9TB
+    numa_nodes: 8
+    memory_per_node: 237.5GB
+    
+    optimization:
+      huge_pages: enabled
+      transparent_huge_pages: "always"
+      numa_balancing: enabled
+      kernel_same_page_merging: enabled
+    
+    limits:
+      application: "85%"
+      system: "15%"
+      swap: disabled
+
+# GPU Configuration
+gpu:
+  type: nvidia_a100
+  count: 8
+  memory_per_gpu: 80GB
+  
+  cuda:
+    version: "12.2"
+    compute_mode: "Default"
+    mig:
+      enabled: true
+      profiles:
+        - "1g.10gb"
+        - "2g.20gb"
+        - "3g.40gb"
+    
+    optimization:
+      power_limit: 400
+      gpu_clock_max: 1410
+      memory_clock_max: 1593
+      auto_boost: enabled
+
+# Storage Configuration
+storage:
+  os_disk:
+    type: Premium_LRS
+    size_gb: 256
+    caching: ReadWrite
+    
+  data_disks:
+    - name: nvme_cache
+      type: Premium_LRS
+      size_gb: 1024
+      caching: None
+      striping: enabled
+      raid_level: 0
+    
+    - name: persistent_data
+      type: Premium_LRS
+      size_gb: 2048
+      caching: ReadOnly
+      striping: enabled
+      raid_level: 10
+
+# Networking
+networking:
+  accelerated_networking: enabled
+  bandwidth: 50Gbps
+  
+  vnet:
+    name: standalone-vnet
+    address_space: "10.0.0.0/16"
+    subnet:
+      name: compute-subnet
+      prefix: "10.0.1.0/24"
+  
+  nsg_rules:
+    - name: allow_ssh
+      priority: 1000
+      direction: Inbound
+      access: Allow
+      protocol: Tcp
+      port: 22
+    - name: allow_https
+      priority: 1001
+      direction: Inbound
+      access: Allow
+      protocol: Tcp
+      port: 443
+
+# Monitoring
+monitoring:
+  enabled: true
+  metrics:
+    - name: "CPUUtilization"
+      period: 300
+      threshold:
+        warning: 80
+        critical: 90
+    - name: "MemoryUtilization"
+      period: 300
+      threshold:
+        warning: 80
+        critical: 90
+  cloud_monitoring:
+    enabled: true
+    metrics:
+      collection_interval: 30s
+      retention_days: 90
+  azure_monitor:
+    enabled: true
+    metrics:
+      - name: Percentage CPU
+        aggregation: Average
+        interval: PT5M
+      - name: Available Memory Bytes
+        aggregation: Average
+        interval: PT5M
+  prometheus:
+    node_exporter:
+      enabled: true
+      collectors:
+        - cpu
+        - diskstats
+        - filesystem
+        - loadavg
+        - meminfo
+        - netdev
+        - netstat
+
+# Security
+security:
+  identity:
+    type: system_assigned
+  service_account:
+    enabled: true
+    name: azure-service-account
+  patching:
+    enabled: true
+    schedule: "0 0 * * 0"
+    reboot: automatic
+  network_acls:
+    enabled: true
+    default_action: Deny
+    ip_rules:
+      - "10.0.0.0/16"
+  ssh:
+    allowed_ips: "${ALLOWED_IPS}"
+    key_pair: "${KEY_PAIR_NAME}"
+  iam:
+    enabled: true
+    mfa: true
+    roles:
+      - name: contributor
+        scope: resource-group
+  confidential_computing:
+    enabled: true
+    attestation: enabled
+  shielded_instance:
+    enabled: true
+    secure_boot: true
+    vtpm: true
+  encryption:
+    disk: enabled
+    key_vault: enabled
+  network:
+    ddos_protection: enabled
+    private_link: enabled
+    service_endpoints:
+      - Microsoft.Storage
+      - Microsoft.KeyVault
+  compliance:
+    azure_policy: enabled
+    security_center: enabled
+
+# Performance Optimization
+performance:
+  compute:
+    cpu_governor: performance
+    numa_policy: strict
+    
+  memory:
+    numa_balancing: enabled
+    transparent_hugepages: always
+    
+  storage:
+    io_scheduler: none
+    read_ahead_kb: 2048
+    
+  network:
+    tcp_bbr: enabled
+    jumbo_frames: enabled
+
+# Resource Management
+resource_management:
+  quotas:
+    cpu: 96
+    memory: 1900GB
+    gpu: 8
+    
+  limits:
+    docker:
+      cpu: "0-95"
+      memory: "1800GB"
+      gpu: "all"
+    
+    system:
+      cpu: "0-7"
+      memory: "100GB"
+
+# Backup and Recovery
+backup:
+  enabled: true
+  retention_days: 30
+  schedule: "0 0 * * *"
+  type: snapshot
+  disk_snapshots:
+    enabled: true
+    frequency: Daily
+    retention:
+      daily: 7
+      weekly: 4
+      monthly: 12
+  azure_backup:
+    enabled: true
+    policy:
+      frequency: Daily
+      time: "02:00"
+      retention:
+        daily: 7
+        weekly: 4
+        monthly: 12
+  application_data:
+    enabled: true
+    type: azure_backup
+    frequency: "0 0 * * *"
+    retention_days: 30
+
+# Maintenance
+maintenance:
+  updates:
+    schedule: "0 0 * * 0"  # Weekly at midnight on Sunday
+    max_duration: 2h
+    auto_reboot: true
+    
+  health_checks:
+    enabled: true
+    interval: 5m
+    timeout: 30s
+    
+  monitoring:
+    logs:
+      retention: 30d
+      categories:
+        - system
+        - application
+        - security 

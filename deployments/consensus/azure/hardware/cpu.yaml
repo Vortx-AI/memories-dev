@@ -1,0 +1,16 @@
+cpu:
+  architecture: x86_64
+  model: amd_epyc
+  vcpus:
+    min: 8
+    max: 32
+  clock_speed:
+    base: 2.5
+    turbo: 3.6
+  features:
+    - avx2
+    - sse4.2
+    - aes-ni
+  optimization:
+    hyperthreading: true
+    power_management: true 

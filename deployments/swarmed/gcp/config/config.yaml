@@ -1,0 +1,147 @@
+version: '1.0'
+
+deployment_type: swarmed
+provider: gcp
+
+edge:
+  type: cloud-cdn
+  configuration:
+    enabled: true
+    cache_mode: CACHE_ALL_STATIC
+    ttl: 3600
+
+cloud:
+  type: memorystore
+  instance:
+    tier: STANDARD_HA
+    memory_size_gb: 32
+    version: REDIS_6_X
+    read_replicas_mode: READ_REPLICAS_ENABLED
+
+synchronization:
+  strategy: multi-master
+  replication_topology: mesh
+  conflict_resolution: vector-clocks
+
+distribution:
+  edge_locations:
+    - region: us-central1
+      zones:
+        - us-central1-a
+        - us-central1-b
+    - region: us-west1
+      zones:
+        - us-west1-a
+        - us-west1-b
+
+infrastructure:
+  instance_type: n2-standard-8
+  machine_type: n2-standard-8
+  vm_size: n2-standard-8
+  ami_id: null
+  region: us-central1
+  availability_zones:
+    - us-central1-a
+    - us-central1-b
+  zones:
+    - us-central1-a
+    - us-central1-b
+  subnet_type: private
+  availability: zone-redundant
+  image:
+    project: deeplearning-platform-release
+    family: common-cu110
+    name: latest
+
+monitoring:
+  enabled: true
+  metrics:
+    - name: "CPUUtilization"
+      period: 300
+      threshold:
+        warning: 80
+        critical: 90
+    - name: "MemoryUtilization"
+      period: 300
+      threshold:
+        warning: 80
+        critical: 90
+  cloud_monitoring:
+    enabled: true
+    metrics:
+      - name: compute.googleapis.com/instance/cpu/utilization
+        filter: resource.type = "gce_instance"
+        interval: 300s
+      - name: compute.googleapis.com/instance/memory/utilization
+        filter: resource.type = "gce_instance"
+        interval: 300s
+  azure_monitor:
+    enabled: false
+
+security:
+  vpc:
+    enabled: true
+    network: swarmed-vpc
+    subnet: swarmed-subnet
+    ip_range: 10.0.0.0/16
+  vnet:
+    enabled: true
+    address_space: 10.0.0.0/16
+  network_security_groups:
+    - name: swarmed-nodes-nsg
+      rules:
+        - name: allow-ssh
+          priority: 100
+          direction: Inbound
+          access: Allow
+          protocol: Tcp
+          source_port_range: "*"
+          destination_port_range: "22"
+          source_address_prefix: "10.0.0.0/16"
+        - name: allow-swarmed
+          priority: 110
+          direction: Inbound
+          access: Allow
+          protocol: Tcp
+          source_port_range: "*"
+          destination_port_range: "9000"
+          source_address_prefix: "10.0.0.0/16"
+  security_groups:
+    - name: swarmed-nodes
+      description: Security group for swarmed nodes
+      rules:
+        - protocol: tcp
+          from_port: 22
+          to_port: 22
+          cidr: 10.0.0.0/16
+        - protocol: tcp
+          from_port: 9000
+          to_port: 9000
+          cidr: 10.0.0.0/16
+  firewall_rules:
+    - name: allow-ssh
+      direction: INGRESS
+      priority: 1000
+      source_ranges: ["10.0.0.0/16"]
+      allow:
+        - protocol: tcp
+          ports: ["22"]
+    - name: allow-swarmed
+      direction: INGRESS
+      priority: 1000
+      source_ranges: ["10.0.0.0/16"]
+      allow:
+        - protocol: tcp
+          ports: ["9000"]
+  ssh:
+    allowed_ips: "${ALLOWED_IPS}"
+    key_pair: "${KEY_PAIR_NAME}"
+  encryption:
+    at_rest: true
+    in_transit: true
+
+backup:
+  enabled: true
+  retention_days: 30
+  schedule: 0 0 * * *
+  type: snapshot 

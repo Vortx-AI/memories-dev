@@ -1,0 +1,23 @@
+network:
+  bandwidth:
+    min: 10
+    max: 25
+  tier: PREMIUM
+  vpc:
+    enabled: true
+    cidr: "10.0.0.0/16"
+  subnets:
+    public:
+      enabled: true
+      cidr: "10.0.1.0/24"
+      region: us-central1
+    private:
+      enabled: true
+      cidr: "10.0.2.0/24"
+      region: us-central1
+  optimization:
+    network_tags:
+      - allow-internal
+      - allow-ssh
+    network_performance:
+      total_egress_bandwidth_tier: TIER_1 

@@ -1,0 +1,16 @@
+gpu:
+  enabled: true
+  instance_types:
+    - p3.2xlarge
+    - p3.8xlarge
+  memory:
+    min: 16
+    max: 64
+  cuda:
+    version: "7.0"
+    compute_capability: "7.0"
+  optimization:
+    power_management: true
+    clock_speeds:
+      memory: 877
+      graphics: 1530 

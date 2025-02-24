@@ -1,0 +1,72 @@
+security:
+  iam:
+    service_accounts: true
+    roles:
+      - name: consensus-leader
+        policies:
+          - AWSLoadBalancerControllerIAMPolicy
+          - AWSEBSCSIDriverPolicy
+      - name: consensus-follower
+        policies:
+          - AWSEBSCSIDriverPolicy
+  
+  kms:
+    enabled: true
+    multi_region: true
+    key_rotation: true
+  
+  network_policies:
+    enabled: true
+    default_deny: true
+    allow_namespaces:
+      - kube-system
+      - monitoring
+  
+  authentication:
+    enabled: true
+    type: "iam"
+    methods:
+      - "password"
+      - "key-based"
+    mfa: true
+    session_duration: 3600
+  
+  network_security_groups:
+    enabled: true
+    rules:
+      - name: "allow-consensus"
+        priority: 100
+        direction: "inbound"
+        access: "allow"
+        protocol: "tcp"
+        source_port_range: "*"
+        destination_port_range: "26656-26657"
+        source_address_prefix: "*"
+        destination_address_prefix: "*"
+      - name: "allow-ssh"
+        priority: 200
+        direction: "inbound"
+        access: "allow"
+        protocol: "tcp"
+        source_port_range: "*"
+        destination_port_range: "22"
+        source_address_prefix: "*"
+        destination_address_prefix: "*"
+  
+  encryption:
+    at_rest:
+      enabled: true
+      type: "aws-kms"
+      key_rotation: true
+    in_transit:
+      enabled: true
+      type: "tls"
+      minimum_version: "1.2"
+  
+  vnet:
+    enabled: true
+    address_space: ["10.0.0.0/16"]
+    subnets:
+      - name: "consensus"
+        address_prefix: "10.0.1.0/24"
+        security_group: "consensus-sg" 

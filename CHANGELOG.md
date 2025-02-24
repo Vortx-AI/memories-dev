@@ -1,20 +1,38 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to memories.dev will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.1] - 2025-02-20 🔧 Patch Release
+## [2.0.2] - 2025-03-20
 
-### Fixed 🐛
+### Added
+- New deployment patterns documentation with comprehensive architecture diagrams
+- Standalone deployment configuration for high-performance computing
+- Consensus deployment support for distributed systems
+- Swarmed deployment pattern for edge computing and global distribution
+- Cross-cloud provider support (AWS, Azure, GCP)
+- Advanced hardware configuration templates
+- Security and monitoring documentation
+
+### Enhanced
+- Improved documentation structure
+- Added mermaid diagrams for architecture visualization
+- Enhanced deployment selection guide
+- Updated folder structure for better organization
+
+### Fixed
+- Configuration file structure and organization
+- Documentation clarity and completeness
+- Cross-provider compatibility issues
 - **Cache System**: 
   - Improved cache invalidation mechanism in DataManager
   - Fixed JSON serialization of numpy arrays in satellite data
   - Enhanced cache key generation for refresh operations
   - Added proper handling of mock responses in tests
 
-### Testing 🧪
+### Testing
 - **Test Improvements**:
   - Enhanced test_cache_invalidation with deterministic responses
   - Added call counting for better test control
@@ -269,7 +287,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Memory persistence improvements
 - Better error messages
 - Enhanced documentation
-S
+
 ### Fixed
 - Various bug fixes
 - Performance optimizations
@@ -300,4 +318,23 @@ S
   - Basic usage guide
   - API reference
   - Installation guide
-  - Examples 
+  - Examples
+
+[2.0.2]: https://github.com/Vortx-AI/memories-dev/compare/v2.0.0...v2.0.2
+[2.0.0]: https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.0
+[1.1.9]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.9
+[1.1.8]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.8
+[1.1.7]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.7
+[1.1.6]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.6
+[1.1.5]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.5
+[1.1.4]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.4
+[1.1.3]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.3
+[1.1.2]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.2
+[1.1.1]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.1
+[1.1.0]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.0
+[1.0.9]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.0.9
+[1.0.8]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.0.8
+[1.0.6]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.0.6
+[1.0.5]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.0.5
+[1.0.4]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.0.4
+[1.0.3]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.0.3 

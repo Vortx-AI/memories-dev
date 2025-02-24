@@ -1,0 +1,16 @@
+cpu:
+  architecture: x86_64
+  machine_type:
+    - n2-standard-4
+    - n2-standard-8
+    - n2-standard-16
+  vcpus:
+    min: 4
+    max: 16
+  features:
+    - avx2
+    - sse4.2
+    - aes-ni
+  optimization:
+    hyperthreading: true
+    power_management: true 

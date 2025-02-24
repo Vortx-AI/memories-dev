@@ -1,0 +1,14 @@
+gpu:
+  enabled: true
+  type: nvidia_tesla_t4
+  count: 1
+  memory:
+    min: 16
+    max: 64
+  cuda_version: "11.0"
+  compute_capability: "7.5"
+  optimization:
+    power_management: true
+    clock_speeds:
+      memory: 1590
+      graphics: 1590 

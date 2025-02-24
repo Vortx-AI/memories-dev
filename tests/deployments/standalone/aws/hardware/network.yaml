@@ -1,0 +1,18 @@
+network:
+  bandwidth:
+    min: 10
+    max: 25
+  enhanced_networking: true
+  placement_group:
+    enabled: true
+    strategy: spread
+  vpc:
+    enabled: true
+    cidr: "10.0.0.0/16"
+  subnets:
+    public:
+      enabled: true
+      cidr: "10.0.1.0/24"
+    private:
+      enabled: true
+      cidr: "10.0.2.0/24" 

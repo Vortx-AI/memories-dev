@@ -1,0 +1,9 @@
+gpu:
+  enabled: false
+  machine_types:
+    - a2-highgpu-1g
+    - a2-highgpu-2g
+  gpu_memory:
+    min: 40
+    max: 80
+  cuda_compute: "8.0" 

@@ -1,0 +1,8 @@
+network:
+  bandwidth:
+    min: 10
+    max: 25
+  tier: PREMIUM
+  sole_tenant:
+    enabled: true
+    node_type: n2-node-80-640 

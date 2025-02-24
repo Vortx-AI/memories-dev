@@ -1,0 +1,10 @@
+cpu:
+  instance_types:
+    - t3.xlarge
+    - t3.2xlarge
+    - m5.xlarge
+    - m5.2xlarge
+  vcpus:
+    min: 4
+    max: 8
+  architecture: x86_64 

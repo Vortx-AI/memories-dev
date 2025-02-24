@@ -1,0 +1,13 @@
+memory:
+  ram:
+    manager:
+      min: 16
+      max: 32
+    worker:
+      min: 8
+      max: 16
+  swap:
+    enabled: true
+    manager_size: 4
+    worker_size: 2
+  ebs_optimized: true 

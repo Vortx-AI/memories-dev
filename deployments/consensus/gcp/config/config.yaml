@@ -1,0 +1,100 @@
+deployment_type: consensus
+provider: gcp
+region: us-central1
+availability_zones: ["us-central1-a", "us-central1-b", "us-central1-c"]
+
+infrastructure:
+  instance_type: n2-standard-8
+  machine_type: n2-standard-8
+  vm_size: n2-standard-8
+  ami_id: null
+  region: us-central1
+  availability_zones:
+    - us-central1-a
+    - us-central1-b
+  zones:
+    - us-central1-a
+    - us-central1-b
+  subnet_type: private
+  availability: zone-redundant
+  image:
+    project: deeplearning-platform-release
+    family: common-cu110
+    name: latest
+
+cluster:
+  size: 3
+  quorum: 2
+  leader_election:
+    enabled: true
+    timeout: 30s
+  health_check:
+    interval: 10s
+    timeout: 5s
+
+consensus:
+  protocol: raft
+  heartbeat_interval: 100ms
+  election_timeout: 1000ms
+  snapshot:
+    enabled: true
+    interval: 1h
+
+state:
+  storage:
+    type: persistent-disk
+    size: 100GB
+  replication:
+    factor: 3
+    sync: true
+
+communication:
+  protocol: grpc
+  tls:
+    enabled: true
+    cert_rotation: 24h
+  ports:
+    consensus: 2380
+    client: 2379
+
+monitoring:
+  enabled: true
+  metrics:
+    - name: "CPUUtilization"
+      period: 300
+      threshold:
+        warning: 80
+        critical: 90
+    - name: "MemoryUtilization"
+      period: 300
+      threshold:
+        warning: 80
+        critical: 90
+  cloud_monitoring:
+    enabled: true
+    metrics:
+      - name: compute.googleapis.com/instance/cpu/utilization
+        filter: 'resource.type = "gce_instance"'
+        interval: "300s"
+      - name: compute.googleapis.com/instance/memory/utilization
+        filter: 'resource.type = "gce_instance"'
+        interval: "300s"
+  azure_monitor:
+    enabled: false
+    metrics: []
+  cloudwatch:
+    enabled: false
+
+security:
+  encryption:
+    at_rest: true
+    in_transit: true
+  authentication:
+    type: mtls
+    client_cert_auth: true
+
+backup:
+  enabled: true
+  retention_days: 30
+  schedule: "0 0 * * *"
+  type: snapshot 

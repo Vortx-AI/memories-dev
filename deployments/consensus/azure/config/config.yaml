@@ -1,0 +1,125 @@
+version: '1.0'
+
+deployment_type: consensus
+provider: azure
+
+cluster:
+  size: 3
+  min_size: 3
+  max_size: 5
+  auto_scaling:
+    enabled: true
+    metrics:
+      - cpu_utilization
+      - memory_utilization
+
+consensus:
+  algorithm: raft
+  quorum_size: 2
+  election_timeout: 1000ms
+  heartbeat_interval: 100ms
+
+state:
+  persistence:
+    type: managed_disk
+    size: 100Gi
+    sku: Premium_LRS
+  replication:
+    factor: 3
+    sync: true
+
+communication:
+  protocol: grpc
+  tls:
+    enabled: true
+    mutual: true
+  ports:
+    consensus: 9000
+    metrics: 9100
+
+infrastructure:
+  instance_type: Standard_D8s_v3
+  machine_type: Standard_D8s_v3
+  vm_size: Standard_D8s_v3
+  ami_id: null
+  region: eastus
+  availability_zones:
+    - 1
+    - 2
+    - 3
+  zones:
+    - 1
+    - 2
+    - 3
+  subnet_type: private
+  availability: zone-redundant
+  image:
+    publisher: Canonical
+    offer: UbuntuServer
+    sku: 18.04-LTS
+    version: latest
+
+monitoring:
+  enabled: true
+  metrics:
+    - name: "CPUUtilization"
+      period: 300
+      threshold:
+        warning: 80
+        critical: 90
+    - name: "MemoryUtilization"
+      period: 300
+      threshold:
+        warning: 80
+        critical: 90
+  cloud_monitoring:
+    enabled: true
+    metrics:
+      collection_interval: 30s
+      retention_days: 90
+      types:
+        - name: "instance.cpu"
+          namespace: "compute"
+        - name: "instance.memory"
+          namespace: "compute"
+  azure_monitor:
+    enabled: true
+    metrics:
+      - name: "Percentage CPU"
+        aggregation: Average
+        interval: PT5M
+      - name: "Available Memory Bytes"
+        aggregation: Average
+        interval: PT5M
+  cloudwatch:
+    enabled: false
+
+security:
+  vnet:
+    enabled: true
+    address_space: 10.0.0.0/16
+  network_security_groups:
+    - name: consensus-nodes-nsg
+      rules:
+        - name: allow-ssh
+          priority: 100
+          direction: Inbound
+          access: Allow
+          protocol: Tcp
+          source_port_range: "*"
+          destination_port_range: "22"
+          source_address_prefix: "10.0.0.0/16"
+        - name: allow-consensus
+          priority: 110
+          direction: Inbound
+          access: Allow
+          protocol: Tcp
+          source_port_range: "*"
+          destination_port_range: "9000"
+          source_address_prefix: "10.0.0.0/16"
+
+backup:
+  enabled: true
+  retention_days: 30
+  schedule: 0 0 * * *
+  type: snapshot 

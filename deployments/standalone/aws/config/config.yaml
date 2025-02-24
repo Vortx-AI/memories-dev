@@ -1,0 +1,221 @@
+version: '1.0'
+
+# AWS Standalone Deployment Configuration
+deployment_type: standalone
+provider: aws
+
+# Infrastructure Configuration
+infrastructure:
+  instance_type: t3.xlarge
+  machine_type: t3.xlarge
+  vm_size: t3.xlarge
+  ami_id: ami-0c55b159cbfafe1f0
+  image:
+    id: ami-0c55b159cbfafe1f0
+    name: ubuntu-20.04
+  region: us-west-2
+  availability_zones: ["us-west-2a", "us-west-2b", "us-west-2c"]
+  zones: ["us-west-2a", "us-west-2b", "us-west-2c"]
+  subnet_type: private
+  availability: "multi-az"
+  
+  high_availability:
+    enabled: true
+    multi_az: true
+    instances: 3
+
+# Operating System Configuration
+os:
+  name: ubuntu
+  version: "20.04"
+  updates:
+    enabled: true
+    schedule: "0 2 * * *"
+  
+  hardening:
+    enabled: true
+    profile: cis-level-1
+    
+  packages:
+    required:
+      - docker
+      - nginx
+      - prometheus-node-exporter
+      - awslogs
+
+# Application Configuration
+application:
+  docker:
+    enabled: true
+    version: "20.10"
+    daemon_config:
+      max-concurrent-downloads: 10
+      max-concurrent-uploads: 10
+      storage-driver: overlay2
+  
+  nginx:
+    worker_processes: auto
+    worker_connections: 2048
+    keepalive_timeout: 65
+    client_max_body_size: 100M
+
+# Storage Configuration
+storage:
+  root:
+    size: 100
+    type: gp3
+    iops: 3000
+  data:
+    size: 500
+    type: gp3
+    iops: 16000
+    mount_point: /data
+
+# Networking Configuration
+networking:
+  vpc:
+    enabled: true
+    cidr: "10.0.0.0/16"
+  subnets:
+    public:
+      enabled: true
+      cidr: "10.0.1.0/24"
+    private:
+      enabled: true
+      cidr: "10.0.2.0/24"
+  
+  security_groups:
+    - name: web
+      rules:
+        - port: 80
+          source: 0.0.0.0/0
+        - port: 443
+          source: 0.0.0.0/0
+    - name: monitoring
+      rules:
+        - port: 9100
+          source: "${MONITORING_CIDR}"
+
+# Monitoring Configuration
+monitoring:
+  enabled: true
+  metrics:
+    - name: "CPUUtilization"
+      period: 300
+      threshold:
+        warning: 80
+        critical: 90
+    - name: "MemoryUtilization"
+      period: 300
+      threshold:
+        warning: 80
+        critical: 90
+  cloud_monitoring:
+    enabled: true
+    metrics:
+      collection_interval: 30s
+      retention_days: 90
+  azure_monitor:
+    enabled: false
+  
+  prometheus:
+    node_exporter:
+      enabled: true
+      collectors:
+        - cpu
+        - diskstats
+        - filesystem
+        - loadavg
+        - meminfo
+        - netdev
+        - netstat
+
+# Backup Configuration
+backup:
+  enabled: true
+  retention_days: 30
+  schedule: "0 0 * * *"
+  type: snapshot
+  disk_snapshots:
+    enabled: true
+    frequency: Daily
+    retention:
+      daily: 7
+      weekly: 4
+      monthly: 12
+  azure_backup:
+    enabled: false
+  application_data:
+    enabled: true
+    type: aws_backup
+    frequency: "0 0 * * *"
+    retention_days: 30
+
+# Security Configuration
+security:
+  service_account:
+    enabled: true
+    name: aws-service-account
+  identity:
+    type: iam
+    service_account: true
+  network:
+    enabled: true
+    security_groups: true
+    network_acls: true
+  compliance:
+    enabled: true
+    standards:
+      - PCI_DSS
+      - HIPAA
+      - SOC2
+  confidential_computing:
+    enabled: true
+    nitro_enclaves: true
+  shielded_instance:
+    enabled: true
+    secure_boot: true
+    vtpm: true
+  ssh:
+    allowed_ips: "${ALLOWED_IPS}"
+    key_pair: "${KEY_PAIR_NAME}"
+  encryption:
+    at_rest: true
+    in_transit: true
+  patching:
+    enabled: true
+    schedule: "0 0 * * 0"
+    reboot: automatic
+  iam:
+    enabled: true
+    mfa: true
+  network_acls:
+    enabled: true
+
+# Scaling
+scaling:
+  auto_scaling:
+    enabled: true
+    min_size: 1
+    max_size: 3
+    desired_capacity: 2
+    
+    policies:
+      - name: cpu-tracking
+        type: target-tracking
+        target: 70
+      - name: memory-tracking
+        type: target-tracking
+        target: 80
+
+# Maintenance
+maintenance:
+  window:
+    enabled: true
+    schedule: "0 0 * * 0"
+    duration: 2h
+  
+  updates:
+    security: true
+    system: true
+    applications: true 

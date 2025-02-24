@@ -1,0 +1,8 @@
+network:
+  bandwidth:
+    min: 10
+    max: 25
+  accelerated_networking: true
+  proximity_placement:
+    enabled: true
+    type: standard 

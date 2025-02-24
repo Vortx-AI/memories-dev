@@ -1,0 +1,16 @@
+cpu:
+  architecture: x86_64
+  model: intel_xeon
+  vcpus:
+    min: 4
+    max: 16
+  clock_speed:
+    base: 2.5
+    turbo: 3.1
+  features:
+    - avx2
+    - sse4
+    - aes-ni
+  optimization:
+    hyperthreading: true
+    cpu_credits: unlimited 

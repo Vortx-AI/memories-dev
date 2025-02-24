@@ -1,0 +1,23 @@
+memory:
+  ram:
+    manager:
+      min: 32
+      max: 64
+    worker:
+      min: 16
+      max: 32
+  swap:
+    enabled: true
+    manager_size: 8
+    worker_size: 4
+  premium_storage: true
+  managed_disks:
+    enabled: true
+    type: Premium_LRS
+  iops:
+    manager:
+      baseline: 6000
+      burst: 12000
+    worker:
+      baseline: 3000
+      burst: 6000 

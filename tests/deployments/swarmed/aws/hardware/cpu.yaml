@@ -1,0 +1,18 @@
+cpu:
+  instance_types:
+    manager:
+      - t3.xlarge
+      - t3.2xlarge
+      - m5.xlarge
+    worker:
+      - t3.large
+      - t3.xlarge
+      - m5.large
+  vcpus:
+    manager:
+      min: 4
+      max: 8
+    worker:
+      min: 2
+      max: 4
+  architecture: x86_64 

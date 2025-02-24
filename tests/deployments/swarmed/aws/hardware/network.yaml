@@ -1,0 +1,12 @@
+network:
+  bandwidth:
+    manager:
+      min: 10
+      max: 25
+    worker:
+      min: 5
+      max: 10
+  enhanced_networking: true
+  placement_group:
+    enabled: true
+    strategy: spread 

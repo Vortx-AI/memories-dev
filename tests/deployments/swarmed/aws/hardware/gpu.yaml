@@ -1,0 +1,17 @@
+gpu:
+  enabled: false
+  instance_types:
+    manager:
+      - p3.2xlarge
+      - p3.8xlarge
+    worker:
+      - g4dn.xlarge
+      - g4dn.2xlarge
+  gpu_memory:
+    manager:
+      min: 16
+      max: 64
+    worker:
+      min: 8
+      max: 16
+  cuda_compute: "7.0" 

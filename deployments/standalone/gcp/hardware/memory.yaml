@@ -1,0 +1,10 @@
+memory:
+  ram:
+    min: 16
+    max: 32
+  persistent_disk:
+    enabled: true
+    type: pd-ssd
+  iops:
+    baseline: 3000
+    burst: 6000 

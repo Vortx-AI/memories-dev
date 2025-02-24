@@ -1,0 +1,138 @@
+version: '1.0'
+
+# Test Configuration for Swarmed Deployment
+test_suites:
+  # Edge Configuration Tests
+  edge_tests:
+    azure:
+      - name: "verify_azure_cdn"
+        test: "validate_edge_config"
+        params:
+          expected:
+            type: "cdn"
+            sku: "Standard"
+            ttl: 3600
+    
+    gcp:
+      - name: "verify_gcp_cdn"
+        test: "validate_edge_config"
+        params:
+          expected:
+            type: "cloud-cdn"
+            cache_mode: "CACHE_ALL_STATIC"
+            ttl: 3600
+
+  # Cloud Configuration Tests
+  cloud_tests:
+    azure:
+      - name: "verify_azure_cache"
+        test: "validate_cloud_config"
+        params:
+          expected:
+            type: "redis-cache"
+            sku: "Premium"
+            capacity: 3
+    
+    gcp:
+      - name: "verify_gcp_cache"
+        test: "validate_cloud_config"
+        params:
+          expected:
+            type: "memorystore"
+            tier: "STANDARD_HA"
+            memory_size_gb: 32
+
+  # Synchronization Tests
+  synchronization_tests:
+    - name: "verify_sync_strategy"
+      test: "validate_synchronization_config"
+      params:
+        expected:
+          strategy: "multi-master"
+          topology: "mesh"
+          conflict_resolution: "vector-clocks"
+    
+    - name: "verify_sync_performance"
+      test: "validate_sync_performance"
+      params:
+        expected:
+          max_latency: "100ms"
+          consistency_level: "eventual"
+
+  # Distribution Tests
+  distribution_tests:
+    azure:
+      - name: "verify_azure_distribution"
+        test: "validate_distribution_config"
+        params:
+          expected:
+            min_locations: 2
+            min_zones: 2
+            regions:
+              - eastus
+              - westus
+    
+    gcp:
+      - name: "verify_gcp_distribution"
+        test: "validate_distribution_config"
+        params:
+          expected:
+            min_locations: 2
+            min_zones: 2
+            regions:
+              - us-central1
+              - us-west1
+
+  # Infrastructure Tests
+  infrastructure_tests:
+    azure:
+      - name: "verify_azure_vm"
+        test: "validate_instance_config"
+        params:
+          expected:
+            vm_size: "Standard_D8s_v3"
+            availability_zones: 2
+    
+    gcp:
+      - name: "verify_gcp_instance"
+        test: "validate_instance_config"
+        params:
+          expected:
+            machine_type: "n2-standard-8"
+            zones: 2
+
+# Test Execution Settings
+execution:
+  parallel: true
+  max_retries: 3
+  timeout: 30m
+  
+  dependencies:
+    pre_test:
+      - "verify_cloud_credentials"
+      - "verify_project_access"
+    
+    post_test:
+      - "cleanup_test_resources"
+      - "generate_test_report"
+
+# Test Reporting
+reporting:
+  format: "junit"
+  output_dir: "/tmp/test-results"
+  
+  notifications:
+    slack:
+      channel: "#deployment-tests"
+      on_failure: true
+    
+    email:
+      recipients: ["ops@memories-app.com"]
+      on_failure: true
+
+# Test Environment
+environment:
+  cleanup:
+    enabled: true
+    retain_logs: true
+    retention_period: "7d" 

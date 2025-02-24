@@ -1,0 +1,20 @@
+gpu:
+  enabled: true
+  type: nvidia_tesla_t4
+  count:
+    manager: 2
+    worker: 1
+  memory:
+    manager:
+      min: 32
+      max: 128
+    worker:
+      min: 16
+      max: 64
+  cuda_version: "11.0"
+  compute_capability: "7.5"
+  optimization:
+    power_management: true
+    clock_speeds:
+      memory: 1590
+      graphics: 1590 

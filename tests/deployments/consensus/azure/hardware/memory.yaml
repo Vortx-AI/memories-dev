@@ -1,0 +1,8 @@
+memory:
+  ram:
+    min: 16
+    max: 32
+  swap:
+    enabled: true
+    size: 4
+  premium_storage: true 

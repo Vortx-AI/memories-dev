@@ -1,0 +1,20 @@
+memory:
+  ram:
+    manager:
+      min: 32
+      max: 64
+    worker:
+      min: 16
+      max: 32
+  swap:
+    enabled: true
+    manager_size: 8
+    worker_size: 4
+  ebs_optimized: true
+  iops:
+    manager:
+      baseline: 6000
+      burst: 12000
+    worker:
+      baseline: 3000
+      burst: 6000 

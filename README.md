@@ -8,7 +8,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.1)
+[![Version](https://img.shields.io/badge/version-2.0.2-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.2)
 [![Discord](https://img.shields.io/discord/1339432819784683522?color=7289da&label=Discord&logo=discord&logoColor=white)](https://discord.gg/tGCVySkX4d)
 
 <a href="https://www.producthunt.com/posts/memories-dev?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-memories&#0045;dev" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=879661&theme=light&t=1739530783374" alt="memories&#0046;dev - Collective&#0032;AGI&#0032;Memory | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
@@ -500,6 +500,39 @@ synthesis = memory_store.synthesize(
     temporal_resolution="daily"
 )
 ```
+
+## 🚀 Deployment Patterns
+
+memories.dev supports three powerful deployment patterns to meet diverse operational needs:
+
+### 1. Standalone Deployment
+Optimized for single-tenant applications requiring maximum performance:
+- High-performance computing workloads
+- Machine learning model inference
+- Real-time data processing
+- Direct hardware access
+
+### 2. Consensus Deployment
+Perfect for distributed systems requiring strong consistency:
+- Distributed databases
+- Blockchain networks
+- Distributed caching systems
+- Mission-critical applications
+
+### 3. Swarmed Deployment
+Ideal for globally distributed applications:
+- Edge computing applications
+- Content delivery networks
+- IoT device networks
+- Global data distribution
+
+Each deployment pattern is supported across major cloud providers (AWS, Azure, GCP) with:
+- Optimized hardware configurations
+- Comprehensive security features
+- Advanced monitoring and logging
+- Automated scaling capabilities
+
+For detailed deployment instructions and architecture diagrams, see the [Deployment Documentation](deployments/README.md).
 
 ---
 

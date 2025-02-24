@@ -1,0 +1,16 @@
+cpu:
+  architecture: x86_64
+  model: intel_cascade_lake
+  vcpus:
+    min: 4
+    max: 16
+  clock_speed:
+    base: 2.8
+    turbo: 3.9
+  features:
+    - avx512
+    - sse4.2
+    - aes-ni
+  optimization:
+    scheduling: true
+    automatic_restart: true 
