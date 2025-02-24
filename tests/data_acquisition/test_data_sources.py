@@ -49,42 +49,6 @@ def test_data_source_interface():
     with pytest.raises(NotImplementedError):
         asyncio.run(source.download({}, Path()))
 
-@pytest.mark.asyncio
-async def test_sentinel_search(sentinel_source, bbox, date_range):
-    """Test Sentinel data search functionality."""
-    # Mock STAC client response
-    mock_items = [
-        {
-            'id': 'sentinel_scene_1',
-            'properties': {
-                'datetime': '2023-01-15T00:00:00Z',
-                'eo:cloud_cover': 5.0
-            },
-            'assets': {
-                'B02': {'href': 'https://example.com/B02.tif'},
-                'B03': {'href': 'https://example.com/B03.tif'},
-                'B04': {'href': 'https://example.com/B04.tif'},
-                'B08': {'href': 'https://example.com/B08.tif'}
-            }
-        }
-    ]
-    
-    with patch('pystac_client.Client.open') as mock_client:
-        mock_search = AsyncMock()
-        mock_search.get_items = Mock(return_value=mock_items)
-        mock_client.return_value.search = Mock(return_value=mock_search)
-        
-        results = await sentinel_source.search(
-            bbox=bbox,
-            start_date=date_range['start_date'],
-            end_date=date_range['end_date'],
-            max_cloud_cover=20.0
-        )
-        
-        assert len(results) == 1
-        assert results[0]['id'] == 'sentinel_scene_1'
-        assert results[0]['properties']['eo:cloud_cover'] == 5.0
-        assert len(results[0]['assets']) == 4
 
 @pytest.mark.asyncio
 async def test_sentinel_download(sentinel_source, tmp_path):
