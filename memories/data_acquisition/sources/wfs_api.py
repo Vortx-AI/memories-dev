@@ -271,4 +271,60 @@ class WFSAPI:
                     gdf.to_file(file_path, driver="GeoJSON")
                     file_paths[f"{service_name}_{layer_name}"] = file_path
         
-        return file_paths 
+        return file_paths
+
+    async def search(self, bbox: List[float], layer: str) -> Dict:
+        """
+        Search for features in a layer within a bounding box.
+        
+        Args:
+            bbox: Bounding box coordinates [west, south, east, north]
+            layer: Layer name to search
+            
+        Returns:
+            Dictionary containing feature collection
+        """
+        try:
+            # Get features using existing method
+            results = self.get_features(
+                bbox=tuple(bbox),
+                layers=[layer],
+                max_features=1000,
+                output_format="GeoJSON"
+            )
+            
+            # Format response to match test expectations
+            if results:
+                # Get first service's results
+                service_name = next(iter(results))
+                service_results = results[service_name]
+                
+                if layer in service_results:
+                    gdf = service_results[layer]
+                    return {
+                        'type': 'FeatureCollection',
+                        'features': json.loads(gdf.to_json())['features']
+                    }
+            
+            return {'type': 'FeatureCollection', 'features': []}
+            
+        except Exception as e:
+            logger.error(f"Error in search: {e}")
+            return {'type': 'FeatureCollection', 'features': []}
+
+    def _cleanup_files(self, files: List[Path]) -> None:
+        """
+        Clean up temporary files.
+        
+        Args:
+            files: List of file paths to clean up
+        """
+        for file in files:
+            try:
+                if isinstance(file, (str, Path)):
+                    file_path = Path(file)
+                    if file_path.exists():
+                        file_path.unlink()
+                        logger.info(f"Cleaned up file: {file_path}")
+            except Exception as e:
+                logger.error(f"Error cleaning up file {file}: {e}") 

@@ -30,7 +30,75 @@ class SentinelAPI:
             data_dir: Optional directory for storing downloaded data
         """
         self.data_dir = Path(data_dir) if data_dir else Path("examples/data/satellite")
+        self.catalog = pystac_client.Client.open(
+            "https://planetarycomputer.microsoft.com/api/stac/v1",
+            modifier=pc.sign_inplace
+        )
         
+    async def search(
+        self,
+        bbox: List[float],
+        start_date: datetime,
+        end_date: datetime,
+        cloud_cover: float = 20.0,
+        limit: int = 10
+    ) -> Dict[str, Any]:
+        """
+        Search for Sentinel-2 scenes.
+        
+        Args:
+            bbox: Bounding box coordinates [west, south, east, north]
+            start_date: Start date
+            end_date: End date
+            cloud_cover: Maximum cloud cover percentage
+            limit: Maximum number of results
+            
+        Returns:
+            Dictionary containing search results
+        """
+        try:
+            # Search for scenes
+            search = self.catalog.search(
+                collections=["sentinel-2-l2a"],
+                bbox=bbox,
+                datetime=f"{start_date.isoformat()}/{end_date.isoformat()}",
+                query={"eo:cloud_cover": {"lt": cloud_cover}},
+                limit=limit
+            )
+            
+            items = list(search.get_items())
+            
+            if not items:
+                return {'features': []}
+            
+            # Format response to match test expectations
+            features = []
+            for item in items:
+                feature = {
+                    'id': item.id,
+                    'properties': {
+                        'datetime': item.datetime.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        'eo:cloud_cover': item.properties.get('eo:cloud_cover', 0),
+                        'sentinel:data_coverage': item.properties.get('sentinel:valid_pixel_percentage', 100)
+                    },
+                    'assets': {}
+                }
+                
+                # Add asset information
+                for band in ['B02', 'B03', 'B04']:
+                    if band in item.assets:
+                        feature['assets'][band] = {
+                            'href': item.assets[band].href
+                        }
+                
+                features.append(feature)
+            
+            return {'features': features}
+            
+        except Exception as e:
+            logger.error(f"Error searching Sentinel data: {e}")
+            return {'features': []}
+
     async def fetch_windowed_band(
         self,
         url: str,
