@@ -1,21 +1,88 @@
+"""
+Code execution agent for safely executing generated code.
+"""
+
 import logging
 import ast
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 import pandas as pd
 import numpy as np
 from io import StringIO
 import sys
 from contextlib import redirect_stdout
+from memories.agents.agent_base import BaseAgent
 
-class AgentCodeExecutor:
-    def __init__(self):
+class CodeExecutionAgent(BaseAgent):
+    def __init__(self, model=None):
+        """Initialize the Code Execution Agent.
+        
+        Args:
+            model: Optional model instance
+        """
+        super().__init__(name="code_execution_agent", model=model)
         self.logger = logging.getLogger(__name__)
-        # Define allowed_modules if safety checks are enabled
+        
+        # Define allowed_modules for safety checks
         self.allowed_modules = {
             'pd': pd,
             'np': np,
             # Add other modules you consider safe
         }
+        
+        # Initialize tools
+        self._initialize_tools()
+    
+    def get_capabilities(self) -> List[str]:
+        """Return a list of high-level capabilities this agent provides."""
+        return [
+            "Execute Python code safely",
+            "Run queries on data",
+            "Capture code output and results",
+            "Perform safety checks on code",
+            "Handle code execution errors"
+        ]
+    
+    def requires_model(self) -> bool:
+        """This agent does not require a model."""
+        return False
+    
+    def _initialize_tools(self):
+        """Initialize the tools this agent can use."""
+        self.register_tool(
+            "execute_code",
+            self.execute_code,
+            "Execute Python code safely with data",
+            {"code"}
+        )
+        self.register_tool(
+            "execute_query",
+            self.execute_query,
+            "Execute a query using code and data",
+            {"code"}
+        )
+        self.register_tool(
+            "_is_safe_code",
+            self._is_safe_code,
+            "Check if code is safe to execute",
+            {"code"}
+        )
+    
+    async def process(self, goal: str, **kwargs) -> Dict[str, Any]:
+        """Process a goal using this agent."""
+        try:
+            # Create a plan
+            plan = self.plan(goal)
+            
+            # Execute the plan
+            return self.execute_plan(**kwargs)
+            
+        except Exception as e:
+            self.logger.error(f"Error in process: {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "data": None
+            }
 
     def _is_safe_code(self, code: str) -> bool:
         """

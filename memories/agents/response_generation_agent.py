@@ -1,3 +1,7 @@
+"""
+Response Generation Agent for generating natural language responses.
+"""
+
 import os
 import logging
 from typing import Dict, Any, Optional, List, Union
@@ -12,6 +16,7 @@ from langchain.callbacks.manager import CallbackManagerForLLMRun
 from pydantic import BaseModel, Field
 import tempfile
 import json
+from memories.agents.agent_base import BaseAgent
 
 # Load environment variables
 load_dotenv()
@@ -111,9 +116,18 @@ class DeepSeekLLM(LLM, BaseModel):
             self._cleanup()
             raise
 
-class ResponseAgent:
-    def __init__(self):
-        """Initialize the Response Agent with LangChain and DeepSeek."""
+class ResponseGenerationAgent(BaseAgent):
+    """Agent specialized in generating natural language responses."""
+    
+    def __init__(self, model: Optional[Any] = None):
+        """Initialize ResponseGenerationAgent with LangChain and DeepSeek.
+        
+        Args:
+            model: Optional LLM model for response generation
+        """
+        super().__init__(name="response_generation_agent", model=model)
+        
+        # Initialize DeepSeek model
         offload_folder = os.path.join(
             tempfile.gettempdir(),
             'deepseek_offload'
@@ -155,35 +169,92 @@ Your conversational response:"""
         )
         
         self.response_chain = LLMChain(llm=self.llm, prompt=self.response_prompt)
-        self.logger = logging.getLogger(__name__)
 
-    def format_response(self, query: str, code_result: Any) -> str:
-        """
-        Format the code execution result into a conversational response.
+    def get_capabilities(self) -> List[str]:
+        """Return the capabilities of this agent."""
+        return [
+            "Generate natural language responses from data",
+            "Format technical results into conversational text",
+            "Handle errors and missing data gracefully",
+            "Provide context and explanations for findings"
+        ]
+
+    def _initialize_tools(self) -> None:
+        """Initialize response generation tools."""
+        self.register_tool(
+            "format_response",
+            self.format_response,
+            "Format data into a natural language response"
+        )
+
+    async def process(self, goal: Dict[str, Any]) -> Dict[str, Any]:
+        """Process response generation goals.
         
         Args:
-            query (str): Original user query
-            code_result: Result from code execution
+            goal: Dictionary containing:
+                - query: Original user query
+                - data: Data to format into a response
+                
+        Returns:
+            Dict[str, Any]: Processing results with formatted response
+        """
+        query = goal.get('query')
+        data = goal.get('data')
+        
+        if not query or data is None:
+            return {
+                "status": "error",
+                "error": "Missing query or data for response generation",
+                "data": None
+            }
+            
+        try:
+            response = await self.format_response(query, data)
+            
+            return {
+                "status": "success",
+                "data": {
+                    "response": response,
+                    "query": query,
+                    "original_data": data
+                },
+                "error": None
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error in ResponseGenerationAgent: {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "data": None
+            }
+
+    async def format_response(self, query: str, data: Any) -> str:
+        """Format data into a natural language response.
+        
+        Args:
+            query: Original user query
+            data: Data to format into a response
             
         Returns:
             str: Formatted conversational response
         """
         try:
             # Handle error cases
-            if isinstance(code_result, str) and code_result.startswith('Error:'):
-                return f"I apologize, but I encountered an error: {code_result}"
+            if isinstance(data, str) and data.startswith('Error:'):
+                return f"I apologize, but I encountered an error: {data}"
             
-            if code_result is None:
+            if data is None:
                 return "I couldn't find any matching data for your query."
             
-            # Convert code_result to string if it's not already
-            if not isinstance(code_result, str):
-                code_result = str(code_result)
+            # Convert data to string if it's not already
+            if not isinstance(data, str):
+                data = str(data)
             
             # Generate response using LLM
             response = self.response_chain.invoke({
                 "query": query,
-                "code_result": code_result
+                "code_result": data
             })["text"]
             
             return response.strip()
@@ -191,4 +262,8 @@ Your conversational response:"""
         except Exception as e:
             self.logger.error(f"Error formatting response: {str(e)}")
             return f"I apologize, but I encountered an error while formatting the response: {str(e)}"
+
+    def requires_model(self) -> bool:
+        """This agent requires a model for response generation."""
+        return True
         

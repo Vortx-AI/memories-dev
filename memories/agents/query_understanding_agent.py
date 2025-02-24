@@ -11,7 +11,7 @@ from memories.utils.agents.context_utils import classify_query
 from memories.utils.agents.location_utils import normalize_location, is_valid_coordinates
 from memories.utils.agents.nlp_utils import initialize_nltk, extract_location_entities
 from memories.models.load_model import LoadModel
-from memories.agents import BaseAgent
+from memories.agents.agent_base import BaseAgent
 
 # Load environment variables
 load_dotenv()

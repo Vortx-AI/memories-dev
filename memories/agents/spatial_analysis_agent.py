@@ -1,31 +1,61 @@
-from typing import Dict, Any
+"""
+Spatial Analysis Agent for processing geometric and spatial data.
+"""
+
+from typing import Dict, Any, Optional, List
 import logging
 from memories.utils.earth.geometry_retriever import GeometryExtractor
-from memories.agents import BaseAgent
+from memories.agents.agent_base import BaseAgent
 
-class AgentGeometry(BaseAgent):
-    """Agent specialized in geometry processing."""
+class SpatialAnalysisAgent(BaseAgent):
+    """Agent specialized in geometry and spatial data processing."""
     
-    def __init__(self, memory_store: Any = None):
-        """Initialize AgentGeometry with GeometryExtractor"""
-        super().__init__(memory_store=memory_store, name="geometry_agent")
-        self.geometry_retriever = GeometryExtractor()
-
-    async def process(self, *args, **kwargs) -> Dict[str, Any]:
-        """Process data using this agent.
-        
-        This method implements the required abstract method from BaseAgent.
-        It serves as a wrapper around process_location.
+    def __init__(self, model: Optional[Any] = None):
+        """Initialize SpatialAnalysisAgent with GeometryExtractor
         
         Args:
-            location_info: Dict containing location information
-            radius_meters: Optional float for search radius
-            
+            model: Optional LLM model for advanced spatial analysis
+        """
+        super().__init__(name="spatial_analysis_agent", model=model)
+        self.geometry_retriever = GeometryExtractor()
+
+    def get_capabilities(self) -> List[str]:
+        """Return the capabilities of this agent."""
+        return [
+            "Extract and analyze geometric features from locations",
+            "Calculate distances and spatial relationships",
+            "Process geographic coordinates and boundaries",
+            "Analyze spatial patterns and distributions"
+        ]
+
+    def _initialize_tools(self) -> None:
+        """Initialize spatial analysis tools."""
+        self.register_tool(
+            "process_location",
+            self.process_location,
+            "Process location information to extract geometric features"
+        )
+        self.register_tool(
+            "analyze_spatial_relationships",
+            self.analyze_spatial_relationships,
+            "Analyze spatial relationships between geometric features"
+        )
+
+    async def process(self, goal: Dict[str, Any]) -> Dict[str, Any]:
+        """Process spatial analysis goals.
+        
+        Args:
+            goal: Dictionary containing:
+                - location_info: Dict with location data
+                - radius_meters: Optional search radius
+                - analysis_type: Type of spatial analysis to perform
+                
         Returns:
             Dict[str, Any]: Processing results
         """
-        location_info = kwargs.get('location_info', args[0] if args else None)
-        radius_meters = kwargs.get('radius_meters', 1000)
+        location_info = goal.get('location_info')
+        radius_meters = goal.get('radius_meters', 1000)
+        analysis_type = goal.get('analysis_type', 'basic')
         
         if not location_info:
             return {
@@ -34,24 +64,38 @@ class AgentGeometry(BaseAgent):
                 "data": None
             }
             
-        result = await self.process_location(location_info, radius_meters)
-        
-        return {
-            "status": "success" if "error" not in result else "error",
-            "data": result if "error" not in result else None,
-            "error": result.get("error")
-        }
+        try:
+            # Get geometric features
+            geometries = await self.process_location(location_info, radius_meters)
+            
+            # Perform additional analysis if requested
+            if analysis_type != 'basic' and 'error' not in geometries:
+                analysis = await self.analyze_spatial_relationships(geometries)
+                geometries['analysis'] = analysis
+            
+            return {
+                "status": "success" if "error" not in geometries else "error",
+                "data": geometries if "error" not in geometries else None,
+                "error": geometries.get("error")
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error in SpatialAnalysisAgent: {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "data": None
+            }
 
     async def process_location(self, location_info: Dict[str, Any], radius_meters: float = 1000) -> Dict[str, Any]:
-        """
-        Process location information and retrieve geometries
+        """Process location information and retrieve geometries.
         
         Args:
-            location_info (Dict): Must contain:
+            location_info: Dict containing:
                 - location (str): Coordinate string
                 - location_type (str): Type of location (e.g., 'point')
                 - coordinates (Tuple): (lat, lon) tuple
-            radius_meters (float): Search radius in meters
+            radius_meters: Search radius in meters
             
         Returns:
             Dict[str, Any]: Retrieved geometries and properties
@@ -84,25 +128,74 @@ class AgentGeometry(BaseAgent):
             return geometries
             
         except Exception as e:
-            self.logger.error(f"Error in AgentGeometry: {str(e)}")
+            self.logger.error(f"Error in process_location: {str(e)}")
             return {
                 "error": str(e),
                 "location_info": location_info
             }
 
+    async def analyze_spatial_relationships(self, geometries: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze spatial relationships between geometric features.
+        
+        Args:
+            geometries: Dictionary containing geometric features
+            
+        Returns:
+            Dict[str, Any]: Analysis results
+        """
+        try:
+            if 'features' not in geometries:
+                raise ValueError("No features found in geometries")
+                
+            features = geometries['features']
+            analysis = {
+                'feature_count': len(features),
+                'feature_types': {},
+                'distance_stats': {
+                    'min': float('inf'),
+                    'max': 0,
+                    'avg': 0
+                }
+            }
+            
+            # Analyze feature types and distances
+            total_distance = 0
+            for feature in features:
+                # Count feature types
+                geom_type = feature['properties'].get('geom_type', 'unknown')
+                analysis['feature_types'][geom_type] = analysis['feature_types'].get(geom_type, 0) + 1
+                
+                # Track distance statistics
+                distance = feature['properties'].get('distance_meters', 0)
+                analysis['distance_stats']['min'] = min(analysis['distance_stats']['min'], distance)
+                analysis['distance_stats']['max'] = max(analysis['distance_stats']['max'], distance)
+                total_distance += distance
+            
+            # Calculate average distance
+            if features:
+                analysis['distance_stats']['avg'] = total_distance / len(features)
+                
+            return analysis
+            
+        except Exception as e:
+            self.logger.error(f"Error in analyze_spatial_relationships: {str(e)}")
+            return {
+                "error": str(e)
+            }
+
     def requires_model(self) -> bool:
-        """This agent does not require a model."""
+        """This agent can operate with or without a model."""
         return False
 
     def __str__(self) -> str:
-        """String representation of AgentGeometry"""
-        return "AgentGeometry(GeometryExtractor)"
+        """String representation of SpatialAnalysisAgent"""
+        return "SpatialAnalysisAgent(GeometryExtractor)"
 
 
 def main():
-    """Example usage of AgentGeometry"""
+    """Example usage of SpatialAnalysisAgent"""
     # Initialize agent
-    agent = AgentGeometry()
+    agent = SpatialAnalysisAgent()
     
     # Example location info
     location_info = {

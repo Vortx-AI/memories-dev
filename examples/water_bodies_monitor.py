@@ -17,12 +17,13 @@ from dotenv import load_dotenv
 from shapely.geometry import box
 from memories import MemoryStore, Config
 from memories.core import HotMemory, WarmMemory, ColdMemory
-from memories.agents import BaseAgent
+from memories.agents.agent_base import BaseAgent
 from memories.utils.text import TextProcessor
 from memories.data_acquisition.sources.overture_api import OvertureAPI
 from memories.data_acquisition.sources.sentinel_api import SentinelAPI
 from memories.utils.processors import ImageProcessor, VectorProcessor
 from memories.data_acquisition.data_manager import DataManager
+from typing import Dict, Any, List
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -34,25 +35,37 @@ load_dotenv()
 def setup_directories(config):
     """Create all necessary data directories."""
     logger.info("Setting up data directories...")
+    
+    # Ensure all required paths are in config
+    required_paths = {
+        'data_root': os.path.join(os.getenv('PROJECT_ROOT', '.'), 'data'),
+        'satellite_path': os.path.join(os.getenv('PROJECT_ROOT', '.'), 'data', 'satellite'),
+        'overture_path': os.path.join(os.getenv('PROJECT_ROOT', '.'), 'data', 'overture'),
+        'processed_path': os.path.join(os.getenv('PROJECT_ROOT', '.'), 'data', 'processed'),
+        'cache_path': os.path.join(os.getenv('PROJECT_ROOT', '.'), 'data', 'cache')
+    }
+    
+    # Update config with required paths
+    if 'data' not in config.config:
+        config.config['data'] = {}
+    config.config['data'].update(required_paths)
+    
+    # Create directories
     for path in config.config['data'].values():
         logger.info(f"Creating directory: {path}")
         Path(path).mkdir(parents=True, exist_ok=True)
-    
-    # Create additional directories for satellite and vector data
-    satellite_dir = Path(config.config['data']['satellite_path'])
-    overture_dir = Path(config.config['data']['overture_path'])
-    
-    logger.info(f"Creating satellite directory: {satellite_dir}")
-    satellite_dir.mkdir(parents=True, exist_ok=True)
-    
-    logger.info(f"Creating Overture directory: {overture_dir}")
-    overture_dir.mkdir(parents=True, exist_ok=True)
 
 class WaterBodyAgent(BaseAgent):
     """Agent specialized in water body analysis."""
     
     def __init__(self, memory_store: MemoryStore, config: Config):
-        super().__init__(memory_store)
+        """Initialize the Water Body Agent.
+        
+        Args:
+            memory_store: Memory store instance
+            config: Configuration instance
+        """
+        super().__init__(name="water_body_agent", memory_store=memory_store)
         self.text_processor = TextProcessor()
         self.image_processor = ImageProcessor()
         self.vector_processor = VectorProcessor()
@@ -64,13 +77,64 @@ class WaterBodyAgent(BaseAgent):
         # Initialize APIs with config paths
         self.overture_api = OvertureAPI(data_dir=config.config['data']['overture_path'])
         self.sentinel_api = SentinelAPI(data_dir=config.config['data']['satellite_path'])
-    
-    async def process(self, bbox, start_date, end_date):
-        """Process water body data.
         
-        This is the main processing method required by BaseAgent.
-        """
-        return await self.analyze_water_body(bbox, start_date, end_date)
+        # Initialize tools
+        self._initialize_tools()
+    
+    def get_capabilities(self) -> List[str]:
+        """Return a list of high-level capabilities this agent provides."""
+        return [
+            "Analyze water bodies using satellite data",
+            "Process water quality metrics",
+            "Monitor water body changes",
+            "Calculate surface area and perimeter",
+            "Extract water features from vector data"
+        ]
+    
+    def _initialize_tools(self):
+        """Initialize the tools this agent can use."""
+        self.register_tool(
+            "analyze_water_body",
+            self.analyze_water_body,
+            "Analyze a water body using satellite and vector data",
+            {"bbox"}
+        )
+        self.register_tool(
+            "analyze_quality",
+            self.analyze_quality,
+            "Analyze water quality using satellite data",
+            {"satellite_data"}
+        )
+        self.register_tool(
+            "_process_water_data",
+            self._process_water_data,
+            "Process water body data to extract key metrics",
+            {"data"}
+        )
+    
+    async def process(self, goal: str, **kwargs) -> Dict[str, Any]:
+        """Process a goal using this agent."""
+        try:
+            # Create a plan
+            plan = self.plan(goal)
+            
+            # Execute the plan with the provided arguments
+            if goal == "analyze water bodies in area":
+                return await self.analyze_water_body(**kwargs)
+            
+            return {
+                "status": "error",
+                "error": "Unsupported goal",
+                "data": None
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error in process: {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "data": None
+            }
     
     async def analyze_water_body(self, bbox, start_date=None, end_date=None):
         """Analyze a water body using satellite and vector data."""
@@ -122,25 +186,48 @@ class WaterBodyAgent(BaseAgent):
         total_area = 0.0
         total_perimeter = 0.0
         
+        # Process Overture water features from base theme
+        if "overture" in data["vector_data"] and "base" in data["vector_data"]["overture"]:
+            base_features = data["vector_data"]["overture"]["base"]
+            # Filter for water features
+            water_features.extend([
+                feature for feature in base_features 
+                if feature.get("feature_type", "").lower() in ["water", "lake", "river", "reservoir"]
+            ])
+        
         # Process OSM water features
         if "osm" in data["vector_data"] and "waterways" in data["vector_data"]["osm"]:
-            water_features = data["vector_data"]["osm"]["waterways"]
+            water_features.extend(data["vector_data"]["osm"]["waterways"])
             
-            # Calculate total area and perimeter
-            for feature in water_features:
-                if "properties" in feature and "area" in feature["properties"]:
-                    total_area += feature["properties"]["area"]
-                    
-                if "geometry" in feature and feature["geometry"]["type"] == "Polygon":
+        # Calculate total area and perimeter
+        for feature in water_features:
+            # Handle area from properties
+            if "properties" in feature and "area" in feature["properties"]:
+                total_area += feature["properties"]["area"]
+            
+            # Calculate area and perimeter from geometry if available
+            if "geometry" in feature:
+                if feature["geometry"]["type"] == "Polygon":
                     coords = feature["geometry"]["coordinates"][0]  # Outer ring
-                    # Calculate perimeter as sum of distances between consecutive points
+                    # Calculate perimeter
                     for i in range(len(coords)-1):
                         x1, y1 = coords[i]
                         x2, y2 = coords[i+1]
                         total_perimeter += ((x2-x1)**2 + (y2-y1)**2)**0.5
+                    
+                    # Calculate area if not in properties
+                    if "area" not in feature.get("properties", {}):
+                        # Simple area calculation for small areas (not geodesic)
+                        area = 0
+                        for i in range(len(coords)-1):
+                            x1, y1 = coords[i]
+                            x2, y2 = coords[i+1]
+                            area += x1*y2 - x2*y1
+                        total_area += abs(area) / 2
         
         logger.info(f"Found {len(water_features)} water features")
         logger.info(f"Total water area: {total_area:.2f} sq km")
+        logger.info(f"Total perimeter: {total_perimeter:.2f} km")
         
         # Process satellite data if available
         quality_metrics = {}
@@ -249,88 +336,83 @@ class WaterBodyAgent(BaseAgent):
         }
 
 async def main():
-    """Main execution function."""
+    """Run the water bodies monitor example."""
+    # Load configuration
+    config = Config()
+    
+    # Setup directories
+    setup_directories(config)
+    
+    # Initialize memory store with proper configuration
+    redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
+    
+    # Update config with memory settings
+    config.config['redis'] = {
+        'url': redis_url,
+        'db': 0
+    }
+    config.config['memory'] = {
+        'hot_size': 1000,
+        'warm_size': 1000,
+        'cold_size': 1000
+    }
+    
+    # Initialize memory store with config
+    memory_store = MemoryStore(config)
+    
+    # Initialize water body agent
+    agent = WaterBodyAgent(memory_store, config)
+    
+    # Define area of interest (Bangalore lakes)
+    bbox = box(77.4, 12.8, 77.8, 13.2)
+    bbox_dict = {
+        'xmin': bbox.bounds[0],
+        'ymin': bbox.bounds[1],
+        'xmax': bbox.bounds[2],
+        'ymax': bbox.bounds[3]
+    }
+    
+    # Define time range (last 30 days)
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=30)
+    
     try:
-        # Initialize memory system
-        config = Config(config_path="examples/config/db_config.yml")  # Updated config path
-        setup_directories(config)
+        # Download Overture data first
+        print("\nDownloading Overture data for the specified area...")
+        download_results = agent.overture_api.download_data(bbox_dict)
         
-        memory_store = MemoryStore(config)
-        
-        # Initialize agent
-        agent = WaterBodyAgent(memory_store, config)
-        
-        # Define monitoring locations (bounding boxes)
-        locations = [
-            {
-                "name": "Lake Victoria",
-                "bbox": {
-                    "xmin": 32.0,
-                    "ymin": -1.0,
-                    "xmax": 34.0,
-                    "ymax": 0.0
-                }
-            },
-            {
-                "name": "Lake Superior",
-                "bbox": {
-                    "xmin": -87.0,
-                    "ymin": 46.5,
-                    "xmax": -84.0,
-                    "ymax": 48.5
-                }
-            }
-        ]
-        
-        # Set time range for analysis
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=90)  # Increase to 90 days to find more imagery
-        
-        # Monitor water bodies
-        for location in locations:
-            logger.info(f"Analyzing water body: {location['name']}")
-            logger.info(f"Location bbox: {location['bbox']}, type: {type(location['bbox'])}")
+        if download_results.get('base', False):
+            print("✅ Successfully downloaded base theme data (includes water features)")
+        else:
+            print("❌ Failed to download base theme data")
             
-            try:
-                # Analyze and store results
-                insights = await agent.analyze_water_body(
-                    bbox=location["bbox"],
-                    start_date=start_date.strftime("%Y-%m-%d"),
-                    end_date=end_date.strftime("%Y-%m-%d")
-                )
-                
-                # Log results
-                logger.info(f"Analysis results for {location['name']}:")
-                logger.info(f"Surface Area: {insights['surface_area']:.2f} sq km")
-                if insights['ndwi_mean'] is not None:
-                    logger.info(f"NDWI Mean: {insights['ndwi_mean']:.2f}")
-                logger.info("Quality Metrics:")
-                for metric, value in insights['quality_metrics'].items():
-                    if value is not None:
-                        logger.info(f"  - {metric}: {value:.2f}")
-                logger.info("-" * 50)
-                
-            except Exception as e:
-                logger.error(f"Error analyzing {location['name']}: {str(e)}")
-                continue  # Continue with next location even if one fails
+        # Process water bodies
+        print("\nAnalyzing water bodies...")
+        insights = await agent.process(
+            goal="analyze water bodies in area",
+            bbox=bbox,
+            start_date=start_date,
+            end_date=end_date
+        )
         
-        # Demonstrate memory retrieval
-        hot_memories = memory_store.hot_memory.retrieve_all()
-        logger.info(f"\nSignificant changes detected: {len(hot_memories)}")
+        # Print results
+        print("\nWater Bodies Analysis Results:")
+        print("="*50)
+        print(f"Surface Area: {insights.get('surface_area', 0):.2f} sq km")
+        print(f"Perimeter: {insights.get('perimeter', 0):.2f} km")
+        print(f"Water Features: {insights.get('water_features', 0)}")
+        print(f"NDWI Mean: {insights.get('ndwi_mean', 0):.3f}")
         
-        # Clean up (optional)
-        memory_store.clear()
-        
-    except KeyboardInterrupt:
-        logger.info("\nScript interrupted by user. Cleaning up...")
-        try:
-            memory_store.clear()
-        except:
-            pass
-    except Exception as e:
-        logger.error(f"Unexpected error in main: {str(e)}")
+        quality = insights.get('quality_metrics', {})
+        print("\nWater Quality Metrics:")
+        print("-"*30)
+        for metric, value in quality.items():
+            print(f"{metric.title()}: {value:.3f}")
+            
     finally:
-        logger.info("Script completed.")
+        # Clean up memory store (non-async)
+        if hasattr(memory_store, 'cleanup'):
+            memory_store.cleanup()
 
 if __name__ == "__main__":
     asyncio.run(main()) 

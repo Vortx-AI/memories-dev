@@ -1,19 +1,24 @@
-from typing import Dict, Any, List
+"""
+Multi-agent system coordinator for the memories system.
+"""
+
+from typing import Dict, Any, List, Optional, Callable, Set
 from dotenv import load_dotenv
 import importlib
-
-from memories.agents.agent_query_context import LocationExtractor, QueryContext
-from memories.agents.location_filter_agent import LocationFilterAgent
-from memories.core.memories_index import FAISSStorage
-from memories.agents.agent_coder import CodeGenerator
-from memories.agents.agent_code_executor import AgentCodeExecutor
-from memories.agents.response_agent import ResponseAgent
-from memories.agents.agent_geometry import AgentGeometry
-
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
 import os
 import logging
 import torch
 import gc
+
+from memories.models.load_model import LoadModel
+from memories.agents.query_understanding_agent import LocationExtractor, QueryContext
+from memories.agents.location_processing_agent import LocationProcessingAgent
+from memories.agents.code_generation_agent import CodeGenerationAgent
+from memories.agents.code_execution_agent import CodeExecutionAgent
+from memories.agents.response_generation_agent import ResponseGenerationAgent
+from memories.agents.spatial_analysis_agent import SpatialAnalysisAgent
 
 # Load environment variables
 load_dotenv()
@@ -52,12 +57,12 @@ class Agent:
         # Initialize agents
         self.agents = {
             "context": LocationExtractor(),
-            "filter": LocationFilterAgent(),
-            "coder": CodeGenerator(),  # No parameters passed
-            "executor": AgentCodeExecutor(),
-            "response": ResponseAgent(),
+            "filter": LocationProcessingAgent(),
+            "coder": CodeGenerationAgent(),
+            "executor": CodeExecutionAgent(),
+            "response": ResponseGenerationAgent(),
             "query_context": QueryContext(),
-            "geometry_agent": AgentGeometry()
+            "spatial": SpatialAnalysisAgent()
         }
 
     def _cleanup_memory(self):
@@ -90,11 +95,10 @@ class Agent:
             print(f"Starting query processing: {query}")
             print("="*50)
             
-            # Step 1: Classify the query using AgentContext
+            # Step 1: Classify the query using QueryContext
             print("\n🔍 CLASSIFYING QUERY")
             print("---------------------------")
-            from memories.agents.agent_context import AgentContext, LocationExtractor
-            context_agent = AgentContext()
+            context_agent = self.agents["query_context"]
             classification_result = context_agent.classify_query(query)
             print(f"Query Classification: {classification_result}")
 
@@ -108,7 +112,7 @@ class Agent:
             if classification_result.get('classification') in ['L1', 'L1_2','L2']:
                 print("\n🔍 EXTRACTING LOCATION DETAILS")
                 print("---------------------------")
-                location_extractor = LocationExtractor(self.load_model)
+                location_extractor = self.agents["context"]
                 location_details = location_extractor.extract_query_info(query)
                 print("Location Details:")
                 print(f"• Data Type: {location_details.get('data_type', '')}")
@@ -169,59 +173,4 @@ class Agent:
             return self.process_query(query, memories)
         except Exception as e:
             self.logger.error(f"Error in run: {str(e)}")
-            return {"fields": [], "code": "", "execution_result": None, "response": ""}
-
-def main():
-    """
-    Main function to run the agent directly.
-    Example usage: python3 agent.py
-    """
-    # Load environment variables
-    load_dotenv()
-    
-    # Initialize the model
-    from memories.models.load_model import LoadModel
-    model = LoadModel(
-        use_gpu=True,
-        model_provider="deepseek-ai",
-        deployment_type="deployment",
-        model_name="deepseek-coder-1.3b-base"
-    )
-    
-    # Define memories configuration
-    memories = {
-        'landuse': {
-            'india_landuse': ['id', 'landuse', 'geometry']
-        }
-    }
-    
-    # Define the query
-    query = "Find parks near 12.911935, 77.611699"
-    
-    # Initialize and run the agent
-    agent = Agent(
-        modalities=memories,
-        load_model=model,
-        query=query,
-        memories=memories
-    )
-    
-    insights = agent.process_query(query=query, memories=memories)
-    
-    # Print insights
-    print("\nQuery Results:")
-    print("="*50)
-    print(f"Fields: {insights.get('fields', [])}")
-    print("\nGenerated Code:")
-    print("-"*50)
-    print(insights.get('code', ''))
-    print("\nExecution Result:")
-    print("-"*50)
-    print(insights.get('execution_result', ''))
-    print("\nFinal Response:")
-    print("-"*50)
-    print(insights.get('response', ''))
-
-if __name__ == "__main__":
-    main()
-
+            return {"fields": [], "code": "", "execution_result": None, "response": ""} 
