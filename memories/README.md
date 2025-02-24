@@ -198,26 +198,9 @@ memories-dev/
 
 ## 🧩 Core Components Explained
 
-### 1. 🤖 Agent System
-The agent system is the intelligence layer that orchestrates memory operations:
 
-```python
-from memories_dev.agents.specialized import AnalysisAgent
 
-# Create an analysis agent
-agent = AnalysisAgent(
-    capabilities=["spatial", "temporal", "pattern"],
-    memory_access="read_write"
-)
-
-# Execute analysis
-results = agent.analyze(
-    data_sources=["satellite", "sensors"],
-    time_range=("2024-01", "2024-03")
-)
-```
-
-### 2. 📡 Data Acquisition
+### 1. 📡 Data Acquisition
 Handles multi-modal data ingestion:
 
 ```python
@@ -240,7 +223,7 @@ data = {
 }
 ```
 
-### 3. 🧠 Memory Formation
+### 2. 🧠 Memory Formation
 Memory creation and storage:
 
 ```python
@@ -266,7 +249,6 @@ memory = creator.create(
 ### Core Capabilities
 - 🔄 Real-time memory formation and updates
 - 🔍 Advanced spatial and temporal querying
-- 🤝 Multi-agent collaboration
 - 🎯 Context-aware memory retrieval
 - 🔗 Cross-modal memory linking
 
@@ -454,7 +436,6 @@ python -m http.server -d _build/html
 Find example notebooks in `notebooks/`:
 - 🔰 Quick Start
 - 🧠 Memory Operations
-- 🤖 Agent Integration
 - 📊 Data Visualization
 
 ## 🎓 Developer Resources
@@ -462,7 +443,6 @@ Find example notebooks in `notebooks/`:
 ### Tutorials & Guides
 - [Getting Started Guide](docs/getting_started.md)
 - [Memory System Architecture](docs/architecture.md)
-- [Agent Development Guide](docs/agents.md)
 - [Custom Memory Store Integration](docs/custom_stores.md)
 
 ### Example Use Cases
@@ -522,7 +502,6 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 ## 📜 Version History
 
 ### v1.0.1 (February 15, 2025)
-- Implemented query context agent for improved memory retrieval
 - Reorganized project structure (memories-dev → memories_dev)
 - Enhanced code organization and cleanup
 - Improved documentation and README structure
@@ -530,7 +509,6 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 ### v1.0.0 (Initial Release, February 14, 2025)
 - Initial stable release
 - Core memory system implementation
-- Basic agent framework
 - Multi-modal data support
 
 ### v0.9.0 (Beta)
@@ -671,11 +649,6 @@ classDiagram
 
 ```
 memories/
-├── agents/              # Agent System
-│   ├── agent_coder.py   # Code generation agent
-│   ├── agent_context.py # Context understanding
-│   └── agent.py        # Base agent class
-│
 ├── core/               # Core Memory System
 │   ├── memory.py      # Main memory interface
 │   ├── hot.py         # Hot memory implementation
@@ -780,7 +753,7 @@ results = store.query_memories(
 ### Advanced Features
 ```python
 from memories.synthetic import generate_synthetic
-from memories.agents import Agent
+
 
 # Generate synthetic data
 synthetic = generate_synthetic(
@@ -789,14 +762,7 @@ synthetic = generate_synthetic(
     time_steps=10
 )
 
-# Use agent for analysis
-agent = Agent(
-    query="Analyze development patterns",
-    context_memories=memories,
-    synthetic_data=synthetic
-)
 
-insights = agent.analyze()
 ```
 
 ## Performance Considerations
