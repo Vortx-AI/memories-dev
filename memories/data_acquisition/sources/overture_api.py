@@ -208,7 +208,7 @@ class OvertureAPI:
                  - Dict with keys 'xmin', 'ymin', 'xmax', 'ymax'
             
         Returns:
-            Dictionary containing features by theme
+            Dictionary containing features
         """
         try:
             # Convert bbox to dictionary format if it's a list
@@ -222,16 +222,14 @@ class OvertureAPI:
             else:
                 bbox_dict = bbox
             
-            results = {}
+            all_features = []
             
             for theme in self.THEMES:
                 theme_dir = self.data_dir / theme
                 if not theme_dir.exists():
                     logger.warning(f"No data directory found for theme {theme}")
-                    results[theme] = []
                     continue
                 
-                theme_results = []
                 for type_name in self.THEMES[theme]:
                     parquet_file = theme_dir / f"{type_name}_filtered.parquet"
                     if not parquet_file.exists():
@@ -250,22 +248,20 @@ class OvertureAPI:
                         
                         df = self.con.execute(query).fetchdf()
                         if not df.empty:
-                            theme_results.extend(df.to_dict('records'))
+                            features = df.to_dict('records')
+                            for feature in features:
+                                feature['theme'] = theme
+                                feature['type'] = type_name
+                            all_features.extend(features)
                             logger.info(f"Found {len(df)} features in {parquet_file.name}")
                     except Exception as e:
                         logger.warning(f"Error reading {parquet_file}: {str(e)}")
-                
-                results[theme] = theme_results
-                if theme_results:
-                    logger.info(f"Found total {len(theme_results)} features for theme {theme}")
-                else:
-                    logger.warning(f"No features found for theme {theme}")
             
-            return results
+            return {'features': all_features}
             
         except Exception as e:
             logger.error(f"Error searching data: {str(e)}")
-            return {theme: [] for theme in self.THEMES}
+            return {'features': []}
     
     def __del__(self):
         """Clean up DuckDB connection."""

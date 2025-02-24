@@ -61,9 +61,9 @@ class LandsatAPI(DataSource):
             Dictionary containing search results
         """
         try:
-            # Format dates as ISO strings
-            start_str = start_date.strftime("%Y-%m-%dT%H:%M:%SZ")
-            end_str = end_date.strftime("%Y-%m-%dT%H:%M:%SZ")
+            # Format dates as ISO strings with UTC timezone
+            start_str = start_date.replace(tzinfo=None).isoformat() + "Z"
+            end_str = end_date.replace(tzinfo=None).isoformat() + "Z"
             
             # Search for scenes
             search = self.catalog.search(

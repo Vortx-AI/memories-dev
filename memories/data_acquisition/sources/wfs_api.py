@@ -273,18 +273,30 @@ class WFSAPI:
         
         return file_paths
 
-    async def search(self, bbox: List[float], layer: str) -> Dict:
+    async def search(self, bbox: List[float], layer: str, use_cache: bool = False) -> Dict:
         """
         Search for features in a layer within a bounding box.
         
         Args:
             bbox: Bounding box coordinates [west, south, east, north]
             layer: Layer name to search
+            use_cache: Whether to use cached results if available
             
         Returns:
             Dictionary containing feature collection
         """
         try:
+            # Check cache if enabled
+            if use_cache:
+                cache_key = f"{layer}_{bbox[0]}_{bbox[1]}_{bbox[2]}_{bbox[3]}.json"
+                cache_file = self.cache_dir / cache_key
+                if cache_file.exists():
+                    try:
+                        with open(cache_file) as f:
+                            return json.load(f)
+                    except Exception as e:
+                        logger.warning(f"Failed to load cache: {e}")
+            
             # Get features using existing method
             results = self.get_features(
                 bbox=tuple(bbox),
@@ -301,10 +313,20 @@ class WFSAPI:
                 
                 if layer in service_results:
                     gdf = service_results[layer]
-                    return {
+                    response = {
                         'type': 'FeatureCollection',
                         'features': json.loads(gdf.to_json())['features']
                     }
+                    
+                    # Cache results if enabled
+                    if use_cache:
+                        try:
+                            with open(cache_file, 'w') as f:
+                                json.dump(response, f)
+                        except Exception as e:
+                            logger.warning(f"Failed to write cache: {e}")
+                    
+                    return response
             
             return {'type': 'FeatureCollection', 'features': []}
             
