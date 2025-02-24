@@ -106,6 +106,96 @@ insights = Agent(
 )
 ```
 
+## 📊 Data Acquisition
+
+The data acquisition module provides robust capabilities for fetching and processing data from various sources:
+
+### Overture Maps Integration
+
+```python
+from memories.data_acquisition.sources.overture_api import OvertureAPI
+from pathlib import Path
+
+# Initialize with config
+config_path = Path("config/config.yaml")
+overture_api = OvertureAPI(data_dir="data/overture")
+
+# Define area of interest
+bbox = {
+    'xmin': -122.4018,  # San Francisco Financial District
+    'ymin': 37.7914,
+    'xmax': -122.3928,
+    'ymax': 37.7994
+}
+
+# Download filtered data
+download_results = overture_api.download_data(bbox)
+
+# Search within downloaded data
+overture_data = await overture_api.search(bbox)
+
+# Access theme-based features
+transportation = overture_data.get('transportation', [])
+buildings = overture_data.get('buildings', [])
+places = overture_data.get('places', [])
+```
+
+### Key Features
+
+1. **Efficient Data Access**
+   - Direct S3 access using DuckDB
+   - Optimized bbox filtering
+   - Theme-based data organization
+
+2. **Supported Themes**
+   - Transportation networks
+   - Building footprints
+   - Places and points of interest
+
+3. **Data Processing**
+   - Automatic filtering by region
+   - Spatial indexing
+   - Feature extraction
+
+### Example Use Cases
+
+1. **Traffic Analysis**
+```python
+from memories.examples.traffic_analyzer import TrafficAnalyzer
+
+analyzer = TrafficAnalyzer(memory_store, data_manager)
+insights = await analyzer.analyze_traffic({
+    "bbox": [-122.5, 37.5, -122.0, 38.0],
+    "id": "road_123",
+    "sensor_data": {...}
+})
+```
+
+2. **Urban Development**
+```python
+# Coming soon
+```
+
+3. **Environmental Monitoring**
+```python
+# Coming soon
+```
+
+### Data Sources
+
+| Source | Description | Update Frequency | Access Method |
+|--------|-------------|------------------|---------------|
+| Overture Maps | Global mapping data | Monthly | DuckDB/S3 |
+| Sentinel-2 | Satellite imagery | 5 days | API |
+| OpenStreetMap | Street networks | Real-time | API |
+| Environmental Sensors | Climate data | Real-time | API |
+
+### Performance Considerations
+
+- Use appropriate bbox sizes to optimize data retrieval
+- Implement caching for frequently accessed regions
+- Consider data update frequencies in your application logic
+
 ## 🛠️ Installation
 
 ### System Requirements

@@ -14,10 +14,8 @@ import random
 import numpy as np
 from typing import Dict, List, Any, Tuple
 from pathlib import Path
-import logging
 
-from memories import MemoryStore
-from memories.config import Config
+from memories import MemoryStore, Config
 from memories.data_acquisition import DataManager
 from memories.utils.processors import ImageProcessor, VectorProcessor
 from memories.data_acquisition.sources.overture_api import OvertureAPI
@@ -34,7 +32,13 @@ class TrafficAnalyzer:
         """
         self.memory_store = memory_store
         self.data_manager = data_manager
-        self.overture_api = OvertureAPI()
+        
+        # Initialize Overture API with data directory from config
+        config_path = Path(__file__).parent.parent / "memories" / "config" / "config.yaml"
+        config = Config(config_path=str(config_path))
+        paths = config.config['data_acquisition']['paths']
+        self.overture_api = OvertureAPI(data_dir=paths['overture'])
+        
         self.image_processor = ImageProcessor()
         self.vector_processor = VectorProcessor()
 
@@ -57,6 +61,13 @@ class TrafficAnalyzer:
             raise ValueError("Missing bbox data")
             
         try:
+            # First download filtered Overture data for the bbox
+            download_results = self.overture_api.download_data(road_data['bbox'])
+            
+            if not any(download_results.values()):
+                raise ValueError("Failed to download Overture data")
+            
+            # Search within downloaded data
             overture_data = await self.overture_api.search(road_data['bbox'])
             insights = await self._analyze_traffic_data(road_data, overture_data)
             
@@ -80,13 +91,13 @@ class TrafficAnalyzer:
         
         Args:
             road_segment: Road segment data
-            overture_data: Overture Maps data
+            overture_data: Overture Maps data with theme-based features
             
         Returns:
             Dictionary containing traffic insights
         """
-        # Check if Overture data is empty
-        if not overture_data or not overture_data.get("roads", {}).get("features"):
+        # Check if Overture data is empty or missing transportation theme
+        if not overture_data or 'transportation' not in overture_data or not overture_data['transportation']:
             return {
                 "traffic_metrics": {
                     "congestion_level": 0.0,
@@ -110,19 +121,26 @@ class TrafficAnalyzer:
                     "long_term": {"maintenance_needed": False, "improvement_priority": 0.0},
                     "risk_assessment": {"accident_risk": 0.0, "infrastructure_risk": 0.0}
                 },
-                "recommendations": ["No data available for analysis"]
+                "recommendations": ["No transportation data available for analysis"]
             }
         
         sensor_data = road_segment.get("sensor_data", {})
-        road_type = road_segment.get("type", "unknown")
+        
+        # Extract road type from transportation features
+        road_features = overture_data['transportation']
+        road_type = "unknown"
+        for feature in road_features:
+            if feature.get('id') == road_segment.get('id'):
+                road_type = feature.get('road_type', 'unknown')
+                break
         
         traffic_metrics = self._calculate_traffic_metrics(sensor_data, road_type)
         road_conditions = self._analyze_road_conditions(
-            self._extract_satellite_features(overture_data),
+            self._extract_road_features(road_features),
             road_segment
         )
         congestion_patterns = self._analyze_congestion_patterns(traffic_metrics, road_type)
-        hazards = self._detect_road_hazards(self._extract_satellite_features(overture_data))
+        hazards = self._detect_road_hazards(self._extract_road_features(road_features))
         predictions = self._generate_predictions(traffic_metrics, congestion_patterns, road_conditions)
         
         recommendations = [
@@ -332,17 +350,34 @@ class TrafficAnalyzer:
             }
         }
 
-    def _extract_satellite_features(self, overture_data):
-        """Extract relevant features from satellite data."""
-        if not overture_data or not overture_data.get("roads", {}).get("features"):
+    def _extract_road_features(self, road_features):
+        """Extract relevant features from Overture transportation data."""
+        if not road_features:
             return None
             
+        # Analyze road features from Overture data
+        surface_condition = "fair"
+        weather_impact = "moderate"
+        visibility = "good"
+        
+        # Count different road types to assess complexity
+        road_types = {}
+        for feature in road_features:
+            road_type = feature.get('road_type', 'unknown')
+            road_types[road_type] = road_types.get(road_type, 0) + 1
+        
+        # More complex intersections might indicate higher maintenance needs
+        complexity_score = len(road_types) / max(sum(road_types.values()), 1)
+        condition_score = 0.85 - (0.1 * complexity_score)  # Adjust based on complexity
+        
         return {
-            "surface_condition": "fair",
-            "weather_impact": "moderate",
-            "visibility": "good",
-            "condition_score": 0.85,
-            "maintenance_history": ["2023-01", "2023-06", "2023-12"]
+            "surface_condition": surface_condition,
+            "weather_impact": weather_impact,
+            "visibility": visibility,
+            "condition_score": condition_score,
+            "maintenance_history": ["2023-01", "2023-06", "2023-12"],
+            "road_types": road_types,
+            "complexity_score": complexity_score
         }
 
 def simulate_road_segment() -> Dict[str, Any]:
