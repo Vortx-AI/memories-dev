@@ -294,6 +294,6 @@ class OvertureLocal:
         if hasattr(self, 'con'):
             self.con.close()
 
-if __name__ == "__main__":
+
     # Run the analysis
-    error_details = index_overture_parquet()
+    
