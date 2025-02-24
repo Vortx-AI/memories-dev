@@ -21,37 +21,52 @@ SF_BBOX = {
 
 def setup_directories(config):
     """Create all necessary data directories."""
-    for path in config.config['data'].values():
+    paths = config.config['data_acquisition']['paths']
+    for path in paths.values():
         Path(path).mkdir(parents=True, exist_ok=True)
 
 async def main():
     """Download Overture Maps and satellite data for San Francisco."""
     print("=== Downloading Data for San Francisco Financial District ===")
     
-    # Initialize config and create directories
-    config = Config()
+    # Initialize config with correct path
+    project_root = Path(__file__).parent.parent
+    config_path = project_root / "memories" / "config" / "config.yaml"
+    config = Config(config_path=str(config_path))
+    
+    # Create directories
     setup_directories(config)
     
+    # Get paths from config
+    paths = config.config['data_acquisition']['paths']
+    
     # Initialize APIs with config paths
-    overture_api = OvertureAPI(data_dir=config.config['data']['overture_path'])
-    sentinel_api = SentinelAPI(data_dir=config.config['data']['satellite_path'])
+    overture_api = OvertureAPI(data_dir=paths['overture'])
+    sentinel_api = SentinelAPI(data_dir=paths['satellite'])
     
     # Download Overture data
     print("\n=== Downloading Overture Maps Data ===")
-    overture_results = overture_api.download_data(SF_BBOX)
+    overture_results = await overture_api.search(SF_BBOX)
     
-    if all(overture_results.values()):
-        print("\nSuccessfully downloaded all Overture themes:")
-        for theme, success in overture_results.items():
-            print(f"- {theme}: {'✓' if success else '✗'}")
+    if overture_results and 'features' in overture_results:
+        print("\nSuccessfully downloaded Overture data:")
+        print(f"- Number of features: {len(overture_results['features'])}")
+        
+        # Count features by type
+        feature_types = {}
+        for feature in overture_results['features']:
+            feat_type = feature['properties'].get('type', 'unknown')
+            feature_types[feat_type] = feature_types.get(feat_type, 0) + 1
+        
+        print("- Feature types:")
+        for feat_type, count in feature_types.items():
+            print(f"  • {feat_type}: {count}")
     else:
-        print("\nSome Overture downloads failed:")
-        for theme, success in overture_results.items():
-            print(f"- {theme}: {'✓' if success else '✗'}")
+        print("\nNo Overture data found or download failed")
     
     # Download satellite data
     print("\n=== Downloading Satellite Imagery ===")
-    satellite_results = await sentinel_api.download_data(
+    satellite_results = await sentinel_api.search(
         bbox=SF_BBOX,
         cloud_cover=10.0,
         bands={
@@ -61,20 +76,23 @@ async def main():
         }
     )
     
-    if satellite_results.get("success"):
-        print("\nSuccessfully downloaded satellite data:")
-        metadata = satellite_results["metadata"]
-        print(f"- Scene ID: {metadata['scene_id']}")
-        print(f"- Date: {metadata['datetime']}")
-        print(f"- Cloud cover: {metadata['cloud_cover']}%")
-        print(f"- Bands: {', '.join(metadata['bands_downloaded'])}")
+    if satellite_results and 'features' in satellite_results:
+        print("\nFound satellite data:")
+        for scene in satellite_results['features']:
+            print(f"- Scene ID: {scene['id']}")
+            print(f"- Date: {scene['properties']['datetime']}")
+            print(f"- Cloud cover: {scene['properties'].get('eo:cloud_cover', 'N/A')}%")
+            print(f"- Available bands: {', '.join(scene['assets'].keys())}")
     else:
-        print("\nSatellite data download failed:")
-        print(f"- Error: {satellite_results.get('error')}")
-        if 'failed_bands' in satellite_results:
-            print(f"- Failed bands: {', '.join(satellite_results['failed_bands'])}")
+        print("\nNo satellite data found or search failed")
     
     print("\n🎉 Download complete!")
 
 if __name__ == "__main__":
+    # Add project root to Python path
+    project_root = str(Path(__file__).parent.parent)
+    if project_root not in sys.path:
+        print(f"Added {project_root} to Python path")
+        sys.path.append(project_root)
+    
     asyncio.run(main()) 

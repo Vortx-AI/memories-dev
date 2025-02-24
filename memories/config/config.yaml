@@ -30,6 +30,12 @@ data_acquisition:
   landuse:
     providers: ["osm"]
     update_frequency: 86400  # 24 hours
+  paths:
+    base: "data"
+    overture: "data/overture"
+    satellite: "data/satellite"
+    osm: "data/osm"
+    cache: "data/cache"
 
 # Database settings
 database:
