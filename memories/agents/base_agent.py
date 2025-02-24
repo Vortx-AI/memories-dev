@@ -19,12 +19,13 @@ import gc
 load_dotenv()
 
 class Agent:
-    def __init__(self, modalities: Dict[str, Dict[str, List[str]]], query: str = None, memories: Dict[str, Any] = None):
+    def __init__(self, modalities: Dict[str, Dict[str, List[str]]], load_model=None, query: str = None, memories: Dict[str, Any] = None):
         """
         Initialize the Multi-Agent system with all required agents.
         
         Args:
             modalities (Dict[str, Dict[str, List[str]]]): Nested memories structured as {modality: {table: [columns]}}
+            load_model: Instance of LoadModel for model operations
             query (str, optional): The user's query.
             memories (Dict[str, Any], optional): Memory data.
         """
@@ -43,17 +44,10 @@ class Agent:
         if project_root is None:
             raise ValueError("PROJECT_ROOT environment variable is not set")
         
-        # Define the offload_folder path (handled internally in CodeGenerator)
-        # Hence, no need to define it here unless other agents require it
-        
-        # Initialize load_model
-        from memories.models.load_model import LoadModel
-        self.load_model = LoadModel(
-            use_gpu=True,
-            model_provider="deepseek-ai",
-            deployment_type="deployment",
-            model_name="deepseek-coder-1.3b-base"
-        )
+        # Store the provided model instance
+        self.load_model = load_model
+        if self.load_model is None:
+            raise ValueError("load_model instance must be provided")
         
         # Initialize agents
         self.agents = {
@@ -185,6 +179,15 @@ def main():
     # Load environment variables
     load_dotenv()
     
+    # Initialize the model
+    from memories.models.load_model import LoadModel
+    model = LoadModel(
+        use_gpu=True,
+        model_provider="deepseek-ai",
+        deployment_type="deployment",
+        model_name="deepseek-coder-1.3b-base"
+    )
+    
     # Define memories configuration
     memories = {
         'landuse': {
@@ -198,6 +201,7 @@ def main():
     # Initialize and run the agent
     agent = Agent(
         modalities=memories,
+        load_model=model,
         query=query,
         memories=memories
     )
