@@ -22,17 +22,36 @@ class OvertureAPI:
         "places": ["place"],           # theme=places/type=place/*
         "transportation": ["segment"],  # theme=transportation/type=segment/*
         "base": ["water", "land"],     # theme=base/type=water/*, theme=base/type=land/*
-        "divisions": ["division_area"]  # theme=divisions/type=division_area/*
+        "divisions": ["division_area"], # theme=divisions/type=division_area/*
+        "addresses": ["address"]        # theme=addresses/type=address/*
     }
     
-    def __init__(self, data_dir: str = None):
+    # Data source configurations
+    SOURCES = {
+        "azure": {
+            "base_url": "https://overturemaps.blob.core.windows.net",
+            "container": "release",
+            "prefix": f"{OVERTURE_RELEASE}"
+        },
+        "aws": {
+            "base_url": "s3://overturemaps-us-west-2",
+            "prefix": f"release/{OVERTURE_RELEASE}"
+        }
+    }
+    
+    def __init__(self, data_dir: str = None, use_azure: bool = True):
         """Initialize the Overture Maps interface.
         
         Args:
             data_dir: Directory for storing downloaded data
+            use_azure: Whether to use Azure (True) or AWS (False) as data source
         """
         self.data_dir = Path(data_dir) if data_dir else Path("data/overture")
         self.data_dir.mkdir(parents=True, exist_ok=True)
+        self.use_azure = use_azure
+        
+        # Select data source configuration
+        self.source_config = self.SOURCES["azure" if use_azure else "aws"]
         
         try:
             # Initialize DuckDB connection
@@ -50,10 +69,11 @@ class OvertureAPI:
                 self.con.execute("LOAD spatial;")
                 self.con.execute("LOAD httpfs;")
             
-            # Configure S3 access
-            self.con.execute("SET s3_region='us-west-2';")
-            self.con.execute("SET enable_http_metadata_cache=true;")
-            self.con.execute("SET enable_object_cache=true;")
+            # Configure S3/Azure access if needed
+            if not use_azure:
+                self.con.execute("SET s3_region='us-west-2';")
+                self.con.execute("SET enable_http_metadata_cache=true;")
+                self.con.execute("SET enable_object_cache=true;")
             
             # Test the connection by running a simple query
             test_query = "SELECT 1;"
@@ -65,16 +85,19 @@ class OvertureAPI:
             raise RuntimeError(f"Failed to initialize DuckDB: {e}")
     
     def get_s3_path(self, theme: str, type_name: str) -> str:
-        """Get the S3 path for a theme and type.
+        """Get the S3/Azure path for a specific theme and type.
         
         Args:
-            theme: Theme name
-            type_name: Type name within theme
+            theme: Theme name (e.g., 'buildings', 'places')
+            type_name: Type within theme (e.g., 'building', 'place')
             
         Returns:
-            S3 path string
+            Full path to the data
         """
-        return f"s3://overturemaps-us-west-2/release/{self.OVERTURE_RELEASE}/theme={theme}/type={type_name}/*"
+        if self.use_azure:
+            return f"{self.source_config['base_url']}/{self.source_config['container']}/{self.source_config['prefix']}/theme={theme}/type={type_name}/*.parquet"
+        else:
+            return f"{self.source_config['base_url']}/{self.source_config['prefix']}/theme={theme}/type={type_name}/*.parquet"
     
     def download_theme(self, theme: str, bbox: Dict[str, float]) -> bool:
         """Download theme data directly from S3 with bbox filtering.
