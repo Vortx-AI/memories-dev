@@ -8,29 +8,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.0.2] - 2025-02-24
 
 ### Added
-- New deployment patterns documentation with comprehensive architecture diagrams
-- Standalone deployment configuration for high-performance computing
-- Consensus deployment support for distributed systems
-- Swarmed deployment pattern for edge computing and global distribution
-- Cross-cloud provider support (AWS, Azure, GCP)
-- Advanced hardware configuration templates
-- Security and monitoring documentation
+  - New deployment patterns documentation with comprehensive 
+  - **Diagrams**
+  - Standalone deployment configuration for high-performance computing
+  - Consensus deployment support for distributed systems
+  - Swarmed deployment pattern for edge computing and global 
+  - **Distribution**
+  - Cross-cloud provider support (AWS, Azure, GCP)
+  - Advanced hardware configuration templates
+  - Security and monitoring documentation
+  - **Agents**
+  - Implemented new async process method in BaseAgent
+  - Added proper error handling and state management
+  - Enhanced tool registration and validation system
+  - Added capability listing for each agent
+  - Implemented memory cleanup handlers
+  - **Utils**
+  - Added new geometry processing utilities
+  - Enhanced text processing with better error handling
+  - Added location normalization utilities
+  - Improved coordinate validation and processing
+  - **Models**
+  - Added new model loading system
+  - Enhanced model cleanup procedures
+  - Improved GPU memory management
 
 ### Enhanced
-- Improved documentation structure
-- Added mermaid diagrams for architecture visualization
-- Enhanced deployment selection guide
-- Updated folder structure for better organization
+  - Improved documentation structure
+  - Added mermaid diagrams for architecture visualization
+  - Enhanced deployment selection guide
+  - Updated folder structure for better organization
+  - **Agents**
+  - Better coordination between different agents
+  - Enhanced memory management
+  - Better error propagation and handling
+  - **Data Acquisition**
+  - Enhanced OvertureAPI with direct S3 access
+  - Added DuckDB integration for efficient data filtering
+  - Added support for multiple Overture themes
+  - Enhanced error handling in data downloads
+  - **Utils**
+  - Optimized data filtering and processing
+  - Enhanced memory efficiency
+  - Improved error handling and logging
+  - Better handling of large datasets
 
 ### Fixed
-- Configuration file structure and organization
-- Documentation clarity and completeness
-- Cross-provider compatibility issues
-- **Cache System**: 
-  - Improved cache invalidation mechanism in DataManager
-  - Fixed JSON serialization of numpy arrays in satellite data
-  - Enhanced cache key generation for refresh operations
-  - Added proper handling of mock responses in tests
+  - Configuration file structure and organization
+  - Documentation clarity and completeness
+  - Cross-provider compatibility issues
+  - **Cache System**: 
+    - Improved cache invalidation mechanism in DataManager
+    - Fixed JSON serialization of numpy arrays in satellite data
+    - Enhanced cache key generation for refresh operations
+    - Added proper handling of mock responses in tests
+  - **Agent System**:
+    - Fixed memory leaks in agent cleanup
+    - Resolved async execution issues
+    - Fixed tool registration validation
+    - Corrected error handling in process methods
+
+  - **Data Acquisition**:
+    - Fixed Overture API connection issues
+    - Resolved DuckDB extension loading problems
+    - Fixed data filtering edge cases
+    - Improved error handling in downloads
 
 ### Testing
 - **Test Improvements**:
@@ -38,6 +80,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added call counting for better test control
   - Improved assertions for cache refresh verification
   - Added comprehensive test coverage for cache operations
+  - Enhanced agent system test coverage
+  - Added data acquisition tests
+  - Improved utility function testing
+
+
 
 ## [2.0.0] - 2025-02-19 🎉 Production Release
 
