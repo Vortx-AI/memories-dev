@@ -64,10 +64,10 @@ faiss-cpu>=1.7.4
 
 # Test dependencies
 pytest>=8.3.4
-pytest-asyncio>=0.23.5
-pytest-cov>=4.1.0
-pytest-mock>=3.12.0
-pytest-xdist>=3.5.0
+pytest-asyncio>=0.25.3
+pytest-cov>=6.0.0
+pytest-mock>=3.14.0
+pytest-xdist>=3.6.1
 pytest-benchmark>=4.0.0
 pytest-timeout>=2.2.0
 
@@ -94,14 +94,6 @@ sphinx-favicon>=1.0.1
 sphinx-sitemap>=2.5.1
 sphinx-last-updated-by-git>=0.3.6
 
-pytest==8.3.4
-pytest-asyncio==0.23.5
-pytest-cov==4.1.0
-pytest-mock==3.12.0
-pytest-xdist==3.5.0
-openai>=1.12.0
-anthropic>=0.18.1 
-
 # System dependencies note (for GitHub Actions)
 # Requires: libopenblas-dev, gfortran
 
@@ -125,6 +117,10 @@ duckdb>=0.9.0
 aiofiles>=23.2.1
 
 # Mock dependencies for testing
-pytest-mock>=3.12.0
+pytest-mock>=3.14.0
 responses>=0.24.1
 aioresponses>=0.7.5
+
+# New dependencies
+openai>=1.12.0
+anthropic>=0.18.1

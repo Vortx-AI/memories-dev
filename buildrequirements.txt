@@ -118,9 +118,9 @@ pandoc>=2.3
 # Test dependencies
 pytest>=8.3.4
 pytest-asyncio>=0.23.5
-pytest-cov>=4.1.0
-pytest-mock>=3.12.0
-pytest-xdist>=3.5.0
+pytest-cov>=6.0.0
+pytest-mock>=3.14.0
+pytest-xdist>=3.6.1
 pytest-benchmark>=4.0.0
 pytest-timeout>=2.2.0
 
