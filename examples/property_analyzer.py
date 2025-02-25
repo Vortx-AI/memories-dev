@@ -17,6 +17,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import requests
 import json
+import asyncio
 import rasterio
 from shapely.geometry import Point, Polygon, box
 import geopandas as gpd
