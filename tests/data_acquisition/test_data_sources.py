@@ -70,7 +70,8 @@ async def test_sentinel_download(sentinel_api, bbox, mock_rasterio_open, mock_ra
         }
         mock_item.assets = {
             "B04": MagicMock(href="https://example.com/B04.tif"),
-            "B08": MagicMock(href="https://example.com/B08.tif")
+            "B08": MagicMock(href="https://example.com/B08.tif"),
+            "B11": MagicMock(href="https://example.com/B11.tif")
         }
         
         mock_search = MagicMock()
@@ -80,12 +81,20 @@ async def test_sentinel_download(sentinel_api, bbox, mock_rasterio_open, mock_ra
         result = await sentinel_api.download_data(
             bbox=bbox,
             start_date=datetime(2023, 1, 1),
-            end_date=datetime(2023, 1, 31)
+            end_date=datetime(2023, 1, 31),
+            cloud_cover=10.0,
+            bands={
+                "B04": "Red",
+                "B08": "NIR",
+                "B11": "SWIR"
+            }
         )
         
         assert isinstance(result, dict)
         assert "metadata" in result
         assert result["metadata"]["scene_id"] == "test_scene"
+        assert result["metadata"]["cloud_cover"] == 5.0
+        assert set(result["metadata"]["bands_downloaded"]) == {"B04", "B08", "B11"}
 
 @pytest.mark.asyncio
 async def test_concurrent_downloads(sentinel_api, bbox, mock_rasterio_open, mock_rasterio_env):
@@ -103,7 +112,8 @@ async def test_concurrent_downloads(sentinel_api, bbox, mock_rasterio_open, mock
         }
         mock_item.assets = {
             "B04": MagicMock(href="https://example.com/B04.tif"),
-            "B08": MagicMock(href="https://example.com/B08.tif")
+            "B08": MagicMock(href="https://example.com/B08.tif"),
+            "B11": MagicMock(href="https://example.com/B11.tif")
         }
         
         mock_search = MagicMock()
@@ -116,10 +126,20 @@ async def test_concurrent_downloads(sentinel_api, bbox, mock_rasterio_open, mock
                 sentinel_api.download_data(
                     bbox=bbox,
                     start_date=datetime(2023, 1, 1),
-                    end_date=datetime(2023, 1, 31)
+                    end_date=datetime(2023, 1, 31),
+                    cloud_cover=10.0,
+                    bands={
+                        "B04": "Red",
+                        "B08": "NIR",
+                        "B11": "SWIR"
+                    }
                 )
             )
         
         results = await asyncio.gather(*tasks)
         assert len(results) == 3
-        assert all(isinstance(r, dict) and "metadata" in r for r in results) 
+        assert all(isinstance(r, dict) and "metadata" in r for r in results)
+        for result in results:
+            assert result["metadata"]["scene_id"] == "test_scene"
+            assert result["metadata"]["cloud_cover"] == 5.0
+            assert set(result["metadata"]["bands_downloaded"]) == {"B04", "B08", "B11"} 

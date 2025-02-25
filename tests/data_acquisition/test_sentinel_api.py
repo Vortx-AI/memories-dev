@@ -1,7 +1,7 @@
 """Tests for Sentinel API functionality."""
 
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch, MagicMock, PropertyMock
 import numpy as np
 import rasterio
 from datetime import datetime
@@ -9,6 +9,8 @@ from pathlib import Path
 import planetary_computer
 import pystac_client
 from pystac.item import Item
+from rasterio.transform import Affine
+from rasterio.windows import Window
 
 from memories.data_acquisition.sources.sentinel_api import SentinelAPI
 
@@ -22,20 +24,43 @@ def mock_rasterio_env():
 def mock_rasterio_open():
     """Mock rasterio.open context manager."""
     mock_dataset = MagicMock()
+    
+    # Set up bounds and dimensions
     mock_dataset.bounds = (-122.4, 37.7, -122.3, 37.8)
     mock_dataset.width = 1000
     mock_dataset.height = 1000
-    mock_dataset.crs.to_epsg.return_value = 4326
-    mock_dataset.transform = (0.0001, 0, -122.4, 0, -0.0001, 37.8)
+    
+    # Set up CRS
+    mock_crs = MagicMock()
+    mock_crs.to_epsg.return_value = 4326
+    type(mock_dataset).crs = PropertyMock(return_value=mock_crs)
+    
+    # Create a proper Affine transform object
+    transform = Affine(0.0001, 0, -122.4, 0, -0.0001, 37.8)
+    type(mock_dataset).transform = PropertyMock(return_value=transform)
+    
+    # Set up profile with transform
     mock_dataset.profile = {
         'count': 1,
         'dtype': 'uint16',
         'height': 1000,
         'width': 1000,
-        'transform': mock_dataset.transform,
-        'crs': mock_dataset.crs
+        'transform': transform,
+        'crs': mock_crs
     }
-    mock_dataset.read.return_value = np.random.randint(0, 10000, (100, 100), dtype=np.uint16)
+    
+    # Mock read method to return random data
+    mock_dataset.read.return_value = np.random.randint(0, 10000, (1, 100, 100), dtype=np.uint16)
+    
+    # Mock window reading
+    def mock_read_with_window(band_index, window=None, out_shape=None, **kwargs):
+        if window is None:
+            window = Window(0, 0, mock_dataset.width, mock_dataset.height)
+        if out_shape is None:
+            out_shape = (window.height, window.width)
+        return np.random.randint(0, 10000, (1, *out_shape), dtype=np.uint16)
+        
+    mock_dataset.read = mock_read_with_window
 
     with patch('rasterio.open') as mock_open:
         mock_open.return_value.__enter__.return_value = mock_dataset
@@ -53,8 +78,7 @@ def mock_stac_item():
     }
     item.assets = {
         "B04": MagicMock(href="https://example.com/B04.tif"),
-        "B08": MagicMock(href="https://example.com/B08.tif"),
-        "B11": MagicMock(href="https://example.com/B11.tif")
+        "B08": MagicMock(href="https://example.com/B08.tif")
     }
     return item
 
@@ -93,14 +117,19 @@ async def test_download_data_success(api, bbox, mock_pc_client, mock_rasterio_op
             bbox=bbox,
             start_date=datetime(2023, 1, 1),
             end_date=datetime(2023, 1, 31),
-            cloud_cover=10.0
+            cloud_cover=10.0,
+            bands={
+                "B04": "Red",
+                "B08": "NIR",
+                "B11": "SWIR"
+            }
         )
         
         assert isinstance(result, dict)
         assert "metadata" in result
         assert result["metadata"]["scene_id"] == "test_scene"
         assert result["metadata"]["cloud_cover"] == 5.0
-        assert isinstance(result["metadata"]["bands_downloaded"], list)
+        assert set(result["metadata"]["bands_downloaded"]) == {"B04", "B08", "B11"}
 
 @pytest.mark.asyncio
 async def test_download_data_no_scenes(api, bbox, mock_pc_client):
@@ -110,7 +139,13 @@ async def test_download_data_no_scenes(api, bbox, mock_pc_client):
     result = await api.download_data(
         bbox=bbox,
         start_date=datetime(2023, 1, 1),
-        end_date=datetime(2023, 1, 31)
+        end_date=datetime(2023, 1, 31),
+        cloud_cover=10.0,
+        bands={
+            "B04": "Red",
+            "B08": "NIR",
+            "B11": "SWIR"
+        }
     )
     
     assert result["status"] == "no_data"
@@ -143,6 +178,9 @@ async def test_download_data_with_invalid_band(api, bbox, mock_pc_client, mock_r
     """Test download with invalid band."""
     result = await api.download_data(
         bbox=bbox,
+        start_date=datetime(2023, 1, 1),
+        end_date=datetime(2023, 1, 31),
+        cloud_cover=10.0,
         bands={"invalid_band": "Invalid"}
     )
     
@@ -155,11 +193,18 @@ async def test_download_data_with_custom_bands(api, bbox, mock_pc_client, mock_r
     with patch('planetary_computer.sign', return_value="https://example.com/signed.tif"):
         result = await api.download_data(
             bbox=bbox,
-            bands={"B04": "Red", "B08": "NIR"}
+            start_date=datetime(2023, 1, 1),
+            end_date=datetime(2023, 1, 31),
+            cloud_cover=10.0,
+            bands={
+                "B04": "Red",
+                "B08": "NIR"
+            }
         )
         
         assert isinstance(result, dict)
         assert "metadata" in result
-        assert "B04" in result["metadata"]["bands_downloaded"]
-        assert "B08" in result["metadata"]["bands_downloaded"]
-        assert "B11" not in result["metadata"]["bands_downloaded"] 
+        assert set(result["metadata"]["bands_downloaded"]) == {"B04", "B08"}
+        assert "B11" not in result["metadata"]["bands_downloaded"]
+        assert result["metadata"]["scene_id"] == "test_scene"
+        assert result["metadata"]["cloud_cover"] == 5.0 
