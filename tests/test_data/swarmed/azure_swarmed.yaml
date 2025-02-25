@@ -1,0 +1,88 @@
+provider: azure
+deployment_type: swarmed
+
+infrastructure:
+  availability:
+    type: availability_zone
+    zones: [1, 2, 3]
+  image:
+    publisher: microsoft-dsvm
+    offer: ubuntu-hpc
+    sku: 2004
+    version: latest
+  vm_size: Standard_D2s_v3
+
+swarm:
+  min_nodes: 3
+  max_nodes: 10
+  manager_nodes: 3
+  worker_nodes: 5
+
+node_specs:
+  manager_specs:
+    instance_type: Standard_D2s_v3
+    storage_size: 100
+  worker_specs:
+    instance_type: Standard_B2s
+    storage_size: 50
+
+network:
+  vpc_cidr: 10.1.0.0/16
+  subnet_type: private
+  security_group:
+    rules:
+      - port: 2377
+        protocol: tcp
+        description: "Swarm management"
+      - port: 7946
+        protocol: tcp
+        description: "Container network discovery"
+      - port: 4789
+        protocol: udp
+        description: "Overlay network traffic"
+  vnet_name: swarmed-vnet
+  subnet_name: swarmed-subnet
+  nsg_name: swarmed-nsg
+  resource_group: swarmed-rg
+  location: westus2
+
+monitoring:
+  enabled: true
+  metrics:
+    - node_health
+    - container_stats
+    - network_latency
+
+logging:
+  level: info
+  retention_days: 30
+
+nodes:
+  manager:
+    vm_size: Standard_D2s_v3
+    region: westus2
+    zones:
+      - 1
+      - 2
+      - 3
+  worker:
+    vm_size: Standard_D4s_v3
+    region: westus2
+    zones:
+      - 1
+      - 2
+      - 3
+
+storage:
+  type: managed_disk
+  size: 100
+  sku: Premium_LRS
+  iops: 3000
+  throughput: 125
+
+scaling:
+  min_worker_nodes: 3
+  max_worker_nodes: 10
+  target_cpu_utilization: 70
+  scale_up_cooldown: 300
+  scale_down_cooldown: 300 
