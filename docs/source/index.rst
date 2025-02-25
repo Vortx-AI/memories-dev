@@ -23,6 +23,9 @@ memories-dev Framework
 .. raw:: html
 
    <div class="hero-banner">
+     <div class="hero-image">
+       <img src="_static/hero_image.png" alt="memories-dev Earth Memory System">
+     </div>
      <div class="hero-content">
        <h1>Building Earth's Collective Memory System</h1>
        <p>A sophisticated framework for integrating geospatial data, historical imagery, and AI to create a comprehensive memory system for our planet.</p>
@@ -41,12 +44,29 @@ memories-dev Framework
        border-radius: 8px;
        margin: 2rem 0;
        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+       display: flex;
+       align-items: center;
+       flex-wrap: wrap;
+     }
+     
+     .hero-image {
+       flex: 1;
+       min-width: 300px;
+       text-align: center;
+       padding: 1rem;
+     }
+     
+     .hero-image img {
+       max-width: 100%;
+       height: auto;
+       border-radius: 8px;
+       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
      }
      
      .hero-content {
-       max-width: 800px;
-       margin: 0 auto;
-       text-align: center;
+       flex: 2;
+       min-width: 300px;
+       padding: 1rem;
      }
      
      .hero-content h1 {

@@ -849,7 +849,7 @@ This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENS
 - [Discord Community](https://discord.gg/tGCVySkX4d)
 
 <p align="center">
-<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/The_Blue_Marble_%28remastered%29.jpg/600px-The_Blue_Marble_%28remastered%29.jpg" alt="Earth - The Blue Marble" width="400px">
+<img src="docs/source/_static/hero_image.png" alt="memories-dev Earth Memory System" width="400px">
   <br>
   <b>Building the World's Memory for Artificial General Intelligence</b>
   <br>
