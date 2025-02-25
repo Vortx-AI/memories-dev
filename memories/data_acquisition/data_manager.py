@@ -12,7 +12,7 @@ import planetary_computer as pc
 import pystac_client
 import numpy as np
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import aiohttp
 import logging
 
@@ -94,83 +94,75 @@ class DataManager:
         with open(cache_path, 'w') as f:
             json.dump(data, f)
     
-    async def get_satellite_data(
-        self,
-        bbox: Union[List[float], Tuple[float, float, float, float], Polygon],
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
-        refresh: bool = False
-    ) -> Dict[str, Any]:
-        """Get satellite data from Sentinel API.
-        
+    def _validate_bbox(self, bbox_coords):
+        """Validate and convert bbox coordinates to the correct format."""
+        try:
+            if isinstance(bbox_coords, (list, tuple)) and len(bbox_coords) == 4:
+                return {
+                    'xmin': float(bbox_coords[0]),
+                    'ymin': float(bbox_coords[1]),
+                    'xmax': float(bbox_coords[2]),
+                    'ymax': float(bbox_coords[3])
+                }
+            elif isinstance(bbox_coords, dict) and all(k in bbox_coords for k in ['xmin', 'ymin', 'xmax', 'ymax']):
+                return {k: float(v) for k, v in bbox_coords.items()}
+            else:
+                logger.error(f"Invalid bbox format: {bbox_coords}")
+                return None
+        except (ValueError, TypeError) as e:
+            logger.error(f"Error validating bbox: {str(e)}")
+            return None
+
+    async def get_satellite_data(self, bbox_coords: Union[List[float], Dict[str, float]], start_date: Optional[str] = None, end_date: Optional[str] = None) -> Dict[str, Any]:
+        """Get satellite data for a given bounding box.
+
         Args:
-            bbox: Bounding box coordinates
-            start_date: Optional start date
-            end_date: Optional end date
-            refresh: Whether to force refresh cached data
-            
+            bbox_coords (Union[List[float], Dict[str, float]]): Bounding box coordinates [xmin, ymin, xmax, ymax] or
+                dict with keys 'xmin', 'ymin', 'xmax', 'ymax'
+            start_date (Optional[str]): Start date for data collection (YYYY-MM-DD)
+            end_date (Optional[str]): End date for data collection (YYYY-MM-DD)
+
         Returns:
-            Dictionary containing satellite data
+            Dict[str, Any]: Dictionary containing satellite data and metadata
         """
-        logger.info(f"get_satellite_data - Input bbox: {bbox}, type: {type(bbox)}")
-        
-        # Convert bbox to appropriate format
-        bbox_coords = self._get_bbox_polygon(bbox)
-        logger.info(f"get_satellite_data - Converted bbox_coords: {bbox_coords}, type: {type(bbox_coords)}")
-        
-        # Convert bbox list to dictionary format for Sentinel API
-        if isinstance(bbox_coords, list):
-            bbox_dict = {
-                'xmin': bbox_coords[0],
-                'ymin': bbox_coords[1],
-                'xmax': bbox_coords[2],
-                'ymax': bbox_coords[3]
+        try:
+            # Convert bbox_coords to dictionary format if it's a list
+            if isinstance(bbox_coords, (list, tuple)) and len(bbox_coords) == 4:
+                bbox_dict = {
+                    "xmin": float(bbox_coords[0]),
+                    "ymin": float(bbox_coords[1]),
+                    "xmax": float(bbox_coords[2]),
+                    "ymax": float(bbox_coords[3])
+                }
+            elif isinstance(bbox_coords, dict) and all(k in bbox_coords for k in ['xmin', 'ymin', 'xmax', 'ymax']):
+                bbox_dict = {k: float(v) for k, v in bbox_coords.items()}
+            else:
+                return {"status": "error", "message": "Invalid bounding box format"}
+
+            # Convert string dates to datetime if provided
+            if isinstance(start_date, str):
+                start_date = datetime.strptime(start_date, "%Y-%m-%d")
+            if isinstance(end_date, str):
+                end_date = datetime.strptime(end_date, "%Y-%m-%d")
+
+            result = await self.sentinel.download_data(
+                bbox=bbox_dict,
+                start_date=start_date,
+                end_date=end_date
+            )
+
+            if result["status"] == "error":
+                return result
+
+            return {
+                "status": "success",
+                "metadata": result["metadata"],
+                "data": result.get("data", None)
             }
-        elif isinstance(bbox_coords, Polygon):
-            bounds = bbox_coords.bounds
-            bbox_dict = {
-                'xmin': bounds[0],
-                'ymin': bounds[1],
-                'xmax': bounds[2],
-                'ymax': bounds[3]
-            }
-        else:
-            raise ValueError("Invalid bbox format")
-        
-        # Generate cache key
-        cache_key = f"satellite_{bbox_coords}_{start_date}_{end_date}"
-        
-        # Check cache unless refresh is requested
-        if not refresh and self.cache_exists(cache_key):
-            cached_data = self.get_from_cache(cache_key)
-            if cached_data:
-                return cached_data
-        
-        # Get data from Sentinel API
-        satellite_data = await self.sentinel.download_data(
-            bbox=bbox_dict,
-            cloud_cover=10.0,
-            bands={
-                "B04": "Red",
-                "B08": "NIR",
-                "B11": "SWIR"
-            }
-        )
-        
-        # Convert numpy arrays to lists for JSON serialization
-        if satellite_data.get('success') and 'data' in satellite_data:
-            if isinstance(satellite_data['data'], np.ndarray):
-                satellite_data['data'] = satellite_data['data'].tolist()
-        
-        # Save to cache if not refreshing
-        if not refresh:
-            self.save_to_cache(cache_key, satellite_data)
-        else:
-            # For refresh, use a new cache key with timestamp
-            refresh_cache_key = f"{cache_key}_{datetime.now().isoformat()}"
-            self.save_to_cache(refresh_cache_key, satellite_data)
-        
-        return satellite_data
+
+        except Exception as e:
+            logging.error(f"Error in get_satellite_data: {str(e)}")
+            return {"status": "error", "message": str(e)}
     
     async def get_vector_data(
         self,
@@ -333,65 +325,51 @@ class DataManager:
 
     async def get_location_data(
         self,
-        bbox: List[float],
+        bbox_coords: Union[List[float], Dict[str, float]],
         start_date: Optional[str] = None,
-        end_date: Optional[str] = None
+        end_date: Optional[str] = None,
+        layers: List[str] = ["buildings", "roads", "landuse"]
     ) -> Dict[str, Any]:
-        """Get location data from all sources.
-        
+        """Get both satellite and vector data for a location.
+
         Args:
-            bbox: Bounding box [min_lon, min_lat, max_lon, max_lat]
-            start_date: Optional start date (YYYY-MM-DD)
-            end_date: Optional end date (YYYY-MM-DD)
-            
+            bbox_coords (Union[List[float], Dict[str, float]]): Bounding box coordinates [xmin, ymin, xmax, ymax] or
+                dict with keys 'xmin', 'ymin', 'xmax', 'ymax'
+            start_date (Optional[str]): Start date for data collection (YYYY-MM-DD)
+            end_date (Optional[str]): End date for data collection (YYYY-MM-DD)
+            layers (List[str]): Vector data layers to fetch
+
         Returns:
-            Dictionary containing data from all sources
+            Dict[str, Any]: Dictionary containing both satellite and vector data
         """
-        # Convert bbox to appropriate format
-        bbox_coords = self._get_bbox_polygon(bbox)
-        
-        # Convert bbox list to dictionary format for Sentinel API
-        if isinstance(bbox_coords, list):
-            bbox_dict = {
-                'xmin': bbox_coords[0],
-                'ymin': bbox_coords[1],
-                'xmax': bbox_coords[2],
-                'ymax': bbox_coords[3]
+        try:
+            logger.info(f"get_location_data - Input bbox: {bbox_coords}, type: {type(bbox_coords)}")
+            
+            # Get satellite data
+            satellite_data = await self.get_satellite_data(
+                bbox_coords=bbox_coords,
+                start_date=start_date,
+                end_date=end_date
+            )
+            
+            if satellite_data["status"] == "error":
+                return satellite_data
+            
+            # Get vector data
+            vector_data = await self.get_vector_data(
+                bbox=bbox_coords,
+                layers=layers
+            )
+            
+            return {
+                "status": "success",
+                "satellite_data": satellite_data,
+                "vector_data": vector_data
             }
-        elif isinstance(bbox_coords, Polygon):
-            bounds = bbox_coords.bounds
-            bbox_dict = {
-                'xmin': bounds[0],
-                'ymin': bounds[1],
-                'xmax': bounds[2],
-                'ymax': bounds[3]
-            }
-        else:
-            raise ValueError("Invalid bbox format")
-        
-        # Get Overture data
-        overture_data = await self.overture.search(bbox_coords)
-        
-        # Get OSM data
-        osm_data = await self.osm.search(bbox_coords)
-        
-        # Get satellite data
-        satellite_data = await self.sentinel.download_data(
-            bbox=bbox_dict,
-            cloud_cover=10.0,
-            bands={
-                "B04": "Red",
-                "B08": "NIR",
-                "B11": "SWIR"
-            }
-        )
-        
-        # Convert numpy arrays to lists for JSON serialization
-        if satellite_data.get('success') and 'data' in satellite_data:
-            satellite_data['data'] = satellite_data['data'].tolist()
-        
-        return {
-            "overture": overture_data,
-            "osm": osm_data,
-            "satellite": satellite_data
-        } 
+            
+        except Exception as e:
+            logger.error(f"Error in get_location_data: {str(e)}")
+            return {
+                "status": "error",
+                "message": str(e)
+            } 

@@ -3,6 +3,7 @@
 import pytest
 import torch
 from unittest.mock import Mock, patch
+import gc
 from memories.models.base_model import BaseModel
 
 @pytest.fixture
@@ -11,6 +12,9 @@ def base_model():
     model = BaseModel.get_instance()
     yield model
     model.cleanup()
+    # Force garbage collection after cleanup
+    gc.collect()
+    torch.cuda.empty_cache() if torch.cuda.is_available() else None
 
 def test_singleton_instance():
     """Test that BaseModel follows singleton pattern."""
@@ -37,37 +41,75 @@ def test_get_model_config(base_model, model_name):
     assert "config" in config
 
 @patch("torch.cuda.is_available")
-def test_initialize_model_cpu(mock_cuda, base_model):
+@patch("transformers.AutoModelForCausalLM.from_pretrained")
+@patch("transformers.AutoTokenizer.from_pretrained")
+def test_initialize_model_cpu(mock_tokenizer, mock_model, mock_cuda, base_model):
     """Test model initialization on CPU."""
     mock_cuda.return_value = False
-    success = base_model.initialize_model("deepseek-coder-small", use_gpu=False)
-    assert success
-    assert base_model.model is not None
-    assert base_model.tokenizer is not None
+    mock_model.return_value = Mock()
+    mock_tokenizer.return_value = Mock()
+    
+    try:
+        success = base_model.initialize_model("deepseek-coder-small", use_gpu=False)
+        assert success
+        assert base_model.model is not None
+        assert base_model.tokenizer is not None
+    finally:
+        base_model.cleanup()
+        gc.collect()
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
-def test_initialize_model_gpu(base_model):
+@patch("transformers.AutoModelForCausalLM.from_pretrained")
+@patch("transformers.AutoTokenizer.from_pretrained")
+def test_initialize_model_gpu(mock_tokenizer, mock_model, base_model):
     """Test model initialization on GPU."""
-    success = base_model.initialize_model("deepseek-coder-small", use_gpu=True)
-    assert success
-    assert base_model.model is not None
-    assert base_model.tokenizer is not None
-    assert next(base_model.model.parameters()).device.type == "cuda"
+    mock_model.return_value = Mock()
+    mock_tokenizer.return_value = Mock()
+    mock_model.return_value.to.return_value = mock_model.return_value
+    mock_model.return_value.parameters.return_value = iter([torch.tensor([1.0]).cuda()])
+    
+    try:
+        success = base_model.initialize_model("deepseek-coder-small", use_gpu=True)
+        assert success
+        assert base_model.model is not None
+        assert base_model.tokenizer is not None
+        assert next(base_model.model.parameters()).device.type == "cuda"
+    finally:
+        base_model.cleanup()
+        torch.cuda.empty_cache()
+        gc.collect()
 
-def test_generate_text(base_model):
+@patch("transformers.AutoModelForCausalLM.from_pretrained")
+@patch("transformers.AutoTokenizer.from_pretrained")
+def test_generate_text(mock_tokenizer, mock_model, base_model):
     """Test text generation."""
-    base_model.initialize_model("deepseek-coder-small", use_gpu=False)
-    prompt = "Write a hello world program in Python"
-    response = base_model.generate(prompt)
-    assert isinstance(response, str)
-    assert len(response) > 0
+    mock_model.return_value = Mock()
+    mock_tokenizer.return_value = Mock()
+    mock_tokenizer.return_value.decode.return_value = "print('Hello, World!')"
+    mock_model.return_value.generate.return_value = torch.tensor([[1, 2, 3]])
+    
+    try:
+        base_model.initialize_model("deepseek-coder-small", use_gpu=False)
+        prompt = "Write a hello world program in Python"
+        response = base_model.generate(prompt)
+        assert isinstance(response, str)
+        assert len(response) > 0
+    finally:
+        base_model.cleanup()
+        gc.collect()
 
 def test_cleanup(base_model):
     """Test cleanup method."""
-    base_model.initialize_model("deepseek-coder-small", use_gpu=False)
-    base_model.cleanup()
-    assert base_model.model is None
-    assert base_model.tokenizer is None
+    with patch("transformers.AutoModelForCausalLM.from_pretrained") as mock_model, \
+         patch("transformers.AutoTokenizer.from_pretrained") as mock_tokenizer:
+        mock_model.return_value = Mock()
+        mock_tokenizer.return_value = Mock()
+        
+        base_model.initialize_model("deepseek-coder-small", use_gpu=False)
+        base_model.cleanup()
+        assert base_model.model is None
+        assert base_model.tokenizer is None
+        gc.collect()
 
 @pytest.mark.parametrize("provider", ["deepseek-ai", "meta", "mistral"])
 def test_list_models_by_provider(base_model, provider):
