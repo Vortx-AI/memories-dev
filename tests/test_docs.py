@@ -16,6 +16,15 @@ def mock_imports():
         'langchain_core.language_models': None,
         'langchain_core.messages': None,
         'langchain_core.utils': None,
+        # Mock Sphinx extensions that might not be installed
+        'sphinx_design': None,
+        'sphinxcontrib.mermaid': None,
+        'sphinx_tabs.tabs': None,
+        'sphinx_togglebutton': None,
+        'sphinx_favicon': None,
+        'sphinx.ext.duration': None,
+        'sphinx_sitemap': None,
+        'sphinx_last_updated_by_git': None,
     }):
         yield
 
