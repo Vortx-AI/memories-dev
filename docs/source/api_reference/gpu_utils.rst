@@ -218,4 +218,127 @@ Common Issues
 - :ref:`gpu_optimization` - Comprehensive GPU optimization guide
 - :ref:`multi_gpu_guide` - Multi-GPU processing strategies
 - :ref:`memory_management` - Memory management best practices
-- :ref:`troubleshooting` - Detailed troubleshooting guide 
+- :ref:`troubleshooting` - Detailed troubleshooting guide
+
+GPU Memory Management
+------------------
+
+.. automodule:: memories.utils.processors.gpu_stat
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+GPU Acceleration
+--------------
+
+The memories-dev library provides comprehensive GPU acceleration support for model inference and data processing. The system automatically handles GPU memory management, device selection, and resource cleanup.
+
+Basic GPU Usage
+~~~~~~~~~~~~
+
+.. code-block:: python
+
+    from memories.models.load_model import LoadModel
+    
+    # Initialize model with GPU support
+    model = LoadModel(
+        use_gpu=True,
+        model_provider="deepseek-ai",
+        deployment_type="local",
+        model_name="deepseek-coder-small"
+    )
+    
+    # Generate text
+    response = model.get_response("Write a function to calculate factorial")
+    
+    # Clean up GPU resources
+    model.cleanup()
+
+Multi-GPU Support
+~~~~~~~~~~~~~~
+
+For systems with multiple GPUs, you can specify which device to use:
+
+.. code-block:: python
+
+    # Use the second GPU (index 1)
+    model = LoadModel(
+        use_gpu=True,
+        device="cuda:1",
+        model_provider="deepseek-ai",
+        deployment_type="local",
+        model_name="deepseek-coder-small"
+    )
+
+GPU Memory Monitoring
+------------------
+
+You can monitor GPU memory usage with the provided utilities:
+
+.. code-block:: python
+
+    from memories.utils.processors.gpu_stat import check_gpu_memory
+    
+    # Get memory statistics for all GPUs
+    memory_stats = check_gpu_memory()
+    
+    for device_id, stats in memory_stats.items():
+        print(f"GPU {device_id}:")
+        print(f"  Total memory: {stats['total']} MB")
+        print(f"  Used memory: {stats['used']} MB")
+        print(f"  Free memory: {stats['free']} MB")
+
+Error Handling
+------------
+
+The system includes robust error handling for GPU-related issues:
+
+.. code-block:: python
+
+    try:
+        model = LoadModel(
+            use_gpu=True,
+            model_provider="deepseek-ai",
+            deployment_type="local",
+            model_name="deepseek-coder-small"
+        )
+    except RuntimeError as e:
+        if "CUDA out of memory" in str(e):
+            print("Not enough GPU memory available. Falling back to CPU.")
+            model = LoadModel(
+                use_gpu=False,
+                model_provider="deepseek-ai",
+                deployment_type="local",
+                model_name="deepseek-coder-small"
+            )
+        else:
+            raise
+
+Performance Comparison
+-------------------
+
+When available, GPU acceleration can significantly improve performance:
+
+.. code-block:: python
+
+    import time
+    import torch
+    
+    # Create test data
+    data = torch.randn(1000, 1000)
+    
+    # CPU computation
+    start_time = time.time()
+    cpu_result = torch.matmul(data, data)
+    cpu_time = time.time() - start_time
+    
+    # GPU computation
+    data_gpu = data.cuda()
+    start_time = time.time()
+    gpu_result = torch.matmul(data_gpu, data_gpu)
+    torch.cuda.synchronize()  # Wait for GPU computation to complete
+    gpu_time = time.time() - start_time
+    
+    print(f"CPU time: {cpu_time:.4f} seconds")
+    print(f"GPU time: {gpu_time:.4f} seconds")
+    print(f"Speedup: {cpu_time / gpu_time:.2f}x") 

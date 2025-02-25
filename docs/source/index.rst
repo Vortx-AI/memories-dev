@@ -1,92 +1,56 @@
-Welcome to memories.dev's documentation!
-=====================================
+.. memories-dev documentation master file
 
-Memories-Dev is a powerful Python framework for Earth Memory Synthesis, designed to capture, process, and understand the evolving story of our planet through data. It provides a sophisticated system for synthesizing and managing Earth observations across multiple temporal and spatial scales.
+Welcome to memories-dev's documentation!
+=======================================
 
-Version: 2.0.2
+**memories-dev** is a Python library for creating and managing memories using satellite imagery, vector data, and large language models.
 
-Key Features
------------
+.. note::
 
-- Multi-tiered Memory Architecture
-  - Hot Memory: Real-time, high-priority Earth observations
-  - Warm Memory: Recent historical data and frequently accessed patterns
-  - Cold Memory: Long-term Earth observation archives
-  - Glacier Memory: Deep historical records and baseline data
+   This project is under active development.
 
-- Earth Memory Synthesis
-  - Temporal Pattern Recognition
-  - Spatial Relationship Analysis
-  - Multi-source Data Integration
-  - Contextual Understanding
-  - Adaptive Learning from Historical Patterns
-
-- Specialized Analysis 
-  - Property Analysis: Understanding urban development patterns
-  - Location Ambience: Environmental and social context synthesis
-  - Traffic Patterns: Transportation network evolution
-  - Water Bodies: Hydrological system monitoring
- 
-
-Example Applications
-------------------
-
-- Property Analyzer: Synthesize property evolution patterns
-- Location Ambience: Environmental and urban characteristic synthesis
-- Traffic Analyzer: Transportation network memory patterns
-- Water Bodies Monitor: Hydrological system memory synthesis
+Contents
+--------
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: User Guide
 
-   installation
    quickstart
-   user_guide/index
-   api_reference/index
-   examples/index
-   contributing
-   changelog
+   user_guide/installation
+   user_guide/data_sources
+   user_guide/models
+   user_guide/advanced_features
+   user_guide/deployment
 
-Getting Started
--------------
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
 
-Installation
-^^^^^^^^^^^
+   api_reference/models
+   api_reference/load_model
+   api_reference/data_utils
+   api_reference/sentinel_api
+   api_reference/gpu_utils
+   api_reference/deployment
 
-.. code-block:: bash
+.. toctree::
+   :maxdepth: 2
+   :caption: Development
 
-    pip install memories-dev
+   development/contributing
+   development/testing
+   development/roadmap
 
-Basic Usage
-^^^^^^^^^^
+Features
+--------
 
-.. code-block:: python
-
-    from memories import MemoryStore, Config
-    
-    # Initialize memory store
-    config = Config(
-        storage_path="./earth_memories",
-        hot_memory_size=50,  # Recent observations
-        warm_memory_size=200,  # Historical patterns
-        cold_memory_size=1000  # Long-term records
-    )
-    memory_store = MemoryStore(config)
-    
-    # Store Earth observation data
-    memory_store.store({
-        "timestamp": "2024-02-17T12:00:00",
-        "location": {"lat": 40.7128, "lon": -74.0060},
-        "observation_type": "environmental",
-        "data": {
-            "temperature": 25.5,
-            "vegetation_index": 0.68,
-            "urban_density": 0.85
-        }
-    })
-
-For more detailed information, check out the :doc:`quickstart` guide.
+- **Satellite Data Acquisition**: Access Sentinel-2, Landsat, and other satellite imagery
+- **Vector Data Integration**: Incorporate OpenStreetMap, Overture Maps, and other vector data
+- **Model Integration**: Seamless integration with various LLM providers
+- **Flexible Deployment**: Local, API-based, and cloud deployment options
+- **GPU Acceleration**: Optimized performance with GPU support
+- **Concurrent Processing**: Efficient handling of multiple data sources
 
 Indices and tables
 ==================
