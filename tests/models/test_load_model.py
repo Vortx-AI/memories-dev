@@ -59,21 +59,25 @@ def test_init_api_model(mock_get_connector, mock_api_connector):
     mock_get_connector.assert_called_once_with("openai", "test-key")
 
 @patch("memories.models.load_model.BaseModel")
-def test_init_local_model(mock_base_model_class, mock_base_model):
+def test_init_local_model(mock_base_model_class):
     """Test initialization of local model."""
+    mock_base_model = Mock()
     mock_base_model_class.get_instance.return_value = mock_base_model
     mock_base_model.initialize_model.return_value = True
-    
+
     model = LoadModel(
         model_provider="deepseek-ai",
         deployment_type="local",
-        model_name="deepseek-coder-small"
+        model_name="deepseek-coder-small",
+        use_gpu=False
     )
-    
-    assert model.model_provider == "deepseek-ai"
-    assert model.deployment_type == "local"
-    assert model.model_name == "deepseek-coder-small"
-    mock_base_model.initialize_model.assert_called_once()
+
+    assert model is not None
+    mock_base_model.initialize_model.assert_called_once_with(
+        model_name="deepseek-coder-small",
+        use_gpu=False,
+        device=None
+    )
 
 def test_init_invalid_deployment_type():
     """Test initialization with invalid deployment type."""
@@ -81,8 +85,7 @@ def test_init_invalid_deployment_type():
         LoadModel(
             model_provider="openai",
             deployment_type="invalid",
-            model_name="gpt-4",
-            api_key="test-key"
+            model_name="gpt-4"
         )
 
 def test_init_invalid_provider():
@@ -91,8 +94,7 @@ def test_init_invalid_provider():
         LoadModel(
             model_provider="invalid",
             deployment_type="api",
-            model_name="gpt-4",
-            api_key="test-key"
+            model_name="gpt-4"
         )
 
 def test_init_missing_api_key():
@@ -108,6 +110,15 @@ def test_init_missing_api_key():
 def test_get_response_api(mock_get_connector, mock_api_connector):
     """Test getting response from API model."""
     mock_get_connector.return_value = mock_api_connector
+    mock_api_connector.generate.return_value = {
+        "text": "Test response",
+        "error": None,
+        "metadata": {
+            "attempt": 1,
+            "generation_time": 0,
+            "total_tokens": 0
+        }
+    }
     
     model = LoadModel(
         model_provider="openai",
@@ -117,29 +128,45 @@ def test_get_response_api(mock_get_connector, mock_api_connector):
     )
     
     response = model.get_response("Test prompt")
-    assert response == "Test response"
-    mock_api_connector.generate.assert_called_once_with("Test prompt")
+    assert isinstance(response, dict)
+    assert response["text"] == "Test response"
+    assert response["error"] is None
+    assert "metadata" in response
+    mock_api_connector.generate.assert_called_once_with("Test prompt", timeout=30)
 
 @patch("memories.models.load_model.BaseModel")
-def test_get_response_local(mock_base_model_class, mock_base_model):
+def test_get_response_local(mock_base_model_class):
     """Test getting response from local model."""
+    mock_base_model = Mock()
     mock_base_model_class.get_instance.return_value = mock_base_model
     mock_base_model.initialize_model.return_value = True
-    
+    mock_base_model.generate.return_value = "Test response"
+
     model = LoadModel(
         model_provider="deepseek-ai",
         deployment_type="local",
         model_name="deepseek-coder-small"
     )
-    
+
     response = model.get_response("Test prompt")
-    assert response == "Test response"
-    mock_base_model.generate.assert_called_once_with("Test prompt")
+    assert response["text"] == "Test response"
+    assert response["error"] is None
+    assert "metadata" in response
+    mock_base_model.generate.assert_called_once_with("Test prompt", timeout=30)
 
 @patch("memories.models.load_model.get_connector")
 def test_get_response_with_params(mock_get_connector, mock_api_connector):
     """Test getting response with additional parameters."""
     mock_get_connector.return_value = mock_api_connector
+    mock_api_connector.generate.return_value = {
+        "text": "Test response",
+        "error": None,
+        "metadata": {
+            "attempt": 1,
+            "generation_time": 0,
+            "total_tokens": 0
+        }
+    }
     
     model = LoadModel(
         model_provider="openai",
@@ -154,8 +181,11 @@ def test_get_response_with_params(mock_get_connector, mock_api_connector):
     }
     
     response = model.get_response("Test prompt", **params)
-    assert response == "Test response"
-    mock_api_connector.generate.assert_called_once_with("Test prompt", **params)
+    assert isinstance(response, dict)
+    assert response["text"] == "Test response"
+    assert response["error"] is None
+    assert "metadata" in response
+    mock_api_connector.generate.assert_called_once_with("Test prompt", timeout=30, **params)
 
 def test_cleanup():
     """Test cleanup method."""
@@ -163,15 +193,17 @@ def test_cleanup():
         mock_base_model = Mock()
         mock_base_model_class.get_instance.return_value = mock_base_model
         mock_base_model.initialize_model.return_value = True
-        
+
         model = LoadModel(
             model_provider="deepseek-ai",
             deployment_type="local",
             model_name="deepseek-coder-small"
         )
-        
+
         model.cleanup()
         mock_base_model.cleanup.assert_called_once()
+        if torch.cuda.is_available():
+            assert torch.cuda.memory_allocated() == 0
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
 def test_gpu_usage():

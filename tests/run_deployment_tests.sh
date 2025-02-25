@@ -17,18 +17,18 @@ pip install -r requirements.txt
 echo "Running deployment tests..."
 
 echo "Running consensus deployment tests..."
-pytest deployments/consensus/test_consensus_config.py -v
+pytest tests/deployments/consensus/test_consensus_config.py -v
 
 echo "Running swarmed deployment tests..."
-pytest deployments/swarmed/test_swarmed_config.py -v
+pytest tests/deployments/swarmed/test_swarmed_config.py -v
 
 # Run with coverage report
 echo "Running tests with coverage..."
-pytest -v --cov=deployments \
+pytest -v --cov=tests/deployments \
     --cov-report=html:test-results/coverage \
     --cov-report=term-missing \
     --junitxml=test-results/junit.xml \
-    deployments/
+    tests/deployments/
 
 # Deactivate virtual environment
 deactivate 

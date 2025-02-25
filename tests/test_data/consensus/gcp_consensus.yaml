@@ -1,0 +1,49 @@
+provider: gcp
+deployment_type: consensus
+
+consensus:
+  algorithm: raft
+  min_nodes: 3
+  max_nodes: 5
+  quorum_size: 2
+  heartbeat_interval: 5
+  election_timeout: 30
+
+node_specs:
+  - id: node1
+    machine_type: n2-standard-2
+    region: us-west1
+    zone: us-west1-a
+  - id: node2
+    machine_type: n2-standard-2
+    region: us-west1
+    zone: us-west1-b
+  - id: node3
+    machine_type: n2-standard-2
+    region: us-west1
+    zone: us-west1-c
+
+storage:
+  type: persistent_disk
+  size: 100
+  disk_type: pd-ssd
+  iops: 3000
+  throughput: 125
+
+network:
+  vpc_name: consensus-vpc
+  subnet_name: consensus-subnet
+  firewall_name: consensus-fw
+  project_id: test-project
+  region: us-west1
+
+monitoring:
+  enabled: true
+  metrics:
+    - node_health
+    - consensus_status
+    - network_latency
+
+logging:
+  level: info
+  retention_days: 30 

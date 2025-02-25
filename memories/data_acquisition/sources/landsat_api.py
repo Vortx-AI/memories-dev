@@ -37,75 +37,40 @@ class LandsatAPI(DataSource):
             modifier=pc.sign_inplace
         )
     
-    async def search(
-        self,
-        bbox: List[float],
-        start_date: datetime,
-        end_date: datetime,
-        collection: str = "landsat-8-c2-l2",
-        cloud_cover: float = 20.0,
-        limit: int = 10
-    ) -> Dict[str, Any]:
+    async def search(self,
+                    bbox: List[float],
+                    start_date: str,
+                    end_date: str,
+                    collection: str = "landsat-8-c2-l2",
+                    cloud_cover: float = 20.0,
+                    limit: int = 10) -> List[Dict[str, Any]]:
         """
         Search for Landsat scenes.
         
         Args:
             bbox: Bounding box coordinates [west, south, east, north]
-            start_date: Start date
-            end_date: End date
-            collection: Collection ID
+            start_date: Start date in ISO format
+            end_date: End date in ISO format
+            collection: Collection ID (e.g., "landsat-8-c2-l2")
             cloud_cover: Maximum cloud cover percentage
             limit: Maximum number of results
             
         Returns:
-            Dictionary containing search results
+            List of scene metadata
         """
-        try:
-            # Format dates as ISO strings with UTC timezone
-            start_str = start_date.replace(tzinfo=None).isoformat() + "Z"
-            end_str = end_date.replace(tzinfo=None).isoformat() + "Z"
-            
-            # Search for scenes
-            search = self.catalog.search(
-                collections=[collection],
-                bbox=bbox,
-                datetime=f"{start_str}/{end_str}",
-                query={"eo:cloud_cover": {"lt": cloud_cover}},
-                limit=limit
-            )
-            
-            items = list(search.get_items())
-            
-            if not items:
-                return {'features': []}
-            
-            # Format response to match test expectations
-            features = []
-            for item in items:
-                feature = {
-                    'id': item.id,
-                    'properties': {
-                        'datetime': item.datetime.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                        'eo:cloud_cover': item.properties.get('eo:cloud_cover', 0),
-                        'landsat:cloud_cover_land': item.properties.get('landsat:cloud_cover_land', 0)
-                    },
-                    'assets': {}
-                }
-                
-                # Add asset information
-                for band in ['SR_B2', 'SR_B3', 'SR_B4']:
-                    if band in item.assets:
-                        feature['assets'][band] = {
-                            'href': item.assets[band].href
-                        }
-                
-                features.append(feature)
-            
-            return {'features': features}
-            
-        except Exception as e:
-            self.logger.error(f"Error searching Landsat data: {e}")
-            raise
+        self.validate_bbox(bbox)
+        
+        search = self.catalog.search(
+            collections=[collection],
+            bbox=bbox,
+            datetime=f"{start_date}/{end_date}",
+            query={"eo:cloud_cover": {"lt": cloud_cover}},
+            limit=limit
+        )
+        
+        items = list(search.get_items())
+        self.logger.info(f"Found {len(items)} items matching criteria")
+        return items
     
     async def download(self,
                       item_id: str,

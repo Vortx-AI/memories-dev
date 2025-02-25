@@ -1,0 +1,49 @@
+provider: azure
+deployment_type: consensus
+
+consensus:
+  algorithm: raft
+  min_nodes: 3
+  max_nodes: 5
+  quorum_size: 2
+  heartbeat_interval: 5
+  election_timeout: 30
+
+node_specs:
+  - id: node1
+    vm_size: Standard_D2s_v3
+    region: westus2
+    zone: 1
+  - id: node2
+    vm_size: Standard_D2s_v3
+    region: westus2
+    zone: 2
+  - id: node3
+    vm_size: Standard_D2s_v3
+    region: westus2
+    zone: 3
+
+storage:
+  type: managed_disk
+  size: 100
+  sku: Premium_LRS
+  iops: 3000
+  throughput: 125
+
+network:
+  vnet_name: consensus-vnet
+  subnet_name: consensus-subnet
+  nsg_name: consensus-nsg
+  resource_group: consensus-rg
+  location: westus2
+
+monitoring:
+  enabled: true
+  metrics:
+    - node_health
+    - consensus_status
+    - network_latency
+
+logging:
+  level: info
+  retention_days: 30 

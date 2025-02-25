@@ -1,0 +1,61 @@
+provider: gcp
+deployment_type: standalone
+
+instance:
+  machine_type: n2-standard-4
+  image:
+    project: deeplearning-platform-release
+    family: common-cu110
+  zone: us-west1-a
+  region: us-west1
+
+hardware:
+  cpu:
+    architecture: x86_64
+    machine_type: n2-standard-4
+    vcpus: 4
+  memory:
+    ram: 16
+    swap: 4
+  storage:
+    boot_disk:
+      size: 100
+      type: pd-ssd
+      iops: 3000
+      throughput: 125
+    data_disk:
+      size: 500
+      type: pd-ssd
+      iops: 6000
+      throughput: 250
+
+network:
+  vpc_name: standalone-vpc
+  subnet_name: standalone-subnet
+  firewall_name: standalone-fw
+  project_id: test-project
+  region: us-west1
+  public_ip: true
+  bandwidth: 5
+
+monitoring:
+  enabled: true
+  metrics:
+    - cpu_utilization
+    - memory_usage
+    - disk_io
+    - network_traffic
+  alerts:
+    - type: cpu
+      threshold: 80
+      duration: 300
+    - type: memory
+      threshold: 85
+      duration: 300
+
+logging:
+  level: info
+  retention_days: 30
+  cloud_logging:
+    enabled: true
+    log_name: standalone-instance 

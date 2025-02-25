@@ -208,7 +208,12 @@ setup(
             "config/*.yaml",
             "data/*.json",
             "models/config/*.json",
-            "utils/styles/*.json"
+            "utils/styles/*.json",
+            "test_data/**/*"
+        ],
+        "tests": [
+            "test_data/**/*.yaml",
+            "test_data/**/*.json"
         ]
     },
     

@@ -37,19 +37,15 @@ class ConfigurationValidator:
 
     def validate_cpu_model(self, params: Dict[str, Any]) -> bool:
         try:
-            if params['model'].startswith('ice_lake'):
-                config = self.load_config('hardware/cpu/intel.yaml')
-            else:
-                config = self.load_config('hardware/cpu/amd.yaml')
-            
-            cpu_model = config['cpu']['models'][params['model']]
+            config = self.load_config('hardware/cpu.yaml')
+            cpu_config = config['cpu']
             expected = params['expected']
             
-            assert cpu_model['cores'] == expected['cores'], f"Core count mismatch"
-            assert cpu_model['threads'] == expected['threads'], f"Thread count mismatch"
-            assert cpu_model['base_frequency'] == expected['base_frequency'], f"Base frequency mismatch"
+            assert cpu_config['architecture'] == expected['architecture'], f"Architecture mismatch"
+            assert cpu_config['machine_type'] == expected['machine_type'], f"Machine type mismatch"
+            assert cpu_config['vcpus'] == expected['vcpus'], f"vCPU configuration mismatch"
             
-            self.logger.info(f"CPU model {params['model']} validation passed")
+            self.logger.info(f"CPU configuration validation passed")
             return True
         except Exception as e:
             self.logger.error(f"CPU model validation failed: {str(e)}")
@@ -57,15 +53,16 @@ class ConfigurationValidator:
 
     def validate_gpu_specs(self, params: Dict[str, Any]) -> bool:
         try:
-            config = self.load_config('hardware/gpu/nvidia.yaml')
-            gpu_model = config['gpu']['models'][params['model']]
+            config = self.load_config('hardware/gpu.yaml')
+            gpu_config = config['gpu']
             expected = params['expected']
             
-            assert gpu_model['memory']['size'] == expected['memory'], f"Memory size mismatch"
-            assert gpu_model['cuda_cores'] == expected['cuda_cores'], f"CUDA core count mismatch"
-            assert gpu_model['tensor_cores'] == expected['tensor_cores'], f"Tensor core count mismatch"
+            assert gpu_config['type'] == expected['type'], f"GPU type mismatch"
+            assert gpu_config['count'] == expected['count'], f"GPU count mismatch"
+            assert gpu_config['memory'] == expected['memory'], f"Memory configuration mismatch"
+            assert gpu_config['cuda_version'] == expected['cuda_version'], f"CUDA version mismatch"
             
-            self.logger.info(f"GPU model {params['model']} validation passed")
+            self.logger.info(f"GPU configuration validation passed")
             return True
         except Exception as e:
             self.logger.error(f"GPU validation failed: {str(e)}")
@@ -73,13 +70,13 @@ class ConfigurationValidator:
 
     def validate_memory_settings(self, params: Dict[str, Any]) -> bool:
         try:
-            config = self.load_config('hardware/memory/config.yaml')
-            memory_type = config['memory']['types'][params['type']]
+            config = self.load_config('hardware/memory.yaml')
+            memory_config = config['memory']
             expected = params['expected']
             
-            assert memory_type['speed'] == expected['speed'], f"Memory speed mismatch"
-            assert memory_type['channels'] == expected['channels'], f"Channel count mismatch"
-            assert memory_type['ecc'] == expected['ecc'], f"ECC setting mismatch"
+            assert memory_config['ram'] == expected['ram'], f"RAM configuration mismatch"
+            assert memory_config['persistent_disk'] == expected['persistent_disk'], f"Persistent disk configuration mismatch"
+            assert memory_config['iops'] == expected['iops'], f"IOPS configuration mismatch"
             
             self.logger.info(f"Memory configuration validation passed")
             return True
@@ -89,13 +86,12 @@ class ConfigurationValidator:
 
     def validate_network_settings(self, params: Dict[str, Any]) -> bool:
         try:
-            config = self.load_config('hardware/network/config.yaml')
+            config = self.load_config('hardware/network.yaml')
             network_config = config['network']
             expected = params['expected']
             
-            assert network_config['vpc']['network'] == expected['network'], f"VPC network mismatch"
-            assert network_config['vpc']['subnet'] == expected['subnet'], f"Subnet mismatch"
-            assert network_config['vpc']['ip_range'] == expected['ip_range'], f"IP range mismatch"
+            assert network_config['vpc'] == expected['vpc'], f"VPC configuration mismatch"
+            assert network_config['subnets'] == expected['subnets'], f"Subnet configuration mismatch"
             
             self.logger.info("Network configuration validation passed")
             return True
@@ -125,33 +121,31 @@ class TestGCPStandaloneConfig:
     
     def test_cpu_model_validation(self, config_validator):
         test_params = {
-            'model': 'ice_lake_8380',
             'expected': {
-                'cores': 40,
-                'threads': 80,
-                'base_frequency': '2.3GHz'
+                'architecture': 'x86_64',
+                'machine_type': ['n2-standard-4', 'n2-standard-8', 'n2-standard-16'],
+                'vcpus': {'min': 4, 'max': 16}
             }
         }
         assert config_validator.validate_cpu_model(test_params)
 
     def test_gpu_specs_validation(self, config_validator):
         test_params = {
-            'model': 'a100',
             'expected': {
-                'memory': '80GB',
-                'cuda_cores': 6912,
-                'tensor_cores': 432
+                'type': 'nvidia_tesla_t4',
+                'count': 1,
+                'memory': {'min': 16, 'max': 64},
+                'cuda_version': '11.0'
             }
         }
         assert config_validator.validate_gpu_specs(test_params)
 
     def test_memory_settings_validation(self, config_validator):
         test_params = {
-            'type': 'ddr5',
             'expected': {
-                'speed': '4800MHz',
-                'channels': 8,
-                'ecc': True
+                'ram': {'min': 16, 'max': 32},
+                'persistent_disk': {'enabled': True, 'type': 'pd-ssd'},
+                'iops': {'baseline': 3000, 'burst': 6000}
             }
         }
         assert config_validator.validate_memory_settings(test_params)
@@ -159,9 +153,22 @@ class TestGCPStandaloneConfig:
     def test_network_settings_validation(self, config_validator):
         test_params = {
             'expected': {
-                'network': 'standalone-vpc',
-                'subnet': 'standalone-subnet',
-                'ip_range': '10.0.0.0/16'
+                'vpc': {
+                    'enabled': True,
+                    'cidr': '10.0.0.0/16'
+                },
+                'subnets': {
+                    'public': {
+                        'enabled': True,
+                        'cidr': '10.0.1.0/24',
+                        'region': 'us-central1'
+                    },
+                    'private': {
+                        'enabled': True,
+                        'cidr': '10.0.2.0/24',
+                        'region': 'us-central1'
+                    }
+                }
             }
         }
         assert config_validator.validate_network_settings(test_params)

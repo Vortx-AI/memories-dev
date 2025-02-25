@@ -224,7 +224,7 @@ def get_connector(provider: str, api_key: Optional[str] = None) -> APIConnector:
     """Get the appropriate API connector for a provider.
     
     Args:
-        provider: The provider name (e.g., "openai", "anthropic", "deepseek")
+        provider: The provider name (e.g., "openai", "anthropic", "deepseek-ai")
         api_key: Optional API key. If not provided, will try to get from environment
         
     Returns:
@@ -233,10 +233,16 @@ def get_connector(provider: str, api_key: Optional[str] = None) -> APIConnector:
     connectors = {
         "openai": OpenAIConnector,
         "anthropic": AnthropicConnector,
-        "deepseek": DeepseekConnector
+        "deepseek": DeepseekConnector,
+        "deepseek-ai": DeepseekConnector,
+        "deepseekai": DeepseekConnector
     }
     
-    provider = provider.lower().replace("-", "").replace("_", "")
+    # Normalize provider name
+    provider = provider.lower()
+    if provider == "deepseek-ai" or provider == "deepseekai":
+        provider = "deepseek"
+    
     connector_class = connectors.get(provider)
     
     if not connector_class:

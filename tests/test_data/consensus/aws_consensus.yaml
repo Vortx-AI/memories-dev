@@ -1,0 +1,50 @@
+provider: aws
+deployment_type: consensus
+
+consensus:
+  algorithm: raft
+  min_nodes: 3
+  max_nodes: 5
+  quorum_size: 2
+  heartbeat_interval: 5
+  election_timeout: 30
+
+node_specs:
+  - id: node1
+    instance_type: t3.medium
+    region: us-west-2
+    zone: us-west-2a
+  - id: node2
+    instance_type: t3.medium
+    region: us-west-2
+    zone: us-west-2b
+  - id: node3
+    instance_type: t3.medium
+    region: us-west-2
+    zone: us-west-2c
+
+storage:
+  type: ebs
+  size: 100
+  iops: 3000
+  throughput: 125
+
+network:
+  vpc_id: vpc-12345
+  subnet_ids:
+    - subnet-a1b2c3
+    - subnet-d4e5f6
+    - subnet-g7h8i9
+  security_group_ids:
+    - sg-12345
+
+monitoring:
+  enabled: true
+  metrics:
+    - node_health
+    - consensus_status
+    - network_latency
+
+logging:
+  level: info
+  retention_days: 30 

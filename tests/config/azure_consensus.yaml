@@ -1,0 +1,94 @@
+# Azure Consensus Configuration
+
+# Node configuration
+nodes:
+  min_nodes: 3
+  max_nodes: 7
+  quorum_size: 2
+  algorithm: "raft"
+  heartbeat_interval: 5
+  election_timeout: 10
+
+# Network configuration
+network:
+  vnet_address_space: "10.0.0.0/16"
+  subnet_prefixes:
+    - "10.0.1.0/24"
+    - "10.0.2.0/24"
+    - "10.0.3.0/24"
+  availability_zones:
+    - "1"
+    - "2"
+    - "3"
+  region: "westus2"
+  nsg_rules:
+    - name: consensus-rule
+      priority: 100
+      direction: Inbound
+      access: Allow
+      protocol: Tcp
+      source_port_range: "*"
+      destination_port_range: "2380"
+      source_address_prefix: "VirtualNetwork"
+      destination_address_prefix: "VirtualNetwork"
+
+# Instance configuration
+instance:
+  size: "Standard_D2s_v3"
+  image:
+    publisher: "Canonical"
+    offer: "UbuntuServer"
+    sku: "18.04-LTS"
+    version: "latest"
+  disk_size_gb: 100
+  disk_type: "Premium_LRS"
+  max_shares: 2
+  tier: P30
+
+# Security configuration
+security:
+  admin_username: "azureuser"
+  ssh_key_data: "ssh-rsa AAAA..."
+  allowed_ips:
+    - "0.0.0.0/0"
+  nsg_rules:
+    - name: "SSH"
+      port: 22
+    - name: "ETCD_PEER"
+      port: 2380
+    - name: "ETCD_CLIENT"
+      port: 2379
+    - name: "API"
+      port: 8080
+
+# Monitoring configuration
+monitoring:
+  enable_azure_monitor: true
+  metrics_retention_days: 30
+  diagnostic_settings_enabled: true
+
+# Backup configuration
+backup:
+  enable_automated_backup: true
+  backup_frequency: "PT6H"  # ISO 8601 duration format
+  retention_days: 7
+  storage_account_tier: "Standard"
+  storage_account_replication: "LRS"
+
+# Tags
+tags:
+  environment: "production"
+  project: "memories"
+  component: "consensus"
+
+# Node instances
+node_instances:
+  - vm_size: Standard_D4s_v3
+    role: leader
+    availability_zone: 1
+  - vm_size: Standard_D4s_v3
+    role: follower
+    availability_zone: 2
+  - vm_size: Standard_D4s_v3
+    role: follower
+    availability_zone: 3 

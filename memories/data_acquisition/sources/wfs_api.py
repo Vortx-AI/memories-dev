@@ -37,15 +37,19 @@ class WFSAPI:
         # Define available WFS endpoints
         self.endpoints = {
             "usgs": {
-                "url": "https://services.nationalmap.gov/arcgis/services/WFS/MapServer/WFSServer",
+                "url": "https://ows.nationalmap.gov/services/wfs",
                 "version": "2.0.0"
             },
-            "geoserver": {
-                "url": "http://geoserver.org/geoserver/wfs",
+            "geoserver_demo": {
+                "url": "https://ahocevar.com/geoserver/wfs",  # Demo GeoServer
                 "version": "2.0.0"
             },
-            "mapserver": {
-                "url": "http://mapserver.org/cgi-bin/wfs",
+            "nasa_gibs": {
+                "url": "https://gibs.earthdata.nasa.gov/wfs/epsg4326",
+                "version": "2.0.0"
+            },
+            "fao": {
+                "url": "https://data.apps.fao.org/map/gsrv/wfs",
                 "version": "2.0.0"
             }
         }
@@ -271,82 +275,4 @@ class WFSAPI:
                     gdf.to_file(file_path, driver="GeoJSON")
                     file_paths[f"{service_name}_{layer_name}"] = file_path
         
-        return file_paths
-
-    async def search(self, bbox: List[float], layer: str, use_cache: bool = False) -> Dict:
-        """
-        Search for features in a layer within a bounding box.
-        
-        Args:
-            bbox: Bounding box coordinates [west, south, east, north]
-            layer: Layer name to search
-            use_cache: Whether to use cached results if available
-            
-        Returns:
-            Dictionary containing feature collection
-        """
-        try:
-            # Check cache if enabled
-            if use_cache:
-                cache_key = f"{layer}_{bbox[0]}_{bbox[1]}_{bbox[2]}_{bbox[3]}.json"
-                cache_file = self.cache_dir / cache_key
-                if cache_file.exists():
-                    try:
-                        with open(cache_file) as f:
-                            return json.load(f)
-                    except Exception as e:
-                        logger.warning(f"Failed to load cache: {e}")
-            
-            # Get features using existing method
-            results = self.get_features(
-                bbox=tuple(bbox),
-                layers=[layer],
-                max_features=1000,
-                output_format="GeoJSON"
-            )
-            
-            # Format response to match test expectations
-            if results:
-                # Get first service's results
-                service_name = next(iter(results))
-                service_results = results[service_name]
-                
-                if layer in service_results:
-                    gdf = service_results[layer]
-                    response = {
-                        'type': 'FeatureCollection',
-                        'features': json.loads(gdf.to_json())['features']
-                    }
-                    
-                    # Cache results if enabled
-                    if use_cache:
-                        try:
-                            with open(cache_file, 'w') as f:
-                                json.dump(response, f)
-                        except Exception as e:
-                            logger.warning(f"Failed to write cache: {e}")
-                    
-                    return response
-            
-            return {'type': 'FeatureCollection', 'features': []}
-            
-        except Exception as e:
-            logger.error(f"Error in search: {e}")
-            return {'type': 'FeatureCollection', 'features': []}
-
-    def _cleanup_files(self, files: List[Path]) -> None:
-        """
-        Clean up temporary files.
-        
-        Args:
-            files: List of file paths to clean up
-        """
-        for file in files:
-            try:
-                if isinstance(file, (str, Path)):
-                    file_path = Path(file)
-                    if file_path.exists():
-                        file_path.unlink()
-                        logger.info(f"Cleaned up file: {file_path}")
-            except Exception as e:
-                logger.error(f"Error cleaning up file {file}: {e}") 
+        return file_paths 
