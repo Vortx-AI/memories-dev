@@ -84,35 +84,119 @@ class LoadModel:
             self.logger.error(f"Error loading config: {str(e)}")
             return {}
     
-    def get_response(self, prompt: str, **kwargs) -> str:
+    def get_response(self, prompt: str, **kwargs) -> Dict[str, Any]:
         """
         Generate a response using either local model or API.
         
         Args:
             prompt: The input prompt
-            **kwargs: Additional generation parameters
-            
+            **kwargs: Additional generation parameters including:
+                max_length: Maximum length of generated response
+                temperature: Sampling temperature (0.0 to 1.0)
+                top_p: Nucleus sampling parameter
+                top_k: Top-k sampling parameter
+                num_beams: Number of beams for beam search
+                
         Returns:
-            str: The generated response
+            Dict[str, Any]: Response dictionary containing:
+                text: The generated response text
+                metadata: Generation metadata (tokens, time, etc)
+                error: Error message if generation failed
         """
+        if not prompt or not isinstance(prompt, str):
+            return {
+                "error": "Invalid prompt - must be non-empty string",
+                "text": None,
+                "metadata": None
+            }
+            
         try:
+            # Log generation attempt
             self.logger.info(f"Generating response for prompt: {prompt[:100]}...")
+            self.logger.debug(f"Full prompt: {prompt}")
             self.logger.info(f"Using deployment type: {self.deployment_type}")
-            self.logger.info(f"Additional parameters: {kwargs}")
+            self.logger.debug(f"Generation parameters: {kwargs}")
             
-            if self.deployment_type == "deployment":
-                self.logger.info("Using base model for generation")
-                response = self.base_model.generate(prompt, **kwargs)
+            # Validate and set default parameters
+            max_retries = kwargs.pop('max_retries', 3)
+            timeout = kwargs.pop('timeout', 30)
+            
+            # Initialize response
+            response = None
+            error = None
+            metadata = {
+                "attempt": 0,
+                "total_tokens": 0,
+                "generation_time": 0
+            }
+            
+            # Try generation with retries
+            for attempt in range(max_retries):
+                metadata["attempt"] = attempt + 1
+                
+                try:
+                    if self.deployment_type == "deployment":
+                        self.logger.info("Using base model for generation")
+                        response = self.base_model.generate(
+                            prompt,
+                            timeout=timeout,
+                            **kwargs
+                        )
+                    else:
+                        self.logger.info(f"Using {self.model_provider} API connector")
+                        response = self.api_connector.generate(
+                            prompt,
+                            timeout=timeout,
+                            **kwargs
+                        )
+                        
+                    if response:
+                        break
+                        
+                except Exception as e:
+                    error = str(e)
+                    self.logger.warning(
+                        f"Attempt {attempt + 1} failed: {error}",
+                        exc_info=True
+                    )
+                    if attempt < max_retries - 1:
+                        continue
+            
+            # Process results
+            if response:
+                # Extract metadata if available
+                if isinstance(response, dict):
+                    metadata.update(response.get('metadata', {}))
+                    response = response.get('text', response)
+                    
+                self.logger.info(
+                    f"Response generated successfully. Length: {len(response)}"
+                )
+                
+                return {
+                    "text": response,
+                    "metadata": metadata,
+                    "error": None
+                }
             else:
-                self.logger.info(f"Using {self.model_provider} API connector for generation")
-                response = self.api_connector.generate(prompt, **kwargs)
-            
-            self.logger.info(f"Response generated successfully. Length: {len(response)}")
-            return response
-            
+                error_msg = error or "Failed to generate response after retries"
+                self.logger.error(error_msg)
+                return {
+                    "text": None,
+                    "metadata": metadata,
+                    "error": error_msg
+                }
+                
         except Exception as e:
-            self.logger.error(f"Error generating response: {str(e)}", exc_info=True)
-            return f"Error: {str(e)}"
+            self.logger.error(
+                f"Unexpected error in get_response: {str(e)}",
+                exc_info=True
+            )
+            return {
+                "text": None,
+                "metadata": {"attempt": 1},
+                "error": f"Unexpected error: {str(e)}"
+            }
     
     def cleanup(self):
         """Clean up model resources."""

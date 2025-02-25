@@ -136,21 +136,21 @@ class TestConsensusConfig:
 
     @pytest.fixture
     def test_data_dir(self):
-        return os.path.join(os.path.dirname(__file__),"..","..",)
+        return os.path.join(os.path.dirname(__file__), "../../test_data/consensus")
 
     @pytest.fixture
     def aws_config_validator(self, test_data_dir):
-        config_path = os.path.join(test_data_dir,"config", "aws_consensus.yaml")
+        config_path = os.path.join(test_data_dir, "aws_consensus.yaml")
         return BaseConfigValidator(config_path)
 
     @pytest.fixture
     def azure_config_validator(self, test_data_dir):
-        config_path = os.path.join(test_data_dir, "config","azure_consensus.yaml")
+        config_path = os.path.join(test_data_dir, "azure_consensus.yaml")
         return BaseConfigValidator(config_path)
 
     @pytest.fixture
     def gcp_config_validator(self, test_data_dir):
-        config_path = os.path.join(test_data_dir, "config", "gcp_consensus.yaml")
+        config_path = os.path.join(test_data_dir, "gcp_consensus.yaml")
         return BaseConfigValidator(config_path)
 
     def test_aws_consensus_config(self, aws_config_validator):
@@ -181,8 +181,4 @@ class TestConsensusConfig:
         assert "consensus" in gcp_config_validator.config
         consensus_config = gcp_config_validator.config["consensus"]
         assert "algorithm" in consensus_config
-        assert consensus_config["algorithm"] in ["raft", "paxos"]
-
-def get_test_data_dir():
-    """Get the test data directory."""
-    return "tests/test_data/consensus" 
+        assert consensus_config["algorithm"] in ["raft", "paxos"] 

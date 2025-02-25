@@ -42,6 +42,7 @@ os:
       - nvidia-driver-535
       - cuda-toolkit-12-2
       - docker-ce
+      - stackdriver-agent
       - google-cloud-sdk
 
 # Memory Management
