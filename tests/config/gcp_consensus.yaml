@@ -1,0 +1,85 @@
+# GCP Consensus Configuration
+
+# Node configuration
+nodes:
+  min_nodes: 3
+  max_nodes: 7
+  quorum_size: 2
+  algorithm: "raft"
+  heartbeat_interval: 5
+  election_timeout: 10
+
+# Network configuration
+network:
+  network_name: "consensus-network"
+  subnetwork_name: "consensus-subnet"
+  ip_cidr_range: "10.0.0.0/16"
+  region: "us-west1"
+  zones:
+    - "us-west1-a"
+    - "us-west1-b"
+    - "us-west1-c"
+  firewall_rules:
+    - name: consensus-allow-internal
+      allowed:
+        - protocol: tcp
+          ports: ["2380"]
+      source_ranges: ["10.0.0.0/16"]
+      target_tags: ["consensus"]
+
+# Instance configuration
+instance:
+  machine_type: "n2-standard-4"
+  image_family: "ubuntu-2004-lts"
+  image_project: "ubuntu-os-cloud"
+  boot_disk_size_gb: 100
+  boot_disk_type: "pd-ssd"
+
+# Security configuration
+security:
+  service_account:
+    email: "consensus@project-id.iam.gserviceaccount.com"
+    scopes:
+      - "https://www.googleapis.com/auth/cloud-platform"
+  network_tags:
+    - "consensus-node"
+  firewall_rules:
+    - name: "allow-ssh"
+      port: 22
+    - name: "allow-etcd-peer"
+      port: 2380
+    - name: "allow-etcd-client"
+      port: 2379
+    - name: "allow-api"
+      port: 8080
+  source_ranges:
+    - "0.0.0.0/0"
+
+# Monitoring configuration
+monitoring:
+  enable_cloud_monitoring: true
+  enable_cloud_logging: true
+  custom_metrics_interval: 60
+  log_retention_days: 30
+
+# Backup configuration
+backup:
+  enable_automated_backup: true
+  backup_schedule: "0 */6 * * *"  # Every 6 hours
+  retention_days: 7
+  backup_bucket: "consensus-backups"
+
+# Labels
+labels:
+  environment: "production"
+  project: "memories"
+  component: "consensus"
+
+# Storage configuration
+storage:
+  type: pd-ssd
+  size_gb: 100
+  replica_zones:
+    - us-west1-a
+    - us-west1-b
+    - us-west1-c 

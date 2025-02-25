@@ -121,7 +121,7 @@ class TestSwarmedConfig:
     
     @pytest.fixture
     def test_data_dir(self):
-        return os.path.join(os.path.dirname(__file__), "../../test_data/swarmed")
+        return "tests/test_data/swarmed"
 
     def test_aws_swarmed_config(self, aws_config_validator):
         """Test AWS swarmed configuration"""
@@ -175,4 +175,8 @@ class TestSwarmedConfig:
         
         validator = SwarmedConfigValidator(config)
         with pytest.raises(AssertionError, match="manager instance_type not specified"):
-            validator.validate_all() 
+            validator.validate_all()
+
+def get_test_data_dir():
+    """Get the test data directory."""
+    return "tests/test_data/swarmed" 

@@ -1,0 +1,90 @@
+# AWS Consensus Configuration
+
+# Node configuration
+nodes:
+  min_nodes: 3
+  max_nodes: 7
+  quorum_size: 2
+  algorithm: "raft"
+
+# Network configuration
+network:
+  vpc_cidr: "10.0.0.0/16"
+  subnet_cidrs:
+    - "10.0.1.0/24"
+    - "10.0.2.0/24"
+    - "10.0.3.0/24"
+  availability_zones:
+    - "us-west-2a"
+    - "us-west-2b"
+    - "us-west-2c"
+  security_groups:
+    - name: consensus-sg
+      rules:
+        - protocol: tcp
+          from_port: 2380
+          to_port: 2380
+          cidr: 10.0.0.0/16
+
+# Instance configuration
+instance:
+  type: "t3.large"
+  ami: "ami-0c55b159cbfafe1f0"
+  volume_size: 100
+  volume_type: "gp3"
+
+# Security configuration
+security:
+  ssh_key_name: "consensus-key"
+  allowed_ips:
+    - "0.0.0.0/0"
+  ports:
+    - 22    # SSH
+    - 2380  # etcd peer
+    - 2379  # etcd client
+    - 8080  # API
+
+# Monitoring configuration
+monitoring:
+  enable_cloudwatch: true
+  metrics_interval: 60
+  log_retention_days: 30
+
+# Backup configuration
+backup:
+  enable_automated_backup: true
+  backup_interval_hours: 6
+  retention_days: 7
+  s3_bucket: "consensus-backups"
+
+# Tags
+tags:
+  Environment: "production"
+  Project: "memories"
+  Component: "consensus"
+
+provider: aws
+region: us-west-2
+consensus:
+  algorithm: raft
+  min_nodes: 3
+  quorum_size: 2
+  heartbeat_interval: 5
+  election_timeout: 10
+  
+nodes:
+  - instance_type: t3.xlarge
+    role: leader
+    availability_zone: us-west-2a
+  - instance_type: t3.xlarge
+    role: follower
+    availability_zone: us-west-2b
+  - instance_type: t3.xlarge
+    role: follower
+    availability_zone: us-west-2c
+
+storage:
+  volume_type: gp3
+  volume_size: 100
+  iops: 3000
+  throughput: 125 
