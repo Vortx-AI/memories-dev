@@ -1,15 +1,31 @@
-# 🧠 memories.dev
+# 🧠 memories-dev
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Tests](https://github.com/Vortx-AI/memories-dev/actions/workflows/tests.yml/badge.svg)](https://github.com/Vortx-AI/memories-dev/actions/workflows/tests.yml)
 
-> Collective AGI memory - v1.1.2 (February 16, 2024)
+> Collective AGI memory - v2.0.2 (June 15, 2024)
+
+## What's New in Version 2.0.2
+
+### New Features
+- **Enhanced Data Sources**: Complete integration with Overture Maps and OpenStreetMap
+- **Multi-model Inference**: Compare results from multiple LLM providers
+- **Streaming Responses**: Real-time streaming for all supported model providers
+- **Memory Optimization**: Advanced memory usage with automatic tier balancing
+- **Distributed Memory**: Support for distributed memory across multiple nodes
+
+### Improvements
+- **Data Acquisition**: Multi-source fusion and temporal analysis capabilities
+- **Model Integration**: Function calling support and improved caching
+- **Memory Management**: Intelligent compression and migration policies
+- **Deployment Options**: Enhanced standalone, consensus, and swarmed deployments
+- **Documentation**: Comprehensive examples and real-world use cases
 
 ## 🌟 Overview
 
-memories.dev is a groundbreaking framework for building and managing collective AGI memory systems. It provides a robust architecture for memory formation, retrieval, and synthesis across multiple modalities, enabling AI models to maintain and utilize contextual understanding across interactions.
+memories-dev is a comprehensive Python library for building and managing collective AGI memory systems using satellite imagery, vector data, and large language models. It provides a robust architecture for memory formation, retrieval, and synthesis across multiple modalities, enabling AI models to maintain and utilize contextual understanding across interactions.
 
 ### 🎯 Key Goals
 - Enable persistent memory for AI systems
@@ -21,58 +37,99 @@ memories.dev is a groundbreaking framework for building and managing collective 
 ## 🚀 Quick Start
 
 ```python
-from memories_dev import MemorySystem
-from memories_dev.models import ModelRegistry
+from memories import MemorySystem
+from memories.models import LoadModel
+from memories.data_acquisition import DataManager
 
-# Initialize the memory system
+# Initialize components
 memory_system = MemorySystem(
     store_type="vector",  # Options: "vector", "graph", "hybrid"
-    vector_store="milvus",  # Coming in v1.1: Support for multiple vector stores
+    vector_store="milvus",
     embedding_model="text-embedding-3-small"
 )
 
+data_manager = DataManager(cache_dir="./data_cache")
+model = LoadModel(
+    model_provider="openai",
+    deployment_type="api",
+    model_name="gpt-4"
+)
 
+# Define area of interest
+bbox = {
+    'xmin': -122.4018,
+    'ymin': 37.7914,
+    'xmax': -122.3928,
+    'ymax': 37.7994
+}
 
-# Store a memory
+# Get satellite and vector data
+satellite_data = await data_manager.get_satellite_data(
+    bbox_coords=bbox,
+    start_date="2023-01-01",
+    end_date="2023-01-31"
+)
+
+vector_data = await data_manager.get_vector_data(
+    bbox=bbox,
+    layers=["buildings", "roads", "landuse"]
+)
+
+# Store a memory with multi-modal data
 memory_id = memory_system.store(
-    content="The city's air quality improved by 15% after implementing new policies.",
+    content={
+        "satellite_imagery": satellite_data,
+        "vector_features": vector_data,
+        "text_description": "Urban area with mixed residential and commercial buildings"
+    },
     metadata={
-        "location": {"lat": 37.7749, "lon": -122.4194},
-        "timestamp": "2024-03-15T10:30:00Z",
-        "source": "environmental_sensor"
+        "location": bbox,
+        "timestamp": "2024-06-15T10:30:00Z",
+        "source": "satellite_analysis"
     }
 )
 
 # Query memories with context
 relevant_memories = memory_system.query(
-    query="What were the environmental changes in San Francisco?",
-    location_radius_km=10,
-    time_range=("2024-01-01", "2024-03-15")
+    query="What is the building density in this urban area?",
+    location=bbox,
+    time_range=("2024-01-01", "2024-06-15")
 )
 
+# Generate insights with LLM
+prompt = f"Analyze this location with the following data: {satellite_data}, {vector_data}, {relevant_memories}"
+insights = model.get_response(prompt)
+print(insights["text"])
 
+# Clean up
+model.cleanup()
 ```
 
 ## 🏗️ Installation
 
-### Current Release (v1.0.0)
+### Standard Installation
 ```bash
 # Basic installation
-pip install git+https://github.com/Vortx-AI/memories-dev.git
+pip install memories-dev
 
-# Development installation
-git clone https://github.com/Vortx-AI/memories-dev.git
-cd memories-dev
-pip install -e ".[dev]"
+# With GPU support
+pip install memories-dev[gpu]
+
+# Full installation with all features
+pip install memories-dev[all]
 ```
 
-### Coming in v1.1.0
+### Development Installation
 ```bash
-# Installation with all features
-pip install memories-dev[all]
+# Clone repository
+git clone https://github.com/Vortx-AI/memories-dev.git
+cd memories-dev
 
-# GPU-optimized installation
-pip install memories-dev[gpu]
+# Install development dependencies
+pip install -e ".[dev]"
+
+# Install documentation tools
+pip install -e ".[docs]"
 ```
 
 ## 🔧 System Requirements
@@ -93,32 +150,24 @@ pip install memories-dev[gpu]
 
 ## 📊 Monitoring & Observability
 
-### Available Now (v1.0.0)
-- Basic logging system with structured output
-- Memory operation metrics
+### Available in v2.0.2
+- Comprehensive logging system with structured output
+- Memory operation metrics with Prometheus integration
 - Performance tracking for core operations
 - Health check endpoints
-
-### Coming in v1.1.0
-- 📈 Grafana dashboards for memory metrics
-- 🔍 Prometheus integration
-- 🔄 Real-time memory operation monitoring
-- 📊 Advanced performance analytics
-- 🚨 Automated alerting system
+- Grafana dashboards for memory metrics
+- Real-time memory operation monitoring
+- Advanced performance analytics
+- Automated alerting system
 
 ## 🧪 Development Features
 
-### Available Now
-- Memory store implementations
-- Core memory operations
-- Unit test framework
-- Development environment setup
-
-### Coming Soon (v1.1.0)
-- Enhanced memory compression
-- Advanced caching system
+### Core Features
+- Multi-tier memory store implementations
+- Advanced data acquisition from multiple sources
+- Integration with multiple LLM providers
 - Distributed memory operations
-- Memory garbage collection
+- Memory compression and optimization
 - Advanced security features
 
 ## 📁 Project Structure
@@ -126,671 +175,322 @@ pip install memories-dev[gpu]
 ```
 memories-dev/
 ├── examples/              # Example implementations
-│   ├── basic/            # Basic usage examples
-│   ├── advanced/         # Advanced implementations
-│   └── notebooks/        # Jupyter notebooks
+│   ├── property_analyzer.py  # Real estate analysis
+│   ├── water_bodies_monitor.py # Water monitoring
+│   ├── location_ambience.py # Location analysis
+│   ├── traffic_analyzer.py # Traffic patterns
+│   ├── urban_planning.py # Urban development
+│   ├── environmental_monitoring.py # Environmental tracking
+│   ├── disaster_response.py # Disaster planning
+│   └── model_comparison.py # Multi-model comparison
 │
-├── memories_dev/         # Main package
-│   ├── models/           # Models
-│   │   ├── core/       # Core functionality
-│   │   │   ├── base.py     # Base  classes
-│   │   │   └── registry.py #  registry
-│   │   ├── memory/     # Memory integration
-│   │   │   ├── context.py  # Context management
-│   │   │   └── retrieval.py# Memory retrieval
-│   │   └── specialized/# Specialized 
-│   │       ├── analysis.py # Analysis 
-│   │       └── synthesis.py# Synthesis 
+├── memories/             # Main package
+│   ├── core/            # Core memory system
+│   │   ├── memory_manager.py # Memory management
+│   │   └── policies.py # Memory policies
 │   │
-│   ├── data_acquisition/# Data Collection
-│   │   ├── satellite/   # Satellite data handlers
-│   │   │   ├── sentinel/# Sentinel-1/2
-│   │   │   └── landsat/ # Landsat 7/8
-│   │   ├── sensors/    # Sensor networks
-│   │   │   ├── climate/# Climate sensors
-│   │   │   └── urban/  # Urban sensors
-│   │   └── streams/    # Real-time streams
-│   │       ├── ingest.py # Stream ingestion
-│   │       └── process.py# Stream processing
+│   ├── data_acquisition/ # Data Collection
+│   │   ├── sources/     # Data sources
+│   │   │   ├── sentinel_api.py # Sentinel-2
+│   │   │   ├── sentinel3_api.py # Sentinel-3
+│   │   │   ├── landsat_api.py # Landsat
+│   │   │   ├── maxar_api.py # Maxar
+│   │   │   ├── osm_api.py # OpenStreetMap
+│   │   │   ├── overture_api.py # Overture Maps
+│   │   │   ├── wfs_api.py # WFS
+│   │   │   └── planetary_compute.py # Planetary Computer
+│   │   ├── processing/ # Data processing
+│   │   │   ├── cloud_mask.py # Cloud masking
+│   │   │   ├── indices.py # Spectral indices
+│   │   │   ├── fusion.py # Data fusion
+│   │   │   └── validation.py # Data validation
+│   │   └── data_manager.py # Data management
 │   │
-│   ├── memories/       # Memory System
-│   │   ├── store/     # Storage backend
-│   │   │   ├── vector.py# Vector store
-│   │   │   └── index.py # Indexing system
-│   │   ├── formation/ # Memory creation
-│   │   │   ├── create.py# Memory formation
-│   │   │   └── update.py# Memory updates
-│   │   └── query/     # Query system
-│   │       ├── spatial.py # Spatial queries
-│   │       └── temporal.py# Temporal queries
+│   ├── models/          # AI Models
+│   │   ├── base_model.py # Base model implementation
+│   │   ├── load_model.py # Model loader
+│   │   ├── api_connector.py # API connectors
+│   │   ├── streaming.py # Streaming responses
+│   │   ├── caching.py # Response caching
+│   │   ├── function_calling.py # Function calling
+│   │   └── multi_model.py # Multi-model inference
 │   │
-│   ├── models/        # AI Models
-│   │   ├── embedding/ # Embedding models
-│   │   │   ├── text.py  # Text embeddings
-│   │   │   └── vision.py# Vision embeddings
-│   │   ├── reasoning/# Reasoning models
-│   │   │   ├── llm.py   # Language models
-│   │   │   └── chain.py # Reasoning chains
-│   │   └── fusion/   # Multi-modal fusion
-│   │       └── combine.py# Modality fusion
-│   │
-│   ├── synthesis/    # Memory Synthesis
-│   │   ├── fusion/  # Data fusion
-│   │   │   ├── spatial.py # Spatial fusion
-│   │   │   └── temporal.py# Temporal fusion
-│   │   └── generation/# Synthetic data
-│   │       ├── augment.py # Data augmentation
-│   │       └── create.py  # Synthetic creation
-│   │
-│   └── utils/       # Utilities
-│       ├── config/  # Configuration
-│       ├── logging/ # Logging system
-│       └── validation/# Data validation
+│   └── deployments/     # Deployment options
+│       ├── standalone/ # Standalone deployment
+│       ├── consensus/ # Consensus deployment
+│       └── swarmed/ # Swarmed deployment
 │
-├── tests/           # Test Suite
-│   ├── unit/       # Unit tests
-│   └── integration/# Integration tests
+├── tests/              # Test Suite
+│   ├── unit/          # Unit tests
+│   └── integration/   # Integration tests
 │
-└── docs/           # Documentation
-    ├── api/        # API documentation
-    └── guides/     # User guides
+└── docs/              # Documentation
+    ├── api/           # API documentation
+    └── guides/        # User guides
 ```
 
 ## 🧩 Core Components Explained
 
-
-
 ### 1. 📡 Data Acquisition
-Handles multi-modal data ingestion:
+Handles multi-modal data ingestion from various sources:
 
 ```python
-from memories_dev.data_acquisition.satellite import SentinelCollector
-from memories_dev.data_acquisition.sensors import ClimateNetwork
+from memories.data_acquisition.data_manager import DataManager
+from memories.data_acquisition.processing.indices import calculate_ndvi
 
-# Initialize collectors
-satellite = SentinelCollector(
-    bands=["B02", "B03", "B04", "B08"]
+# Initialize data manager
+manager = DataManager(cache_dir="./data_cache")
+
+# Define area of interest
+bbox = [-122.4, 37.7, -122.3, 37.8]  # [west, south, east, north]
+
+# Get satellite data
+sentinel_data = await manager.get_satellite_data(
+    bbox=bbox,
+    start_date="2024-01-01",
+    end_date="2024-01-31",
+    collection="sentinel-2-l2a"
 )
 
-climate = ClimateNetwork(
-    metrics=["temperature", "humidity", "air_quality"]
+# Get vector data
+vector_data = await manager.get_vector_data(
+    bbox=bbox,
+    layers=["buildings", "roads", "landuse"],
+    source="overture"  # Options: "overture", "osm", "wfs"
 )
 
-# Collect data
-data = {
-    "satellite": satellite.collect(location=(37.7749, -122.4194)),
-    "climate": climate.get_readings(timeframe="1d")
+# Calculate vegetation index
+ndvi = calculate_ndvi(sentinel_data)
+
+# Combine data
+combined_data = {
+    "satellite": sentinel_data,
+    "vector": vector_data,
+    "indices": {"ndvi": ndvi}
 }
 ```
 
-### 2. 🧠 Memory Formation
-Memory creation and storage:
+### 2. 🧠 Memory Management
+Multi-tier memory system for efficient data storage and retrieval:
 
 ```python
-from memories_dev.memories.formation import MemoryCreator
-from memories_dev.memories.store import VectorStore
+from memories.core.memory_manager import MemoryManager
+from memories.core.policies import MigrationPolicy
 
-# Initialize memory system
-store = VectorStore(dimension=1536)
-creator = MemoryCreator(store=store)
+# Define migration policy
+migration_policy = MigrationPolicy(
+    hot_to_warm_threshold=24,  # hours
+    warm_to_cold_threshold=72,  # hours
+    cold_to_glacier_threshold=30  # days
+)
 
-# Create memory
-memory = creator.create(
-    content=data,
-    metadata={
-        "source": "environmental",
-        "confidence": 0.95
-    }
+# Initialize memory manager
+manager = MemoryManager(
+    hot_memory_size=2,    # GB for GPU memory
+    warm_memory_size=8,   # GB for in-memory storage
+    cold_memory_size=50,  # GB for on-device storage
+    glacier_memory_size=500,  # GB for off-device storage
+    migration_policy=migration_policy
+)
+
+# Store data with automatic tier placement
+manager.store(
+    key="location_123",
+    data=combined_data
+)
+
+# Retrieve data (automatically fetches from appropriate tier)
+result = manager.retrieve(key="location_123")
+
+# Create memory snapshot
+snapshot_id = manager.create_snapshot(
+    tiers=["hot", "warm"],
+    description="Pre-deployment state"
 )
 ```
 
-## 🎯 Features (v1.0.0)
+### 3. 🤖 Model Integration
+Integration with multiple LLM providers:
 
-### Core Capabilities
-- 🔄 Real-time memory formation and updates
-- 🔍 Advanced spatial and temporal querying
-- 🎯 Context-aware memory retrieval
-- 🔗 Cross-modal memory linking
-
-### Technical Features
-- ⚡ High-performance vector storage
-- 🔐 Secure memory management
-- 📊 Advanced data fusion algorithms
-- 🎨 Multi-modal data support
-- 🔄 Real-time stream processing
-
-## 🚀 Roadmap
-
-### Coming in v1.1.0
-- Enhanced memory compression
-- Improved cross-modal reasoning
-- Advanced context understanding
-
-### Future Horizons
-- Distributed memory networks
-- Quantum-inspired memory storage
-- Advanced consciousness simulation
-
-## 🛠️ Development
-
-### Prerequisites
-- Python 3.8+
-- CUDA-compatible GPU (recommended)
-- Vector store backend (Redis/Milvus/Pinecone)
-- Docker & Docker Compose
-- Make (optional, for using Makefile commands)
-
-### Environment Setup
-
-1. **Clone and Setup**
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/memories.dev.git
-cd memories.dev
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: .\venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-pip install -r requirements-dev.txt  # Development dependencies
-```
-
-2. **Environment Variables**
-```bash
-# Copy example environment file
-cp .env.example .env
-
-# Edit .env with your configurations
-nano .env
-```
-
-3. **Development Database**
-```bash
-# Start development services
-docker-compose up -d
-```
-
-### Development Workflow
-
-#### 1. Code Style
-We use `black` for code formatting and `flake8` for linting:
-```bash
-# Format code
-make format
-
-# Run linting
-make lint
-```
-
-#### 2. Testing
-```bash
-# Run all tests
-make test
-
-# Run specific test file
-pytest tests/test_memories/test_store.py
-
-# Run with coverage
-make coverage
-```
-
-#### 3. Pre-commit Hooks
-```bash
-# Install pre-commit hooks
-pre-commit install
-
-# Run hooks manually
-pre-commit run --all-files
-```
-
-### 🐳 Docker Development
-
-```bash
-# Build development image
-docker build -t memories-dev -f docker/Dockerfile.dev .
-
-# Run development container
-docker run -it --gpus all -v $(pwd):/app memories-dev
-```
-
-### 📊 Monitoring & Debugging
-
-1. **Logging**
 ```python
-# In your code
-from memories.utils.logging import get_logger
+from memories.models.load_model import LoadModel
+from memories.models.multi_model import MultiModelInference
 
-logger = get_logger(__name__)
-logger.info("Memory operation completed")
+# Initialize models
+openai_model = LoadModel(
+    model_provider="openai",
+    deployment_type="api",
+    model_name="gpt-4"
+)
+
+anthropic_model = LoadModel(
+    model_provider="anthropic",
+    deployment_type="api",
+    model_name="claude-3-opus"
+)
+
+# Create multi-model inference
+multi_model = MultiModelInference(
+    models=[openai_model, anthropic_model],
+    aggregation_method="consensus"
+)
+
+# Get streaming response
+for chunk in openai_model.get_streaming_response("Analyze this urban area"):
+    print(chunk, end="", flush=True)
+
+# Get responses from all models
+results = multi_model.get_responses("Analyze this satellite image for urban development")
+
+# Get aggregated response
+consensus = multi_model.get_aggregated_response()
 ```
 
-2. **Performance Monitoring**
-- Access metrics dashboard: `http://localhost:8080/metrics`
-- Prometheus integration available
-- Grafana dashboards in `./monitoring`
+### 4. 🚀 Deployment
+Flexible deployment options:
 
-### 🔄 Common Workflows
+```python
+from memories.deployments.standalone import StandaloneDeployment
+from memories.deployments.consensus import ConsensusDeployment
+from memories.deployments.swarmed import SwarmedDeployment
 
-#### Adding a New Feature
-1. Create feature branch: `git checkout -b feature/your-feature`
-2. Implement changes
-3. Add tests in `tests/`
-4. Update documentation
-5. Run test suite: `make test`
-6. Create pull request
+# Standalone deployment (single node)
+standalone = StandaloneDeployment(
+    provider="gcp",
+    config={
+        "hardware": {
+            "cpu": {"vcpus": 8},
+            "memory": {"ram": 32},
+            "gpu": {"type": "nvidia-tesla-t4", "count": 1},
+            "storage": {"size": 100}
+        }
+    }
+)
 
-#### Updating Dependencies
-1. Update `requirements.in` or `requirements-dev.in`
-2. Compile requirements: `make requirements`
-3. Test changes: `make test`
-4. Commit changes
+# Consensus deployment (multiple coordinated nodes)
+consensus = ConsensusDeployment(
+    provider="aws",
+    node_count=3,
+    config={
+        "hardware": {
+            "cpu": {"vcpus": 16},
+            "memory": {"ram": 64},
+            "gpu": {"type": "nvidia-a10g", "count": 1},
+            "storage": {"size": 200}
+        },
+        "consensus": {
+            "algorithm": "raft",
+            "timeout": 5000
+        }
+    }
+)
 
-## 🚀 CI/CD Pipeline
+# Swarmed deployment (distributed processing)
+swarmed = SwarmedDeployment(
+    provider="azure",
+    node_count=5,
+    config={
+        "hardware": {
+            "cpu": {"vcpus": 8},
+            "memory": {"ram": 32},
+            "storage": {"size": 100}
+        },
+        "swarm": {
+            "orchestrator": "kubernetes",
+            "scaling": {"min_nodes": 3, "max_nodes": 10}
+        }
+    }
+)
 
-```mermaid
-graph LR
-    A[Push] --> B[Lint]
-    B --> C[Test]
-    C --> D[Build]
-    D --> E[Deploy]
+# Deploy the application
+deployment_id = standalone.deploy()
 ```
 
-### Automated Checks
-- Code formatting (black)
-- Type checking (mypy)
-- Unit tests (pytest)
-- Integration tests
-- Security scanning
-- Performance benchmarks
+## 🌍 Real-World Use Cases
 
-### Deployment Environments
-- **Dev**: Automatic deployment on main branch
-- **Staging**: Manual trigger from release branches
-- **Production**: Tagged releases only
+### Urban Planning
+Analyze urban development patterns and optimize city planning:
+
+```python
+from memories.examples.urban_planning import UrbanPlanner
+
+planner = UrbanPlanner(
+    city="San Francisco",
+    bbox=[-122.5, 37.7, -122.3, 37.8]
+)
+
+# Analyze building density
+density_map = planner.analyze_building_density()
+
+# Identify green spaces
+green_spaces = planner.identify_green_spaces()
+
+# Generate development recommendations
+recommendations = planner.generate_recommendations(
+    focus_areas=["housing", "transportation", "sustainability"]
+)
+```
+
+### Environmental Monitoring
+Track environmental changes and predict future trends:
+
+```python
+from memories.examples.environmental_monitoring import EnvironmentalMonitor
+
+monitor = EnvironmentalMonitor(
+    region="Amazon Rainforest",
+    start_date="2020-01-01",
+    end_date="2024-06-01"
+)
+
+# Track deforestation
+deforestation = monitor.track_deforestation()
+
+# Analyze climate impact
+climate_impact = monitor.analyze_climate_impact()
+
+# Predict future changes
+predictions = monitor.predict_changes(years_ahead=5)
+```
+
+### Disaster Response Planning
+Create disaster response plans based on historical and current data:
+
+```python
+from memories.examples.disaster_response import DisasterPlanner
+
+planner = DisasterPlanner(
+    region="Florida Coast",
+    disaster_type="hurricane"
+)
+
+# Generate flood risk maps
+flood_risk = planner.generate_flood_risk_map()
+
+# Create evacuation routes
+evacuation_routes = planner.create_evacuation_routes()
+
+# Identify critical infrastructure
+critical_infrastructure = planner.identify_critical_infrastructure()
+```
 
 ## 📚 Documentation
 
-### Building Docs Locally
-```bash
-# Install documentation dependencies
-pip install -r docs/requirements.txt
+Comprehensive documentation is available at [https://docs.memories-dev.ai](https://docs.memories-dev.ai):
 
-# Build documentation
-cd docs
-make html
-
-# Serve documentation
-python -m http.server -d _build/html
-```
-
-### API Documentation
-- [API Reference](docs/api.md)
-- [Architecture Guide](docs/architecture.md)
-- [Development Guide](docs/development.md)
-- [Deployment Guide](docs/deployment.md)
-- [Contributing Guide](CONTRIBUTING.md)
-
-### Example Notebooks
-Find example notebooks in `notebooks/`:
-- 🔰 Quick Start
-- 🧠 Memory Operations
-- 📊 Data Visualization
-
-## 🎓 Developer Resources
-
-### Tutorials & Guides
-- [Getting Started Guide](docs/getting_started.md)
-- [Memory System Architecture](docs/architecture.md)
-- [Custom Memory Store Integration](docs/custom_stores.md)
-
-### Example Use Cases
-1. **Persistent Context in Conversations**
-   ```python
-   # Example of maintaining context across conversations
-   conversation = memory_system.create_conversation()
-   conversation.add_memory("User preference: Dark mode")
-   conversation.add_memory("Language: Python")
-   
-   # Later in the conversation
-   context = conversation.get_relevant_context("IDE settings")
-   ```
-
-2. **Spatial Memory Analysis**
-   ```python
-   # Analyzing patterns in spatial memories
-   spatial_analysis = memory_system.analyze_spatial(
-       location=(37.7749, -122.4194),
-       radius_km=5,
-       time_range=("2024-01-01", "2024-03-15"),
-       analysis_type="pattern_recognition"
-   )
-   ```
-
-### Best Practices
-- Always use context managers for memory operations
-- Implement proper error handling
-- Use batch operations for multiple memories
-- Regularly clean up unused memories
-- Monitor memory usage and performance
-
-## 🤝 Community & Support
-
-- [Discord Community](https://discord.gg/memoriesdev)
-- [GitHub Discussions](https://github.com/Vortx-AI/memories-dev/discussions)
-- [Documentation](https://memoriesdev.readthedocs.io/)
-- [Blog](https://memoriesdev.medium.com)
+- **Getting Started Guide**: Basic setup and first steps
+- **API Reference**: Detailed API documentation
+- **Tutorials**: Step-by-step guides for common tasks
+- **Examples**: Real-world use cases and implementations
+- **Deployment Guide**: Instructions for different deployment options
+- **Contributing Guide**: How to contribute to the project
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions from the community! Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to get started.
 
-### Getting Started
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+## 📄 License
 
-### Code Review Process
-1. Automated checks must pass
-2. Requires one approved review
-3. Must maintain test coverage
-4. Documentation updates required
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
-## 📜 Version History
-
-### v1.0.1 (February 15, 2025)
-- Reorganized project structure (memories-dev → memories_dev)
-- Enhanced code organization and cleanup
-- Improved documentation and README structure
-
-### v1.0.0 (Initial Release, February 14, 2025)
-- Initial stable release
-- Core memory system implementation
-- Multi-modal data support
-
-### v0.9.0 (Beta)
-- Feature-complete beta release
-- Performance optimizations
-- API stabilization
-
-
-
-
-
-## 🔌 Integration Examples
-
-### 1. Real-time Environmental Monitoring
-```python
-from memories_dev import MemorySystem
-from memories_dev.data_acquisition import StreamCollector
-from memories_dev.synthesis import RealTimeSynthesis
-
-# Setup real-time monitoring
-stream = StreamCollector(
-    sources=["air_quality", "traffic", "noise"],
-    buffer_size="1h",
-    sampling_rate="1m"
-)
-
-# Process and store real-time data
-@stream.on_data
-async def process_environmental_data(data):
-    # Form memory from real-time data
-    memory = await memory_system.store_streaming(
-        data,
-        retention_policy="24h",
-        importance_threshold=0.7
-    )
-    
-    # Trigger real-time synthesis
-    insights = await RealTimeSynthesis.analyze(
-        memory,
-        context_window="6h"
-    )
-```
-
-### 2. Multi-modal Memory Fusion
-```python
-from memories_dev.fusion import ModalityFusion
-from memories_dev.models import MultiModalEncoder
-
-# Initialize fusion system
-fusion = ModalityFusion(
-    modalities=["text", "vision", "sensor"],
-    fusion_strategy="hierarchical",
-    alignment="temporal"
-)
-
-# Fuse different memory types
-fused_memory = fusion.combine(
-    memories={
-        "text": text_memory,
-        "vision": image_memory,
-        "sensor": sensor_data
-    },
-    weights={
-        "text": 0.4,
-        "vision": 0.4,
-        "sensor": 0.2
-    }
-)
-```
-
-# memories Core Package
-
-## Architecture Overview
-
-```mermaid
-graph TB
-    A[Client Application] --> B[Memory System]
-    B --> C[Hot Memory]
-    B --> D[Warm Memory]
-    B --> E[Cold Memory]
-    B --> F[Glacier Memory]
-    
-    C --> G[Redis Cache]
-    D --> H[Vector Store]
-    E --> I[Object Store]
-    F --> J[Archive Store]
-    
-    K[Data Sources] --> L[Data Acquisition]
-    L --> M[Memory Formation]
-    M --> B
-    
-    N[Models] --> O[Memory Processing]
-    O --> M
-```
-
-## Component Structure
-
-```mermaid
-classDiagram
-    class MemoryStore {
-        +create_memories()
-        +query_memories()
-        +update_memories()
-        +delete_memories()
-    }
-    
-    class HotMemory {
-        +cache_data()
-        +get_cached()
-        +invalidate_cache()
-    }
-    
-    class WarmMemory {
-        +store_vectors()
-        +search_similar()
-        +update_index()
-    }
-    
-    class ColdMemory {
-        +store_objects()
-        +retrieve_objects()
-        +compress_data()
-    }
-    
-    class GlacierMemory {
-        +archive_data()
-        +restore_data()
-        +verify_integrity()
-    }
-    
-    MemoryStore --> HotMemory
-    MemoryStore --> WarmMemory
-    MemoryStore --> ColdMemory
-    MemoryStore --> GlacierMemory
-```
-
-## Package Structure
-
-```
-memories/
-├── core/               # Core Memory System
-│   ├── memory.py      # Main memory interface
-│   ├── hot.py         # Hot memory implementation
-│   ├── warm.py        # Warm memory implementation
-│   ├── cold.py        # Cold memory implementation
-│   └── glacier.py     # Glacier memory implementation
-│
-├── data_acquisition/   # Data Collection
-│   ├── satellite/     # Satellite data handlers
-│   ├── sensors/       # Sensor data handlers
-│   └── streams/       # Real-time streams
-│
-├── models/            # AI Models
-│   ├── load_model.py  # Model loading utilities
-│   └── config/       # Model configurations
-│
-├── synthetic/         # Synthetic Data Generation
-│   ├── generator.py   # Data generation
-│   └── augment.py    # Data augmentation
-│
-└── utils/            # Utilities
-    ├── processors.py # Data processors
-    └── validators.py # Data validators
-```
-
-## Memory Tiers
-
-### Hot Memory
-- In-memory cache using Redis
-- Fastest access times
-- Stores frequently accessed data
-- Automatic cache invalidation
-
-### Warm Memory
-- Vector store for similarity search
-- Fast retrieval of related memories
-- Efficient indexing and updates
-- Supports semantic search
-
-### Cold Memory
-- Object storage for raw data
-- Compressed storage format
-- Batch processing support
-- Cost-effective storage
-
-### Glacier Memory
-- Long-term archival storage
-- High durability guarantee
-- Infrequent access pattern
-- Data integrity verification
-
-## Data Flow
-
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant M as MemoryStore
-    participant H as HotMemory
-    participant W as WarmMemory
-    participant D as DataAcquisition
-    
-    C->>M: Request Memory
-    M->>H: Check Cache
-    alt Cache Hit
-        H-->>M: Return Cached Data
-        M-->>C: Return Memory
-    else Cache Miss
-        M->>W: Search Vector Store
-        W-->>M: Return Similar Memories
-        M->>D: Acquire New Data
-        D-->>M: Return Raw Data
-        M->>H: Update Cache
-        M-->>C: Return Memory
-    end
-```
-
-## Usage Examples
-
-### Basic Memory Operations
-```python
-from memories.core.memory import MemoryStore
-from memories.models.load_model import LoadModel
-
-# Initialize
-store = MemoryStore()
-model = LoadModel(use_gpu=True)
-
-# Create memories
-memories = store.create_memories(
-    model=model,
-    location=(37.7749, -122.4194),
-    time_range=("2024-01-01", "2024-02-01")
-)
-
-# Query memories
-results = store.query_memories(
-    query="urban development",
-    location_radius_km=10
-)
-```
-
-### Advanced Features
-```python
-from memories.synthetic import generate_synthetic
-
-
-# Generate synthetic data
-synthetic = generate_synthetic(
-    base_location=(37.7749, -122.4194),
-    scenario="urban_development",
-    time_steps=10
-)
-
-
-```
-
-## Performance Considerations
-
-1. **Memory Tier Selection**
-   - Hot memory: < 1ms access time
-   - Warm memory: < 100ms access time
-   - Cold memory: < 1s access time
-   - Glacier memory: Minutes to hours
-
-2. **Resource Usage**
-   - Redis cache: 1-10GB RAM
-   - Vector store: 10-100GB disk
-   - Object store: 100GB-10TB disk
-   - Archive store: 1TB+ disk
-
-3. **Scaling Factors**
-   - Number of memories
-   - Memory size
-   - Query complexity
-   - Update frequency
-
-## Contributing
-
-See the main [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines on contributing to this package.
-
-<p align="center">Built with 💜 by the memories.dev team</p>
-
-<p align="center">
-<a href="https://discord.com/invite/7qAFEekp">Discord</a> •
-</p>
+<p align="center">Built with 💜 by the memories-dev team</p>
