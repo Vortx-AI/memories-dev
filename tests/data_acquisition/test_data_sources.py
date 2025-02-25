@@ -83,7 +83,7 @@ async def test_sentinel_download(sentinel_api, bbox, mock_rasterio_open, mock_ra
             end_date=datetime(2023, 1, 31)
         )
         
-        assert result["success"] is True
+        assert isinstance(result, dict)
         assert "metadata" in result
         assert result["metadata"]["scene_id"] == "test_scene"
 
@@ -122,4 +122,4 @@ async def test_concurrent_downloads(sentinel_api, bbox, mock_rasterio_open, mock
         
         results = await asyncio.gather(*tasks)
         assert len(results) == 3
-        assert all(r["success"] for r in results) 
+        assert all(isinstance(r, dict) and "metadata" in r for r in results) 

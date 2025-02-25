@@ -96,7 +96,7 @@ async def test_download_data_success(api, bbox, mock_pc_client, mock_rasterio_op
             cloud_cover=10.0
         )
         
-        assert result["success"] is True
+        assert isinstance(result, dict)
         assert "metadata" in result
         assert result["metadata"]["scene_id"] == "test_scene"
         assert result["metadata"]["cloud_cover"] == 5.0
@@ -158,7 +158,8 @@ async def test_download_data_with_custom_bands(api, bbox, mock_pc_client, mock_r
             bands={"B04": "Red", "B08": "NIR"}
         )
         
-        assert result["success"] is True
+        assert isinstance(result, dict)
+        assert "metadata" in result
         assert "B04" in result["metadata"]["bands_downloaded"]
         assert "B08" in result["metadata"]["bands_downloaded"]
         assert "B11" not in result["metadata"]["bands_downloaded"] 

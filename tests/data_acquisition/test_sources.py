@@ -21,7 +21,12 @@ from memories.data_acquisition.sources import (
 @pytest.fixture
 def bbox():
     """Sample bounding box for testing."""
-    return [-122.5, 37.5, -122.0, 38.0]  # San Francisco area
+    return {
+        'xmin': -122.5,
+        'ymin': 37.5,
+        'xmax': -122.0,
+        'ymax': 38.0
+    }
 
 @pytest.fixture
 def date_range():
@@ -59,7 +64,7 @@ async def test_error_handling():
     # Test invalid bbox
     with pytest.raises(ValueError):
         await api.download_data(
-            bbox=[0],  # Invalid bbox
+            bbox={'xmin': 0, 'ymin': 0, 'xmax': 0, 'ymax': 0},  # Invalid bbox
             start_date=datetime(2023, 1, 1),
             end_date=datetime(2023, 1, 31)
         )
@@ -67,7 +72,7 @@ async def test_error_handling():
     # Test invalid date range
     with pytest.raises(ValueError):
         await api.download_data(
-            bbox=[-122.5, 37.5, -122.0, 38.0],
+            bbox={'xmin': -122.5, 'ymin': 37.5, 'xmax': -122.0, 'ymax': 38.0},
             start_date=datetime(2023, 1, 31),
             end_date=datetime(2023, 1, 1)  # End date before start date
         )
@@ -78,7 +83,12 @@ async def test_concurrent_operations(sentinel_api, bbox):
     # Create multiple concurrent requests
     requests = []
     for i in range(3):
-        modified_bbox = [x + i * 0.1 for x in bbox]
+        modified_bbox = {
+            'xmin': bbox['xmin'] + i * 0.1,
+            'ymin': bbox['ymin'] + i * 0.1,
+            'xmax': bbox['xmax'] + i * 0.1,
+            'ymax': bbox['ymax'] + i * 0.1
+        }
         requests.append(
             sentinel_api.download_data(
                 bbox=modified_bbox,
