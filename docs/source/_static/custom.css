@@ -16,6 +16,17 @@
     --border-color: #334155;
     --code-bg: #1e293b;
     --code-color: #e2e8f0;
+    
+    /* New code syntax highlighting colors */
+    --code-keyword: #ff79c6;     /* Pink for keywords */
+    --code-function: #50fa7b;    /* Neon green for functions */
+    --code-string: #f1fa8c;      /* Light yellow for strings */
+    --code-number: #bd93f9;      /* Purple for numbers */
+    --code-comment: #6272a4;     /* Blue-gray for comments */
+    --code-operator: #ff79c6;    /* Pink for operators */
+    --code-class: #8be9fd;       /* Cyan for classes */
+    --code-variable: #f8f8f2;    /* Light gray for variables */
+    --code-property: #66d9ef;    /* Light blue for properties */
 }
 
 /* Base styles */
@@ -68,6 +79,7 @@ pre {
     margin: 1.5em 0;
     overflow: auto;
     border-left: 4px solid var(--accent-color);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 code {
@@ -76,6 +88,64 @@ code {
     color: var(--code-color);
     background-color: var(--code-bg);
     padding: 0.2em 0.4em;
+    border-radius: 3px;
+}
+
+/* Enhanced syntax highlighting for code blocks */
+.highlight .k, .highlight .kd, .highlight .kn, .highlight .kp, .highlight .kr, .highlight .kt {
+    color: var(--code-keyword); /* Keywords */
+    font-weight: bold;
+}
+
+.highlight .n {
+    color: var(--code-variable); /* Names */
+}
+
+.highlight .na, .highlight .nb, .highlight .nc, .highlight .no, .highlight .nd, .highlight .ni, .highlight .ne, .highlight .nf, .highlight .nl, .highlight .nn, .highlight .nx, .highlight .py {
+    color: var(--code-function); /* Function names */
+}
+
+.highlight .nc {
+    color: var(--code-class); /* Class names */
+    font-weight: bold;
+}
+
+.highlight .s, .highlight .sa, .highlight .sb, .highlight .sc, .highlight .dl, .highlight .sd, .highlight .s2, .highlight .se, .highlight .sh, .highlight .si, .highlight .sx, .highlight .sr, .highlight .s1, .highlight .ss {
+    color: var(--code-string); /* Strings */
+}
+
+.highlight .m, .highlight .mb, .highlight .mf, .highlight .mh, .highlight .mi, .highlight .mo, .highlight .il {
+    color: var(--code-number); /* Numbers */
+}
+
+.highlight .c, .highlight .ch, .highlight .cm, .highlight .c1, .highlight .cs, .highlight .cp, .highlight .cpf {
+    color: var(--code-comment); /* Comments */
+    font-style: italic;
+}
+
+.highlight .o, .highlight .ow {
+    color: var(--code-operator); /* Operators */
+}
+
+.highlight .p {
+    color: var(--code-variable); /* Punctuation */
+}
+
+.highlight .gd {
+    color: #ff5555; /* Deleted */
+    background-color: rgba(255, 85, 85, 0.1);
+}
+
+.highlight .gi {
+    color: #50fa7b; /* Inserted */
+    background-color: rgba(80, 250, 123, 0.1);
+}
+
+/* Inline code */
+code.literal {
+    color: #f8f8f2;
+    background-color: var(--code-bg);
+    padding: 2px 4px;
     border-radius: 3px;
 }
 

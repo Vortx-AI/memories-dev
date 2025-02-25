@@ -72,6 +72,7 @@ templates_path = ['_templates']
 # These paths are either relative to html_static_path or fully qualified paths (eg. https://...)
 html_css_files = [
     'custom.css',
+    'code-highlight.css',
     'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
 ]
 

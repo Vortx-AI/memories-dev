@@ -27,6 +27,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add API documentation enhancement
     enhanceAPIDocumentation();
+    
+    // Enhance code blocks with better styling
+    enhanceCodeBlocks();
 });
 
 // Add copy buttons to code blocks
@@ -69,6 +72,92 @@ function addCopyButtons() {
             });
             
             pre.appendChild(button);
+        }
+    });
+}
+
+// Enhance code blocks with better styling and line numbers
+function enhanceCodeBlocks() {
+    document.querySelectorAll('div.highlight pre').forEach(function(pre) {
+        // Add a subtle glow effect to code blocks
+        pre.style.boxShadow = '0 0 10px rgba(80, 250, 123, 0.1)';
+        
+        // Add line numbers if not already present
+        if (!pre.classList.contains('with-line-numbers') && !pre.parentElement.classList.contains('linenos')) {
+            pre.classList.add('with-line-numbers');
+            
+            var code = pre.textContent.split('\n');
+            // Remove the last empty line if present
+            if (code[code.length - 1] === '') {
+                code.pop();
+            }
+            
+            var lineNumbersDiv = document.createElement('div');
+            lineNumbersDiv.className = 'line-numbers';
+            lineNumbersDiv.style.float = 'left';
+            lineNumbersDiv.style.textAlign = 'right';
+            lineNumbersDiv.style.color = '#6272a4';
+            lineNumbersDiv.style.paddingRight = '10px';
+            lineNumbersDiv.style.marginRight = '10px';
+            lineNumbersDiv.style.borderRight = '1px solid #334155';
+            lineNumbersDiv.style.userSelect = 'none';
+            
+            var codeContentDiv = document.createElement('div');
+            codeContentDiv.className = 'code-content';
+            codeContentDiv.style.overflow = 'auto';
+            
+            for (var i = 0; i < code.length; i++) {
+                var lineNumber = document.createElement('div');
+                lineNumber.textContent = (i + 1);
+                lineNumber.style.paddingRight = '5px';
+                lineNumbersDiv.appendChild(lineNumber);
+                
+                var codeLine = document.createElement('div');
+                codeLine.textContent = code[i];
+                codeLine.style.fontFamily = 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace';
+                codeContentDiv.appendChild(codeLine);
+            }
+            
+            // Clear the pre content
+            pre.textContent = '';
+            
+            // Create a wrapper div for flex layout
+            var wrapper = document.createElement('div');
+            wrapper.style.display = 'flex';
+            wrapper.appendChild(lineNumbersDiv);
+            wrapper.appendChild(codeContentDiv);
+            
+            pre.appendChild(wrapper);
+        }
+        
+        // Add language indicator
+        var parent = pre.parentElement;
+        if (parent && parent.classList.length > 0) {
+            // Try to determine the language from class
+            var langClass = Array.from(parent.classList).find(cls => cls.startsWith('language-'));
+            if (langClass) {
+                var lang = langClass.replace('language-', '');
+                var langIndicator = document.createElement('div');
+                langIndicator.className = 'lang-indicator';
+                langIndicator.textContent = lang;
+                langIndicator.style.position = 'absolute';
+                langIndicator.style.top = '0';
+                langIndicator.style.right = '0';
+                langIndicator.style.padding = '2px 8px';
+                langIndicator.style.fontSize = '0.8em';
+                langIndicator.style.backgroundColor = '#0f172a';
+                langIndicator.style.color = '#8be9fd';
+                langIndicator.style.borderRadius = '0 0 0 4px';
+                langIndicator.style.textTransform = 'uppercase';
+                langIndicator.style.fontWeight = 'bold';
+                
+                // Make sure parent has position relative
+                if (getComputedStyle(parent).position === 'static') {
+                    parent.style.position = 'relative';
+                }
+                
+                parent.appendChild(langIndicator);
+            }
         }
     });
 }
