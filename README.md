@@ -140,40 +140,6 @@ memories-dev solves these problems by:
 memories-dev creates a sophisticated memory system by fusing multiple data sources:
 
 ```mermaid
-graph LR
-    A[Earth Memory System] --> B[Satellite Imagery]
-    A --> C[Vector Geospatial Data]
-    A --> D[Environmental Metrics]
-    A --> E[Temporal Analysis]
-    A --> F[Climate Data]
-    A --> G[Urban Development]
-    
-    B --> H[Sentinel-2]
-    B --> I[Landsat]
-    B --> J[Earth Engine]
-    
-    C --> K[Overture Maps]
-    C --> L[OpenStreetMap]
-    C --> M[WFS Services]
-    
-    D --> N[Air Quality]
-    D --> O[Biodiversity]
-    D --> P[Noise Levels]
-    D --> Q[Solar Potential]
-    
-    E --> R[Historical Changes]
-    E --> S[Future Predictions]
-    
-    F --> T[Temperature Trends]
-    F --> U[Precipitation Patterns]
-    F --> V[Extreme Weather Risk]
-    
-    G --> W[Urban Density]
-    G --> X[Infrastructure]
-    G --> Y[Development Plans]
-```
-
-```mermaid
 %%{init: {'theme': 'forest', 'themeVariables': { 'primaryColor': '#2c3e50', 'primaryTextColor': '#ecf0f1', 'primaryBorderColor': '#34495e', 'lineColor': '#3498db', 'secondaryColor': '#16a085', 'tertiaryColor': '#2980b9'}}}%%
 graph LR
     classDef mainSystem fill:#2c3e50,stroke:#34495e,stroke-width:2px,color:white,font-weight:bold
@@ -208,7 +174,7 @@ graph LR
     E --> R[📜 Historical Changes]
     E --> S[🔮 Future Predictions]
     
-    F --> T[🌡️ Temperature Trends]
+    F --> T[🌡️ Climate Data]
     F --> U[🌧️ Precipitation Patterns]
     F --> V[⚠️ Extreme Weather Risk]
     
@@ -255,47 +221,6 @@ graph LR
 
 The framework includes 15+ specialized analyzers for extracting insights from Earth Memory:
 
-```mermaid
-graph TD
-    A[Earth Memory Analyzers] --> B[TerrainAnalyzer]
-    A --> C[ClimateDataFetcher]
-    A --> D[EnvironmentalImpactAnalyzer]
-    A --> E[LandUseClassifier]
-    A --> F[WaterResourceAnalyzer]
-    A --> G[GeologicalDataFetcher]
-    A --> H[UrbanDevelopmentAnalyzer]
-    A --> I[BiodiversityAnalyzer]
-    A --> J[AirQualityMonitor]
-    A --> K[NoiseAnalyzer]
-    A --> L[SolarPotentialCalculator]
-    A --> M[WalkabilityAnalyzer]
-    A --> N[ViewshedAnalyzer]
-    A --> O[MicroclimateAnalyzer]
-    A --> P[PropertyValuePredictor]
-    A --> Q[InfrastructureAnalyzer]
-    
-    B --> B1[Elevation Analysis]
-    B --> B2[Slope Analysis]
-    B --> B3[Aspect Analysis]
-    B --> B4[Landslide Risk]
-    
-    C --> C1[Temperature Trends]
-    C --> C2[Precipitation Patterns]
-    C --> C3[Climate Projections]
-    C --> C4[Extreme Weather Risk]
-    
-    F --> F1[Flood Risk Assessment]
-    F --> F2[Water Quality Analysis]
-    F --> F3[Drought Risk Modeling]
-    F --> F4[Watershed Analysis]
-    
-    H --> H1[Urban Growth Patterns]
-    H --> H2[Development Plans]
-    H --> H3[Infrastructure Analysis]
-    H --> H4[Zoning Changes]
-```
-
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1e293b', 'primaryTextColor': '#f8fafc', 'primaryBorderColor': '#334155', 'lineColor': '#3b82f6', 'secondaryColor': '#10b981', 'tertiaryColor': '#6366f1'}}}%%
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1e293b', 'primaryTextColor': '#f8fafc', 'primaryBorderColor': '#334155', 'lineColor': '#3b82f6', 'secondaryColor': '#10b981', 'tertiaryColor': '#6366f1'}}}%%
 graph TD
@@ -575,63 +500,6 @@ memories-dev powers sophisticated AI applications with deep contextual understan
 
 Our `RealEstateAgent` class demonstrates comprehensive property analysis using Earth Memory:
 
-```mermaid
-graph TD
-    A[Property Data] -->|Input| B[RealEstateAgent]
-    C[Earth Memory System] -->|13 Specialized Analyzers| B
-    B -->|Asynchronous Analysis| D[Comprehensive Property Analysis]
-    
-    D -->|Output| E[Environmental Quality]
-    E -->|Metrics| E1[Air Quality Index]
-    E -->|Metrics| E2[Noise Levels]
-    E -->|Metrics| E3[Green Space Ratio]
-    E -->|Metrics| E4[Biodiversity Score]
-    
-    D -->|Output| F[Natural Risks]
-    F -->|Metrics| F1[Flood Risk]
-    F -->|Metrics| F2[Earthquake Risk]
-    F -->|Metrics| F3[Landslide Risk]
-    F -->|Metrics| F4[Subsidence Risk]
-    
-    D -->|Output| G[Urban Features]
-    G -->|Metrics| G1[Walkability Score]
-    G -->|Metrics| G2[Public Transport Access]
-    G -->|Metrics| G3[Amenities Score]
-    G -->|Metrics| G4[Urban Density]
-    
-    D -->|Output| H[Sustainability]
-    H -->|Metrics| H1[Solar Potential]
-    H -->|Metrics| H2[Green Building Score]
-    H -->|Metrics| H3[Water Efficiency]
-    H -->|Metrics| H4[Energy Efficiency]
-    
-    D -->|Output| I[Climate Resilience]
-    I -->|Metrics| I1[Heat Island Effect]
-    I -->|Metrics| I2[Cooling Demand]
-    I -->|Metrics| I3[Storm Resilience]
-    I -->|Metrics| I4[Drought Risk]
-    
-    B -->|Temporal Analysis| J[Historical Changes]
-    J -->|Analysis| J1[Land Use Changes]
-    J -->|Analysis| J2[Urban Development]
-    J -->|Analysis| J3[Environmental Impact]
-    J -->|Analysis| J4[Climate Trends]
-    
-    B -->|Predictive Analysis| K[Future Predictions]
-    K -->|Predictions| K1[Urban Development]
-    K -->|Predictions| K2[Environmental Changes]
-    K -->|Predictions| K3[Climate Projections]
-    K -->|Predictions| K4[Sustainability Outlook]
-    
-    B -->|Multi-Dimensional Scoring| L[Property Scores]
-    L -->|Score| L1[🏆 Overall Score]
-    L -->|Score| L2[♻️ Sustainability Score]
-    L -->|Score| L3[🏡 Livability Score]
-    L -->|Score| L4[💰 Investment Score]
-    L -->|Score| L5[🛡️ Resilience Score]
-```
-
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0f172a', 'primaryTextColor': '#f8fafc', 'primaryBorderColor': '#1e293b', 'lineColor': '#3b82f6', 'secondaryColor': '#10b981', 'tertiaryColor': '#6366f1'}}}%%
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0f172a', 'primaryTextColor': '#f8fafc', 'primaryBorderColor': '#1e293b', 'lineColor': '#3b82f6', 'secondaryColor': '#10b981', 'tertiaryColor': '#6366f1'}}}%%
 graph TD
