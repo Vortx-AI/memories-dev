@@ -93,5 +93,7 @@ data/
 
 examples/data/
 examples/agentinaction.py
+Untitled.ipynb
+*.ipynb
 
 .tox/

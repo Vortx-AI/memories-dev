@@ -9,6 +9,7 @@ import tempfile
 import gc
 import uuid
 import json
+from datetime import datetime
 
 from memories.models.base_model import BaseModel
 from memories.models.api_connector import get_connector
@@ -228,3 +229,199 @@ class LoadModel:
             torch.cuda.ipc_collect()
         self.logger.info("Model resources cleaned up")
 
+    def get_response_with_context(self, prompt: str, context_data: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+        """
+        Generate a response using context-aware prompting.
+        
+        Args:
+            prompt: The input prompt
+            context_data: Dictionary containing contextual information including:
+                - location_info: Location details
+                - raw_data_summary: Summary of raw data from different sources
+                - analysis_results: Results of various analyses
+                - scenario_projections: Future scenario projections
+                - historical_trends: Historical trend analysis
+            **kwargs: Additional generation parameters including:
+                max_length: Maximum length of generated response
+                temperature: Sampling temperature (0.0 to 1.0)
+                top_p: Nucleus sampling parameter
+                top_k: Top-k sampling parameter
+                num_beams: Number of beams for beam search
+                
+        Returns:
+            Dict[str, Any]: Response dictionary containing:
+                text: The generated response text
+                metadata: Generation metadata including context usage
+                error: Error message if generation failed
+        """
+        if not prompt or not isinstance(prompt, str):
+            return {
+                "error": "Invalid prompt - must be non-empty string",
+                "text": None,
+                "metadata": None
+            }
+            
+        if not context_data or not isinstance(context_data, dict):
+            return {
+                "error": "Invalid context_data - must be non-empty dictionary",
+                "text": None,
+                "metadata": None
+            }
+            
+        try:
+            # Log generation attempt with context
+            self.logger.info(f"Generating context-aware response for prompt: {prompt[:100]}...")
+            self.logger.debug(f"Full prompt: {prompt}")
+            self.logger.debug(f"Context data keys: {list(context_data.keys())}")
+            self.logger.info(f"Using deployment type: {self.deployment_type}")
+            
+            # Format prompt with context
+            formatted_prompt = self._format_prompt_with_context(prompt, context_data)
+            self.logger.debug(f"Formatted prompt with context: {formatted_prompt[:200]}...")
+            
+            # Get response using formatted prompt
+            response = self.get_response(formatted_prompt, **kwargs)
+            
+            if response.get("error"):
+                return response
+                
+            # Analyze context usage in response
+            context_usage = self._analyze_context_usage(response["text"], context_data)
+            
+            # Update metadata with context usage
+            response["metadata"]["context_used"] = context_usage
+            response["metadata"]["context_keys"] = list(context_data.keys())
+            response["metadata"]["prompt_length"] = len(formatted_prompt)
+            response["metadata"]["context_integration_timestamp"] = datetime.now().isoformat()
+            
+            return response
+            
+        except Exception as e:
+            self.logger.error(
+                f"Unexpected error in get_response_with_context: {str(e)}",
+                exc_info=True
+            )
+            return {
+                "text": None,
+                "metadata": {"attempt": 1},
+                "error": f"Error processing context: {str(e)}"
+            }
+            
+    def _format_prompt_with_context(self, prompt: str, context_data: Dict[str, Any]) -> str:
+        """Format the prompt by incorporating context data."""
+        context_sections = []
+        
+        # Add location information if available
+        if "location_info" in context_data:
+            loc = context_data["location_info"]
+            context_sections.append(
+                f"Location: {loc.get('name', 'Unknown')}\n"
+                f"Type: {loc.get('type', 'Unknown')}\n"
+                f"Area: {loc.get('area_sqkm', 0):.2f} km²"
+            )
+        
+        # Add data summaries if available
+        if "raw_data_summary" in context_data:
+            data = context_data["raw_data_summary"]
+            if "overture" in data:
+                ov = data["overture"]
+                context_sections.append(
+                    f"Urban Data:\n"
+                    f"- Buildings: {ov.get('total_buildings', 0)}\n"
+                    f"- Places: {ov.get('total_places', 0)}\n"
+                    f"- Transportation: {ov.get('total_transportation', 0)}"
+                )
+            if "sentinel" in data:
+                sen = data["sentinel"]
+                context_sections.append(
+                    f"Satellite Data:\n"
+                    f"- Scenes: {sen.get('total_scenes', 0)}\n"
+                    f"- Coverage: {sen.get('coverage_percentage', 0)}%"
+                )
+        
+        # Add analysis results if available
+        if "analysis_results" in context_data:
+            analysis = context_data["analysis_results"]
+            if "urban_metrics" in analysis:
+                um = analysis["urban_metrics"]
+                context_sections.append(
+                    f"Urban Analysis:\n"
+                    f"- Building Density: {um.get('building_density', 0):.2f}/km²\n"
+                    f"- Urbanization Level: {um.get('urbanization_level', 'Unknown')}"
+                )
+            if "environmental_metrics" in analysis:
+                em = analysis["environmental_metrics"]
+                context_sections.append(
+                    f"Environmental Analysis:\n"
+                    f"- Vegetation Index: {em.get('vegetation_index', 0)}\n"
+                    f"- Environmental Health: {em.get('environmental_health', 'Unknown')}"
+                )
+        
+        # Add scenario projections if available
+        if "scenario_projections" in context_data:
+            scenarios = context_data["scenario_projections"]
+            context_sections.append("Future Scenarios:")
+            for scenario_type, details in scenarios.items():
+                context_sections.append(
+                    f"{scenario_type.title()} Scenario (Probability: {details.get('probability', 0)*100:.0f}%):\n"
+                    f"- Changes: {', '.join(str(c) for c in details.get('changes', []))}\n"
+                    f"- Impact Factors: {', '.join(str(f) for f in details.get('impact_factors', []))}"
+                )
+        
+        # Add historical trends if available
+        if "historical_trends" in context_data:
+            trends = context_data["historical_trends"]
+            context_sections.append(
+                f"Historical Trends:\n"
+                f"- Growth Rate: {trends.get('growth_rate', 0):.2f}\n"
+                f"- Trend Direction: {trends.get('trend_direction', 'stable')}\n"
+                f"- Seasonal Factors: {', '.join(trends.get('seasonal_factors', []))}"
+            )
+        
+        # Combine context sections with the original prompt
+        context_text = "\n\n".join(context_sections)
+        formatted_prompt = f"""Context Information:
+
+{context_text}
+
+User Query: {prompt}
+
+Please provide a detailed response incorporating the above context."""
+        
+        return formatted_prompt
+            
+    def _analyze_context_usage(self, response: str, context_data: Dict[str, Any]) -> Dict[str, float]:
+        """Analyze how different parts of the context were used in the response."""
+        context_usage = {}
+        response_lower = response.lower()
+        
+        for context_type, data in context_data.items():
+            if isinstance(data, dict):
+                # For nested dictionaries, check both keys and values
+                key_terms = set()
+                for k, v in data.items():
+                    key_terms.add(str(k).lower())
+                    if isinstance(v, (str, int, float)):
+                        key_terms.add(str(v).lower())
+                    elif isinstance(v, (list, tuple)):
+                        key_terms.update(str(item).lower() for item in v)
+                    elif isinstance(v, dict):
+                        key_terms.update(str(k).lower() for k in v.keys())
+                        key_terms.update(str(v).lower() for v in v.values() if isinstance(v, (str, int, float)))
+            elif isinstance(data, (list, tuple)):
+                key_terms = set(str(item).lower() for item in data)
+            else:
+                key_terms = set(str(data).lower().split())
+            
+            # Count how many key terms appear in response
+            terms_found = sum(1 for term in key_terms if term in response_lower)
+            if len(key_terms) > 0:
+                usage_score = terms_found / len(key_terms)
+            else:
+                usage_score = 0.0
+            
+            context_usage[context_type] = usage_score
+        
+        return context_usage
+
+    
