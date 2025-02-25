@@ -1,17 +1,23 @@
-# 🧠 memories-dev
+# 🧠 memories-dev Core Module
+
+<div align="center">
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Tests](https://github.com/Vortx-AI/memories-dev/actions/workflows/tests.yml/badge.svg)](https://github.com/Vortx-AI/memories-dev/actions/workflows/tests.yml)
 
+**Building the World's Memory for Artificial General Intelligence**
+
+</div>
+
 > Collective AGI memory - v2.0.2 (Scheduled for February 25, 2025)
 
-## Release Timeline
+## 📋 Release Timeline
 - **v1.0.0** - Released on February 14, 2025: Initial stable release with core functionality
 - **v2.0.2** - Scheduled for February 25, 2025: Current development version with enhanced features
 
-## What's New in Version 2.0.2
+## 🌟 What's New in Version 2.0.2
 
 ### New Features
 - **Enhanced Data Sources**: Complete integration with Overture Maps and OpenStreetMap
@@ -27,7 +33,7 @@
 - **Deployment Options**: Enhanced standalone, consensus, and swarmed deployments
 - **Documentation**: Comprehensive examples and real-world use cases
 
-## 🌟 Overview
+## 🚀 Overview
 
 memories-dev is a comprehensive Python library for building and managing collective AGI memory systems using satellite imagery, vector data, and large language models. It provides a robust architecture for memory formation, retrieval, and synthesis across multiple modalities, enabling AI models to maintain and utilize contextual understanding across interactions.
 
@@ -38,7 +44,7 @@ memories-dev is a comprehensive Python library for building and managing collect
 - Ensure scalable and efficient memory operations
 - Maintain privacy and security in memory access
 
-## 🚀 Quick Start
+## 💻 Quick Start
 
 ```python
 from memories import MemorySystem
@@ -164,196 +170,66 @@ pip install -e ".[docs]"
 - Advanced performance analytics
 - Automated alerting system
 
-## 🧪 Development Features
-
-### Core Features
-- Multi-tier memory store implementations
-- Advanced data acquisition from multiple sources
-- Integration with multiple LLM providers
-- Distributed memory operations
-- Memory compression and optimization
-- Advanced security features
-
 ## 📁 Project Structure
 
 ```
-memories-dev/
-├── examples/              # Example implementations
-│   ├── property_analyzer.py  # Real estate analysis
-│   ├── water_bodies_monitor.py # Water monitoring
-│   ├── location_ambience.py # Location analysis
-│   ├── traffic_analyzer.py # Traffic patterns
-│   ├── urban_planning.py # Urban development
-│   ├── environmental_monitoring.py # Environmental tracking
-│   ├── disaster_response.py # Disaster planning
-│   └── model_comparison.py # Multi-model comparison
+memories/
+├── core/            # Core memory system
+│   ├── memory_manager.py # Memory management
+│   └── policies.py # Memory policies
 │
-├── memories/             # Main package
-│   ├── core/            # Core memory system
-│   │   ├── memory_manager.py # Memory management
-│   │   └── policies.py # Memory policies
-│   │
-│   ├── data_acquisition/ # Data Collection
-│   │   ├── sources/     # Data sources
-│   │   │   ├── sentinel_api.py # Sentinel-2
-│   │   │   ├── landsat_api.py # Landsat
-│   │   │   ├── osm_api.py # OpenStreetMap
-│   │   │   ├── overture_api.py # Overture Maps
-│   │   │   ├── wfs_api.py # WFS
-│   │   │   └── planetary_compute.py # Planetary Computer
-│   │   ├── processing/ # Data processing
-│   │   │   ├── cloud_mask.py # Cloud masking
-│   │   │   ├── indices.py # Spectral indices
-│   │   │   ├── fusion.py # Data fusion
-│   │   │   └── validation.py # Data validation
-│   │   └── data_manager.py # Data management
-│   │
-│   ├── models/          # AI Models
-│   │   ├── base_model.py # Base model implementation
-│   │   ├── load_model.py # Model loader
-│   │   ├── api_connector.py # API connectors
-│   │   ├── streaming.py # Streaming responses
-│   │   ├── caching.py # Response caching
-│   │   ├── function_calling.py # Function calling
-│   │   └── multi_model.py # Multi-model inference
-│   │
-│   └── deployments/     # Deployment options
-│       ├── standalone/ # Standalone deployment
-│       ├── consensus/ # Consensus deployment
-│       └── swarmed/ # Swarmed deployment
+├── data_acquisition/ # Data Collection
+│   ├── sources/     # Data sources
+│   │   ├── sentinel_api.py # Sentinel-2
+│   │   ├── landsat_api.py # Landsat
+│   │   ├── osm_api.py # OpenStreetMap
+│   │   ├── overture_api.py # Overture Maps
+│   │   ├── wfs_api.py # WFS
+│   │   └── planetary_compute.py # Planetary Computer
+│   ├── processing/ # Data processing
+│   │   ├── cloud_mask.py # Cloud masking
+│   │   ├── indices.py # Spectral indices
+│   │   ├── fusion.py # Data fusion
+│   │   └── validation.py # Data validation
+│   └── data_manager.py # Data management
 │
-├── tests/              # Test Suite
-│   ├── unit/          # Unit tests
-│   └── integration/   # Integration tests
+├── models/          # AI Models
+│   ├── base_model.py # Base model implementation
+│   ├── load_model.py # Model loader
+│   ├── api_connector.py # API connectors
+│   ├── streaming.py # Streaming responses
+│   ├── caching.py # Response caching
+│   ├── function_calling.py # Function calling
+│   └── multi_model.py # Multi-model inference
 │
-└── docs/              # Documentation
-    ├── api/           # API documentation
-    └── guides/        # User guides
+└── deployments/     # Deployment options
+    ├── standalone/ # Standalone deployment
+    ├── consensus/ # Consensus deployment
+    └── swarmed/ # Swarmed deployment
 ```
 
-## 🧩 Core Components Explained
+## 🧩 Core Components
 
 ### 1. 📡 Data Acquisition
-Handles multi-modal data ingestion from various sources:
-
-```python
-from memories.data_acquisition.data_manager import DataManager
-from memories.data_acquisition.processing.indices import calculate_ndvi
-
-# Initialize data manager
-manager = DataManager(cache_dir="./data_cache")
-
-# Define area of interest
-bbox = [-122.4, 37.7, -122.3, 37.8]  # [west, south, east, north]
-
-# Get satellite data
-sentinel_data = await manager.get_satellite_data(
-    bbox=bbox,
-    start_date="2025-01-01",
-    end_date="2025-02-01",
-    source="sentinel-2",
-    bands=["B02", "B03", "B04", "B08"]
-)
-
-# Get vector data
-vector_data = await manager.get_vector_data(
-    bbox=bbox,
-    source="openstreetmap",
-    layers=["buildings", "roads", "landuse"]
-)
-
-# Calculate NDVI
-ndvi = calculate_ndvi(sentinel_data)
-```
+Handles multi-modal data ingestion from various sources including satellite imagery, vector data, and environmental metrics.
 
 ### 2. 🧠 Memory Management
-Provides a 4-tier memory system for efficient data storage and retrieval:
-
-```python
-from memories.core import MemoryManager
-
-# Initialize memory manager
-memory_manager = MemoryManager(
-    hot_memory_size=2,    # GB (GPU memory)
-    warm_memory_size=8,   # GB (RAM)
-    cold_memory_size=50,  # GB (Disk)
-    glacier_enabled=True  # Off-device storage
-)
-
-# Store data with automatic tier selection
-memory_manager.store(
-    key="location_data",
-    value=location_data,
-    priority="high"  # Influences tier selection
-)
-
-# Retrieve data (automatically promoted to appropriate tier)
-data = memory_manager.retrieve("location_data")
-
-# Explicitly store in specific tier
-memory_manager.store(
-    key="historical_data",
-    value=historical_data,
-    tier="cold"  # Options: "hot", "warm", "cold", "glacier"
-)
-
-# Create memory snapshot
-snapshot_id = memory_manager.create_snapshot()
-
-# Restore from snapshot
-memory_manager.restore_snapshot(snapshot_id)
-```
+Provides tiered memory storage with hot, warm, and cold tiers for efficient data access and storage optimization.
 
 ### 3. 🤖 Model Integration
-Provides a unified interface for working with various AI models:
+Supports multiple model providers with both local deployment and API-based access options.
 
-```python
-from memories.models import LoadModel
+### 4. 🚀 Deployment
+Offers flexible deployment options including standalone, consensus-based, and swarmed architectures.
 
-# Initialize local model
-local_model = LoadModel(
-    use_gpu=True,
-    model_provider="deepseek-ai",
-    deployment_type="local",
-    model_name="deepseek-coder-small"
-)
+## 📚 Documentation
 
-# Generate text
-response = local_model.get_response("Write a function to calculate factorial")
-print(response["text"])
+For more detailed information, check out our documentation:
 
-# Initialize API-based model
-api_model = LoadModel(
-    model_provider="openai",
-    deployment_type="api",
-    model_name="gpt-4",
-    api_key="your-api-key"
-)
-
-# Generate text with parameters
-response = api_model.get_response(
-    "Explain the impact of climate change on urban areas",
-    temperature=0.7,
-    max_tokens=500
-)
-print(response["text"])
-
-# Clean up resources
-local_model.cleanup()
-api_model.cleanup()
-```
-
-## 🔜 Coming in Version 2.1.0 (March 2025)
-
-- **Maxar Integration**: Access to Maxar's high-resolution satellite imagery
-- **Sentinel-3 Support**: Integration with Sentinel-3 OLCI and SLSTR instruments
-- **Multi-source Fusion**: Advanced algorithms for combining data from multiple sources
-- **Function Calling**: Support for OpenAI and Anthropic function calling APIs
-- **Multi-model Inference**: Compare results from multiple models in parallel
-- **Memory Snapshots**: Point-in-time memory snapshots for backup and recovery
-
-## 🤝 Contributing
-
-We welcome contributions to the Memories library! Please see our [Contributing Guide](https://memories-dev.readthedocs.io/development/contributing.html) for more information.
+- [Quick Start Guide](https://memories-dev.readthedocs.io/quickstart.html)
+- [User Guide](https://memories-dev.readthedocs.io/user_guide/index.html)
+- [API Reference](https://memories-dev.readthedocs.io/api_reference/index.html)
+- [Examples](https://memories-dev.readthedocs.io/user_guide/examples.html)
+- [Development Guide](https://memories-dev.readthedocs.io/development/index.html)
 
 <p align="center">Built with 💜 by the memories-dev team</p>
