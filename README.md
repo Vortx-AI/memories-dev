@@ -113,9 +113,6 @@ The system is built on three core components:
 2. **Model System**: Manages model loading, inference, and API connections
 3. **Deployment**: Handles deployment configurations and resource management
 
-<div align="center">
-  <img src="https://raw.githubusercontent.com/Vortx-AI/memories-dev/main/docs/source/_static/architecture.png" alt="memories-dev Architecture" width="700px">
-</div>
 
 ## 📊 Example Applications
 
