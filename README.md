@@ -26,27 +26,7 @@
   <img src="https://github.com/Vortx-AI/memories-dev/raw/main/docs/source/_static/architecture_overview.gif" alt="memories-dev Architecture" width="700px">
 </div>
 
-%%{
-  init: {
-    'theme': 'base',
-    'themeVariables': {
-      'primaryColor': '#2C3E50',
-      'primaryTextColor': '#fff',
-      'primaryBorderColor': '#1F3A60',
-      'lineColor': '#3498DB',
-      'secondaryColor': '#16A085',
-      'tertiaryColor': '#2980B9'
-    },
-    'flowchart': {
-      'curve': 'basis',
-      'htmlLabels': true
-    },
-    'sequence': {
-      'mirrorActors': false,
-      'wrap': true
-    }
-  }
-}%%
+
 ```mermaid
 %%{init: {'theme': 'forest', 'themeVariables': { 'primaryColor': '#1f77b4', 'primaryTextColor': '#fff', 'primaryBorderColor': '#0d6efd', 'lineColor': '#3498db', 'secondaryColor': '#16a085', 'tertiaryColor': '#2980b9'}}}%%
 graph TD
