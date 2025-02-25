@@ -13,7 +13,6 @@ sphinx-togglebutton>=0.3.2
 sphinx-favicon>=1.0.1
 sphinx-sitemap>=2.5.1
 sphinx-last-updated-by-git>=0.3.6
-sphinx-search>=0.1.1
 
 # Documentation utilities
 docutils>=0.20.1
