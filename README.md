@@ -1,4 +1,4 @@
-# memories.dev
+# memories-dev
 
 <div align="center">
 
@@ -8,188 +8,258 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Version](https://img.shields.io/badge/version-2.0.2-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.2)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v2.1.0)
 [![Discord](https://img.shields.io/discord/1339432819784683522?color=7289da&label=Discord&logo=discord&logoColor=white)](https://discord.gg/tGCVySkX4d)
 
 <a href="https://www.producthunt.com/posts/memories-dev?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-memories&#0045;dev" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=879661&theme=light&t=1739530783374" alt="memories&#0046;dev - Collective&#0032;AGI&#0032;Memory | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
 </div>
 
-## 🌟 Overview
+## �� Overview
 
-memories.dev is a groundbreaking memory infrastructure designed to provide real-world contextual intelligence to AI models during inference. By processing, indexing, and serving location-tagged intelligence ("memories") from diverse data sources including satellite imagery, climate sensors, and urban development metrics, it creates a rich tapestry of environmental and spatial context that enhances AI models' understanding and reasoning capabilities.
+memories-dev is a comprehensive Python library for creating and managing memories using satellite imagery, vector data, and large language models. It provides a unified interface for data acquisition, processing, and model integration, enabling developers to build sophisticated applications with rich contextual understanding of the physical world.
 
 ### 🚀 Key Features
 
-- **Multi-Modal Memory Formation**: 
-  - Seamless integration of satellite imagery
-  - Real-time environmental sensor data
-  - Urban development metrics
-  - Comprehensive spatial context
+- **Data Acquisition**: 
+  - Satellite imagery (Sentinel-2, Landsat)
+  - Vector data (OpenStreetMap, Overture Maps)
+  - Environmental metrics
+  - Temporal-spatial data integration
 
-- **Temporal-Spatial Intelligence**: 
-  - Advanced temporal data processing
-  - Sophisticated spatial indexing
-  - Real-time context updates
-  - Historical data analysis
+- **Model Integration**: 
+  - Local model deployment
+  - API-based model access
+  - Multiple provider support (DeepSeek, OpenAI, Anthropic)
+  - GPU acceleration
 
-- **Advanced Model Integration**: 
-  - Native DeepSeek support
-  - Custom model implementation
-  - Flexible API integration
-  - Optimized inference pipeline
+- **Deployment Options**: 
+  - Local deployment
+  - Cloud deployment (AWS, GCP, Azure)
+  - Distributed systems
+  - Container orchestration
 
-- **Enterprise-Grade Architecture**: 
-  - High-performance processing
-  - Scalable memory formation
-  - Robust error handling
-  - Comprehensive monitoring
-
-- **Developer-First Design**: 
-  - Intuitive API design
-  - Extensive documentation
-  - Active community support
-  - Regular feature updates
+- **Advanced Features**: 
+  - Concurrent data processing
+  - GPU memory management
+  - Caching and optimization
+  - Error handling and validation
 
 ## System Architecture
 
-The system is built on three core pillars:
+The system is built on three core components:
 
-1. **Memory Formation Pipeline**: Processes raw data into structured memories
-2. **Query Pipeline**: Efficient retrieval and context assembly
-
+1. **Data Acquisition**: Collects and processes data from various sources
+2. **Model System**: Manages model loading, inference, and API connections
+3. **Deployment**: Handles deployment configurations and resource management
 
 ## Quick Start
 
+### Installation
+
+```bash
+# Basic installation
+pip install memories-dev
+
+# With GPU support
+pip install memories-dev[gpu]
+```
+
+### Basic Usage
+
 ```python
 from memories.models.load_model import LoadModel
-from memories.core.memory import MemoryStore
+from memories.data_acquisition.data_manager import DataManager
+import asyncio
 
-
-
-# Initialize with advanced models
-load_model = LoadModel(
-    use_gpu= True 
-    model_provider= "deepseek-ai" #"deepseek" or "openai"
-    deployment_type= "local" #"local" or "api"
-    model_name= "deepseek-r1-zero" #"deepseek-r1-zero" or "gpt-4o" or "deepseek-coder-3.1b-base" or "gpt-4o-mini"
-    #api_key= #"your-api-key" optional for api deployment
+# Initialize model
+model = LoadModel(
+    use_gpu=True,
+    model_provider="deepseek-ai",
+    deployment_type="local",
+    model_name="deepseek-coder-small"
 )
 
-# Create Earth memories
-memory_store = MemoryStore()
+# Initialize data manager
+data_manager = DataManager(cache_dir="./data_cache")
 
-memories = memory_store.create_memories(
-    model = load_model,
-    location=(37.7749, -122.4194),  # San Francisco coordinates
-    time_range=("2024-01-01", "2024-02-01"),
-    artifacts={
-        "satellite": ["sentinel-2", "landsat8"],
-        "landuse": ["osm","overture"]
-    }
+# Define area of interest (San Francisco)
+bbox = {
+    'xmin': -122.4018,
+    'ymin': 37.7914,
+    'xmax': -122.3928,
+    'ymax': 37.7994
+}
+
+# Get satellite data
+async def get_data():
+    satellite_data = await data_manager.get_satellite_data(
+        bbox_coords=bbox,
+        start_date="2023-01-01",
+        end_date="2023-02-01"
+    )
+    return satellite_data
+
+# Run the async function
+satellite_data = asyncio.run(get_data())
+
+# Generate text with the model
+response = model.get_response(
+    f"Describe the satellite data for this region: {satellite_data}"
 )
+print(response["text"])
 
-
-# Generate synthetic data
-synthetic_data = vx.generate_synthetic(
-    base_location=(37.7749, -122.4194),
-    scenario="urban_development",
-    time_steps=10,
-    climate_factors=True
-)
-
-
+# Clean up resources
+model.cleanup()
 ```
 
 ## 📊 Data Acquisition
 
 The data acquisition module provides robust capabilities for fetching and processing data from various sources:
 
-### Overture Maps Integration
+### Sentinel API
 
 ```python
-from memories.data_acquisition.sources.overture_api import OvertureAPI
-from pathlib import Path
+from memories.data_acquisition.sources.sentinel_api import SentinelAPI
+import asyncio
 
-# Initialize with config
-config_path = Path("config/config.yaml")
-overture_api = OvertureAPI(data_dir="data/overture")
+# Initialize the API
+api = SentinelAPI(data_dir="./sentinel_data")
+await api.initialize()
 
 # Define area of interest
 bbox = {
-    'xmin': -122.4018,  # San Francisco Financial District
+    'xmin': -122.4018,
     'ymin': 37.7914,
     'xmax': -122.3928,
     'ymax': 37.7994
 }
 
-# Download filtered data
-download_results = overture_api.download_data(bbox)
+# Download specific bands with cloud cover filter
+result = await api.download_data(
+    bbox=bbox,
+    start_date="2023-01-01",
+    end_date="2023-01-31",
+    bands=["B04", "B08"],
+    cloud_cover=10.0
+)
 
-# Search within downloaded data
-overture_data = await overture_api.search(bbox)
-
-# Access theme-based features
-transportation = overture_data.get('transportation', [])
-buildings = overture_data.get('buildings', [])
-places = overture_data.get('places', [])
+if result["status"] == "success":
+    print(f"Downloaded files: {result['files']}")
+    print(f"Metadata: {result['metadata']}")
 ```
 
-### Key Features
+### Vector Data
 
-1. **Efficient Data Access**
-   - Direct S3 access using DuckDB
-   - Optimized bbox filtering
-   - Theme-based data organization
-
-2. **Supported Themes**
-   - Transportation networks
-   - Building footprints
-   - Places and points of interest
-
-3. **Data Processing**
-   - Automatic filtering by region
-   - Spatial indexing
-   - Feature extraction
-
-### Example Use Cases
-
-1. **Traffic Analysis**
 ```python
-from memories.examples.traffic_analyzer import TrafficAnalyzer
+from memories.data_acquisition.data_manager import DataManager
+import asyncio
 
-analyzer = TrafficAnalyzer(memory_store, data_manager)
-insights = await analyzer.analyze_traffic({
-    "bbox": [-122.5, 37.5, -122.0, 38.0],
-    "id": "road_123",
-    "sensor_data": {...}
-})
+# Initialize data manager
+data_manager = DataManager(cache_dir="./data_cache")
+
+# Get vector data
+vector_data = await data_manager.get_vector_data(
+    bbox={
+        'xmin': -122.4018, 'ymin': 37.7914,
+        'xmax': -122.3928, 'ymax': 37.7994
+    },
+    layers=["buildings", "roads", "landuse"]
+)
+
+# Access individual sources
+buildings = vector_data["buildings"]
+roads = vector_data["roads"]
 ```
 
-2. **Urban Development**
+## 🧠 Model System
+
+The model system provides a unified interface for both local and API-based models:
+
+### Local Models
+
 ```python
-# Coming soon
+from memories.models.load_model import LoadModel
+
+# Initialize local model
+model = LoadModel(
+    use_gpu=True,
+    model_provider="deepseek-ai",
+    deployment_type="local",
+    model_name="deepseek-coder-small"
+)
+
+# Generate text
+response = model.get_response("Write a function to calculate factorial")
+print(response["text"])
+
+# Clean up resources
+model.cleanup()
 ```
 
-3. **Environmental Monitoring**
+### API-based Models
+
 ```python
-# Coming soon
+from memories.models.load_model import LoadModel
+
+# Initialize API-based model
+model = LoadModel(
+    model_provider="openai",
+    deployment_type="api",
+    model_name="gpt-4",
+    api_key="your-api-key"  # Or set OPENAI_API_KEY environment variable
+)
+
+# Generate text
+response = model.get_response("Explain the impact of climate change on urban areas")
+print(response["text"])
 ```
 
-### Data Sources
+## 🚀 Deployment
 
-| Source | Description | Update Frequency | Access Method |
-|--------|-------------|------------------|---------------|
-| Overture Maps | Global mapping data | Monthly | DuckDB/S3 |
-| Sentinel-2 | Satellite imagery | 5 days | API |
-| OpenStreetMap | Street networks | Real-time | API |
-| Environmental Sensors | Climate data | Real-time | API |
+memories-dev supports various deployment configurations:
 
-### Performance Considerations
+### Cloud Deployment
 
-- Use appropriate bbox sizes to optimize data retrieval
-- Implement caching for frequently accessed regions
-- Consider data update frequencies in your application logic
+```python
+from memories.deployment.cloud import CloudDeployment
+
+# Configure GCP deployment
+deployment = CloudDeployment(
+    provider="gcp",
+    config={
+        "machine_type": "n1-standard-8",
+        "accelerator": "nvidia-tesla-t4",
+        "accelerator_count": 1,
+        "region": "us-central1",
+        "zone": "us-central1-a"
+    }
+)
+
+# Deploy the application
+deployment.deploy()
+```
+
+### Distributed Deployment
+
+```python
+from memories.deployment.distributed import DistributedDeployment
+
+# Configure AWS distributed deployment
+deployment = DistributedDeployment(
+    provider="aws",
+    config={
+        "instance_type": "p3.2xlarge",
+        "node_count": 3,
+        "quorum_size": 2,
+        "region": "us-east-1",
+        "availability_zones": ["us-east-1a", "us-east-1b", "us-east-1c"]
+    }
+)
+
+# Deploy the distributed system
+deployment.deploy()
+```
 
 ## 🛠️ Installation
 
@@ -201,16 +271,6 @@ insights = await analyzer.analyze_traffic({
 - **Storage**: 10GB+ available space
 - **GPU**: Optional, but recommended for optimal performance
 
-### Basic Installation
-
-```bash
-pip install memories-dev
-```
-
-### Python Version Compatibility
-
-The package supports Python versions 3.9 through 3.13. Dependencies are automatically adjusted based on your Python version to ensure compatibility.
-
 ### Installation Options
 
 #### 1. CPU-only Installation (Default)
@@ -219,296 +279,38 @@ pip install memories-dev
 ```
 
 #### 2. GPU Support Installation
-For CUDA 11.8:
 ```bash
-pip install memories-dev[gpu]
-```
-
-For different CUDA versions, install PyTorch manually first:
-```bash
-# For CUDA 12.1
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-
-# Then install the package
 pip install memories-dev[gpu]
 ```
 
 #### 3. Development Installation
-For contributing to the project:
 ```bash
 pip install memories-dev[dev]
 ```
 
 #### 4. Documentation Tools
-For building documentation:
 ```bash
 pip install memories-dev[docs]
 ```
 
-### Version-specific Dependencies
+## 📚 Documentation
 
-The package automatically handles version-specific dependencies based on your Python version:
+For comprehensive documentation, visit [memories-dev.readthedocs.io](https://memories-dev.readthedocs.io/).
 
-- Python 3.9: Compatible with older versions of key packages
-- Python 3.10-3.11: Standard modern package versions
-- Python 3.12-3.13: Latest package versions with improved performance
+### Key Documentation Sections
 
-### Common Issues and Solutions
+- [Quick Start Guide](https://memories-dev.readthedocs.io/quickstart.html)
+- [User Guide](https://memories-dev.readthedocs.io/user_guide/index.html)
+- [API Reference](https://memories-dev.readthedocs.io/api_reference/index.html)
+- [Development Guide](https://memories-dev.readthedocs.io/development/index.html)
 
-1. **Shapely Version Conflicts**
-   - For Python <3.13: Uses Shapely 1.7.0-1.8.5
-   - For Python ≥3.13: Uses Shapely 2.0+
+## 🤝 Contributing
 
-2. **GPU Dependencies**
-   - CUDA toolkit must be installed separately
-   - PyTorch Geometric packages are installed from wheels matching your CUDA version
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for more details.
 
-3. **Package Conflicts**
-   If you encounter dependency conflicts:
-   ```bash
-   pip install --upgrade pip
-   pip install memories-dev --no-deps
-   pip install -r requirements.txt
-   ```
-
-### Development Setup
-
-1. Clone the repository:
-```bash
-git clone https://github.com/Vortx-AI/memories-dev.git
-cd memories-dev
-```
-
-2. Create a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or
-.\venv\Scripts\activate  # Windows
-```
-
-3. Install development dependencies:
-```bash
-pip install -e .[dev]
-```
-
-4. Install pre-commit hooks:
-```bash
-pre-commit install
-```
-
-## 🔄 Workflows
-
-### Memory Formation Pipeline
-
-```mermaid
-graph LR
-    %% Node Styles
-    classDef input fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    classDef process fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
-    classDef storage fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-    
-    %% Input Nodes
-    I1(("📡 Raw Data")):::input
-    I2(("🛰️ Satellite")):::input
-    I3(("🌡️ Sensors")):::input
-    
-    %% Processing Nodes
-    P1["🔄 Preprocessing"]:::process
-    P2["⚡ Feature Extraction"]:::process
-    P3["🧠 Memory Formation"]:::process
-    
-    %% Storage Nodes
-    S1[("💾 Vector Store")]:::storage
-    S2[("📊 Time Series DB")]:::storage
-    S3[("🗺️ Spatial Index")]:::storage
-    
-    %% Flow
-    I1 & I2 & I3 --> P1
-    P1 --> P2
-    P2 --> P3
-    P3 --> S1 & S2 & S3
-```
-
-### Query Pipeline
-
-```mermaid
-graph TD
-    %% Node Styles
-    classDef query fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef memory fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
-    classDef output fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-
-    %% Query Flow
-    Q1["🔍 Query Request"]:::query
-    Q2["📍 Location Filter"]:::query
-    Q3["⏱️ Time Filter"]:::query
-    
-    %% Memory Operations
-    M1["🧠 Memory Lookup"]:::memory
-    M2["🔄 Context Assembly"]:::memory
-    M3["⚡ Real-time Update"]:::memory
-    
-    %% Output Generation
-    O1["📊 Results"]:::output
-    O2["📝 Analysis"]:::output
-    O3["🔄 Synthesis"]:::output
-
-    %% Connections
-    Q1 --> Q2 & Q3
-    Q2 & Q3 --> M1
-    M1 --> M2 --> M3
-    M3 --> O1 & O2 & O3
-```
-
-
-### System
-
-```mermaid
-graph TD
-    %% Node Styles
-    
-    classDef memory fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
-    classDef task fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-
-   
-
-    %% Memory Access
-    subgraph "💾 Memory Access"
-        M1["📥 Retrieval"]:::memory
-        M2["🔄 Update"]:::memory
-        M3["🔍 Query"]:::memory
-    end
-
-    %% Task Processing
-    subgraph "📋 Tasks"
-        T1["📊 Analysis"]:::task
-        T2["🔄 Synthesis"]:::task
-        T3["📝 Reporting"]:::task
-    end
-
-    %% Connections
-    A1 --> M1 & M2 & M3
-    M1 & M2 & M3 --> A2
-    A2 --> A3
-    A3 --> T1 & T2 & T3
-```
-
-### Memory Architecture
-
-```mermaid
-graph TD
-    %% Styles
-    classDef store fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef cache fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
-    classDef index fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-
-    %% Memory Store
-    subgraph Store[Memory Store]
-        V[Vector Store]
-        T[Time Series DB]
-        S[Spatial Index]
-    end
-
-    %% Cache System
-    subgraph Cache[Cache Layers]
-        L1[L1 Cache - Memory]
-        L2[L2 Cache - SSD]
-        L3[L3 Cache - Distributed]
-    end
-
-    %% Index System
-    subgraph Index[Index Types]
-        I1[Spatial Index]
-        I2[Temporal Index]
-        I3[Semantic Index]
-    end
-
-    %% Flow
-    V & T & S --> L1
-    L1 --> L2 --> L3
-    L3 --> I1 & I2 & I3
-
-    %% Styles
-    class V,T,S store;
-    class L1,L2,L3 cache;
-    class I1,I2,I3 index;
-```
-
-
-### Data Flow
-
-```mermaid
-graph LR
-    %% Styles
-    classDef input fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef process fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
-    classDef output fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
-
-    %% Pipeline
-    I[Raw Data] --> P1[Preprocessing]
-    P1 --> P2[Feature Extraction]
-    P2 --> P3[Memory Formation]
-    P3 --> P4[Memory Storage]
-    P4 --> P5[Memory Retrieval]
-    P5 --> O[AI Integration]
-
-    %% Styles
-    class I input;
-    class P1,P2,P3,P4,P5 process;
-    class O output;
-```
-## 📚 Module Dependencies
-
-```mermaid
-graph TD
-    %% Node Styles
-    classDef core fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    classDef dep fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef util fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
-
-    %% Core Modules
-    C1["🧠 Memory Core"]:::core
-    C3["📡 Data Core"]:::core
-
-    %% Dependencies
-    D1["📊 NumPy/Pandas"]:::dep
-    D2["🔥 PyTorch"]:::dep
-    D3["🗄️ Vector Store"]:::dep
-    D4["🌐 Network Utils"]:::dep
-
-    %% Utilities
-    U1["⚙️ Config"]:::util
-    U2["📝 Logging"]:::util
-    U3["✅ Validation"]:::util
-
-    %% Connections
-    D1 & D2 --> C1
-    D3 --> C1 & C2
-    D4 --> C3
-    U1 --> C1 & C2 & C3
-    U2 --> C1 & C2 & C3
-    U3 --> C1 & C2 & C3
-```
-
-## Usage
-
-See our [documentation](https://docs.memories.dev) for detailed usage instructions and examples.
-
-## License
+## 📄 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-We welcome contributions! Here's how you can help:
-
-1. **Bug Reports**: Open an issue with a clear description and reproduction steps
-2. **Feature Requests**: Use the issue tracker to propose new features
-3. **Code Contributions**: Submit pull requests with tests and documentation
-4. **Documentation**: Help improve our docs and examples
-
-See our [Contributing Guide](CONTRIBUTING.md) for more details.
 
 ## Community
 
@@ -518,11 +320,11 @@ See our [Contributing Guide](CONTRIBUTING.md) for more details.
 
 ## Citation
 
-If you use memories.dev in your research, please cite:
+If you use memories-dev in your research, please cite:
 
 ```bibtex
 @software{memories_dev_2024,
-  title={memories.dev: Collective Memory Infrastructure for AGI},
+  title={memories-dev: Collective Memory Infrastructure for AGI},
   author={Vortx AI Team},
   year={2024},
   url={https://github.com/Vortx-AI/memories-dev}
@@ -582,7 +384,7 @@ synthesis = memory_store.synthesize(
 
 ## 🚀 Deployment Patterns
 
-memories.dev supports three powerful deployment patterns to meet diverse operational needs:
+memories-dev supports three powerful deployment patterns to meet diverse operational needs:
 
 ### 1. Standalone Deployment
 Optimized for single-tenant applications requiring maximum performance:
@@ -619,7 +421,7 @@ For detailed deployment instructions and architecture diagrams, see the [Deploym
 
 **Empowering AGI with Real-World Context**
 
-<p align="center">Built with 💜 by the memories.dev team</p>
+<p align="center">Built with 💜 by the memories-dev team</p>
 
 <p align="center">
 <a href="https://discord.com/invite/7qAFEekp">Discord</a> •
