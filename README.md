@@ -2,7 +2,6 @@
 
 <div align="center">
 
-<img src="docs/source/_static/hero_image.png" alt="Earth - The Blue Marble" width="400px">
 
 **Building the World's Memory for Artificial General Intelligence**
 
