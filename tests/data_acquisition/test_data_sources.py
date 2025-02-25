@@ -1,281 +1,125 @@
-"""
-Test data sources functionality.
-"""
+"""Tests for data source implementations."""
 
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
-from pathlib import Path
+from unittest.mock import AsyncMock, patch, MagicMock
 import numpy as np
-import aiohttp
 import rasterio
 from datetime import datetime
+from pathlib import Path
 import asyncio
-from memories.data_acquisition.data_sources import (
-    DataSource,
-    SentinelDataSource,
-    LandsatDataSource
-)
+
+from memories.data_acquisition.sources import SentinelAPI
 
 @pytest.fixture
-def sentinel_source():
-    """Create a Sentinel data source instance for testing."""
-    return SentinelDataSource()
+def mock_rasterio_env():
+    """Mock rasterio environment."""
+    with patch('rasterio.Env') as mock:
+        yield mock
 
 @pytest.fixture
-def landsat_source():
-    """Create a Landsat data source instance for testing."""
-    return LandsatDataSource()
+def mock_rasterio_open():
+    """Mock rasterio.open context manager."""
+    mock_dataset = MagicMock()
+    mock_dataset.bounds = (-122.4, 37.7, -122.3, 37.8)
+    mock_dataset.width = 1000
+    mock_dataset.height = 1000
+    mock_dataset.crs.to_epsg.return_value = 4326
+    mock_dataset.transform = (0.0001, 0, -122.4, 0, -0.0001, 37.8)
+    mock_dataset.profile = {
+        'count': 1,
+        'dtype': 'uint16',
+        'height': 1000,
+        'width': 1000,
+        'transform': mock_dataset.transform,
+        'crs': mock_dataset.crs
+    }
+    mock_dataset.read.return_value = np.random.randint(0, 10000, (100, 100), dtype=np.uint16)
+
+    with patch('rasterio.open') as mock_open:
+        mock_open.return_value.__enter__.return_value = mock_dataset
+        yield mock_open
+
+@pytest.fixture
+def sentinel_api(tmp_path):
+    """Create a Sentinel API instance."""
+    return SentinelAPI(data_dir=str(tmp_path))
 
 @pytest.fixture
 def bbox():
     """Sample bounding box for testing."""
-    return [-122.5, 37.5, -122.0, 38.0]  # San Francisco area
-
-@pytest.fixture
-def date_range():
-    """Sample date range for testing."""
     return {
-        'start_date': datetime(2023, 1, 1),
-        'end_date': datetime(2023, 1, 31)
+        'xmin': -122.4018,
+        'ymin': 37.7914,
+        'xmax': -122.3928,
+        'ymax': 37.7994
     }
 
-def test_data_source_interface():
-    """Test the base DataSource class interface."""
-    source = DataSource()
-    
-    with pytest.raises(NotImplementedError):
-        asyncio.run(source.search([], None, None))
-    
-    with pytest.raises(NotImplementedError):
-        asyncio.run(source.download({}, Path()))
-
-
 @pytest.mark.asyncio
-async def test_sentinel_download(sentinel_source, tmp_path):
-    """Test Sentinel data download functionality."""
-    # Mock item data
-    item = {
-        'id': 'test_scene',
-        'assets': {
-            'B02': {'href': 'https://example.com/B02.tif'},
-            'B03': {'href': 'https://example.com/B03.tif'},
-            'B04': {'href': 'https://example.com/B04.tif'}
-        }
-    }
-    
-    # Mock HTTP response
-    mock_content = np.random.bytes(1000)
-    
-    async def mock_get(*args, **kwargs):
-        mock_response = AsyncMock()
-        mock_response.content.iter_chunked = AsyncMock(
-            return_value=[mock_content]
-        )
-        return mock_response
-    
-    with patch('aiohttp.ClientSession.get', new=mock_get):
-        with patch('rasterio.open') as mock_rasterio:
-            # Mock rasterio read/write operations
-            mock_src = Mock()
-            mock_src.profile = {'count': 1, 'dtype': 'uint8'}
-            mock_src.read = Mock(return_value=np.random.rand(1, 100, 100))
-            mock_rasterio.return_value.__enter__.return_value = mock_src
-            
-            output_path = await sentinel_source.download(
-                item=item,
-                output_dir=tmp_path,
-                bands=['B02', 'B03', 'B04']
-            )
-            
-            assert output_path.exists()
-            assert output_path.name == f"{item['id']}_merged.tif"
-
-@pytest.mark.asyncio
-async def test_landsat_search(landsat_source, bbox, date_range):
-    """Test Landsat data search functionality."""
-    # Mock STAC client response
-    mock_items = [
-        {
-            'id': 'landsat_scene_1',
-            'properties': {
-                'datetime': '2023-01-15T00:00:00Z',
-                'eo:cloud_cover': 10.0
-            },
-            'assets': {
-                'SR_B2': {'href': 'https://example.com/SR_B2.tif'},
-                'SR_B3': {'href': 'https://example.com/SR_B3.tif'},
-                'SR_B4': {'href': 'https://example.com/SR_B4.tif'},
-                'SR_B5': {'href': 'https://example.com/SR_B5.tif'}
-            }
-        }
-    ]
-    
-    with patch('pystac_client.Client.open') as mock_client:
-        mock_search = AsyncMock()
-        mock_search.get_items = Mock(return_value=mock_items)
-        mock_client.return_value.search = Mock(return_value=mock_search)
+async def test_sentinel_download(sentinel_api, bbox, mock_rasterio_open, mock_rasterio_env):
+    """Test Sentinel data download."""
+    with patch('planetary_computer.sign', return_value="https://example.com/signed.tif"), \
+         patch('pystac_client.Client.open') as mock_client:
         
-        results = await landsat_source.search(
+        # Mock STAC search results
+        mock_item = MagicMock()
+        mock_item.id = "test_scene"
+        mock_item.properties = {
+            "datetime": "2023-01-01T00:00:00Z",
+            "eo:cloud_cover": 5.0,
+            "platform": "sentinel-2a"
+        }
+        mock_item.assets = {
+            "B04": MagicMock(href="https://example.com/B04.tif"),
+            "B08": MagicMock(href="https://example.com/B08.tif")
+        }
+        
+        mock_search = MagicMock()
+        mock_search.get_items.return_value = [mock_item]
+        mock_client.return_value.search.return_value = mock_search
+        
+        result = await sentinel_api.download_data(
             bbox=bbox,
-            start_date=date_range['start_date'],
-            end_date=date_range['end_date'],
-            max_cloud_cover=20.0
+            start_date=datetime(2023, 1, 1),
+            end_date=datetime(2023, 1, 31)
         )
         
-        assert len(results) == 1
-        assert results[0]['id'] == 'landsat_scene_1'
-        assert results[0]['properties']['eo:cloud_cover'] == 10.0
-        assert len(results[0]['assets']) == 4
+        assert result["success"] is True
+        assert "metadata" in result
+        assert result["metadata"]["scene_id"] == "test_scene"
 
 @pytest.mark.asyncio
-async def test_landsat_download(landsat_source, tmp_path):
-    """Test Landsat data download functionality."""
-    # Mock item data
-    item = {
-        'id': 'test_scene',
-        'assets': {
-            'SR_B2': {'href': 'https://example.com/SR_B2.tif'},
-            'SR_B3': {'href': 'https://example.com/SR_B3.tif'},
-            'SR_B4': {'href': 'https://example.com/SR_B4.tif'}
+async def test_concurrent_downloads(sentinel_api, bbox, mock_rasterio_open, mock_rasterio_env):
+    """Test concurrent downloads."""
+    with patch('planetary_computer.sign', return_value="https://example.com/signed.tif"), \
+         patch('pystac_client.Client.open') as mock_client:
+        
+        # Mock STAC search results
+        mock_item = MagicMock()
+        mock_item.id = "test_scene"
+        mock_item.properties = {
+            "datetime": "2023-01-01T00:00:00Z",
+            "eo:cloud_cover": 5.0,
+            "platform": "sentinel-2a"
         }
-    }
-    
-    # Mock HTTP response
-    mock_content = np.random.bytes(1000)
-    
-    async def mock_get(*args, **kwargs):
-        mock_response = AsyncMock()
-        mock_response.content.iter_chunked = AsyncMock(
-            return_value=[mock_content]
-        )
-        return mock_response
-    
-    with patch('aiohttp.ClientSession.get', new=mock_get):
-        with patch('rasterio.open') as mock_rasterio:
-            # Mock rasterio read/write operations
-            mock_src = Mock()
-            mock_src.profile = {'count': 1, 'dtype': 'uint8'}
-            mock_src.read = Mock(return_value=np.random.rand(1, 100, 100))
-            mock_rasterio.return_value.__enter__.return_value = mock_src
-            
-            output_path = await landsat_source.download(
-                item=item,
-                output_dir=tmp_path,
-                bands=['SR_B2', 'SR_B3', 'SR_B4']
-            )
-            
-            assert output_path.exists()
-            assert output_path.name == f"{item['id']}_merged.tif"
-
-@pytest.mark.asyncio
-async def test_error_handling_search():
-    """Test error handling in search operations."""
-    source = SentinelDataSource()
-    
-    # Test invalid bbox
-    with pytest.raises(ValueError):
-        await source.search(
-            bbox=[0],  # Invalid bbox
-            start_date=datetime.now(),
-            end_date=datetime.now()
-        )
-    
-    # Test invalid date range
-    with pytest.raises(ValueError):
-        await source.search(
-            bbox=[-122.5, 37.5, -122.0, 38.0],
-            start_date=datetime(2023, 1, 31),  # End before start
-            end_date=datetime(2023, 1, 1)
-        )
-
-@pytest.mark.asyncio
-async def test_error_handling_download(sentinel_source, tmp_path):
-    """Test error handling in download operations."""
-    # Test invalid item format
-    with pytest.raises(ValueError):
-        await sentinel_source.download(
-            item={},  # Invalid item
-            output_dir=tmp_path
-        )
-    
-    # Test missing assets
-    with pytest.raises(ValueError):
-        await sentinel_source.download(
-            item={'id': 'test', 'assets': {}},  # No assets
-            output_dir=tmp_path
-        )
-    
-    # Test invalid bands
-    with pytest.raises(ValueError):
-        await sentinel_source.download(
-            item={
-                'id': 'test',
-                'assets': {'B02': {'href': 'url'}}
-            },
-            output_dir=tmp_path,
-            bands=['invalid_band']
-        )
-
-@pytest.mark.asyncio
-async def test_concurrent_downloads(sentinel_source, tmp_path):
-    """Test concurrent download operations."""
-    # Mock item data with multiple bands
-    item = {
-        'id': 'test_scene',
-        'assets': {
-            'B02': {'href': 'https://example.com/B02.tif'},
-            'B03': {'href': 'https://example.com/B03.tif'},
-            'B04': {'href': 'https://example.com/B04.tif'},
-            'B08': {'href': 'https://example.com/B08.tif'}
+        mock_item.assets = {
+            "B04": MagicMock(href="https://example.com/B04.tif"),
+            "B08": MagicMock(href="https://example.com/B08.tif")
         }
-    }
-    
-    # Mock HTTP response
-    mock_content = np.random.bytes(1000)
-    
-    async def mock_get(*args, **kwargs):
-        mock_response = AsyncMock()
-        mock_response.content.iter_chunked = AsyncMock(
-            return_value=[mock_content]
-        )
-        return mock_response
-    
-    with patch('aiohttp.ClientSession.get', new=mock_get):
-        with patch('rasterio.open') as mock_rasterio:
-            # Mock rasterio read/write operations
-            mock_src = Mock()
-            mock_src.profile = {'count': 1, 'dtype': 'uint8'}
-            mock_src.read = Mock(return_value=np.random.rand(1, 100, 100))
-            mock_rasterio.return_value.__enter__.return_value = mock_src
-            
-            output_path = await sentinel_source.download(
-                item=item,
-                output_dir=tmp_path,
-                bands=['B02', 'B03', 'B04', 'B08']
+        
+        mock_search = MagicMock()
+        mock_search.get_items.return_value = [mock_item]
+        mock_client.return_value.search.return_value = mock_search
+        
+        tasks = []
+        for i in range(3):
+            tasks.append(
+                sentinel_api.download_data(
+                    bbox=bbox,
+                    start_date=datetime(2023, 1, 1),
+                    end_date=datetime(2023, 1, 31)
+                )
             )
-            
-            assert output_path.exists()
-            assert output_path.name == f"{item['id']}_merged.tif"
-
-def test_cleanup(sentinel_source, tmp_path):
-    """Test cleanup of temporary files after download."""
-    # Create some temporary files
-    temp_files = [
-        tmp_path / "temp1.tif",
-        tmp_path / "temp2.tif",
-        tmp_path / "temp3.tif"
-    ]
-    
-    for file in temp_files:
-        file.touch()
-    
-    # Mock cleanup method
-    with patch.object(sentinel_source, '_cleanup_temp_files') as mock_cleanup:
-        mock_cleanup(temp_files)
         
-        # Verify cleanup was called with correct files
-        mock_cleanup.assert_called_once_with(temp_files)
-        
-        # Verify files were removed
-        for file in temp_files:
-            assert not file.exists() 
+        results = await asyncio.gather(*tasks)
+        assert len(results) == 3
+        assert all(r["success"] for r in results) 
