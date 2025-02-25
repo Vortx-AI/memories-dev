@@ -1,0 +1,57 @@
+provider: aws
+deployment_type: standalone
+
+instance:
+  type: t3.xlarge
+  ami: ami-0c55b159cbfafe1f0
+  region: us-west-2
+  zone: us-west-2a
+
+hardware:
+  cpu:
+    vcpus: 4
+    architecture: x86_64
+  memory:
+    ram: 16
+    swap: 4
+  storage:
+    root_volume:
+      size: 100
+      type: gp3
+      iops: 3000
+      throughput: 125
+    data_volume:
+      size: 500
+      type: gp3
+      iops: 6000
+      throughput: 250
+
+network:
+  vpc_id: vpc-12345
+  subnet_id: subnet-a1b2c3
+  security_group_ids:
+    - sg-12345
+  public_ip: true
+  bandwidth: 5
+
+monitoring:
+  enabled: true
+  metrics:
+    - cpu_utilization
+    - memory_usage
+    - disk_io
+    - network_traffic
+  alerts:
+    - type: cpu
+      threshold: 80
+      duration: 300
+    - type: memory
+      threshold: 85
+      duration: 300
+
+logging:
+  level: info
+  retention_days: 30
+  cloudwatch:
+    enabled: true
+    log_group: /aws/standalone/instance 

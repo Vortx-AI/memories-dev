@@ -1,0 +1,62 @@
+provider: azure
+deployment_type: standalone
+
+instance:
+  size: Standard_D4s_v3
+  image:
+    publisher: microsoft-dsvm
+    offer: ubuntu-hpc
+    sku: 2004
+    version: latest
+  location: westus2
+  zone: 1
+
+hardware:
+  cpu:
+    vcpus: 4
+    architecture: x86_64
+  memory:
+    ram: 16
+    swap: 4
+  storage:
+    os_disk:
+      size: 100
+      type: Premium_LRS
+      iops: 3000
+      throughput: 125
+    data_disk:
+      size: 500
+      type: Premium_LRS
+      iops: 6000
+      throughput: 250
+
+network:
+  vnet_name: standalone-vnet
+  subnet_name: standalone-subnet
+  nsg_name: standalone-nsg
+  resource_group: standalone-rg
+  public_ip: true
+  bandwidth: 5
+  dns_name: standalone-instance
+
+monitoring:
+  enabled: true
+  metrics:
+    - cpu_utilization
+    - memory_usage
+    - disk_io
+    - network_traffic
+  alerts:
+    - type: cpu
+      threshold: 80
+      duration: 300
+    - type: memory
+      threshold: 85
+      duration: 300
+
+logging:
+  level: info
+  retention_days: 30
+  azure_monitor:
+    enabled: true
+    workspace: standalone-logs 
