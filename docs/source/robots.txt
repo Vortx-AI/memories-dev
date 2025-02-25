@@ -1,10 +1,14 @@
-User: *
+User-agent: *
 Allow: /
-Sitemap: https://memories-dev.readthedocs.io/sitemap.xml
 
-# Disallow indexing of search results and other dynamic pages
+# Allow all bots to access the documentation
+# Disallow specific paths that might contain sensitive information or are not meant for indexing
 Disallow: /search/
 Disallow: /search.html
 Disallow: /_sources/
 Disallow: /_static/
-Disallow: /_images/ 
+Disallow: /_modules/
+Disallow: /_images/
+
+# Sitemap location
+Sitemap: https://memories-dev.readthedocs.io/sitemap.xml 

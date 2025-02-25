@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/The_Blue_Marble_%28remastered%29.jpg/600px-The_Blue_Marble_%28remastered%29.jpg" alt="Earth - The Blue Marble" width="400px">
+<img src="docs/source/_static/hero_image.png" alt="Earth - The Blue Marble" width="400px">
 
 **Building the World's Memory for Artificial General Intelligence**
 
@@ -40,6 +40,67 @@ graph TD
     G --> I
     H --> I
     I -->|Powers| J[Next-Gen AI Applications]
+```
+
+%%{
+  init: {
+    'theme': 'base',
+    'themeVariables': {
+      'primaryColor': '#2C3E50',
+      'primaryTextColor': '#fff',
+      'primaryBorderColor': '#1F3A60',
+      'lineColor': '#3498DB',
+      'secondaryColor': '#16A085',
+      'tertiaryColor': '#2980B9'
+    },
+    'flowchart': {
+      'curve': 'basis',
+      'htmlLabels': true
+    },
+    'sequence': {
+      'mirrorActors': false,
+      'wrap': true
+    }
+  }
+}%%
+```mermaid
+%%{init: {'theme': 'forest', 'themeVariables': { 'primaryColor': '#1f77b4', 'primaryTextColor': '#fff', 'primaryBorderColor': '#0d6efd', 'lineColor': '#3498db', 'secondaryColor': '#16a085', 'tertiaryColor': '#2980b9'}}}%%
+graph TD
+    classDef foundationModels fill:#3498db,stroke:#2980b9,stroke-width:2px,color:white,font-weight:bold
+    classDef earthMemory fill:#16a085,stroke:#1abc9c,stroke-width:2px,color:white,font-weight:bold
+    classDef contextNodes fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:white
+    classDef intelligenceNodes fill:#f39c12,stroke:#f1c40f,stroke-width:2px,color:white
+    classDef memoryNode fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:white,font-weight:bold
+    classDef appNode fill:#2c3e50,stroke:#34495e,stroke-width:2px,color:white,font-weight:bold
+    
+    A[🤖 Foundation Models] -->|Augmented with| B[🌍 Earth Memory]
+    B -->|Provides| C[📍 Spatial Context]
+    B -->|Provides| D[⏱️ Temporal Context]
+    B -->|Provides| E[🌱 Environmental Context]
+    C -->|Enables| F[📌 Location-Aware Intelligence]
+    D -->|Enables| G[⏰ Time-Aware Intelligence]
+    E -->|Enables| H[🌿 Environment-Aware Intelligence]
+    F --> I[🧠 Collective AGI Memory]
+    G --> I
+    H --> I
+    I -->|Powers| J[🚀 Next-Gen AI Applications]
+    
+    A:::foundationModels
+    B:::earthMemory
+    C:::contextNodes
+    D:::contextNodes
+    E:::contextNodes
+    F:::intelligenceNodes
+    G:::intelligenceNodes
+    H:::intelligenceNodes
+    I:::memoryNode
+    J:::appNode
+
+    linkStyle 0 stroke:#3498db,stroke-width:2px,stroke-dasharray: 5 5
+    linkStyle 1,2,3 stroke:#16a085,stroke-width:2px
+    linkStyle 4,5,6 stroke:#9b59b6,stroke-width:2px
+    linkStyle 7,8,9 stroke:#f39c12,stroke-width:2px
+    linkStyle 10 stroke:#e74c3c,stroke-width:2px,stroke-dasharray: 5 5
 ```
 
 ## 🚀 What's New in Version 2.0.2
@@ -113,6 +174,85 @@ graph LR
     G --> Y[Development Plans]
 ```
 
+%%{init: {'theme': 'forest', 'themeVariables': { 'primaryColor': '#2c3e50', 'primaryTextColor': '#ecf0f1', 'primaryBorderColor': '#34495e', 'lineColor': '#3498db', 'secondaryColor': '#16a085', 'tertiaryColor': '#2980b9'}}}%%
+```mermaid
+%%{init: {'theme': 'forest', 'themeVariables': { 'primaryColor': '#2c3e50', 'primaryTextColor': '#ecf0f1', 'primaryBorderColor': '#34495e', 'lineColor': '#3498db', 'secondaryColor': '#16a085', 'tertiaryColor': '#2980b9'}}}%%
+graph LR
+    classDef mainSystem fill:#2c3e50,stroke:#34495e,stroke-width:2px,color:white,font-weight:bold
+    classDef satelliteData fill:#3498db,stroke:#2980b9,stroke-width:2px,color:white
+    classDef vectorData fill:#9b59b6,stroke:#8e44ad,stroke-width:2px,color:white
+    classDef environmentalData fill:#16a085,stroke:#1abc9c,stroke-width:2px,color:white
+    classDef temporalData fill:#f39c12,stroke:#f1c40f,stroke-width:2px,color:white
+    classDef climateData fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:white
+    classDef urbanData fill:#1abc9c,stroke:#16a085,stroke-width:2px,color:white
+    classDef dataSource fill:#7f8c8d,stroke:#95a5a6,stroke-width:1px,color:white
+    
+    A[🌍 Earth Memory System] --> B[🛰️ Satellite Imagery]
+    A --> C[🗺️ Vector Geospatial Data]
+    A --> D[🌱 Environmental Metrics]
+    A --> E[⏱️ Temporal Analysis]
+    A --> F[🌡️ Climate Data]
+    A --> G[🏙️ Urban Development]
+    
+    B --> H[📡 Sentinel-2]
+    B --> I[📡 Landsat]
+    B --> J[🌐 Earth Engine]
+    
+    C --> K[🗺️ Overture Maps]
+    C --> L[🗺️ OpenStreetMap]
+    C --> M[🔄 WFS Services]
+    
+    D --> N[💨 Air Quality]
+    D --> O[🦋 Biodiversity]
+    D --> P[🔊 Noise Levels]
+    D --> Q[☀️ Solar Potential]
+    
+    E --> R[📜 Historical Changes]
+    E --> S[🔮 Future Predictions]
+    
+    F --> T[🌡️ Temperature Trends]
+    F --> U[🌧️ Precipitation Patterns]
+    F --> V[⚠️ Extreme Weather Risk]
+    
+    G --> W[🏢 Urban Density]
+    G --> X[🛣️ Infrastructure]
+    G --> Y[📋 Development Plans]
+    
+    A:::mainSystem
+    B:::satelliteData
+    C:::vectorData
+    D:::environmentalData
+    E:::temporalData
+    F:::climateData
+    G:::urbanData
+    H:::dataSource
+    I:::dataSource
+    J:::dataSource
+    K:::dataSource
+    L:::dataSource
+    M:::dataSource
+    N:::dataSource
+    O:::dataSource
+    P:::dataSource
+    Q:::dataSource
+    R:::dataSource
+    S:::dataSource
+    T:::dataSource
+    U:::dataSource
+    V:::dataSource
+    W:::dataSource
+    X:::dataSource
+    Y:::dataSource
+    
+    linkStyle 0,1,2,3,4,5 stroke-width:2px
+    linkStyle 0 stroke:#3498db
+    linkStyle 1 stroke:#9b59b6
+    linkStyle 2 stroke:#16a085
+    linkStyle 3 stroke:#f39c12
+    linkStyle 4 stroke:#e74c3c
+    linkStyle 5 stroke:#1abc9c
+```
+
 ### 2. Specialized Earth Memory Analyzers
 
 The framework includes 15+ specialized analyzers for extracting insights from Earth Memory:
@@ -155,6 +295,104 @@ graph TD
     H --> H2[Development Plans]
     H --> H3[Infrastructure Analysis]
     H --> H4[Zoning Changes]
+```
+
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1e293b', 'primaryTextColor': '#f8fafc', 'primaryBorderColor': '#334155', 'lineColor': '#3b82f6', 'secondaryColor': '#10b981', 'tertiaryColor': '#6366f1'}}}%%
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1e293b', 'primaryTextColor': '#f8fafc', 'primaryBorderColor': '#334155', 'lineColor': '#3b82f6', 'secondaryColor': '#10b981', 'tertiaryColor': '#6366f1'}}}%%
+graph TD
+    classDef mainSystem fill:#1e293b,stroke:#334155,stroke-width:2px,color:white,font-weight:bold
+    classDef terrainAnalyzer fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:white,font-weight:bold
+    classDef climateAnalyzer fill:#ef4444,stroke:#dc2626,stroke-width:2px,color:white,font-weight:bold
+    classDef environmentalAnalyzer fill:#10b981,stroke:#059669,stroke-width:2px,color:white,font-weight:bold
+    classDef landAnalyzer fill:#8b5cf6,stroke:#7c3aed,stroke-width:2px,color:white,font-weight:bold
+    classDef waterAnalyzer fill:#0ea5e9,stroke:#0284c7,stroke-width:2px,color:white,font-weight:bold
+    classDef geologicalAnalyzer fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:white,font-weight:bold
+    classDef urbanAnalyzer fill:#6366f1,stroke:#4f46e5,stroke-width:2px,color:white,font-weight:bold
+    classDef bioAnalyzer fill:#84cc16,stroke:#65a30d,stroke-width:2px,color:white,font-weight:bold
+    classDef airAnalyzer fill:#06b6d4,stroke:#0891b2,stroke-width:2px,color:white,font-weight:bold
+    classDef noiseAnalyzer fill:#ec4899,stroke:#db2777,stroke-width:2px,color:white,font-weight:bold
+    classDef solarAnalyzer fill:#eab308,stroke:#ca8a04,stroke-width:2px,color:white,font-weight:bold
+    classDef walkAnalyzer fill:#14b8a6,stroke:#0d9488,stroke-width:2px,color:white,font-weight:bold
+    classDef viewAnalyzer fill:#8b5cf6,stroke:#7c3aed,stroke-width:2px,color:white,font-weight:bold
+    classDef microAnalyzer fill:#22c55e,stroke:#16a34a,stroke-width:2px,color:white,font-weight:bold
+    classDef propertyAnalyzer fill:#f43f5e,stroke:#e11d48,stroke-width:2px,color:white,font-weight:bold
+    classDef infraAnalyzer fill:#6366f1,stroke:#4f46e5,stroke-width:2px,color:white,font-weight:bold
+    classDef subAnalyzer fill:#64748b,stroke:#475569,stroke-width:1px,color:white
+    
+    A[🧠 Earth Memory Analyzers] --> B[🏔️ TerrainAnalyzer]
+    A --> C[🌡️ ClimateDataFetcher]
+    A --> D[🌱 EnvironmentalImpactAnalyzer]
+    A --> E[🏞️ LandUseClassifier]
+    A --> F[💧 WaterResourceAnalyzer]
+    A --> G[🪨 GeologicalDataFetcher]
+    A --> H[🏙️ UrbanDevelopmentAnalyzer]
+    A --> I[🦋 BiodiversityAnalyzer]
+    A --> J[💨 AirQualityMonitor]
+    A --> K[🔊 NoiseAnalyzer]
+    A --> L[☀️ SolarPotentialCalculator]
+    A --> M[🚶 WalkabilityAnalyzer]
+    A --> N[👁️ ViewshedAnalyzer]
+    A --> O[🌤️ MicroclimateAnalyzer]
+    A --> P[💰 PropertyValuePredictor]
+    A --> Q[🛣️ InfrastructureAnalyzer]
+    
+    B --> B1[📏 Elevation Analysis]
+    B --> B2[📐 Slope Analysis]
+    B --> B3[🧭 Aspect Analysis]
+    B --> B4[⚠️ Landslide Risk]
+    
+    C --> C1[📈 Temperature Trends]
+    C --> C2[🌧️ Precipitation Patterns]
+    C --> C3[🔮 Climate Projections]
+    C --> C4[🌪️ Extreme Weather Risk]
+    
+    F --> F1[🌊 Flood Risk Assessment]
+    F --> F2[🧪 Water Quality Analysis]
+    F --> F3[🏜️ Drought Risk Modeling]
+    F --> F4[🏞️ Watershed Analysis]
+    
+    H --> H1[📊 Urban Growth Patterns]
+    H --> H2[📋 Development Plans]
+    H --> H3[🏗️ Infrastructure Analysis]
+    H --> H4[🏢 Zoning Changes]
+    
+    A:::mainSystem
+    B:::terrainAnalyzer
+    C:::climateAnalyzer
+    D:::environmentalAnalyzer
+    E:::landAnalyzer
+    F:::waterAnalyzer
+    G:::geologicalAnalyzer
+    H:::urbanAnalyzer
+    I:::bioAnalyzer
+    J:::airAnalyzer
+    K:::noiseAnalyzer
+    L:::solarAnalyzer
+    M:::walkAnalyzer
+    N:::viewAnalyzer
+    O:::microAnalyzer
+    P:::propertyAnalyzer
+    Q:::infraAnalyzer
+    
+    B1:::subAnalyzer
+    B2:::subAnalyzer
+    B3:::subAnalyzer
+    B4:::subAnalyzer
+    C1:::subAnalyzer
+    C2:::subAnalyzer
+    C3:::subAnalyzer
+    C4:::subAnalyzer
+    F1:::subAnalyzer
+    F2:::subAnalyzer
+    F3:::subAnalyzer
+    F4:::subAnalyzer
+    H1:::subAnalyzer
+    H2:::subAnalyzer
+    H3:::subAnalyzer
+    H4:::subAnalyzer
+    
+    linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 stroke-width:2px,stroke-dasharray:5 5
 ```
 
 ### 3. Tiered Memory Architecture
@@ -395,6 +633,130 @@ graph TD
     L -->|Score| L5[Resilience Score]
 ```
 
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0f172a', 'primaryTextColor': '#f8fafc', 'primaryBorderColor': '#1e293b', 'lineColor': '#3b82f6', 'secondaryColor': '#10b981', 'tertiaryColor': '#6366f1'}}}%%
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0f172a', 'primaryTextColor': '#f8fafc', 'primaryBorderColor': '#1e293b', 'lineColor': '#3b82f6', 'secondaryColor': '#10b981', 'tertiaryColor': '#6366f1'}}}%%
+graph TD
+    classDef inputData fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:white,font-weight:bold
+    classDef memorySystem fill:#10b981,stroke:#059669,stroke-width:2px,color:white,font-weight:bold
+    classDef agent fill:#6366f1,stroke:#4f46e5,stroke-width:2px,color:white,font-weight:bold
+    classDef analysis fill:#0f172a,stroke:#1e293b,stroke-width:2px,color:white,font-weight:bold
+    classDef environmental fill:#22c55e,stroke:#16a34a,stroke-width:2px,color:white
+    classDef risks fill:#ef4444,stroke:#dc2626,stroke-width:2px,color:white
+    classDef urban fill:#8b5cf6,stroke:#7c3aed,stroke-width:2px,color:white
+    classDef sustainability fill:#10b981,stroke:#059669,stroke-width:2px,color:white
+    classDef climate fill:#0ea5e9,stroke:#0284c7,stroke-width:2px,color:white
+    classDef historical fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:white
+    classDef future fill:#ec4899,stroke:#db2777,stroke-width:2px,color:white
+    classDef scores fill:#f43f5e,stroke:#e11d48,stroke-width:2px,color:white
+    classDef metrics fill:#64748b,stroke:#475569,stroke-width:1px,color:white
+    
+    A[📊 Property Data] -->|Input| B[🏠 RealEstateAgent]
+    C[🌍 Earth Memory System] -->|13 Specialized Analyzers| B
+    B -->|Asynchronous Analysis| D[🔍 Comprehensive Property Analysis]
+    
+    D -->|Output| E[🌿 Environmental Quality]
+    E -->|Metrics| E1[💨 Air Quality Index]
+    E -->|Metrics| E2[🔊 Noise Levels]
+    E -->|Metrics| E3[🌳 Green Space Ratio]
+    E -->|Metrics| E4[🦋 Biodiversity Score]
+    
+    D -->|Output| F[⚠️ Natural Risks]
+    F -->|Metrics| F1[🌊 Flood Risk]
+    F -->|Metrics| F2[🌋 Earthquake Risk]
+    F -->|Metrics| F3[⛰️ Landslide Risk]
+    F -->|Metrics| F4[🕳️ Subsidence Risk]
+    
+    D -->|Output| G[🏙️ Urban Features]
+    G -->|Metrics| G1[🚶 Walkability Score]
+    G -->|Metrics| G2[🚇 Public Transport Access]
+    G -->|Metrics| G3[🏬 Amenities Score]
+    G -->|Metrics| G4[🏢 Urban Density]
+    
+    D -->|Output| H[♻️ Sustainability]
+    H -->|Metrics| H1[☀️ Solar Potential]
+    H -->|Metrics| H2[🏗️ Green Building Score]
+    H -->|Metrics| H3[💧 Water Efficiency]
+    H -->|Metrics| H4[⚡ Energy Efficiency]
+    
+    D -->|Output| I[🌡️ Climate Resilience]
+    I -->|Metrics| I1[🔥 Heat Island Effect]
+    I -->|Metrics| I2[❄️ Cooling Demand]
+    I -->|Metrics| I3[🌪️ Storm Resilience]
+    I -->|Metrics| I4[🏜️ Drought Risk]
+    
+    B -->|Temporal Analysis| J[📜 Historical Changes]
+    J -->|Analysis| J1[🏞️ Land Use Changes]
+    J -->|Analysis| J2[🏗️ Urban Development]
+    J -->|Analysis| J3[🌱 Environmental Impact]
+    J -->|Analysis| J4[🌡️ Climate Trends]
+    
+    B -->|Predictive Analysis| K[🔮 Future Predictions]
+    K -->|Predictions| K1[🏙️ Urban Development]
+    K -->|Predictions| K2[🌿 Environmental Changes]
+    K -->|Predictions| K3[🌡️ Climate Projections]
+    K -->|Predictions| K4[♻️ Sustainability Outlook]
+    
+    B -->|Multi-Dimensional Scoring| L[⭐ Property Scores]
+    L -->|Score| L1[🏆 Overall Score]
+    L -->|Score| L2[♻️ Sustainability Score]
+    L -->|Score| L3[🏡 Livability Score]
+    L -->|Score| L4[💰 Investment Score]
+    L -->|Score| L5[🛡️ Resilience Score]
+    
+    A:::inputData
+    B:::agent
+    C:::memorySystem
+    D:::analysis
+    E:::environmental
+    F:::risks
+    G:::urban
+    H:::sustainability
+    I:::climate
+    J:::historical
+    K:::future
+    L:::scores
+    
+    E1:::metrics
+    E2:::metrics
+    E3:::metrics
+    E4:::metrics
+    F1:::metrics
+    F2:::metrics
+    F3:::metrics
+    F4:::metrics
+    G1:::metrics
+    G2:::metrics
+    G3:::metrics
+    G4:::metrics
+    H1:::metrics
+    H2:::metrics
+    H3:::metrics
+    H4:::metrics
+    I1:::metrics
+    I2:::metrics
+    I3:::metrics
+    I4:::metrics
+    J1:::metrics
+    J2:::metrics
+    J3:::metrics
+    J4:::metrics
+    K1:::metrics
+    K2:::metrics
+    K3:::metrics
+    K4:::metrics
+    L1:::metrics
+    L2:::metrics
+    L3:::metrics
+    L4:::metrics
+    L5:::metrics
+    
+    linkStyle 0,1 stroke-width:2px,stroke:#3b82f6
+    linkStyle 2 stroke-width:2px,stroke:#6366f1
+    linkStyle 3,8,13,18,23 stroke-width:2px,stroke:#0f172a
+    linkStyle 28,33,38 stroke-width:2px,stroke:#6366f1,stroke-dasharray:5 5
+```
+
 ### 2. Property Analyzer
 
 The `PropertyAnalyzer` class provides even more detailed analysis with specialized components:
@@ -427,247 +789,9 @@ environmental_analysis = analysis["environmental_analysis"]
 risk_assessment = analysis["risk_assessment"]
 value_analysis = analysis["value_analysis"]
 recommendations = analysis["recommendations"]
+
+
 ```
-
-### 3. Climate Risk Assessment
-
-Financial institutions use memories-dev to assess climate-related risks for properties and infrastructure:
-
-```python
-from memories import ClimateRiskAssessor
-from memories.earth import ClimateDataFetcher
-
-# Initialize risk assessor
-risk_assessor = ClimateRiskAssessor(
-    risk_types=["flood", "wildfire", "drought", "storm"],
-    analysis_resolution="property",
-    time_horizon_years=30
-)
-
-# Assess portfolio risks
-portfolio_risks = await risk_assessor.assess_portfolio(
-    properties=[
-        {"address": "123 Main St, Miami, FL", "value": 750000, "type": "residential"},
-        {"address": "456 Oak Ave, Phoenix, AZ", "value": 1200000, "type": "commercial"},
-        # More properties...
-    ],
-    scenarios=["RCP4.5", "RCP8.5"],
-    confidence_interval=0.95
-)
-
-# Generate risk mitigation recommendations
-recommendations = risk_assessor.generate_mitigation_strategies(
-    portfolio_risks=portfolio_risks,
-    budget_constraint=5000000,
-    prioritization="cost_effectiveness"
-)
-```
-
-### 4. Urban Planning & Development
-
-Urban planners use memories-dev to analyze historical development patterns and simulate future scenarios:
-
-```mermaid
-graph LR
-    A[City Data] -->|Acquisition| B[memories-dev]
-    C[Historical Imagery] -->|Processing| B
-    D[Development Plans] -->|Analysis| B
-    B -->|Insights| E[Urban Planners]
-    B -->|Recommendations| F[Policy Makers]
-    B -->|Visualizations| G[Public Engagement]
-```
-
-### 5. AI-Enhanced Code Intelligence
-
-The `CodeIntelligenceAgent` provides contextual understanding for code repositories:
-
-```python
-# Initialize the agent
-agent = CodeIntelligenceAgent(
-    memory_store=memory_store,
-    embedding_model="all-MiniLM-L6-v2",
-    supported_languages=["python", "javascript", "java", "c++", "go"]
-)
-
-# Store code knowledge
-await agent.store_code_snippet(
-    code="def calculate_distance(point1, point2):\n    return ((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)**0.5",
-    language="python",
-    description="Calculate Euclidean distance between two points",
-    metadata={"category": "geometry", "complexity": "low"}
-)
-
-# Generate code with Earth Memory context
-generated_code = await agent.generate_code(
-    description="Calculate the flood risk for a property based on elevation and proximity to water bodies",
-    language="python",
-    earth_memory_context={
-        "location": {"lat": 37.7749, "lon": -122.4194},
-        "elevation_data": elevation_data,
-        "water_bodies": water_bodies
-    }
-)
-```
-
-### 6. Multimodal AI Assistant
-
-The `MultimodalAIAssistant` integrates text, imagery, and geospatial data:
-
-```python
-# Initialize the assistant
-assistant = MultimodalAIAssistant(
-    memory_store=memory_store,
-    text_embedding_model="all-MiniLM-L6-v2",
-    image_embedding_model="clip-ViT-B-32"
-)
-
-# Process multimodal data
-text_result = await assistant.process_text(
-    text="The urban development in San Francisco has changed significantly over the past decade.",
-    metadata={"topic": "urban_development", "location": "San Francisco"}
-)
-
-image_result = await assistant.process_image(
-    image_path="san_francisco_skyline_2023.jpg",
-    metadata={"type": "skyline", "year": 2023, "location": "San Francisco"}
-)
-
-# Generate multimodal response with Earth Memory context
-response = await assistant.generate_response(
-    query="How has San Francisco's skyline changed since 2010?",
-    earth_memory_context={
-        "location": {"lat": 37.7749, "lon": -122.4194},
-        "time_range": {"start": "2010-01-01", "end": "2023-12-31"}
-    }
-)
-```
-
-### 7. Additional Examples
-
-Check out our [examples directory](examples/) for more sophisticated applications:
-
-- **Ambience Analyzer**: Evaluates environmental quality and sensory experience
-- **LLM Training Optimizer**: Improves model training with Earth Memory context
-- **Water Body Agent**: Monitors water resources with temporal change detection
-- **Traffic Analyzer**: Identifies patterns and optimizes transportation
-
-## 🧩 System Architecture
-
-memories-dev is built on a sophisticated architecture that enables seamless integration of Earth Memory with AI systems:
-
-```mermaid
-graph TD
-    A[Data Acquisition Layer] -->|Ingests| B[Memory Management Layer]
-    B -->|Provides Context| C[Model Integration Layer]
-    C -->|Powers| D[Application Layer]
-    
-    A -->|Components| A1[Satellite Imagery APIs]
-    A -->|Components| A2[Vector Data Sources]
-    A -->|Components| A3[Environmental Data APIs]
-    A -->|Components| A4[Temporal Data Processors]
-    
-    B -->|Components| B1[Hot Memory Manager]
-    B -->|Components| B2[Warm Memory Manager]
-    B -->|Components| B3[Cold Memory Manager]
-    B -->|Components| B4[Memory Indexing System]
-    B -->|Components| B5[Vector Store Integration]
-    
-    C -->|Components| C1[Model Connectors]
-    C -->|Components| C2[Context Formatters]
-    C -->|Components| C3[Response Generators]
-    C -->|Components| C4[Function Calling]
-    
-    D -->|Examples| D1[Real Estate Agent]
-    D -->|Examples| D2[Property Analyzer]
-    D -->|Examples| D3[Water Body Agent]
-    D -->|Examples| D4[Ambience Analyzer]
-```
-
-## 🚀 Deployment Options
-
-memories-dev offers flexible deployment options to suit different use cases:
-
-### Docker Deployment
-
-```bash
-# Build the Docker image
-docker build -t memories-dev:latest .
-
-# Run with Earth Memory API access
-docker run -p 8000:8000 \
-  -v $(pwd)/data:/app/data \
-  -e OVERTURE_API_KEY=your_api_key \
-  -e SENTINEL_USER=your_username \
-  -e SENTINEL_PASSWORD=your_password \
-  memories-dev:latest
-```
-
-### Kubernetes Deployment
-
-```yaml
-# memories-deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: memories-dev
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: memories-dev
-  template:
-    metadata:
-      labels:
-        app: memories-dev
-    spec:
-      containers:
-      - name: memories-dev
-        image: memories-dev:latest
-        resources:
-          limits:
-            cpu: "4"
-            memory: "8Gi"
-            nvidia.com/gpu: "1"
-          requests:
-            cpu: "2"
-            memory: "4Gi"
-        env:
-        - name: OVERTURE_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: api-keys
-              key: overture-api-key
-        - name: SENTINEL_USER
-          valueFrom:
-            secretKeyRef:
-              name: api-keys
-              key: sentinel-user
-        - name: SENTINEL_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: api-keys
-              key: sentinel-password
-        volumeMounts:
-        - name: data-volume
-          mountPath: /app/data
-      volumes:
-      - name: data-volume
-        persistentVolumeClaim:
-          claimName: memories-data-pvc
-```
-
-## 📊 Performance Benchmarks
-
-memories-dev has been optimized for high-performance Earth Memory processing:
-
-| Operation | CPU (8 cores) | GPU (T4) | GPU (A100) |
-|-----------|--------------|----------|------------|
-| Satellite Image Processing | 12.5s | 3.2s | 0.8s |
-| Vector Data Processing | 4.8s | 1.5s | 0.4s |
-| Environmental Analysis | 8.3s | 2.1s | 0.5s |
-| Comprehensive Property Analysis | 28.7s | 7.4s | 1.9s |
-| Historical Change Detection | 45.2s | 11.8s | 3.1s |
-| Future Trend Prediction | 18.9s | 4.9s | 1.3s |
 
 ## 📅 Release Timeline
 
@@ -675,62 +799,3 @@ memories-dev has been optimized for high-performance Earth Memory processing:
 - **v2.0.2** - Released on February 25, 2025: Current version with enhanced features
 
 ## 🔮 Future Roadmap
-
-```mermaid
-gantt
-    title memories-dev Development Roadmap
-    dateFormat  YYYY-MM-DD
-    section Core Features
-    Enhanced Vector Store Integration    :done, 2025-01-01, 2025-02-14
-    Multi-modal Memory Management        :active, 2025-02-15, 2025-04-30
-    Distributed Memory Architecture      :2025-05-01, 2025-07-31
-    section Earth Memory
-    Advanced Satellite Integration       :done, 2025-01-01, 2025-02-14
-    Real-time Environmental Monitoring   :active, 2025-02-15, 2025-05-31
-    Climate Prediction Models            :2025-06-01, 2025-08-31
-    section AI Capabilities
-    Memory-Augmented Reasoning           :active, 2025-02-15, 2025-04-30
-    Multi-agent Memory Sharing           :2025-05-01, 2025-07-31
-    Causal Inference Engine              :2025-08-01, 2025-10-31
-```
-
-## 📚 Documentation
-
-- [Getting Started Guide](docs/getting_started.md)
-- [API Reference](docs/api_reference.md)
-- [Earth Memory Integration](docs/earth_memory.md)
-- [Example Applications](examples/README.md)
-- [Advanced Features](docs/advanced_features.md)
-
-## ⚙️ System Requirements
-
-- Python 3.9+
-- 16GB RAM (32GB+ recommended for production)
-- NVIDIA GPU with 8GB+ VRAM (recommended)
-- Internet connection for Earth Memory APIs
-- API keys for Overture Maps and Sentinel data
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-## 📜 License
-
-This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-- [Issue Tracker](https://github.com/Vortx-AI/memories-dev/issues)
-- [Documentation](docs/)
-- [Community Forum](https://forum.memories-dev.com)
-- [Discord Community](https://discord.gg/tGCVySkX4d)
-
-<p align="center">
-  <img src="https://github.com/Vortx-AI/memories-dev/raw/main/docs/source/_static/earth_memory_logo.png" alt="Earth Memory" width="150px">
-  <br>
-  <b>Building the World's Memory for Artificial General Intelligence</b>
-  <br>
-  <br>
-  Built with 💜 by the memories-dev team
-</p>
-

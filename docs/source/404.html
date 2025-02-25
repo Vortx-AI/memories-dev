@@ -1,0 +1,234 @@
+{% extends "layout.html" %}
+
+{% set title = 'Page Not Found' %}
+
+{% block body %}
+<div class="error-page">
+  <h1>404 - Page Not Found</h1>
+  
+  <div class="error-image">
+    <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+  </div>
+  
+  <p class="error-message">
+    We couldn't find the page you were looking for. The page may have been moved, deleted, or never existed.
+  </p>
+  
+  <div class="error-suggestions">
+    <h2>Here are some helpful links:</h2>
+    <ul>
+      <li><a href="{{ pathto('index') }}">Home</a> - Return to the documentation homepage</li>
+      <li><a href="{{ pathto('search') }}">Search</a> - Find what you're looking for</li>
+      <li><a href="https://github.com/Vortx-AI/memories-dev/issues">Report an Issue</a> - Let us know about broken links</li>
+    </ul>
+  </div>
+  
+  <div class="search-box">
+    <h3>Search the documentation:</h3>
+    <form action="{{ pathto('search') }}" method="get">
+      <input type="text" name="q" placeholder="Search documentation...">
+      <input type="submit" value="Search">
+    </form>
+  </div>
+</div>
+
+<style>
+  .error-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  }
+  
+  .error-page h1 {
+    font-size: 2.5rem;
+    color: #0f172a;
+    margin-bottom: 2rem;
+  }
+  
+  .error-image {
+    margin: 2rem 0;
+    color: #3b82f6;
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0% {
+      opacity: 0.6;
+      transform: scale(0.98);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0.6;
+      transform: scale(0.98);
+    }
+  }
+  
+  .error-message {
+    font-size: 1.2rem;
+    color: #64748b;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+  
+  .error-suggestions {
+    text-align: left;
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background-color: #f8fafc;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  }
+  
+  .error-suggestions h2 {
+    font-size: 1.5rem;
+    color: #0f172a;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+  }
+  
+  .error-suggestions ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .error-suggestions li {
+    margin: 0.8rem 0;
+    padding-left: 1.5rem;
+    position: relative;
+  }
+  
+  .error-suggestions li:before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: #3b82f6;
+  }
+  
+  .error-suggestions a {
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease-in-out;
+  }
+  
+  .error-suggestions a:hover {
+    color: #2563eb;
+    text-decoration: underline;
+  }
+  
+  .search-box {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background-color: #f0f9ff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  }
+  
+  .search-box h3 {
+    font-size: 1.2rem;
+    color: #0f172a;
+    margin-bottom: 1rem;
+  }
+  
+  .search-box form {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .search-box input[type="text"] {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+  
+  .search-box input[type="submit"] {
+    padding: 0.75rem 1.5rem;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+  }
+  
+  .search-box input[type="submit"]:hover {
+    background-color: #2563eb;
+  }
+  
+  /* Dark mode support */
+  .dark-mode .error-page h1,
+  .dark-mode .error-suggestions h2,
+  .dark-mode .search-box h3 {
+    color: #f8fafc;
+  }
+  
+  .dark-mode .error-message {
+    color: #94a3b8;
+  }
+  
+  .dark-mode .error-image {
+    color: #60a5fa;
+  }
+  
+  .dark-mode .error-suggestions,
+  .dark-mode .search-box {
+    background-color: #1e293b;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  }
+  
+  .dark-mode .error-suggestions h2 {
+    border-bottom-color: #334155;
+  }
+  
+  .dark-mode .error-suggestions a {
+    color: #60a5fa;
+  }
+  
+  .dark-mode .error-suggestions a:hover {
+    color: #93c5fd;
+  }
+  
+  .dark-mode .search-box input[type="text"] {
+    background-color: #0f172a;
+    border-color: #334155;
+    color: #f8fafc;
+  }
+  
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .error-page {
+      padding: 1rem;
+    }
+    
+    .error-page h1 {
+      font-size: 2rem;
+    }
+    
+    .error-message {
+      font-size: 1rem;
+    }
+    
+    .search-box form {
+      flex-direction: column;
+    }
+    
+    .search-box input[type="submit"] {
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %} 

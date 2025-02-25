@@ -34,6 +34,18 @@ extensions = [
     'myst_parser'
 ]
 
+# Add enhanced extensions for better documentation
+extensions += [
+    'sphinx_design',           # Enhanced UI components
+    'sphinxcontrib.mermaid',   # Mermaid diagrams support
+    'sphinx_tabs.tabs',        # Tabbed content
+    'sphinx_togglebutton',     # Toggle buttons
+    'sphinx_favicon',          # Multiple favicons
+    'sphinx.ext.duration',     # Build duration tracking
+    'sphinx_sitemap',          # Sitemap generation
+    'sphinx_last_updated_by_git', # Last updated date from git
+]
+
 # Handle type hints based on Python version
 python_version = packaging_version.parse(platform.python_version())
 sphinx_version = packaging_version.parse(sphinx.__version__)
@@ -60,10 +72,12 @@ templates_path = ['_templates']
 # These paths are either relative to html_static_path or fully qualified paths (eg. https://...)
 html_css_files = [
     'custom.css',
+    'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
 ]
 
 html_js_files = [
     'https://buttons.github.io/buttons.js',
+    'custom.js',
 ]
 
 # The suffix of source filenames
@@ -100,6 +114,16 @@ html_theme_options = {
     'analytics_id': 'UA-XXXXXXXX-1',  # Replace with your Google Analytics ID
 }
 
+# Enhanced theme options
+html_theme_options.update({
+    'style_nav_header_background': '#0f172a',  # Darker blue
+    'body_max_width': '1200px',
+    'navigation_with_keys': True,
+    'canonical_url': 'https://memories-dev.readthedocs.io/',
+    'logo_only': True,
+    'display_version': True,
+})
+
 # HTML context
 html_context = {
     'display_github': True,
@@ -108,6 +132,29 @@ html_context = {
     'github_version': 'main',
     'conf_py_path': '/docs/source/',
 }
+
+# Logo configuration
+html_logo = '_static/memories_logo_light.png'
+html_favicon = '_static/favicon.ico'
+
+# Favicon configuration
+favicons = [
+    {
+        "rel": "icon",
+        "sizes": "16x16",
+        "href": "favicon-16x16.png",
+    },
+    {
+        "rel": "icon",
+        "sizes": "32x32",
+        "href": "favicon-32x32.png",
+    },
+    {
+        "rel": "apple-touch-icon",
+        "sizes": "180x180",
+        "href": "apple-touch-icon.png"
+    },
+]
 
 # Custom sidebar templates
 html_sidebars = {
@@ -192,7 +239,22 @@ copybutton_remove_prompts = True
 
 # Mermaid settings
 mermaid_params = {
-    'theme': 'default',
+    'theme': 'dark',
+    'securityLevel': 'loose',
+    'startOnLoad': True,
+    'flowchart': {
+        'useMaxWidth': False,
+        'htmlLabels': True,
+        'curve': 'basis'
+    },
+    'themeVariables': {
+        'primaryColor': '#0f172a',
+        'primaryTextColor': '#f8fafc',
+        'primaryBorderColor': '#1e293b',
+        'lineColor': '#3b82f6',
+        'secondaryColor': '#10b981',
+        'tertiaryColor': '#6366f1'
+    }
 }
 
 # MyST settings
@@ -215,6 +277,17 @@ html_extra_path = ['robots.txt']
 # Output file base name for HTML help builder
 htmlhelp_basename = 'memories-dev-doc'
 
+# Sitemap configuration
+sitemap_url_scheme = "{link}"
+sitemap_filename = "sitemap.xml"
+
+# Last updated configuration
+html_last_updated_fmt = "%b %d, %Y"
+
+# Search configuration
+search_language = "en"
+
+# Mock imports for documentation build
 autodoc_mock_imports = [
     "cudf",
     "cuspatial",
@@ -248,12 +321,4 @@ autodoc_mock_imports = [
     "xarray",
     "dask",
     "aiohttp",
-    "fsspec",
-    "cryptography",
-    "pyjwt",
-    "fastapi",
-    "netCDF4",
-    "earthengine",
-    "sentinelhub",
-    "sentence_transformers"
 ] 
