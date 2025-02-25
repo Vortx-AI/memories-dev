@@ -22,7 +22,8 @@ class LoadModel:
                  model_provider: str = None,
                  deployment_type: str = None,  # "deployment" or "api"
                  model_name: str = None,
-                 api_key: str = None):
+                 api_key: str = None,
+                 device: str = None):
         """
         Initialize model loader with configuration.
         
@@ -32,6 +33,7 @@ class LoadModel:
             deployment_type (str): Either "deployment" or "api"
             model_name (str): Short name of the model from BaseModel.MODEL_MAPPINGS
             api_key (str): API key for the model provider (required for API deployment type)
+            device (str): Specific GPU device to use (e.g., "cuda:0", "cuda:1")
         """
         # Setup logging
         self.instance_id = str(uuid.uuid4())
@@ -65,10 +67,24 @@ class LoadModel:
         self.model_name = model_name
         self.api_key = api_key
         
+        # Handle device selection
+        self.device = device
+        if self.use_gpu:
+            if device:
+                if not device.startswith("cuda:"):
+                    raise ValueError("Device must be in format 'cuda:N' where N is the GPU index")
+                device_idx = int(device.split(":")[-1])
+                if device_idx >= torch.cuda.device_count():
+                    raise ValueError(f"Device {device} not available. Maximum device index is {torch.cuda.device_count()-1}")
+            else:
+                self.device = "cuda:0"  # Default to first GPU
+        else:
+            self.device = "cpu"
+            
         # Initialize appropriate model interface
         if deployment_type == "deployment":
             self.base_model = BaseModel.get_instance()
-            success = self.base_model.initialize_model(model_name, use_gpu)
+            success = self.base_model.initialize_model(model_name, use_gpu, device=self.device)
             if not success:
                 raise RuntimeError(f"Failed to initialize model: {model_name}")
         else:  # api

@@ -51,12 +51,13 @@ class BaseModel:
         """Get configuration for a specific model."""
         return self.config.get("models", {}).get(model_name, {})
     
-    def initialize_model(self, model: str, use_gpu: bool = True) -> bool:
+    def initialize_model(self, model: str, use_gpu: bool = True, device: str = None) -> bool:
         """Initialize a model with the specified configuration.
         
         Args:
             model: Model identifier from config
             use_gpu: Whether to use GPU if available
+            device: Specific GPU device to use (e.g., "cuda:0", "cuda:1")
             
         Returns:
             bool: True if initialization successful, False otherwise
@@ -72,10 +73,22 @@ class BaseModel:
                 return False
             
             # Determine device
-            device = "cuda" if use_gpu and torch.cuda.is_available() else "cpu"
-            if device == "cpu" and not self.config["global_config"]["fallback_to_cpu"]:
-                logger.error("GPU requested but not available and fallback_to_cpu is False")
-                return False
+            if use_gpu and torch.cuda.is_available():
+                if device:
+                    if not device.startswith("cuda:"):
+                        logger.error("Device must be in format 'cuda:N' where N is the GPU index")
+                        return False
+                    device_idx = int(device.split(":")[-1])
+                    if device_idx >= torch.cuda.device_count():
+                        logger.error(f"Device {device} not available. Maximum device index is {torch.cuda.device_count()-1}")
+                        return False
+                else:
+                    device = "cuda:0"  # Default to first GPU
+            else:
+                device = "cpu"
+                if not self.config["global_config"]["fallback_to_cpu"]:
+                    logger.error("GPU requested but not available and fallback_to_cpu is False")
+                    return False
             
             # Get model parameters
             config = model_config["config"]
@@ -85,7 +98,7 @@ class BaseModel:
             model_kwargs = {
                 "use_auth_token": self.hf_token if self.config["global_config"]["use_auth_token"] else None,
                 "torch_dtype": getattr(torch, config.get("torch_dtype", "float32")),
-                "device_map": config.get("device_map", "auto") if device == "cuda" else None,
+                "device_map": "auto" if device.startswith("cuda") else None,
                 "trust_remote_code": config.get("trust_remote_code", True)
             }
             
@@ -101,7 +114,8 @@ class BaseModel:
                 **model_kwargs
             )
             
-            if device == "cpu":
+            # Move model to specified device
+            if device == "cpu" or device.startswith("cuda:"):
                 self.model = self.model.to(device)
             
             logger.info(f"Model {model_name} initialized successfully on {device}")
@@ -207,9 +221,12 @@ class BaseModel:
             ]
         return list(instance.config["models"].keys())
 
-def load_stable_diffusion_model():
+def load_stable_diffusion_model(device: str = None):
     """
     Preloads the Stable Diffusion model into the global `pipe` variable.
+    
+    Args:
+        device: Specific GPU device to use (e.g., "cuda:0", "cuda:1")
     """
     global pipe
 
@@ -232,10 +249,22 @@ def load_stable_diffusion_model():
             **config
         )
         
+        # Determine device
         if torch.cuda.is_available():
-            pipe = pipe.to("cuda")
+            if device:
+                if not device.startswith("cuda:"):
+                    raise ValueError("Device must be in format 'cuda:N' where N is the GPU index")
+                device_idx = int(device.split(":")[-1])
+                if device_idx >= torch.cuda.device_count():
+                    raise ValueError(f"Device {device} not available. Maximum device index is {torch.cuda.device_count()-1}")
+            else:
+                device = "cuda:0"  # Default to first GPU
+            pipe = pipe.to(device)
+        else:
+            logger.warning("CUDA not available, using CPU. This will be slow!")
+            pipe = pipe.to("cpu")
             
-        logger.info("Stable Diffusion model loaded successfully.")
+        logger.info(f"Stable Diffusion model loaded successfully on {device if device else 'cuda:0'}")
         
     except Exception as e:
         logger.error(f"Failed to load Stable Diffusion model: {e}")
