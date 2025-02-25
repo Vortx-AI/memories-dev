@@ -166,13 +166,13 @@ setup(
             "pre-commit>=3.6.0"
         ],
         "docs": [
-            "sphinx>=7.2.0",
+            "sphinx>=7.2.6",
             "sphinx-rtd-theme>=2.0.0",
-            "sphinx-autodoc-typehints>=2.0.0",
-            "nbsphinx>=0.9.0",
+            "sphinx-autodoc-typehints>=2.0.1",
+            "nbsphinx>=0.9.3",
             "pandoc>=2.3",
             "sphinx-copybutton>=0.5.2",
-            "myst-parser>=0.18.1",
+            "myst-parser>=2.0.0",
             "sphinx-design>=0.5.0",
             "sphinxcontrib-mermaid>=0.9.2",
             "sphinx-tabs>=3.4.1",
