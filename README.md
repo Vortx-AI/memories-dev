@@ -26,21 +26,6 @@
   <img src="https://github.com/Vortx-AI/memories-dev/raw/main/docs/source/_static/architecture_overview.gif" alt="memories-dev Architecture" width="700px">
 </div>
 
-```mermaid
-graph TD
-    A[Foundation Models] -->|Augmented with| B[Earth Memory]
-    B -->|Provides| C[Spatial Context]
-    B -->|Provides| D[Temporal Context]
-    B -->|Provides| E[Environmental Context]
-    C -->|Enables| F[Location-Aware Intelligence]
-    D -->|Enables| G[Time-Aware Intelligence]
-    E -->|Enables| H[Environment-Aware Intelligence]
-    F --> I[Collective AGI Memory]
-    G --> I
-    H --> I
-    I -->|Powers| J[Next-Gen AI Applications]
-```
-
 %%{
   init: {
     'theme': 'base',
@@ -98,8 +83,6 @@ graph TD
     linkStyle 0 stroke:#3498db,stroke-width:2px,stroke-dasharray: 5 5
     linkStyle 1,2,3 stroke:#16a085,stroke-width:2px
     linkStyle 4,5,6 stroke:#9b59b6,stroke-width:2px
-    linkStyle 7,8,9 stroke:#f39c12,stroke-width:2px
-    linkStyle 10 stroke:#e74c3c,stroke-width:2px,stroke-dasharray: 5 5
 ```
 
 ## 🚀 What's New in Version 2.0.2
