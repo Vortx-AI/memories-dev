@@ -30,6 +30,7 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install pytest pytest-cov pytest-asyncio pytest-mock pytest-xdist pytest-benchmark pytest-timeout
         if [ -f buildtestrequirements.txt ]; then pip install -r buildtestrequirements.txt; fi
+        if [ -f tests/requirements.txt ]; then pip install -r tests/requirements.txt; fi
         pip install -e .
     
     - name: Lint with flake8
