@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/Vortx-AI/memories-dev/main/docs/source/_static/hero_image.png" alt="memories-dev" width="600px">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/The_Blue_Marble_%28remastered%29.jpg/600px-The_Blue_Marble_%28remastered%29.jpg" alt="Earth - The Blue Marble" width="400px">
 
 **Building the World's Memory for Artificial General Intelligence**
 
