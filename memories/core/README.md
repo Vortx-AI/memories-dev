@@ -123,56 +123,61 @@ from memories.core import MemoryManager
 from memories.core.policies import MigrationPolicy
 
 # Define custom migration policy
-migration_policy = MigrationPolicy(
-    hot_to_warm_threshold=24,  # hours
-    warm_to_cold_threshold=72,  # hours
-    cold_to_glacier_threshold=30  # days
-)
+class CustomMigrationPolicy(MigrationPolicy):
+    def should_migrate(self, data_key, current_tier, stats):
+        access_count = stats.get_access_count(data_key)
+        last_access = stats.get_last_access(data_key)
+        size = stats.get_size(data_key)
+        
+        if current_tier == "cold" and access_count > 100:
+            return "warm"  # Promote frequently accessed data
+        elif current_tier == "warm" and last_access > 86400:
+            return "cold"  # Demote stale data
+        return current_tier
 
 # Initialize memory manager with custom policy
 memory_manager = MemoryManager(
-    hot_memory_size=4,
-    warm_memory_size=16,
-    cold_memory_size=100,
-    glacier_enabled=True,
-    migration_policy=migration_policy
+    migration_policy=CustomMigrationPolicy(),
+    compression_enabled=True,
+    encryption_enabled=True
 )
 
 # Store data with metadata
 memory_manager.store(
-    key="satellite_imagery",
-    value=imagery_data,
+    key="satellite_data",
+    value=satellite_imagery,
+    tier="hot",
     metadata={
+        "timestamp": "2025-02-15T10:30:00Z",
         "location": "San Francisco",
-        "date": "2025-02-15",
-        "source": "sentinel-2"
+        "resolution": "10m"
     }
 )
 
-# Query data by metadata
-results = memory_manager.query(
-    metadata_filter={
-        "location": "San Francisco",
-        "date": {"$gte": "2025-01-01"}
-    }
+# Configure glacier storage
+glacier_config = {
+    "provider": "s3",  # or "gcs", "azure", "local"
+    "bucket": "memories-archive",
+    "prefix": "archive/",
+    "region": "us-west-2",
+    "encryption": "AES256"
+}
+
+memory_manager.configure_glacier(glacier_config)
+
+# Batch operations
+keys_to_archive = ["data1", "data2", "data3"]
+memory_manager.migrate_batch(
+    keys=keys_to_archive,
+    target_tier="glacier",
+    compression_level="high"
 )
 
-# Create memory snapshot
-snapshot_id = memory_manager.create_snapshot(
-    description="Pre-processing state"
-)
-
-# Restore from snapshot
-memory_manager.restore_snapshot(snapshot_id)
-
-# Get memory metrics
-metrics = memory_manager.get_metrics()
-print(f"Hot memory usage: {metrics['hot']['usage_percent']}%")
-print(f"Warm memory usage: {metrics['warm']['usage_percent']}%")
-print(f"Cold memory usage: {metrics['cold']['usage_percent']}%")
-
-# Compress cold memory
-memory_manager.compress(tier="cold", compression_level=5)
+# Memory analytics
+stats = memory_manager.get_stats()
+print(f"Hot tier utilization: {stats.hot_tier_utilization}%")
+print(f"Most accessed keys: {stats.get_top_accessed_keys(5)}")
+print(f"Total data size: {stats.total_size_gb}GB")
 ```
 
 ## Implementation Details
@@ -314,14 +319,6 @@ glacier_config = {
     "encryption": "AES256"
 }
 ```
-
-## Coming in Version 2.1.0 (March 2025)
-
-- **Memory Snapshots**: Enhanced point-in-time memory snapshots for backup and recovery
-- **Multi-node Synchronization**: Improved synchronization for distributed memory
-- **Memory Visualization**: Tools for visualizing memory usage and data flow
-- **Custom Compression**: Support for custom compression algorithms
-- **Memory Policies**: More flexible policies for memory management
 
 ## Real-World Memory System Applications
 
@@ -644,6 +641,14 @@ Inspired by these real-world applications? Here's how to get started with your o
 5. **Set up migration policies**: Configure automatic data migration between tiers
 
 For more detailed guidance, check out our [comprehensive documentation](https://memories-dev.readthedocs.io/) and [tutorial series](https://memories-dev.readthedocs.io/tutorials/).
+
+## Coming in Version 2.1.0 (March 2025)
+
+- **Memory Snapshots**: Enhanced point-in-time memory snapshots for backup and recovery
+- **Multi-node Synchronization**: Improved synchronization for distributed memory
+- **Memory Visualization**: Tools for visualizing memory usage and data flow
+- **Custom Compression**: Support for custom compression algorithms
+- **Memory Policies**: More flexible policies for memory management
 
 ## Contributing
 

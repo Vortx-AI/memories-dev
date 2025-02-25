@@ -35,16 +35,17 @@ extensions = [
 ]
 
 # Add enhanced extensions for better documentation
-extensions += [
-    'sphinx_design',           # Enhanced UI components
-    'sphinxcontrib.mermaid',   # Mermaid diagrams support
-    'sphinx_tabs.tabs',        # Tabbed content
-    'sphinx_togglebutton',     # Toggle buttons
-    'sphinx_favicon',          # Multiple favicons
-    'sphinx.ext.duration',     # Build duration tracking
-    'sphinx_sitemap',          # Sitemap generation
-    'sphinx_last_updated_by_git', # Last updated date from git
-]
+# Temporarily disabled for troubleshooting
+# extensions += [
+#     'sphinx_design',           # Enhanced UI components
+#     'sphinxcontrib.mermaid',   # Mermaid diagrams support
+#     'sphinx_tabs.tabs',        # Tabbed content
+#     'sphinx_togglebutton',     # Toggle buttons
+#     'sphinx_favicon',          # Multiple favicons
+#     'sphinx.ext.duration',     # Build duration tracking
+#     'sphinx_sitemap',          # Sitemap generation
+#     'sphinx_last_updated_by_git', # Last updated date from git
+# ]
 
 # Handle type hints based on Python version
 python_version = packaging_version.parse(platform.python_version())

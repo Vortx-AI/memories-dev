@@ -14,7 +14,70 @@ Earth Memory
 Introduction
 ===========
 
-Earth Memory is the core concept behind the memories-dev framework, providing AI systems with a comprehensive understanding of the physical world through temporal and spatial data integration. This section of the documentation explores the Earth Memory system in detail, including its components, capabilities, and applications.
+Earth Memory is the core concept behind the memories-dev framework, providing AI systems with a comprehensive understanding of the physical world through temporal and spatial data integration. Unlike traditional AI approaches that rely on text corpora or unstructured documents, Earth Memory connects AI directly to objective Earth observation data - the pure source of truth about our physical world.
+
+.. raw:: html
+
+   <div class="earth-memory-banner">
+     <div class="banner-content">
+       <h2>The Source of Truth for AI Systems</h2>
+       <p>Earth Memory provides AI with direct access to objective Earth observation data, eliminating hallucinations and biases inherent in text-based training.</p>
+     </div>
+     <div class="banner-image">
+       <img src="../_static/earth_memory_concept.png" alt="Earth Memory Concept">
+     </div>
+   </div>
+
+   <style>
+     .earth-memory-banner {
+       background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+       color: white;
+       padding: 2rem;
+       border-radius: 8px;
+       margin: 2rem 0;
+       display: flex;
+       flex-wrap: wrap;
+       align-items: center;
+       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+     }
+     
+     .banner-content {
+       flex: 1;
+       min-width: 300px;
+       padding: 1rem;
+     }
+     
+     .banner-content h2 {
+       color: white;
+       margin-top: 0;
+       border-bottom: none;
+     }
+     
+     .banner-content p {
+       font-size: 1.1rem;
+       opacity: 0.9;
+     }
+     
+     .banner-image {
+       flex: 1;
+       min-width: 300px;
+       padding: 1rem;
+       text-align: center;
+     }
+     
+     .banner-image img {
+       max-width: 100%;
+       height: auto;
+       border-radius: 8px;
+       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+     }
+     
+     @media (max-width: 768px) {
+       .banner-content, .banner-image {
+         flex: 100%;
+       }
+     }
+   </style>
 
 What is Earth Memory?
 -------------------
@@ -24,7 +87,24 @@ Earth Memory is a sophisticated system that:
 1. **Integrates diverse data sources** about the physical world, including satellite imagery, geospatial data, environmental metrics, and socioeconomic information
 2. **Organizes data across time and space**, creating a four-dimensional understanding of locations
 3. **Processes and analyzes data** to extract meaningful insights and patterns
-4. **Provides contextual information to AI systems**, enabling them to reason about the physical world
+4. **Provides contextual information to AI systems**, enabling them to reason about the physical world with factual accuracy
+
+Why Earth Memory Matters
+---------------------
+
+Traditional AI systems face significant limitations when reasoning about the physical world:
+
+- They rely on text corpora that may contain biases, inaccuracies, and outdated information
+- They lack direct observation capabilities to verify physical world conditions
+- They cannot track how places change over time with precision
+- They often hallucinate plausible but incorrect information about locations and environments
+
+Earth Memory solves these problems by:
+
+- Providing direct access to objective Earth observation data from satellites and sensors
+- Enabling temporal analysis to track changes over time with scientific accuracy
+- Integrating specialized analyzers for domain-specific insights about the physical world
+- Eliminating hallucinations through grounding in factual, observable data
 
 Earth Memory Components
 =====================
@@ -90,29 +170,27 @@ Example usage:
 
 .. code-block:: python
 
-    from memories.earth.temporal import TemporalEngine
+    from memories.earth import TemporalEngine
     
     # Initialize temporal engine
-    temporal_engine = TemporalEngine()
+    engine = TemporalEngine()
     
-    # Analyze changes over time
-    changes = await temporal_engine.analyze_changes(
+    # Analyze historical changes
+    changes = await engine.analyze_changes(
         location="San Francisco, CA",
-        time_range={"start": "2000-01-01", "end": "2023-12-31"},
-        metrics=["urban_development", "vegetation", "property_values"]
+        start_date="2000-01-01",
+        end_date="2023-01-01",
+        interval="yearly"
     )
     
     # Detect significant events
-    events = temporal_engine.detect_events(
-        changes=changes,
-        threshold=0.25  # Significant change threshold
-    )
+    events = engine.detect_significant_events(changes)
     
     # Forecast future trends
-    forecast = await temporal_engine.forecast_trends(
-        location="San Francisco, CA",
-        metrics=["urban_development", "property_values"],
-        forecast_years=10
+    forecast = engine.forecast_trends(
+        changes,
+        forecast_years=10,
+        confidence_interval=0.95
     )
 
 Spatial Engine
@@ -121,38 +199,38 @@ Spatial Engine
 The Spatial Engine manages geographic relationships and spatial analysis, enabling:
 
 - **Proximity Analysis**: Understanding what's near a location
-- **Spatial Relationships**: Analyzing how geographic features relate to each other
-- **Area Calculations**: Computing areas, distances, and other spatial metrics
-- **Geographic Context**: Providing comprehensive geographic understanding
+- **Containment Analysis**: Determining what's within a boundary
+- **Network Analysis**: Analyzing connections between locations
+- **Viewshed Analysis**: Determining what's visible from a location
 
 Example usage:
 
 .. code-block:: python
 
-    from memories.earth.spatial import SpatialEngine
+    from memories.earth import SpatialEngine
     
     # Initialize spatial engine
-    spatial_engine = SpatialEngine()
+    engine = SpatialEngine()
     
-    # Analyze proximity
-    nearby = await spatial_engine.find_nearby(
-        latitude=37.7749,
-        longitude=-122.4194,
-        feature_types=["building", "park", "school"],
+    # Find nearby features
+    nearby = await engine.find_nearby(
+        location="San Francisco, CA",
+        feature_types=["park", "school", "hospital"],
         radius_km=2
     )
     
-    # Calculate spatial metrics
-    metrics = spatial_engine.calculate_metrics(
-        location="San Francisco, CA",
-        metrics=["building_density", "green_space_ratio", "road_connectivity"]
+    # Calculate travel times
+    travel_times = await engine.calculate_travel_times(
+        origin="San Francisco, CA",
+        destinations=["Oakland, CA", "San Jose, CA", "Palo Alto, CA"],
+        mode="driving"
     )
     
-    # Analyze spatial relationships
-    relationships = await spatial_engine.analyze_relationships(
-        feature1=building,
-        feature2=park,
-        relationship_type="distance"
+    # Analyze visibility
+    viewshed = await engine.analyze_viewshed(
+        location="Twin Peaks, San Francisco, CA",
+        radius_km=5,
+        resolution="high"
     )
 
 Analysis Pipeline
@@ -160,54 +238,46 @@ Analysis Pipeline
 
 The Analysis Pipeline extracts insights and patterns from raw data, enabling:
 
-- **Multi-dimensional Analysis**: Examining locations across multiple factors
-- **Pattern Recognition**: Identifying recurring patterns in Earth data
-- **Anomaly Detection**: Finding unusual or unexpected conditions
-- **Comparative Analysis**: Comparing different locations or time periods
+- **Feature Extraction**: Identifying important features in imagery and data
+- **Pattern Recognition**: Recognizing patterns across time and space
+- **Anomaly Detection**: Identifying unusual or unexpected conditions
+- **Correlation Analysis**: Understanding relationships between different factors
 
 Example usage:
 
 .. code-block:: python
 
-    from memories.earth.analysis import AnalysisPipeline
+    from memories.earth import AnalysisPipeline
     
     # Initialize analysis pipeline
     pipeline = AnalysisPipeline()
     
-    # Configure analysis steps
-    pipeline.add_step("data_acquisition", {
-        "sources": ["satellite", "vector", "environmental"]
-    })
-    pipeline.add_step("preprocessing", {
-        "normalize": True,
-        "fill_missing": "interpolate"
-    })
-    pipeline.add_step("feature_extraction", {
-        "features": ["ndvi", "building_density", "temperature_anomaly"]
-    })
-    pipeline.add_step("pattern_recognition", {
-        "algorithm": "clustering",
-        "n_clusters": 5
-    })
-    
-    # Run analysis
-    results = await pipeline.run(
+    # Extract features from satellite imagery
+    features = await pipeline.extract_features(
         location="San Francisco, CA",
-        time_range={"start": "2020-01-01", "end": "2023-12-31"}
+        feature_types=["building", "vegetation", "water"]
     )
     
-    # Extract insights
-    insights = pipeline.extract_insights(results)
+    # Detect anomalies
+    anomalies = pipeline.detect_anomalies(
+        data=features,
+        baseline="historical_average"
+    )
+    
+    # Analyze correlations
+    correlations = pipeline.analyze_correlations(
+        factors=["vegetation_cover", "temperature", "air_quality"]
+    )
 
 Context Formatter
 --------------
 
 The Context Formatter prepares Earth Memory data for consumption by AI models, enabling:
 
-- **Model-specific Formatting**: Tailoring data to different AI model requirements
-- **Multi-modal Integration**: Combining text, imagery, and structured data
-- **Prompt Engineering**: Creating effective prompts that incorporate Earth Memory
-- **Response Enhancement**: Enriching AI responses with Earth Memory context
+- **Prompt Engineering**: Creating effective prompts with Earth Memory context
+- **Multi-Modal Integration**: Combining text, imagery, and structured data
+- **Format Adaptation**: Adapting data to different model requirements
+- **Context Optimization**: Optimizing context for different use cases
 
 Example usage:
 
@@ -238,6 +308,155 @@ Example usage:
         location="Mission District, San Francisco, CA",
         context=llm_context
     )
+
+Earth Memory vs. Traditional AI Approaches
+=======================================
+
+.. raw:: html
+
+   <div class="comparison-container">
+     <div class="comparison-header">
+       <div class="comparison-cell header-cell">Feature</div>
+       <div class="comparison-cell header-cell">Earth Memory</div>
+       <div class="comparison-cell header-cell">Traditional Foundation Models</div>
+       <div class="comparison-cell header-cell">Traditional RAG Systems</div>
+     </div>
+     
+     <div class="comparison-row">
+       <div class="comparison-cell feature-cell">Data Source</div>
+       <div class="comparison-cell positive-cell">Direct Earth observation data from satellites and sensors</div>
+       <div class="comparison-cell negative-cell">Text corpora from the internet with potential biases</div>
+       <div class="comparison-cell neutral-cell">Document collections that may contain outdated information</div>
+     </div>
+     
+     <div class="comparison-row">
+       <div class="comparison-cell feature-cell">Temporal Understanding</div>
+       <div class="comparison-cell positive-cell">Precise tracking of changes over time with historical imagery</div>
+       <div class="comparison-cell negative-cell">Limited to text descriptions of historical events</div>
+       <div class="comparison-cell neutral-cell">Dependent on document collection's temporal coverage</div>
+     </div>
+     
+     <div class="comparison-row">
+       <div class="comparison-cell feature-cell">Spatial Understanding</div>
+       <div class="comparison-cell positive-cell">Native understanding of geographic relationships and spatial context</div>
+       <div class="comparison-cell negative-cell">Limited spatial reasoning capabilities</div>
+       <div class="comparison-cell neutral-cell">Basic geospatial understanding if documents contain location data</div>
+     </div>
+     
+     <div class="comparison-row">
+       <div class="comparison-cell feature-cell">Factual Accuracy</div>
+       <div class="comparison-cell positive-cell">Grounded in observable, objective data</div>
+       <div class="comparison-cell negative-cell">Prone to hallucinations about the physical world</div>
+       <div class="comparison-cell neutral-cell">Limited by the accuracy of retrieved documents</div>
+     </div>
+     
+     <div class="comparison-row">
+       <div class="comparison-cell feature-cell">Multi-modal Integration</div>
+       <div class="comparison-cell positive-cell">Native integration of visual, vector, and environmental data</div>
+       <div class="comparison-cell negative-cell">Primarily text-based with limited multi-modal capabilities</div>
+       <div class="comparison-cell neutral-cell">Can retrieve multi-modal documents but lacks integrated analysis</div>
+     </div>
+     
+     <div class="comparison-row">
+       <div class="comparison-cell feature-cell">Specialized Analysis</div>
+       <div class="comparison-cell positive-cell">15+ domain-specific analyzers for environmental and geospatial insights</div>
+       <div class="comparison-cell negative-cell">General-purpose reasoning without specialized tools</div>
+       <div class="comparison-cell neutral-cell">Limited to the analysis capabilities in retrieved documents</div>
+     </div>
+     
+     <div class="comparison-row">
+       <div class="comparison-cell feature-cell">Real-time Updates</div>
+       <div class="comparison-cell positive-cell">Can access current Earth observation data</div>
+       <div class="comparison-cell negative-cell">Knowledge frozen at training time</div>
+       <div class="comparison-cell neutral-cell">Dependent on document collection update frequency</div>
+     </div>
+   </div>
+
+   <style>
+     .comparison-container {
+       margin: 2rem 0;
+       border-radius: 8px;
+       overflow: hidden;
+       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+     }
+     
+     .comparison-header {
+       display: flex;
+       background-color: #0f172a;
+     }
+     
+     .comparison-row {
+       display: flex;
+       border-bottom: 1px solid #e2e8f0;
+     }
+     
+     .comparison-row:last-child {
+       border-bottom: none;
+     }
+     
+     .comparison-cell {
+       padding: 1rem;
+       flex: 1;
+       display: flex;
+       align-items: center;
+     }
+     
+     .header-cell {
+       background-color: #0f172a;
+       color: white;
+       font-weight: bold;
+       padding: 1rem;
+     }
+     
+     .feature-cell {
+       background-color: #f8fafc;
+       font-weight: bold;
+       flex: 0.8;
+     }
+     
+     .positive-cell {
+       background-color: #f0fdf4;
+       border-left: 3px solid #10b981;
+     }
+     
+     .negative-cell {
+       background-color: #fef2f2;
+       border-left: 3px solid #ef4444;
+     }
+     
+     .neutral-cell {
+       background-color: #f8fafc;
+       border-left: 3px solid #64748b;
+     }
+     
+     @media (max-width: 768px) {
+       .comparison-header, .comparison-row {
+         flex-direction: column;
+       }
+       
+       .comparison-cell {
+         flex: 1;
+         border-left: none;
+       }
+       
+       .positive-cell, .negative-cell, .neutral-cell {
+         border-left: none;
+         border-top: 3px solid;
+       }
+       
+       .positive-cell {
+         border-top-color: #10b981;
+       }
+       
+       .negative-cell {
+         border-top-color: #ef4444;
+       }
+       
+       .neutral-cell {
+         border-top-color: #64748b;
+       }
+     }
+   </style>
 
 Earth Memory Applications
 ======================
@@ -297,57 +516,24 @@ Example usage:
     # Monitor deforestation
     deforestation = await monitor.analyze_deforestation(
         region="Amazon Rainforest",
-        time_range={"start": "2000-01-01", "end": "2023-12-31"},
-        resolution="medium"
+        time_range=("2000-01-01", "2023-01-01")
     )
     
-    # Generate environmental report
-    report = monitor.generate_report(
-        analysis=deforestation,
-        format="interactive"
-    )
-
-Urban Planning
------------
-
-Earth Memory supports urban planning and development, including:
-
-- **Development Analysis**: Understanding urban development patterns
-- **Infrastructure Planning**: Supporting infrastructure planning and optimization
-- **Zoning Analysis**: Analyzing land use and zoning patterns
-- **Public Space Evaluation**: Assessing public spaces and their accessibility
-
-Example usage:
-
-.. code-block:: python
-
-    from memories.applications.urban import UrbanPlanner
-    
-    # Initialize urban planner
-    planner = UrbanPlanner()
-    
-    # Analyze urban development
-    development = await planner.analyze_development(
-        city="Boston, MA",
-        time_range={"start": "2000-01-01", "end": "2023-12-31"},
-        metrics=["building_density", "green_space", "transportation"]
-    )
-    
-    # Generate urban development report
-    report = planner.generate_report(
-        analysis=development,
-        format="interactive"
+    # Generate impact report
+    report = monitor.generate_impact_report(
+        deforestation=deforestation,
+        factors=["carbon_storage", "biodiversity", "water_cycle"]
     )
 
 Climate Risk Assessment
 --------------------
 
-Earth Memory enables comprehensive climate risk assessment, including:
+Earth Memory supports comprehensive climate risk assessment, including:
 
-- **Flood Risk Analysis**: Assessing flood risk based on elevation, proximity to water, and historical patterns
-- **Wildfire Risk Analysis**: Evaluating wildfire risk based on vegetation, climate, and historical patterns
-- **Drought Risk Analysis**: Analyzing drought risk based on climate patterns and water resources
-- **Storm Risk Analysis**: Assessing storm risk based on historical patterns and climate projections
+- **Flood Risk**: Assessing flood risk based on terrain, precipitation, and historical patterns
+- **Heat Risk**: Evaluating heat island effects and extreme heat risks
+- **Drought Risk**: Analyzing drought vulnerability and water resource challenges
+- **Storm Risk**: Assessing vulnerability to storms and extreme weather events
 
 Example usage:
 

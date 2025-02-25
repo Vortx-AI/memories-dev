@@ -134,7 +134,7 @@ class PropertyAnalyzer(BaseModel):
         for name, dimension in collections:
             if name not in self.memory_store.list_collections():
                 self.memory_store.create_collection(name, vector_dimension=dimension)
-
+    
     async def analyze_property(
         self,
         lat: float,
@@ -148,7 +148,7 @@ class PropertyAnalyzer(BaseModel):
             lat: Property latitude
             lon: Property longitude
             property_data: Optional additional property information
-        
+            
         Returns:
             Dictionary containing comprehensive analysis results
         """
@@ -676,7 +676,7 @@ class PropertyAnalyzer(BaseModel):
                 development
             )
         }
-
+    
     def _assess_historical_risks(
         self,
         landscape_changes: Dict[str, Any],
@@ -704,7 +704,7 @@ class PropertyAnalyzer(BaseModel):
             })
         
         return risks
-
+    
     def _assess_natural_hazard_risks(
         self,
         terrain_analysis: Dict[str, Any],
@@ -742,7 +742,7 @@ class PropertyAnalyzer(BaseModel):
             })
         
         return risks
-
+    
     def _assess_environmental_risks(
         self,
         environmental_analysis: Dict[str, Any],
@@ -780,7 +780,7 @@ class PropertyAnalyzer(BaseModel):
             })
         
         return risks
-
+    
     def _assess_development_risks(
         self,
         land_use_analysis: Dict[str, Any],
@@ -817,7 +817,7 @@ class PropertyAnalyzer(BaseModel):
             })
         
         return risks
-
+    
     def _assess_infrastructure_risks(
         self,
         historical_analysis: Dict[str, Any],
@@ -845,7 +845,7 @@ class PropertyAnalyzer(BaseModel):
             })
         
         return risks
-
+    
     def _assess_market_risks(
         self,
         land_use_analysis: Dict[str, Any],
@@ -910,7 +910,7 @@ class PropertyAnalyzer(BaseModel):
             })
         
         return recommendations
-
+    
     def _generate_value_enhancement_recommendations(self, value_analysis: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Generate value enhancement recommendations."""
         recommendations = []
