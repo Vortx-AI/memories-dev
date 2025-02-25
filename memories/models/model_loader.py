@@ -39,8 +39,8 @@ class ModelLoader:
             if self.provider == 'deepseekai':
                 # Import deepseekai module
                 try:
-                    import deepseekai
-                    self.model = deepseekai.Model(**self.config)
+                    import deepseek_ai
+                    self.model = deepseek_ai.Model(**self.config)
                 except ImportError:
                     raise ImportError("deepseekai package not installed")
             elif self.provider == 'openai':
