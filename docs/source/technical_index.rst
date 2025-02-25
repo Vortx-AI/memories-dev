@@ -16,7 +16,7 @@ Core Mathematical Concepts
    technical/data_fusion
 
 Algorithms & Methods
-------------------
+-------------------
 
 Spatial Analysis
 ^^^^^^^^^^^^^^^
@@ -43,10 +43,10 @@ Data Fusion
 * :doc:`/algorithms/uncertainty_quantification`
 
 Formula Database
---------------
+---------------
 
 Spatial Statistics
-^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 .. math-index::
    :maxdepth: 2
@@ -56,7 +56,7 @@ Spatial Statistics
    * Ripley's K: :math:`K(r) = \lambda^{-1}\mathbb{E}[number\:of\:points\:within\:distance\:r\:of\:a\:random\:point]`
 
 Temporal Statistics
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 .. math-index::
    :maxdepth: 2
@@ -66,7 +66,7 @@ Temporal Statistics
    * Trend Component: :math:`T_t = \frac{1}{2q+1}\sum_{j=-q}^q x_{t+j}`
 
 Performance Metrics
-^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 .. math-index::
    :maxdepth: 2
@@ -76,7 +76,7 @@ Performance Metrics
    * R²: :math:`R^2 = 1 - \frac{\sum_i(y_i - \hat{y}_i)^2}{\sum_i(y_i - \bar{y})^2}`
 
 Code Examples
------------
+------------
 
 Spatial Analysis
 ^^^^^^^^^^^^^^^
@@ -144,7 +144,7 @@ Data Fusion
     )
 
 Validation Methods
----------------
+----------------
 
 Cross-Validation
 ^^^^^^^^^^^^^^^
@@ -177,7 +177,7 @@ Cross-Validation
        B3 --> C3
 
 Uncertainty Quantification
-^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. mermaid::
    graph LR
@@ -207,10 +207,10 @@ Uncertainty Quantification
        B3 --> C3
 
 Technical Specifications
----------------------
+----------------------
 
 Hardware Requirements
-^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 .. list-table::
    :header-rows: 1
@@ -230,7 +230,7 @@ Hardware Requirements
      - 1Gbps+ for real-time data
 
 Software Dependencies
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 .. list-table::
    :header-rows: 1

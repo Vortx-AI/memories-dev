@@ -1,5 +1,5 @@
 Advanced Features
-=================
+================
 
 Overview
 --------
@@ -7,10 +7,10 @@ Overview
 memories-dev provides several advanced features for power users and complex use cases.
 
 Custom Memory Stores
------------------
+------------------
 
 Creating Custom Stores
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -27,10 +27,10 @@ Creating Custom Stores
             pass
 
 Advanced Querying
---------------
+----------------
 
 Spatial Queries
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -42,7 +42,7 @@ Spatial Queries
     )
 
 Temporal Queries
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -53,7 +53,7 @@ Temporal Queries
     )
 
 Semantic Queries
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -64,7 +64,7 @@ Semantic Queries
     )
 
 Performance Optimization
----------------------
+----------------------
 
 Caching Strategies
 ~~~~~~~~~~~~~~~~
@@ -89,7 +89,7 @@ Batch Operations
             memory_store.process_memory(data)
 
 Distributed Processing
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -100,7 +100,7 @@ Distributed Processing
     )
 
 Security Features
---------------
+----------------
 
 Encryption
 ~~~~~~~~~
@@ -125,7 +125,7 @@ Access Control
     )
 
 Best Practices
-------------
+-------------
 
 1. Performance Tuning
    - Profile memory operations
@@ -179,9 +179,7 @@ The system automatically handles GPU memory management and cleanup:
     model.cleanup()
 
 Deployment Options
-----------------
-
-memories-dev supports multiple deployment configurations:
+-----------------
 
 Standalone Deployment
 ~~~~~~~~~~~~~~~~~~~
@@ -257,7 +255,7 @@ For scalable, container-based deployments:
     deployment.deploy()
 
 API Connectors
-------------
+--------------
 
 memories-dev supports multiple API providers for model inference:
 

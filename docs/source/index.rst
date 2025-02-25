@@ -261,52 +261,82 @@ Table of Contents
 
 .. toctree::
    :maxdepth: 2
-   :caption: Foundations
+   :caption: Getting Started
    
-   getting_started/index
-   core_concepts/index
-   scientific_foundation/index
-   architecture/index
+   getting_started/installation
+   getting_started/quickstart
+   getting_started/configuration
+   getting_started/examples
 
 .. toctree::
    :maxdepth: 2
    :caption: User Guide
    
    user_guide/index
-   earth_memory/index
-   ai_capabilities/index
-   analysis/index
-   applications/index
+   user_guide/memory_system
+   user_guide/data_sources
+   user_guide/models
+   user_guide/advanced_features
+   user_guide/best_practices
+   user_guide/configuration
+   user_guide/deployment
+   user_guide/examples
 
 .. toctree::
    :maxdepth: 2
-   :caption: Developer Reference
+   :caption: Core Concepts
+   
+   core_concepts/index
+   core_concepts/architecture
+   core_concepts/data_flow
+   core_concepts/memory_system
+   core_concepts/data_fusion
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Earth Memory
+   
+   earth_memory/index
+   earth_memory/data_sources
+   earth_memory/analyzers
+   earth_memory/integration
+   earth_memory/scientific_foundations
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Algorithms
+   
+   algorithms/index
+   algorithms/kriging
+   algorithms/point_pattern
+   algorithms/time_series_decomposition
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
    
    api_reference/index
-   technical_index
-   code_catalog/index
-   function_index/index
-   algorithms/index
-   metrics/index
+   api_reference/data_utils
+   api_reference/gpu_utils
+   api_reference/load_model
+   api_reference/memory_store
+   api_reference/models
+   api_reference/deployment
+   api_reference/sentinel_api
+   api_reference/utils
 
 .. toctree::
    :maxdepth: 2
-   :caption: Examples & Tutorials
+   :caption: Examples
    
    examples/index
-   tutorials/index
-   case_studies/index
-   notebooks/index
 
 .. toctree::
    :maxdepth: 2
-   :caption: Project Information
+   :caption: Metrics
    
-   development/index
-   contributing
-   changelog
-   roadmap
-   faq
+   metrics/index
+   metrics/environmental_metrics
 
 Indices and Tables
 =================
