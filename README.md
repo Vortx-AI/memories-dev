@@ -799,3 +799,61 @@ recommendations = analysis["recommendations"]
 - **v2.0.2** - Released on February 25, 2025: Current version with enhanced features
 
 ## 🔮 Future Roadmap
+
+```mermaid
+gantt
+    title memories-dev Development Roadmap
+    dateFormat  YYYY-MM-DD
+    section Core Features
+    Enhanced Vector Store Integration    :done, 2025-01-01, 2025-02-14
+    Multi-modal Memory Management        :active, 2025-02-15, 2025-04-30
+    Distributed Memory Architecture      :2025-05-01, 2025-07-31
+    section Earth Memory
+    Advanced Satellite Integration       :done, 2025-01-01, 2025-02-14
+    Real-time Environmental Monitoring   :active, 2025-02-15, 2025-05-31
+    Climate Prediction Models            :2025-06-01, 2025-08-31
+    section AI Capabilities
+    Memory-Augmented Reasoning           :active, 2025-02-15, 2025-04-30
+    Multi-agent Memory Sharing           :2025-05-01, 2025-07-31
+    Causal Inference Engine              :2025-08-01, 2025-10-31
+```
+
+## 📚 Documentation
+
+- [Getting Started Guide](docs/getting_started.md)
+- [API Reference](docs/api_reference.md)
+- [Earth Memory Integration](docs/earth_memory.md)
+- [Example Applications](examples/README.md)
+- [Advanced Features](docs/advanced_features.md)
+
+## ⚙️ System Requirements
+
+- Python 3.9+
+- 16GB RAM (32GB+ recommended for production)
+- NVIDIA GPU with 8GB+ VRAM (recommended)
+- Internet connection for Earth Memory APIs
+- API keys for Overture Maps and Sentinel data
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+## 📜 License
+
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+- [Issue Tracker](https://github.com/Vortx-AI/memories-dev/issues)
+- [Documentation](docs/)
+- [Community Forum](https://forum.memories-dev.com)
+- [Discord Community](https://discord.gg/tGCVySkX4d)
+
+<p align="center">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/The_Blue_Marble_%28remastered%29.jpg/600px-The_Blue_Marble_%28remastered%29.jpg" alt="Earth - The Blue Marble" width="400px">
+  <br>
+  <b>Building the World's Memory for Artificial General Intelligence</b>
+  <br>
+  <br>
+  Built with 💜 by the memories-dev team
+</p>
