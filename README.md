@@ -173,7 +173,6 @@ graph LR
     G --> Y[Development Plans]
 ```
 
-%%{init: {'theme': 'forest', 'themeVariables': { 'primaryColor': '#2c3e50', 'primaryTextColor': '#ecf0f1', 'primaryBorderColor': '#34495e', 'lineColor': '#3498db', 'secondaryColor': '#16a085', 'tertiaryColor': '#2980b9'}}}%%
 ```mermaid
 %%{init: {'theme': 'forest', 'themeVariables': { 'primaryColor': '#2c3e50', 'primaryTextColor': '#ecf0f1', 'primaryBorderColor': '#34495e', 'lineColor': '#3498db', 'secondaryColor': '#16a085', 'tertiaryColor': '#2980b9'}}}%%
 graph LR
@@ -625,11 +624,11 @@ graph TD
     K -->|Predictions| K4[Sustainability Outlook]
     
     B -->|Multi-Dimensional Scoring| L[Property Scores]
-    L -->|Score| L1[Overall Score]
-    L -->|Score| L2[Sustainability Score]
-    L -->|Score| L3[Livability Score]
-    L -->|Score| L4[Investment Score]
-    L -->|Score| L5[Resilience Score]
+    L -->|Score| L1[🏆 Overall Score]
+    L -->|Score| L2[♻️ Sustainability Score]
+    L -->|Score| L3[🏡 Livability Score]
+    L -->|Score| L4[💰 Investment Score]
+    L -->|Score| L5[🛡️ Resilience Score]
 ```
 
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0f172a', 'primaryTextColor': '#f8fafc', 'primaryBorderColor': '#1e293b', 'lineColor': '#3b82f6', 'secondaryColor': '#10b981', 'tertiaryColor': '#6366f1'}}}%%
@@ -639,7 +638,7 @@ graph TD
     classDef inputData fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:white,font-weight:bold
     classDef memorySystem fill:#10b981,stroke:#059669,stroke-width:2px,color:white,font-weight:bold
     classDef agent fill:#6366f1,stroke:#4f46e5,stroke-width:2px,color:white,font-weight:bold
-    classDef analysis fill:#0f172a,stroke:#1e293b,stroke-width:2px,color:white,font-weight:bold
+    classDef analysis fill:#0f172a,stroke:#1e293b,stroke-width:2px,color:white
     classDef environmental fill:#22c55e,stroke:#16a34a,stroke-width:2px,color:white
     classDef risks fill:#ef4444,stroke:#dc2626,stroke-width:2px,color:white
     classDef urban fill:#8b5cf6,stroke:#7c3aed,stroke-width:2px,color:white
@@ -800,17 +799,23 @@ recommendations = analysis["recommendations"]
 ## 🔮 Future Roadmap
 
 ```mermaid
+%%{init: {'theme': 'default', 'themeVariables': { 'primaryColor': '#0f172a', 'primaryTextColor': '#f8fafc', 'primaryBorderColor': '#1e293b', 'lineColor': '#3b82f6', 'secondaryColor': '#10b981', 'tertiaryColor': '#6366f1'}}}%%
 gantt
     title memories-dev Development Roadmap
     dateFormat  YYYY-MM-DD
+    axisFormat %b %Y
+    todayMarker off
+    
     section Core Features
     Enhanced Vector Store Integration    :done, 2025-01-01, 2025-02-14
     Multi-modal Memory Management        :active, 2025-02-15, 2025-04-30
     Distributed Memory Architecture      :2025-05-01, 2025-07-31
+    
     section Earth Memory
     Advanced Satellite Integration       :done, 2025-01-01, 2025-02-14
     Real-time Environmental Monitoring   :active, 2025-02-15, 2025-05-31
     Climate Prediction Models            :2025-06-01, 2025-08-31
+    
     section AI Capabilities
     Memory-Augmented Reasoning           :active, 2025-02-15, 2025-04-30
     Multi-agent Memory Sharing           :2025-05-01, 2025-07-31
