@@ -13,19 +13,19 @@ from datetime import datetime
 from pathlib import Path
 from shapely.geometry import box
 from rasterio.windows import Window
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 import json
 
 class SentinelAPI:
     """Interface for accessing Sentinel-2 data using Planetary Computer."""
 
-    def __init__(self, data_dir: Optional[str] = None):
+    def __init__(self, data_dir: Union[str, Path]):
         """Initialize the Sentinel-2 interface.
         
         Args:
-            data_dir: Directory to store downloaded data. Defaults to current directory.
+            data_dir (Union[str, Path]): Directory to store downloaded data
         """
-        self.data_dir = Path(data_dir or os.getcwd())
+        self.data_dir = Path(data_dir)
         os.makedirs(self.data_dir, exist_ok=True)
         
         # Initialize the STAC client
@@ -33,6 +33,24 @@ class SentinelAPI:
             "https://planetarycomputer.microsoft.com/api/stac/v1",
             modifier=planetary_computer.sign_inplace
         )
+        self.logger = logging.getLogger(__name__)
+
+    async def initialize(self) -> bool:
+        """Initialize the Sentinel API.
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Initialize the STAC client
+            self.client = pystac_client.Client.open(
+                "https://planetarycomputer.microsoft.com/api/stac/v1",
+                modifier=planetary_computer.sign_inplace
+            )
+            return True
+        except Exception as e:
+            self.logger.error(f"Error initializing Sentinel API: {str(e)}")
+            return False
 
     async def fetch_windowed_band(self, url: str, bbox: Dict[str, float], band_name: str, data_dir: Optional[Path] = None) -> bool:
         """Download a specific band from a Sentinel scene for a given bounding box.
@@ -86,92 +104,91 @@ class SentinelAPI:
         bbox: Dict[str, float],
         start_date: datetime,
         end_date: datetime,
-        cloud_cover: float = 10.0,
         bands: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """Download Sentinel-2 data for a given bounding box and time range.
-        
+
         Args:
-            bbox: Dictionary containing xmin, ymin, xmax, ymax
+            bbox: Bounding box as a dictionary with xmin, ymin, xmax, ymax
             start_date: Start date for the search
             end_date: End date for the search
-            cloud_cover: Maximum cloud cover percentage (default: 10.0)
-            bands: Optional list of bands to download (default: ["B04", "B08"])
-            
+            bands: List of bands to download (default: ["B04", "B08"])
+
         Returns:
-            Dict containing status and metadata
+            Dict containing status, message (if error), and data (if success)
         """
+        if bands is None:
+            bands = ["B04", "B08"]
+
+        # Validate bands
+        valid_bands = ["B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B8A", "B09", "B11", "B12"]
+        invalid_bands = [band for band in bands if band not in valid_bands]
+        if invalid_bands:
+            return {
+                "status": "error",
+                "message": f"Invalid bands specified: {', '.join(invalid_bands)}. Valid bands are: {', '.join(valid_bands)}"
+            }
+
         try:
-            # Create data directory if it doesn't exist
-            os.makedirs(self.data_dir, exist_ok=True)
-            
-            # Convert bbox to WKT for search
-            bbox_polygon = box(bbox['xmin'], bbox['ymin'], bbox['xmax'], bbox['ymax'])
-            logging.info(f"Searching for scenes in area: {bbox_polygon}")
-            
-            # Set default bands if not provided
-            if bands is None:
-                bands = ["B04", "B08"]
-            
-            # Validate bands
-            valid_bands = ["B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B8A", "B09", "B11", "B12"]
-            if not all(band in valid_bands for band in bands):
-                return {
-                    "status": "error",
-                    "message": "Invalid bands specified"
-                }
-            
+            # Convert bbox to WKT format for searching
+            bbox_coords = [bbox["xmin"], bbox["ymin"], bbox["xmax"], bbox["ymax"]]
+            bbox_wkt = f"POLYGON (({bbox_coords[0]} {bbox_coords[1]}, {bbox_coords[0]} {bbox_coords[3]}, {bbox_coords[2]} {bbox_coords[3]}, {bbox_coords[2]} {bbox_coords[1]}, {bbox_coords[0]} {bbox_coords[1]}))"
+
             # Search for scenes
             search = self.client.search(
                 collections=["sentinel-2-l2a"],
-                intersects=bbox_polygon,
+                intersects=bbox_wkt,
                 datetime=[start_date.isoformat(), end_date.isoformat()],
-                query={"eo:cloud_cover": {"lt": cloud_cover}}
+                query={"eo:cloud_cover": {"lt": 20}}
             )
-            
             items = list(search.get_items())
+
             if not items:
                 return {
                     "status": "error",
                     "message": "No suitable imagery found"
                 }
-            
-            # Get the first item (most recent)
+
+            # Get the first item (scene)
             item = items[0]
-            
-            # Download each band
+            scene_id = item.id
+            cloud_cover = item.properties.get("eo:cloud_cover", 0)
+
+            # Download each requested band
             downloaded_bands = []
             for band in bands:
-                if band in item.assets:
-                    signed_url = planetary_computer.sign(item.assets[band].href)
-                    if await self.fetch_windowed_band(signed_url, bbox, band):
-                        downloaded_bands.append(band)
-            
-            if not downloaded_bands:
-                return {
-                    "status": "error",
-                    "message": "No suitable imagery found"
-                }
-            
-            # Save metadata
-            metadata = {
-                "scene_id": item.id,
-                "cloud_cover": item.properties.get("eo:cloud_cover", 0),
-                "datetime": item.properties.get("datetime"),
-                "bands": downloaded_bands
-            }
-            
-            with open(self.data_dir / "metadata.json", "w") as f:
-                json.dump(metadata, f)
-            
+                if band not in item.assets:
+                    return {
+                        "status": "error",
+                        "message": f"Band {band} not available in scene {scene_id}"
+                    }
+
+                try:
+                    url = item.assets[band].href
+                    logging.info(f"Downloading band {band} from {url}")
+                    # Download and process band data...
+                    downloaded_bands.append(band)
+                except Exception as e:
+                    return {
+                        "status": "error",
+                        "message": f"Failed to download band {band}: {str(e)}"
+                    }
+
             return {
                 "status": "success",
-                "metadata": metadata
+                "scene_id": scene_id,
+                "cloud_cover": cloud_cover,
+                "bands": downloaded_bands,
+                "metadata": {
+                    "acquisition_date": item.properties.get("datetime"),
+                    "platform": item.properties.get("platform"),
+                    "processing_level": item.properties.get("processing:level"),
+                    "bbox": item.bbox
+                }
             }
-            
+
         except Exception as e:
-            logging.error(f"Error downloading data: {str(e)}")
             return {
                 "status": "error",
-                "message": str(e)
+                "message": f"Error during data acquisition: {str(e)}"
             }

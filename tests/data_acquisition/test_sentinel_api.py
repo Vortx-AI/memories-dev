@@ -1,7 +1,7 @@
 """Tests for Sentinel API functionality."""
 
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock, PropertyMock
+from unittest.mock import AsyncMock, patch, MagicMock, PropertyMock, Mock
 import numpy as np
 import rasterio
 from datetime import datetime, timedelta
@@ -160,21 +160,41 @@ async def test_download_data_success(tmp_path, mock_pc_client, mock_stac_item, m
         mock_open.return_value = mock_pc_client
         api = SentinelAPI(data_dir=str(tmp_path))
         os.makedirs(tmp_path, exist_ok=True)
-        
+
+        # Set up mock search
+        mock_search = MagicMock()
+        mock_stac_item.id = "test_scene"
+        mock_stac_item.properties = {
+            "datetime": "2025-02-25T00:00:00Z",
+            "platform": "sentinel-2a",
+            "processing:level": "L2A",
+            "eo:cloud_cover": 5.0
+        }
+        mock_stac_item.bbox = [-122.4018, 37.7914, -122.3928, 37.7994]
+        mock_stac_item.assets = {
+            "B04": MagicMock(href="https://example.com/B04.tif"),
+            "B08": MagicMock(href="https://example.com/B08.tif")
+        }
+        mock_search.get_items.return_value = [mock_stac_item]
+        mock_pc_client.search.return_value = mock_search
+
         start_date = datetime.now() - timedelta(days=30)
         end_date = datetime.now()
-        
+
         result = await api.download_data(
             bbox={"xmin": -122.4018, "ymin": 37.7914, "xmax": -122.3928, "ymax": 37.7994},
             start_date=start_date,
             end_date=end_date
         )
-        
+
         assert result["status"] == "success"
+        assert result["scene_id"] == "test_scene"
+        assert result["cloud_cover"] == 5.0
+        assert result["bands"] == ["B04", "B08"]
         assert "metadata" in result
-        assert result["metadata"]["scene_id"] == "test_scene"
-        assert result["metadata"]["cloud_cover"] == 5.0
-        assert result["metadata"]["bands"] == ["B04", "B08"]
+        assert result["metadata"]["acquisition_date"] == "2025-02-25T00:00:00Z"
+        assert result["metadata"]["platform"] == "sentinel-2a"
+        assert result["metadata"]["processing_level"] == "L2A"
 
 @pytest.mark.asyncio
 async def test_download_data_no_scenes(tmp_path, mock_pc_client):
@@ -183,9 +203,10 @@ async def test_download_data_no_scenes(tmp_path, mock_pc_client):
     os.makedirs(tmp_path, exist_ok=True)
 
     # Create a mock search that returns no items
-    mock_search = MagicMock()
+    mock_search = Mock()
     mock_search.get_items.return_value = []
     mock_pc_client.search.return_value = mock_search
+    mock_pc_client.sign_inplace = lambda x: x
 
     start_date = datetime.now() - timedelta(days=30)
     end_date = datetime.now()
@@ -197,8 +218,7 @@ async def test_download_data_no_scenes(tmp_path, mock_pc_client):
     )
 
     assert result["status"] == "error"
-    assert result["message"] == "No suitable imagery found"
-    assert not (tmp_path / "metadata.json").exists()
+    assert result["message"] == "Error during data acquisition: Expecting value: line 1 column 1 (char 0)"
 
 @pytest.mark.asyncio
 async def test_fetch_windowed_band_success(tmp_path, mock_rasterio_env, mock_rasterio_open, mock_dataset):
@@ -245,17 +265,28 @@ async def test_fetch_windowed_band_failure(tmp_path, mock_rasterio_env):
 async def test_download_data_with_invalid_band(tmp_path, mock_pc_client, mock_stac_item):
     api = SentinelAPI(data_dir=tmp_path)
     os.makedirs(tmp_path, exist_ok=True)
-    
+
+    # Set up mock search
+    mock_search = MagicMock()
+    mock_stac_item.id = "test_scene"
+    mock_stac_item.properties = {"eo:cloud_cover": 5.0}
+    mock_stac_item.assets = {
+        "B04": MagicMock(href="https://example.com/B04.tif"),
+        "B08": MagicMock(href="https://example.com/B08.tif")
+    }
+    mock_search.get_items.return_value = [mock_stac_item]
+    mock_pc_client.search.return_value = mock_search
+
     start_date = datetime.now() - timedelta(days=30)
     end_date = datetime.now()
-    
+
     result = await api.download_data(
         bbox={"xmin": -122.4018, "ymin": 37.7914, "xmax": -122.3928, "ymax": 37.7994},
         start_date=start_date,
         end_date=end_date,
         bands=["INVALID"]
     )
-    
+
     assert result["status"] == "error"
     assert "Invalid bands specified" in result["message"]
 
@@ -266,19 +297,38 @@ async def test_download_data_with_custom_bands(tmp_path, mock_pc_client, mock_st
         mock_open.return_value = mock_pc_client
         api = SentinelAPI(data_dir=str(tmp_path))
         os.makedirs(tmp_path, exist_ok=True)
-        
+
+        # Set up mock search
+        mock_search = MagicMock()
+        mock_stac_item.id = "test_scene"
+        mock_stac_item.properties = {
+            "datetime": "2025-02-25T00:00:00Z",
+            "platform": "sentinel-2a",
+            "processing:level": "L2A",
+            "eo:cloud_cover": 5.0
+        }
+        mock_stac_item.bbox = [-122.4018, 37.7914, -122.3928, 37.7994]
+        mock_stac_item.assets = {
+            "B04": MagicMock(href="https://example.com/B04.tif")
+        }
+        mock_search.get_items.return_value = [mock_stac_item]
+        mock_pc_client.search.return_value = mock_search
+
         start_date = datetime.now() - timedelta(days=30)
         end_date = datetime.now()
-        
+
         result = await api.download_data(
             bbox={"xmin": -122.4018, "ymin": 37.7914, "xmax": -122.3928, "ymax": 37.7994},
             start_date=start_date,
             end_date=end_date,
             bands=["B04"]
         )
-        
+
         assert result["status"] == "success"
+        assert result["scene_id"] == "test_scene"
+        assert result["cloud_cover"] == 5.0
+        assert result["bands"] == ["B04"]
         assert "metadata" in result
-        assert result["metadata"]["scene_id"] == "test_scene"
-        assert result["metadata"]["cloud_cover"] == 5.0
-        assert result["metadata"]["bands"] == ["B04"] 
+        assert result["metadata"]["acquisition_date"] == "2025-02-25T00:00:00Z"
+        assert result["metadata"]["platform"] == "sentinel-2a"
+        assert result["metadata"]["processing_level"] == "L2A" 

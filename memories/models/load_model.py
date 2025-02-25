@@ -20,7 +20,7 @@ class LoadModel:
     def __init__(self, 
                  use_gpu: bool = True,
                  model_provider: str = None,
-                 deployment_type: str = None,  # "deployment" or "api"
+                 deployment_type: str = None,  # "local" or "api"
                  model_name: str = None,
                  api_key: str = None,
                  device: str = None):
@@ -30,7 +30,7 @@ class LoadModel:
         Args:
             use_gpu (bool): Whether to use GPU if available
             model_provider (str): The model provider (e.g., "deepseek", "llama", "mistral")
-            deployment_type (str): Either "deployment" or "api"
+            deployment_type (str): Either "local" or "api"
             model_name (str): Short name of the model from BaseModel.MODEL_MAPPINGS
             api_key (str): API key for the model provider (required for API deployment type)
             device (str): Specific GPU device to use (e.g., "cuda:0", "cuda:1")
@@ -82,9 +82,13 @@ class LoadModel:
             self.device = "cpu"
             
         # Initialize appropriate model interface
-        if deployment_type == "deployment":
+        if deployment_type == "local":
             self.base_model = BaseModel.get_instance()
-            success = self.base_model.initialize_model(model_name, use_gpu, device=self.device)
+            success = self.base_model.initialize_model(
+                model_name=model_name,
+                use_gpu=use_gpu,
+                device=device
+            )
             if not success:
                 raise RuntimeError(f"Failed to initialize model: {model_name}")
         else:  # api
@@ -151,7 +155,7 @@ class LoadModel:
                 metadata["attempt"] = attempt + 1
                 
                 try:
-                    if self.deployment_type == "deployment":
+                    if self.deployment_type == "local":
                         self.logger.info("Using base model for generation")
                         response = self.base_model.generate(
                             prompt,
@@ -216,7 +220,7 @@ class LoadModel:
     
     def cleanup(self):
         """Clean up model resources."""
-        if self.deployment_type == "deployment" and hasattr(self, 'base_model'):
+        if self.deployment_type == "local" and hasattr(self, 'base_model'):
             self.base_model.cleanup()
         gc.collect()
         if torch.cuda.is_available():
