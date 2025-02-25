@@ -1,0 +1,32 @@
+MODEL ANALYSIS RESULT
+====================
+
+Query: "Analyze urban development in this region over the past year"
+Model: DeepSeek-Coder-Small
+Deployment: Local (GPU)
+
+ANALYSIS:
+--------
+The satellite imagery shows significant urban development in the northeastern 
+quadrant of the region over the past 12 months. Specifically:
+
+1. Construction of approximately 37 new residential buildings
+2. Expansion of road network by 4.2 km
+3. Reduction in vegetation cover by 3.1%
+4. New commercial development near the highway intersection
+
+ENVIRONMENTAL IMPACT:
+-------------------
+- Moderate reduction in permeable surfaces
+- Potential increase in urban heat island effect
+- Minimal impact on existing water bodies
+- Loss of small woodland area (approximately 1.2 hectares)
+
+RECOMMENDATIONS:
+--------------
+1. Monitor stormwater runoff in newly developed areas
+2. Consider green infrastructure to mitigate heat island effect
+3. Implement vegetation buffers around new developments
+4. Preserve remaining natural areas to maintain ecological balance
+
+CONFIDENCE SCORE: 87% 

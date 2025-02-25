@@ -1,0 +1,39 @@
+deployment_type: swarmed
+provider: gcp
+infrastructure:
+  machine_type: n2-standard-4
+  region: us-central1
+  zones:
+    - us-central1-a
+    - us-central1-b
+    - us-central1-c
+swarm:
+  manager_nodes: 3
+  worker_nodes: 2
+  node_specs:
+    manager_specs:
+      instance_type: n2-standard-4
+      storage_size: 100
+    worker_specs:
+      instance_type: n2-standard-2
+      storage_size: 50
+monitoring:
+  enabled: true
+  metrics:
+    - name: cpu_utilization
+      interval: 60
+    - name: memory_utilization
+      interval: 60
+logging:
+  level: info
+  retention_days: 30
+security:
+  encryption:
+    at_rest: true
+    in_transit: true
+  authentication:
+    type: service_account
+backup:
+  enabled: true
+  retention_days: 7
+  schedule: "0 0 * * *" 

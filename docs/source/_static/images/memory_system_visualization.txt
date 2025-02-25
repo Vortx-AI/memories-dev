@@ -1,0 +1,37 @@
+MEMORY SYSTEM VISUALIZATION
+==========================
+
++-------------------+-------------------+-------------------+-------------------+
+|                   |                   |                   |                   |
+|  HOT MEMORY       |  WARM MEMORY      |  COLD MEMORY      |  GLACIER MEMORY   |
+|  (GPU Memory)     |  (RAM)            |  (SSD Storage)    |  (HDD/Cloud)      |
+|                   |                   |                   |                   |
++-------------------+-------------------+-------------------+-------------------+
+|                   |                   |                   |                   |
+|  Size: 8 GB       |  Size: 32 GB      |  Size: 500 GB     |  Size: 2 TB       |
+|  Usage: 62%       |  Usage: 45%       |  Usage: 28%       |  Usage: 15%       |
+|                   |                   |                   |                   |
++-------------------+-------------------+-------------------+-------------------+
+|                   |                   |                   |                   |
+|  Access Time:     |  Access Time:     |  Access Time:     |  Access Time:     |
+|  < 1 ms           |  ~10 ms           |  ~100 ms          |  1-10 seconds     |
+|                   |                   |                   |                   |
++-------------------+-------------------+-------------------+-------------------+
+|                   |                   |                   |                   |
+|  Contents:        |  Contents:        |  Contents:        |  Contents:        |
+|  - Active models  |  - Recent data    |  - Historical     |  - Archived       |
+|  - Current batch  |  - Cached results |    data           |    data           |
+|  - Processing     |  - Intermediate   |  - Processed      |  - Rarely used    |
+|    tensors        |    results        |    results        |    datasets       |
+|                   |                   |                   |                   |
++-------------------+-------------------+-------------------+-------------------+
+
+MEMORY FLOW:
+-----------
+Hot ⟷ Warm ⟷ Cold ⟷ Glacier
+
+OPTIMIZATION METRICS:
+-------------------
+- Hit Rate: 92% (Hot), 87% (Warm), 76% (Cold)
+- Migration Rate: 15 MB/s (Hot→Warm), 8 MB/s (Warm→Cold), 2 MB/s (Cold→Glacier)
+- Compression Ratio: 1:1 (Hot), 2:1 (Warm), 5:1 (Cold), 10:1 (Glacier) 

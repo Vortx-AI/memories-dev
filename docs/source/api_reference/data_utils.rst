@@ -24,6 +24,84 @@ The Data Utilities module provides a comprehensive suite of tools for efficient 
   - Caching strategies
   - Performance monitoring
 
+Data Acquisition
+--------------
+
+Data Manager
+~~~~~~~~~~~
+
+.. automodule:: memories.data_acquisition.data_manager
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Sentinel API
+~~~~~~~~~~~
+
+.. automodule:: memories.data_acquisition.sources.sentinel_api
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Landsat API
+~~~~~~~~~~
+
+.. automodule:: memories.data_acquisition.sources.landsat_api
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+OpenStreetMap API
+~~~~~~~~~~~~~~~
+
+.. automodule:: memories.data_acquisition.sources.osm_api
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Overture API
+~~~~~~~~~~
+
+.. automodule:: memories.data_acquisition.sources.overture_api
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Data Processing
+-------------
+
+Image Processing
+~~~~~~~~~~~~~~
+
+.. automodule:: memories.utils.processors.image_processor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Vector Processing
+~~~~~~~~~~~~~~
+
+.. automodule:: memories.utils.processors.vector_processor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Data Fusion
+~~~~~~~~~
+
+.. automodule:: memories.utils.processors.data_fusion
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Caching System
+------------
+
+.. automodule:: memories.utils.cache
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 DuckDB Query Utilities
 -------------------
 
@@ -229,4 +307,53 @@ Common Issues
 - :ref:`memory_store` - Core memory storage interface
 - :ref:`data_processing` - Data processing utilities
 - :ref:`query_optimization` - Query optimization guide
-- :ref:`performance_tuning` - Performance tuning tips 
+- :ref:`performance_tuning` - Performance tuning tips
+
+Example Usage
+-----------
+
+.. code-block:: python
+
+    from memories.data_acquisition.data_manager import DataManager
+    import asyncio
+    
+    # Initialize data manager
+    data_manager = DataManager(cache_dir="./data_cache")
+    
+    # Define area of interest
+    bbox = {
+        'xmin': -122.4018,
+        'ymin': 37.7914,
+        'xmax': -122.3928,
+        'ymax': 37.7994
+    }
+    
+    # Define async function to get data
+    async def get_data():
+        # Get satellite data
+        satellite_data = await data_manager.get_satellite_data(
+            bbox_coords=bbox,
+            start_date="2023-01-01",
+            end_date="2023-02-01"
+        )
+        
+        # Get vector data
+        vector_data = await data_manager.get_vector_data(
+            bbox=bbox,
+            layers=["buildings", "roads"]
+        )
+        
+        # Prepare training data
+        training_data = await data_manager.prepare_training_data(
+            bbox=bbox,
+            start_date="2023-01-01",
+            end_date="2023-02-01",
+            satellite_collections=["sentinel-2-l2a"],
+            vector_layers=["buildings", "roads"],
+            cloud_cover=10.0
+        )
+        
+        return satellite_data, vector_data, training_data
+    
+    # Run the async function
+    satellite_data, vector_data, training_data = asyncio.run(get_data()) 

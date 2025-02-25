@@ -88,6 +88,8 @@ traffic_cache/
 data/
 *_cache/
 *_data/
+!tests/test_data/
+!tests/test_data/**/*.yaml
 
 examples/data/
 examples/agentinaction.py

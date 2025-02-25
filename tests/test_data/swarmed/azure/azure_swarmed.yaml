@@ -1,0 +1,39 @@
+deployment_type: swarmed
+provider: azure
+infrastructure:
+  vm_size: Standard_D4s_v3
+  region: westus2
+  availability_zones:
+    - "1"
+    - "2"
+    - "3"
+swarm:
+  manager_nodes: 3
+  worker_nodes: 2
+  node_specs:
+    manager_specs:
+      instance_type: Standard_D4s_v3
+      storage_size: 100
+    worker_specs:
+      instance_type: Standard_D2s_v3
+      storage_size: 50
+monitoring:
+  enabled: true
+  metrics:
+    - name: cpu_percentage
+      interval: 60
+    - name: memory_percentage
+      interval: 60
+logging:
+  level: info
+  retention_days: 30
+security:
+  encryption:
+    at_rest: true
+    in_transit: true
+  authentication:
+    type: managed_identity
+backup:
+  enabled: true
+  retention_days: 7
+  schedule: "0 0 * * *" 

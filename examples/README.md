@@ -7,20 +7,23 @@ This directory contains example applications built using the Memories-Dev framew
 Since our initial release (v1.0.0 on February 14, 2025), we've added several new examples and improved existing ones:
 
 ### New Examples
-- **Urban Planning Assistant**: Analyze urban areas for development planning
-- **Environmental Monitoring**: Track changes in vegetation and land use over time
-- **Location Context Analyzer**: Generate rich contextual descriptions of locations
+- **Real Estate Agent**: AI-powered property analysis with earth memory integration
+- **Property Analyzer**: Comprehensive property and environmental analysis
+- **Water Body Agent**: Advanced water body monitoring and analysis
+- **Food Analyzer**: Intelligent food and nutrition analysis
+- **Traffic Analyzer**: Real-time traffic pattern analysis
+- **Autonomous Vehicle Memory**: Generalized car memory system with AI capabilities
 
 ### Improvements
-- **Enhanced Visualization**: All examples now include improved visualization options
+- **Enhanced Earth Memory Integration**: All examples now include Overture and Sentinel data integration
 - **Performance Optimization**: Reduced memory usage and faster processing
 - **Better Documentation**: More detailed comments and usage instructions
 
 ## Available Examples
 
-### property_analyzer.py
+### real_estate_agent.py
 
-A tool for analyzing property characteristics and surrounding areas.
+An AI agent for analyzing real estate properties with earth memory integration.
 
 **Setup:**
 ```bash
@@ -28,132 +31,99 @@ A tool for analyzing property characteristics and surrounding areas.
 pip install memories-dev[examples]
 
 # Set up environment variables
-export OPENSTREETMAP_API_KEY=your_api_key
 export OVERTURE_API_KEY=your_api_key
+export SENTINEL_USER=your_username
+export SENTINEL_PASSWORD=your_password
+```
+
+**Usage:**
+```python
+from examples.real_estate_agent import RealEstateAgent
+from memories import MemoryStore, Config
+
+# Initialize memory store
+config = Config(
+    storage_path="./real_estate_data",
+    hot_memory_size=50,
+    warm_memory_size=200,
+    cold_memory_size=1000
+)
+memory_store = MemoryStore(config)
+
+# Initialize agent
+agent = RealEstateAgent(memory_store, enable_earth_memory=True)
+
+# Add a property
+property_data = {
+    "location": "San Francisco, CA",
+    "coordinates": {"lat": 37.7749, "lon": -122.4194},
+    "price": 1250000,
+    "bedrooms": 2,
+    "bathrooms": 2,
+    "square_feet": 1200,
+    "property_type": "Condo",
+    "year_built": 2015
+}
+
+# Add property and analyze
+result = await agent.add_property(property_data)
+analysis = await agent.analyze_property_environment(result["property_id"])
+
+print(f"Property added: {result['property_id']}")
+print(f"Environmental analysis: {analysis}")
+```
+
+### property_analyzer.py
+
+A tool for comprehensive property analysis using earth memory data.
+
+**Setup:**
+```bash
+# Install required dependencies
+pip install memories-dev[examples]
+
+# Set up environment variables
+export OVERTURE_API_KEY=your_api_key
+export SENTINEL_USER=your_username
+export SENTINEL_PASSWORD=your_password
 ```
 
 **Usage:**
 ```python
 from examples.property_analyzer import PropertyAnalyzer
+from memories import MemoryStore, Config
 
-# Initialize the analyzer
-analyzer = PropertyAnalyzer()
+# Initialize memory store
+config = Config(
+    storage_path="./property_analyzer_data",
+    hot_memory_size=50,
+    warm_memory_size=200,
+    cold_memory_size=1000
+)
+memory_store = MemoryStore(config)
 
-# Analyze a property by address
-results = analyzer.analyze_by_address("123 Main St, San Francisco, CA")
+# Initialize analyzer
+analyzer = PropertyAnalyzer(memory_store)
 
-# Or analyze by coordinates
-results = analyzer.analyze_by_coordinates(37.7749, -122.4194)
-
-# Get the analysis report
-print(results.summary)
-print(results.nearby_amenities)
-print(results.environmental_factors)
-```
-
-### water_bodies_monitor.py
-
-A tool for monitoring water bodies and analyzing changes over time.
-
-**Setup:**
-```bash
-# Install required dependencies
-pip install memories-dev[examples]
-
-# Set up environment variables
-export OPENSTREETMAP_API_KEY=your_api_key
-```
-
-**Usage:**
-```python
-from examples.water_bodies_monitor import WaterBodiesMonitor
-import asyncio
-
-# Initialize the monitor
-monitor = WaterBodiesMonitor(cache_dir="./water_bodies_cache")
-
-# Define area of interest
-bbox = {
-    'xmin': -122.5,
-    'ymin': 37.7,
-    'xmax': -122.3,
-    'ymax': 37.9
-}
-
-# Run the monitoring
-async def monitor_water():
-    # Get current water bodies
-    water_bodies = await monitor.get_water_bodies(bbox)
-    
-    # Analyze changes over time
-    changes = await monitor.analyze_changes(
-        bbox,
-        start_date="2023-01-01",
-        end_date="2023-12-31"
-    )
-    
-    return water_bodies, changes
-
-# Run the async function
-water_bodies, changes = asyncio.run(monitor_water())
-
-# Print results
-print(f"Found {len(water_bodies)} water bodies")
-print(f"Detected {len(changes)} significant changes")
-```
-
-### location_ambience.py
-
-A tool for generating rich descriptions of locations based on available data.
-
-**Setup:**
-```bash
-# Install required dependencies
-pip install memories-dev[examples]
-
-# Set up environment variables
-export OPENSTREETMAP_API_KEY=your_api_key
-export DEEPSEEK_API_KEY=your_api_key  # Or use another supported model provider
-```
-
-**Usage:**
-```python
-from examples.location_ambience import LocationAmbience
-import asyncio
-
-# Initialize the ambience generator
-ambience = LocationAmbience(
-    model_provider="deepseek-ai",
-    model_name="deepseek-coder-small"
+# Analyze property
+analysis = await analyzer.analyze_property(
+    lat=37.7749,
+    lon=-122.4194,
+    property_data={
+        "address": "123 Main St, San Francisco, CA",
+        "property_type": "residential"
+    }
 )
 
-# Define location
-location = {
-    'lat': 37.7749,
-    'lon': -122.4194,
-    'radius': 500  # meters
-}
-
-# Generate ambience description
-async def generate_ambience():
-    description = await ambience.generate_description(
-        location,
-        include_history=True,
-        include_culture=True,
-        include_architecture=True
-    )
-    return description
-
-# Run the async function
-description = asyncio.run(generate_ambience())
-
-# Print the description
-print(description)
+print("Analysis Results:")
+print(f"Terrain Risks: {analysis['terrain_risks']}")
+print(f"Water Resources: {analysis['water_resources']}")
+print(f"Environmental Factors: {analysis['environmental_factors']}")
 ```
 
-### traffic_analyzer.py
+### water_body_agent.py
 
-A tool for analyzing traffic patterns and road network characteristics.
+An AI agent for monitoring and analyzing water bodies.
 
 **Setup:**
 ```bash
@@ -161,49 +131,37 @@ A tool for analyzing traffic patterns and road network characteristics.
 pip install memories-dev[examples]
 
 # Set up environment variables
-export OPENSTREETMAP_API_KEY=your_api_key
+export SENTINEL_USER=your_username
+export SENTINEL_PASSWORD=your_password
 ```
 
 **Usage:**
 ```python
-from examples.traffic_analyzer import TrafficAnalyzer
-import asyncio
+from examples.water_body_agent import WaterBodyAgent
+from memories import MemoryStore, Config
 
-# Initialize the analyzer
-analyzer = TrafficAnalyzer(cache_dir="./traffic_cache")
+# Initialize memory store
+config = Config(
+    storage_path="./water_body_data",
+    hot_memory_size=50,
+    warm_memory_size=200,
+    cold_memory_size=1000
+)
+memory_store = MemoryStore(config)
 
-# Define area of interest
-bbox = {
-    'xmin': -122.5,
-    'ymin': 37.7,
-    'xmax': -122.3,
-    'ymax': 37.9
-}
+# Initialize agent
+agent = WaterBodyAgent(memory_store)
 
-# Analyze traffic
-async def analyze_traffic():
-    # Get road network
-    road_network = await analyzer.get_road_network(bbox)
-    
-    # Analyze connectivity
-    connectivity = await analyzer.analyze_connectivity(bbox)
-    
-    # Identify bottlenecks
-    bottlenecks = await analyzer.identify_bottlenecks(bbox)
-    
-    return {
-        'road_network': road_network,
-        'connectivity': connectivity,
-        'bottlenecks': bottlenecks
-    }
+# Analyze water body
+analysis = await agent.analyze_water_body(
+    coordinates={"lat": 37.7749, "lon": -122.4194},
+    radius_meters=1000
+)
 
-# Run the async function
-traffic_analysis = asyncio.run(analyze_traffic())
-
-# Print results
-print(f"Road network has {len(traffic_analysis['road_network'])} segments")
-print(f"Connectivity score: {traffic_analysis['connectivity']['score']}")
-print(f"Identified {len(traffic_analysis['bottlenecks'])} bottlenecks")
+print("Water Body Analysis:")
+print(f"Water Quality: {analysis['water_quality']}")
+print(f"Surface Area Changes: {analysis['surface_area_changes']}")
+print(f"Environmental Impact: {analysis['environmental_impact']}")
 ```
 
 ## Requirements
@@ -217,26 +175,25 @@ print(f"Identified {len(traffic_analysis['bottlenecks'])} bottlenecks")
 
 All examples follow a similar pattern:
 
-1. Initialize the specific tool/analyzer
-2. Define the area of interest (coordinates, bounding box, or address)
-3. Call the appropriate methods to retrieve and analyze data
-4. Process and visualize the results
+1. Initialize the memory store with appropriate configuration
+2. Create an instance of the specific agent or analyzer
+3. Provide necessary data or coordinates for analysis
+4. Process the results and generate insights
 
 ## Data Storage
 
 Each example stores its data in a configurable cache directory:
 
-- `property_analyzer.py`: `./property_cache` (default)
-- `water_bodies_monitor.py`: `./water_bodies_cache` (default)
-- `location_ambience.py`: Uses in-memory cache only
-- `traffic_analyzer.py`: `./traffic_cache` (default)
+- `real_estate_agent.py`: `./real_estate_data` (default)
+- `property_analyzer.py`: `./property_analyzer_data` (default)
+- `water_body_agent.py`: `./water_body_data` (default)
 
 ## Coming in Version 2.1.0 (March 2025)
 
-- **Disaster Response Planning**: Analyze areas for natural disaster risks and plan response
-- **Urban Heat Island Analysis**: Identify and analyze urban heat islands
-- **Maxar Integration Examples**: Demonstrate high-resolution imagery analysis
-- **Sentinel-3 Data Examples**: Show how to work with Sentinel-3 data
+- **Food Analysis Agent**: Advanced food and nutrition analysis
+- **Traffic Pattern Analyzer**: Real-time traffic monitoring and prediction
+- **Autonomous Vehicle Memory**: Enhanced car memory system
+- **Improved Earth Memory**: Additional data sources and analysis capabilities
 
 ## Contributing
 
