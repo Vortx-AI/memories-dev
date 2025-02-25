@@ -3,8 +3,8 @@
 Real Estate Agent with AI-Powered Property Analysis
 ----------------------------------
 This example demonstrates how to use the Memories-Dev framework to create
-an AI agent that analyzes real estate properties, stores property information,
-and provides intelligent recommendations based on user preferences.
+an AI agent that analyzes real estate properties using comprehensive earth memory data,
+providing deep insights into property characteristics, environmental factors, and future risks.
 """
 
 import os
@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 import requests
 import json
 import rasterio
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point, Polygon, box
 import geopandas as gpd
 from sentinelsat import SentinelAPI
 
@@ -33,7 +33,16 @@ from memories.utils.earth_memory import (
     SentinelClient,
     TerrainAnalyzer,
     ClimateDataFetcher,
-    EnvironmentalImpactAnalyzer
+    EnvironmentalImpactAnalyzer,
+    LandUseClassifier,
+    WaterResourceAnalyzer,
+    GeologicalDataFetcher,
+    UrbanDevelopmentAnalyzer,
+    BiodiversityAnalyzer,
+    AirQualityMonitor,
+    NoiseAnalyzer,
+    SolarPotentialCalculator,
+    WalkabilityAnalyzer
 )
 
 # Configure logging
@@ -52,9 +61,18 @@ sentinel_client = SentinelClient(
 terrain_analyzer = TerrainAnalyzer()
 climate_fetcher = ClimateDataFetcher()
 impact_analyzer = EnvironmentalImpactAnalyzer()
+land_use_classifier = LandUseClassifier()
+water_analyzer = WaterResourceAnalyzer()
+geological_fetcher = GeologicalDataFetcher()
+urban_analyzer = UrbanDevelopmentAnalyzer()
+biodiversity_analyzer = BiodiversityAnalyzer()
+air_quality_monitor = AirQualityMonitor()
+noise_analyzer = NoiseAnalyzer()
+solar_calculator = SolarPotentialCalculator()
+walkability_analyzer = WalkabilityAnalyzer()
 
 class RealEstateAgent(BaseModel):
-    """AI agent specialized in real estate property analysis and recommendations with earth memory integration."""
+    """AI agent specialized in real estate property analysis and recommendations with comprehensive earth memory integration."""
     
     def __init__(
         self, 
@@ -62,7 +80,8 @@ class RealEstateAgent(BaseModel):
         embedding_model: str = "all-MiniLM-L6-v2",
         embedding_dimension: int = 384,
         similarity_threshold: float = 0.75,
-        enable_earth_memory: bool = True
+        analysis_radius_meters: int = 2000,
+        temporal_analysis_years: int = 10
     ):
         """
         Initialize the Real Estate Agent.
@@ -72,14 +91,16 @@ class RealEstateAgent(BaseModel):
             embedding_model: Name of the embedding model to use
             embedding_dimension: Dimension of the embedding vectors
             similarity_threshold: Threshold for similarity matching
-            enable_earth_memory: Whether to enable earth memory features
+            analysis_radius_meters: Radius around property for analysis
+            temporal_analysis_years: Years of historical data to analyze
         """
         super().__init__()
         self.memory_store = memory_store
         self.embedding_model = embedding_model
         self.embedding_dimension = embedding_dimension
         self.similarity_threshold = similarity_threshold
-        self.enable_earth_memory = enable_earth_memory
+        self.analysis_radius_meters = analysis_radius_meters
+        self.temporal_analysis_years = temporal_analysis_years
         
         # Initialize utility components
         self.text_processor = TextProcessor()
@@ -87,537 +108,381 @@ class RealEstateAgent(BaseModel):
         self.query_understanding = QueryUnderstanding()
         self.response_generator = ResponseGenerator()
         
-        # Create collection for property embeddings if it doesn't exist
-        if "property_embeddings" not in self.memory_store.list_collections():
-            self.memory_store.create_collection(
-                "property_embeddings", 
-                vector_dimension=embedding_dimension
-            )
-        
-        # Create collection for earth memory data if enabled
-        if enable_earth_memory and "earth_memory_data" not in self.memory_store.list_collections():
-            self.memory_store.create_collection(
-                "earth_memory_data",
-                vector_dimension=embedding_dimension
-            )
+        # Initialize collections
+        self._initialize_collections()
     
+    def _initialize_collections(self):
+        """Initialize memory collections for various data types."""
+        collections = [
+            ("property_embeddings", self.embedding_dimension),
+            ("earth_memory_data", self.embedding_dimension),
+            ("environmental_metrics", self.embedding_dimension),
+            ("temporal_changes", self.embedding_dimension),
+            ("urban_development", self.embedding_dimension),
+            ("sustainability_metrics", self.embedding_dimension)
+        ]
+        
+        for name, dimension in collections:
+            if name not in self.memory_store.list_collections():
+                self.memory_store.create_collection(name, vector_dimension=dimension)
+
     async def add_property(self, property_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Add a new property to the database with embeddings and earth memory data.
+        Add a new property with comprehensive earth memory analysis.
         
         Args:
             property_data: Dictionary containing property information
-                (location, price, features, description, etc.)
-            
+                Required keys: location, coordinates, price, property_type
+                Optional keys: bedrooms, bathrooms, square_feet, year_built
+        
         Returns:
-            Dictionary with property ID and status
+            Dictionary containing property ID and initial analysis results
         """
-        # Create property description for embedding
-        property_description = self._create_property_description(property_data)
+        # Validate required fields
+        required_fields = ["location", "coordinates", "price", "property_type"]
+        if not all(field in property_data for field in required_fields):
+            raise ValueError(f"Missing required fields: {required_fields}")
         
-        # Generate embedding for the property description
-        embedding = self._generate_embedding(property_description)
+        # Extract coordinates
+        lat = property_data["coordinates"]["lat"]
+        lon = property_data["coordinates"]["lon"]
         
-        # Create metadata
-        metadata = {
-            "property_id": property_data.get("property_id", str(hash(property_description))[:10]),
-            "location": property_data.get("location", ""),
-            "coordinates": property_data.get("coordinates", {"lat": 0, "lon": 0}),
-            "price": property_data.get("price", 0),
-            "bedrooms": property_data.get("bedrooms", 0),
-            "bathrooms": property_data.get("bathrooms", 0),
-            "square_feet": property_data.get("square_feet", 0),
-            "property_type": property_data.get("property_type", ""),
-            "year_built": property_data.get("year_built", 0),
-            "added_date": datetime.now().isoformat(),
-        }
-        
-        # Fetch and add earth memory data if enabled
-        if self.enable_earth_memory:
-            earth_memory_data = await self._fetch_earth_memory_data(
-                metadata["coordinates"]["lat"],
-                metadata["coordinates"]["lon"]
-            )
-            metadata["earth_memory_data"] = earth_memory_data
-        
-        # Store the embedding
-        embedding_record = {
-            "vector": embedding,
-            "text": property_description,
-            "metadata": metadata
-        }
-        
-        self._store_embedding(embedding_record)
-        
-        return {
-            "property_id": metadata["property_id"],
-            "status": "added",
-            "embedding_generated": True,
-            "earth_memory_data_added": self.enable_earth_memory
-        }
-    
-    async def _fetch_earth_memory_data(self, lat: float, lon: float) -> Dict[str, Any]:
-        """
-        Fetch comprehensive earth memory data for a location.
-        
-        Args:
-            lat: Latitude
-            lon: Longitude
-            
-        Returns:
-            Dictionary containing earth memory data
-        """
-        # Create location point
+        # Create analysis area
+        area = self._create_analysis_area(lat, lon)
         location = Point(lon, lat)
         
-        # Fetch terrain data
-        terrain_data = await terrain_analyzer.analyze_location(location)
+        # Fetch comprehensive earth memory data
+        earth_data = await self._fetch_comprehensive_earth_data(location, area)
         
-        # Fetch climate data
-        climate_data = await climate_fetcher.get_climate_data(lat, lon)
+        # Analyze current conditions
+        current_analysis = await self._analyze_current_conditions(location, area, earth_data)
         
-        # Fetch environmental impact data
-        impact_data = await impact_analyzer.analyze_location_impact(location)
+        # Analyze historical changes
+        historical_analysis = await self._analyze_historical_changes(location, area)
         
-        # Fetch Sentinel satellite imagery
-        sentinel_data = await self._fetch_sentinel_data(lat, lon)
+        # Predict future trends
+        future_predictions = await self._predict_future_trends(location, area, historical_analysis)
         
-        # Fetch Overture map data
-        overture_data = await self._fetch_overture_data(lat, lon)
-        
-        return {
-            "terrain": terrain_data,
-            "climate": climate_data,
-            "environmental_impact": impact_data,
-            "satellite_imagery": sentinel_data,
-            "map_data": overture_data,
-            "timestamp": datetime.now().isoformat()
-        }
-    
-    async def _fetch_sentinel_data(self, lat: float, lon: float) -> Dict[str, Any]:
-        """Fetch Sentinel satellite imagery data."""
-        try:
-            # Define area of interest
-            bbox = [lon-0.1, lat-0.1, lon+0.1, lat+0.1]
-            
-            # Query Sentinel data
-            products = await sentinel_client.query(
-                bbox=bbox,
-                date=('NOW-30DAYS', 'NOW'),
-                platformname='Sentinel-2',
-                cloudcoverpercentage=(0, 20)
-            )
-            
-            if not products:
-                return {"error": "No recent Sentinel data available"}
-            
-            # Get the most recent product
-            product = products[0]
-            
-            # Download and process imagery
-            imagery_data = await sentinel_client.get_product_data(product)
-            
-            return {
-                "product_id": product.id,
-                "acquisition_date": product.beginposition.isoformat(),
-                "cloud_cover": product.cloudcoverpercentage,
-                "data": imagery_data
-            }
-            
-        except Exception as e:
-            logger.error(f"Error fetching Sentinel data: {str(e)}")
-            return {"error": str(e)}
-    
-    async def _fetch_overture_data(self, lat: float, lon: float) -> Dict[str, Any]:
-        """Fetch Overture map data."""
-        try:
-            # Query Overture for location context
-            location_data = await overture_client.get_location_context(lat, lon)
-            
-            # Get nearby amenities
-            amenities = await overture_client.get_nearby_amenities(
-                lat, lon, radius_meters=1000
-            )
-            
-            # Get transportation data
-            transportation = await overture_client.get_transportation_data(
-                lat, lon, radius_meters=1000
-            )
-            
-            return {
-                "location_context": location_data,
-                "nearby_amenities": amenities,
-                "transportation": transportation,
-                "timestamp": datetime.now().isoformat()
-            }
-            
-        except Exception as e:
-            logger.error(f"Error fetching Overture data: {str(e)}")
-            return {"error": str(e)}
-    
-    async def analyze_property_environment(self, property_id: str) -> Dict[str, Any]:
-        """
-        Perform detailed environmental analysis of a property.
-        
-        Args:
-            property_id: ID of the property to analyze
-            
-        Returns:
-            Dictionary with environmental analysis
-        """
-        # Retrieve property data
-        property_data = self._get_property_by_id(property_id)
-        
-        if not property_data or not self.enable_earth_memory:
-            return {"error": "Property not found or earth memory not enabled"}
-        
-        metadata = property_data["metadata"]
-        earth_data = metadata.get("earth_memory_data", {})
-        
-        # Analyze terrain risks
-        terrain_risks = self._analyze_terrain_risks(earth_data.get("terrain", {}))
-        
-        # Analyze climate impacts
-        climate_impacts = self._analyze_climate_impacts(earth_data.get("climate", {}))
-        
-        # Analyze environmental sustainability
-        sustainability = self._analyze_sustainability(
-            earth_data.get("environmental_impact", {})
+        # Calculate property score
+        property_score = self._calculate_property_score(
+            current_analysis,
+            historical_analysis,
+            future_predictions
         )
         
-        # Generate recommendations
-        recommendations = self._generate_environmental_recommendations(
-            terrain_risks,
-            climate_impacts,
-            sustainability
+        # Generate property embedding
+        property_text = self._generate_property_description(
+            property_data,
+            current_analysis,
+            historical_analysis,
+            future_predictions
+        )
+        property_embedding = self.vector_processor.encode(property_text)
+        
+        # Store data
+        property_id = f"prop_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        await self._store_property_data(
+            property_id,
+            property_data,
+            property_embedding,
+            current_analysis,
+            historical_analysis,
+            future_predictions,
+            property_score
         )
         
         return {
             "property_id": property_id,
-            "terrain_risks": terrain_risks,
-            "climate_impacts": climate_impacts,
-            "sustainability": sustainability,
-            "recommendations": recommendations,
-            "analysis_date": datetime.now().isoformat()
+            "analysis": current_analysis,
+            "historical_trends": historical_analysis,
+            "future_predictions": future_predictions,
+            "property_score": property_score
         }
-    
-    def _analyze_terrain_risks(self, terrain_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze terrain-related risks."""
-        risks = []
-        risk_level = "low"
-        
-        # Check elevation and slope
-        elevation = terrain_data.get("elevation", 0)
-        slope = terrain_data.get("slope", 0)
-        
-        if slope > 30:
-            risks.append("Steep slope may pose landslide risk")
-            risk_level = "high"
-        elif slope > 15:
-            risks.append("Moderate slope may require additional foundation work")
-            risk_level = "medium"
-            
-        # Check flood risk
-        flood_risk = terrain_data.get("flood_risk", "low")
-        if flood_risk in ["medium", "high"]:
-            risks.append(f"{flood_risk.capitalize()} flood risk identified")
-            risk_level = flood_risk
-            
-        return {
-            "risk_level": risk_level,
-            "identified_risks": risks,
-            "elevation": elevation,
-            "slope": slope,
-            "flood_risk": flood_risk
-        }
-    
-    def _analyze_climate_impacts(self, climate_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze climate-related impacts."""
-        impacts = []
-        impact_level = "low"
-        
-        # Analyze temperature trends
-        temp_trend = climate_data.get("temperature_trend", 0)
-        if abs(temp_trend) > 2:
-            impacts.append(f"Significant temperature change trend: {temp_trend}°C/decade")
-            impact_level = "high"
-            
-        # Analyze precipitation changes
-        precip_change = climate_data.get("precipitation_change", 0)
-        if abs(precip_change) > 20:
-            impacts.append(f"Notable precipitation change: {precip_change}%")
-            impact_level = "medium"
-            
-        # Analyze extreme weather frequency
-        extreme_weather = climate_data.get("extreme_weather_frequency", "low")
-        if extreme_weather != "low":
-            impacts.append(f"{extreme_weather.capitalize()} frequency of extreme weather events")
-            impact_level = extreme_weather
-            
-        return {
-            "impact_level": impact_level,
-            "identified_impacts": impacts,
-            "temperature_trend": temp_trend,
-            "precipitation_change": precip_change,
-            "extreme_weather_frequency": extreme_weather
-        }
-    
-    def _analyze_sustainability(self, impact_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze environmental sustainability."""
-        factors = []
-        sustainability_score = 0
-        
-        # Analyze air quality
-        air_quality = impact_data.get("air_quality", 0)
-        if air_quality > 0:
-            sustainability_score += air_quality
-            factors.append(f"Air quality index: {air_quality}")
-            
-        # Analyze green space proximity
-        green_space = impact_data.get("green_space_proximity", 0)
-        if green_space > 0:
-            sustainability_score += green_space
-            factors.append(f"Green space proximity score: {green_space}")
-            
-        # Analyze solar potential
-        solar_potential = impact_data.get("solar_potential", 0)
-        if solar_potential > 0:
-            sustainability_score += solar_potential
-            factors.append(f"Solar energy potential: {solar_potential}")
-            
-        # Calculate overall score
-        max_possible_score = 300  # Assuming each factor is 0-100
-        sustainability_score = (sustainability_score / max_possible_score) * 100
-        
-        return {
-            "sustainability_score": sustainability_score,
-            "factors": factors,
-            "air_quality": air_quality,
-            "green_space_proximity": green_space,
-            "solar_potential": solar_potential
-        }
-    
-    def _generate_environmental_recommendations(
-        self,
-        terrain_risks: Dict[str, Any],
-        climate_impacts: Dict[str, Any],
-        sustainability: Dict[str, Any]
-    ) -> List[str]:
-        """Generate environmental recommendations."""
-        recommendations = []
-        
-        # Terrain-based recommendations
-        if terrain_risks["risk_level"] != "low":
-            for risk in terrain_risks["identified_risks"]:
-                if "flood" in risk.lower():
-                    recommendations.append(
-                        "Consider flood mitigation measures such as elevated foundations "
-                        "and proper drainage systems"
-                    )
-                elif "slope" in risk.lower():
-                    recommendations.append(
-                        "Consult with a geotechnical engineer about slope stability "
-                        "and appropriate foundation design"
-                    )
-                    
-        # Climate-based recommendations
-        if climate_impacts["impact_level"] != "low":
-            for impact in climate_impacts["identified_impacts"]:
-                if "temperature" in impact.lower():
-                    recommendations.append(
-                        "Consider enhanced insulation and energy-efficient HVAC systems "
-                        "to address temperature trends"
-                    )
-                elif "precipitation" in impact.lower():
-                    recommendations.append(
-                        "Implement robust water management systems and consider "
-                        "drought-resistant landscaping"
-                    )
-                    
-        # Sustainability recommendations
-        if sustainability["sustainability_score"] < 60:
-            recommendations.append(
-                "Consider improvements to increase property sustainability: "
-                "solar panels, energy-efficient appliances, and green building materials"
-            )
-            
-        if not recommendations:
-            recommendations.append(
-                "Property shows good environmental characteristics. "
-                "Continue maintaining current sustainability features."
-            )
-            
-        return recommendations
 
-def simulate_property_database() -> List[Dict[str, Any]]:
-    """Generate a simulated database of properties."""
-    properties = [
-        {
-            "property_id": "PROP001",
-            "location": "San Francisco, CA",
-            "coordinates": {"lat": 37.7749, "lon": -122.4194},
-            "price": 1250000,
-            "bedrooms": 2,
-            "bathrooms": 2,
-            "square_feet": 1200,
-            "property_type": "Condo",
-            "year_built": 2015,
-            "features": ["Hardwood floors", "Stainless steel appliances", "In-unit laundry"],
-            "description": "Modern condo in the heart of San Francisco with beautiful city views."
-        },
-        {
-            "property_id": "PROP002",
-            "location": "San Francisco, CA",
-            "coordinates": {"lat": 37.7833, "lon": -122.4167},
-            "price": 2500000,
-            "bedrooms": 4,
-            "bathrooms": 3,
-            "square_feet": 2800,
-            "property_type": "Single Family Home",
-            "year_built": 1998,
-            "features": ["Backyard", "Garage", "Fireplace", "Updated kitchen"],
-            "description": "Spacious family home in a quiet neighborhood with excellent schools nearby."
-        },
-        {
-            "property_id": "PROP003",
-            "location": "Oakland, CA",
-            "coordinates": {"lat": 37.8044, "lon": -122.2711},
-            "price": 850000,
-            "bedrooms": 3,
-            "bathrooms": 2,
-            "square_feet": 1800,
-            "property_type": "Single Family Home",
-            "year_built": 1965,
-            "features": ["Renovated bathroom", "Large kitchen", "Deck"],
-            "description": "Charming mid-century home with character and modern updates."
-        },
-        {
-            "property_id": "PROP004",
-            "location": "Berkeley, CA",
-            "coordinates": {"lat": 37.8716, "lon": -122.2727},
-            "price": 1100000,
-            "bedrooms": 3,
-            "bathrooms": 2,
-            "square_feet": 1600,
-            "property_type": "Craftsman",
-            "year_built": 1925,
-            "features": ["Original woodwork", "Built-ins", "Garden"],
-            "description": "Classic Berkeley Craftsman with period details and a beautiful garden."
-        },
-        {
-            "property_id": "PROP005",
-            "location": "Palo Alto, CA",
-            "coordinates": {"lat": 37.4419, "lon": -122.1430},
-            "price": 3200000,
-            "bedrooms": 4,
-            "bathrooms": 3.5,
-            "square_feet": 2400,
-            "property_type": "Contemporary",
-            "year_built": 2020,
-            "features": ["Smart home", "Solar panels", "Home office", "Pool"],
-            "description": "Luxury contemporary home with high-end finishes and energy-efficient features."
+    async def _fetch_comprehensive_earth_data(
+        self,
+        location: Point,
+        area: Polygon
+    ) -> Dict[str, Any]:
+        """Fetch comprehensive earth memory data for the property location."""
+        tasks = [
+            self._fetch_sentinel_data(location, area),
+            self._fetch_overture_data(location, area),
+            terrain_analyzer.analyze_terrain(area),
+            climate_fetcher.get_climate_data(area),
+            impact_analyzer.analyze_environmental_impact(area),
+            water_analyzer.analyze_water_resources(area),
+            geological_fetcher.get_geological_data(area),
+            urban_analyzer.analyze_urban_development(area),
+            biodiversity_analyzer.analyze_biodiversity(area),
+            air_quality_monitor.get_air_quality(location),
+            noise_analyzer.analyze_noise_levels(area),
+            solar_calculator.calculate_solar_potential(area),
+            walkability_analyzer.analyze_walkability(location)
+        ]
+        
+        results = await asyncio.gather(*tasks)
+        
+        return {
+            "sentinel_data": results[0],
+            "overture_data": results[1],
+            "terrain_data": results[2],
+            "climate_data": results[3],
+            "environmental_impact": results[4],
+            "water_resources": results[5],
+            "geological_data": results[6],
+            "urban_development": results[7],
+            "biodiversity": results[8],
+            "air_quality": results[9],
+            "noise_levels": results[10],
+            "solar_potential": results[11],
+            "walkability": results[12]
         }
-    ]
-    
-    return properties
+
+    async def _analyze_current_conditions(
+        self,
+        location: Point,
+        area: Polygon,
+        earth_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Analyze current property conditions using earth memory data."""
+        return {
+            "environmental_quality": {
+                "air_quality_index": earth_data["air_quality"]["aqi"],
+                "noise_level_db": earth_data["noise_levels"]["average_db"],
+                "green_space_ratio": earth_data["environmental_impact"]["green_space_ratio"],
+                "biodiversity_score": earth_data["biodiversity"]["biodiversity_index"]
+            },
+            "natural_risks": {
+                "flood_risk": earth_data["water_resources"]["flood_risk_score"],
+                "earthquake_risk": earth_data["geological_data"]["seismic_risk_score"],
+                "landslide_risk": earth_data["terrain_data"]["landslide_risk_score"],
+                "subsidence_risk": earth_data["geological_data"]["subsidence_risk_score"]
+            },
+            "urban_features": {
+                "walkability_score": earth_data["walkability"]["score"],
+                "public_transport_access": earth_data["urban_development"]["transit_score"],
+                "amenities_score": earth_data["overture_data"]["amenities_score"],
+                "urban_density": earth_data["urban_development"]["density_score"]
+            },
+            "sustainability": {
+                "solar_potential": earth_data["solar_potential"]["annual_kwh"],
+                "green_building_score": earth_data["environmental_impact"]["building_sustainability"],
+                "water_efficiency": earth_data["water_resources"]["efficiency_score"],
+                "energy_efficiency": earth_data["environmental_impact"]["energy_efficiency"]
+            },
+            "climate_resilience": {
+                "heat_island_effect": earth_data["climate_data"]["heat_island_intensity"],
+                "cooling_demand": earth_data["climate_data"]["cooling_degree_days"],
+                "storm_resilience": earth_data["climate_data"]["storm_risk_score"],
+                "drought_risk": earth_data["water_resources"]["drought_risk_score"]
+            }
+        }
+
+    async def _analyze_historical_changes(
+        self,
+        location: Point,
+        area: Polygon
+    ) -> Dict[str, Any]:
+        """Analyze historical changes in the area over the specified time period."""
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=365 * self.temporal_analysis_years)
+        
+        # Fetch historical satellite imagery
+        historical_imagery = await sentinel_client.get_historical_imagery(
+            area,
+            start_date,
+            end_date,
+            max_cloud_cover=20
+        )
+        
+        # Analyze changes
+        land_use_changes = await land_use_classifier.analyze_changes(historical_imagery)
+        urban_development_changes = await urban_analyzer.analyze_historical_changes(area, start_date, end_date)
+        environmental_changes = await impact_analyzer.analyze_historical_impact(area, start_date, end_date)
+        climate_changes = await climate_fetcher.get_historical_trends(area, start_date, end_date)
+        
+        return {
+            "land_use_changes": land_use_changes,
+            "urban_development": urban_development_changes,
+            "environmental_impact": environmental_changes,
+            "climate_trends": climate_changes
+        }
+
+    async def _predict_future_trends(
+        self,
+        location: Point,
+        area: Polygon,
+        historical_analysis: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Predict future trends based on historical data and current plans."""
+        # Get urban development plans
+        development_plans = await urban_analyzer.get_development_plans(area)
+        
+        # Predict changes for the next 10 years
+        predictions = {
+            "urban_development": {
+                "density_change": self._predict_density_change(historical_analysis, development_plans),
+                "property_value_trend": self._predict_value_trend(historical_analysis, development_plans),
+                "infrastructure_improvements": development_plans["infrastructure_projects"],
+                "neighborhood_changes": development_plans["zoning_changes"]
+            },
+            "environmental_changes": {
+                "green_space_trend": self._predict_green_space_trend(historical_analysis),
+                "air_quality_trend": self._predict_air_quality_trend(historical_analysis),
+                "noise_level_trend": self._predict_noise_trend(historical_analysis),
+                "biodiversity_trend": self._predict_biodiversity_trend(historical_analysis)
+            },
+            "climate_projections": {
+                "temperature_trend": self._predict_temperature_trend(historical_analysis),
+                "precipitation_trend": self._predict_precipitation_trend(historical_analysis),
+                "extreme_weather_risk": self._predict_weather_risks(historical_analysis),
+                "sea_level_impact": self._predict_sea_level_impact(location, historical_analysis)
+            },
+            "sustainability_outlook": {
+                "energy_efficiency_potential": self._predict_energy_efficiency(historical_analysis),
+                "water_stress_projection": self._predict_water_stress(historical_analysis),
+                "renewable_energy_potential": self._predict_renewable_potential(historical_analysis),
+                "resilience_score": self._calculate_resilience_score(historical_analysis)
+            }
+        }
+        
+        return predictions
+
+    def _calculate_property_score(
+        self,
+        current_analysis: Dict[str, Any],
+        historical_analysis: Dict[str, Any],
+        future_predictions: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Calculate comprehensive property scores based on all analyses."""
+        return {
+            "overall_score": self._calculate_overall_score(
+                current_analysis,
+                historical_analysis,
+                future_predictions
+            ),
+            "sustainability_score": self._calculate_sustainability_score(
+                current_analysis,
+                future_predictions
+            ),
+            "livability_score": self._calculate_livability_score(
+                current_analysis,
+                future_predictions
+            ),
+            "investment_score": self._calculate_investment_score(
+                current_analysis,
+                historical_analysis,
+                future_predictions
+            ),
+            "resilience_score": self._calculate_resilience_score(
+                current_analysis,
+                future_predictions
+            )
+        }
+
+    def _create_analysis_area(self, lat: float, lon: float) -> Polygon:
+        """Create a polygon representing the analysis area around the property."""
+        return self._create_buffer_polygon(
+            lat,
+            lon,
+            self.analysis_radius_meters
+        )
+
+    @staticmethod
+    def _create_buffer_polygon(lat: float, lon: float, radius_meters: float) -> Polygon:
+        """Create a circular buffer polygon around a point."""
+        point = Point(lon, lat)
+        return point.buffer(radius_meters / 111320)  # Convert meters to degrees
+
+    async def get_property_recommendations(
+        self,
+        preferences: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """
+        Get property recommendations based on user preferences and earth memory data.
+        
+        Args:
+            preferences: Dictionary containing user preferences
+                Required keys: budget_range, location_area, property_type
+                Optional keys: environmental_priority, investment_horizon
+        
+        Returns:
+            List of recommended properties with scores and analysis
+        """
+        # Validate preferences
+        required_fields = ["budget_range", "location_area", "property_type"]
+        if not all(field in preferences for field in required_fields):
+            raise ValueError(f"Missing required preference fields: {required_fields}")
+        
+        # Create search area
+        search_area = self._create_search_area(preferences["location_area"])
+        
+        # Get properties in search area
+        properties = await self._get_properties_in_area(search_area)
+        
+        # Score properties based on preferences
+        scored_properties = []
+        for property_data in properties:
+            score = await self._score_property_for_preferences(
+                property_data,
+                preferences
+            )
+            scored_properties.append({
+                "property": property_data,
+                "match_score": score
+            })
+        
+        # Sort by score and return top recommendations
+        scored_properties.sort(key=lambda x: x["match_score"], reverse=True)
+        return scored_properties[:10]
 
 async def main():
-    """Main execution function."""
-    # Initialize memory system
+    """Run the example."""
+    # Initialize memory store
     config = Config(
-        storage_path="./real_estate_agent_data",
+        storage_path="./data",
         hot_memory_size=50,
         warm_memory_size=200,
         cold_memory_size=1000
     )
-    
     memory_store = MemoryStore(config)
     
-    # Initialize real estate agent
-    real_estate_agent = RealEstateAgent(memory_store, enable_earth_memory=True)
+    # Initialize agent
+    agent = RealEstateAgent(
+        memory_store=memory_store,
+        temporal_analysis_years=10
+    )
     
-    # Generate property database
-    property_database = simulate_property_database()
-    
-    # Add properties to the agent's memory
-    logger.info("Adding properties to the database with earth memory data...")
-    for property_data in property_database:
-        result = await real_estate_agent.add_property(property_data)
-        logger.info(f"Added property {result['property_id']} with earth memory: {result['earth_memory_data_added']}")
-    
-    # Search for properties
-    search_query = "Modern home in San Francisco with at least 2 bedrooms"
-    logger.info(f"\nSearching for: '{search_query}'")
-    
-    search_results = await real_estate_agent.search_properties(search_query, top_k=3)
-    
-    logger.info("\nTop matching properties:")
-    for i, result in enumerate(search_results):
-        logger.info(f"{i+1}. Match score: {result['similarity']:.4f}")
-        logger.info(f"   {result['bedrooms']}bd/{result['bathrooms']}ba {result['property_type']} in {result['location']}")
-        logger.info(f"   Price: ${result['price']:,}")
-        logger.info(f"   {result['square_feet']} sq ft, built in {result['year_built']}")
-    
-    # Analyze environmental aspects of a specific property
-    property_to_analyze = "PROP005"  # Palo Alto contemporary
-    logger.info(f"\nAnalyzing environmental aspects of property {property_to_analyze}...")
-    
-    env_analysis = await real_estate_agent.analyze_property_environment(property_to_analyze)
-    
-    if "error" not in env_analysis:
-        logger.info("\nEnvironmental Analysis:")
-        logger.info(f"Terrain Risk Level: {env_analysis['terrain_risks']['risk_level']}")
-        if env_analysis['terrain_risks']['identified_risks']:
-            logger.info("Identified Terrain Risks:")
-            for risk in env_analysis['terrain_risks']['identified_risks']:
-                logger.info(f"- {risk}")
-        
-        logger.info(f"\nClimate Impact Level: {env_analysis['climate_impacts']['impact_level']}")
-        if env_analysis['climate_impacts']['identified_impacts']:
-            logger.info("Identified Climate Impacts:")
-            for impact in env_analysis['climate_impacts']['identified_impacts']:
-                logger.info(f"- {impact}")
-        
-        logger.info(f"\nSustainability Score: {env_analysis['sustainability']['sustainability_score']:.1f}/100")
-        if env_analysis['sustainability']['factors']:
-            logger.info("Sustainability Factors:")
-            for factor in env_analysis['sustainability']['factors']:
-                logger.info(f"- {factor}")
-        
-        logger.info("\nEnvironmental Recommendations:")
-        for rec in env_analysis['recommendations']:
-            logger.info(f"- {rec}")
-    else:
-        logger.error(f"Error analyzing property: {env_analysis['error']}")
-    
-    # Recommend properties based on user preferences with environmental considerations
-    user_preferences = {
-        "location": "San Francisco",
-        "min_bedrooms": 2,
-        "min_bathrooms": 2,
-        "max_price": 2000000,
-        "features": ["Hardwood floors"],
-        "environmental_preferences": {
-            "min_sustainability_score": 70,
-            "max_climate_risk": "medium",
-            "prefer_solar_ready": True
-        }
+    # Example property data
+    property_data = {
+        "location": "San Francisco, CA",
+        "coordinates": {
+            "lat": 37.7749,
+            "lon": -122.4194
+        },
+        "price": 1250000,
+        "property_type": "residential",
+        "bedrooms": 2,
+        "bathrooms": 2,
+        "square_feet": 1200,
+        "year_built": 2015
     }
     
-    logger.info("\nRecommending properties based on user preferences...")
-    recommendations = await real_estate_agent.recommend_properties(user_preferences)
+    # Add property and analyze
+    result = await agent.add_property(property_data)
     
-    logger.info("\nTop recommendations:")
-    for i, rec in enumerate(recommendations):
-        logger.info(f"{i+1}. Match score: {rec['weighted_score']:.4f}")
-        logger.info(f"   {rec['bedrooms']}bd/{rec['bathrooms']}ba {rec['property_type']} in {rec['location']}")
-        logger.info(f"   Price: ${rec['price']:,}")
-        if "earth_memory_data" in rec:
-            env_data = rec["earth_memory_data"]
-            logger.info(f"   Sustainability Score: {env_data.get('sustainability_score', 'N/A')}")
-            logger.info(f"   Climate Risk: {env_data.get('climate_risk', 'N/A')}")
-            logger.info(f"   Solar Potential: {env_data.get('solar_potential', 'N/A')}")
+    # Print results
+    print("\nProperty Analysis Results:")
+    print(f"Property ID: {result['property_id']}")
+    print("\nCurrent Conditions:")
+    print(json.dumps(result['analysis'], indent=2))
+    print("\nHistorical Trends:")
+    print(json.dumps(result['historical_trends'], indent=2))
+    print("\nFuture Predictions:")
+    print(json.dumps(result['future_predictions'], indent=2))
+    print("\nProperty Scores:")
+    print(json.dumps(result['property_score'], indent=2))
 
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(main())
