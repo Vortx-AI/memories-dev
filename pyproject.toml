@@ -187,7 +187,14 @@ docs = [
     "furo>=2024.1.29",
     "sphinx-copybutton>=0.5.2",
     "myst-parser>=2.0.0",
-    "platformdirs>=4.2.0"  # Add platformdirs to handle Jupyter warning
+    "platformdirs>=4.2.0",  # Add platformdirs to handle Jupyter warning
+    "sphinx-design>=0.5.0",  # Added to fix failing test
+    "sphinxcontrib-mermaid>=0.9.2",  # Added to fix failing test
+    "sphinx-tabs>=3.4.1",  # Added to fix failing test
+    "sphinx-togglebutton>=0.3.2",  # Added to fix failing test
+    "sphinx-favicon>=1.0.1",  # Added to fix failing test
+    "sphinx-sitemap>=2.5.1",  # Added to fix failing test
+    "sphinx-last-updated-by-git>=0.3.6"  # Added to fix failing test
 ]
 
 [project.urls]
