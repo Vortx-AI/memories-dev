@@ -5,7 +5,11 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Tests](https://github.com/Vortx-AI/memories-dev/actions/workflows/tests.yml/badge.svg)](https://github.com/Vortx-AI/memories-dev/actions/workflows/tests.yml)
 
-> Collective AGI memory - v2.0.2 (June 15, 2024)
+> Collective AGI memory - v2.0.2 (Scheduled for February 25, 2025)
+
+## Release Timeline
+- **v1.0.0** - Released on February 14, 2025: Initial stable release with core functionality
+- **v2.0.2** - Scheduled for February 25, 2025: Current development version with enhanced features
 
 ## What's New in Version 2.0.2
 
@@ -84,7 +88,7 @@ memory_id = memory_system.store(
     },
     metadata={
         "location": bbox,
-        "timestamp": "2024-06-15T10:30:00Z",
+        "timestamp": "2025-02-15T10:30:00Z",
         "source": "satellite_analysis"
     }
 )
@@ -93,7 +97,7 @@ memory_id = memory_system.store(
 relevant_memories = memory_system.query(
     query="What is the building density in this urban area?",
     location=bbox,
-    time_range=("2024-01-01", "2024-06-15")
+    time_range=("2025-01-01", "2025-02-15")
 )
 
 # Generate insights with LLM
@@ -192,9 +196,7 @@ memories-dev/
 │   ├── data_acquisition/ # Data Collection
 │   │   ├── sources/     # Data sources
 │   │   │   ├── sentinel_api.py # Sentinel-2
-│   │   │   ├── sentinel3_api.py # Sentinel-3
 │   │   │   ├── landsat_api.py # Landsat
-│   │   │   ├── maxar_api.py # Maxar
 │   │   │   ├── osm_api.py # OpenStreetMap
 │   │   │   ├── overture_api.py # Overture Maps
 │   │   │   ├── wfs_api.py # WFS
@@ -247,250 +249,111 @@ bbox = [-122.4, 37.7, -122.3, 37.8]  # [west, south, east, north]
 # Get satellite data
 sentinel_data = await manager.get_satellite_data(
     bbox=bbox,
-    start_date="2024-01-01",
-    end_date="2024-01-31",
-    collection="sentinel-2-l2a"
+    start_date="2025-01-01",
+    end_date="2025-02-01",
+    source="sentinel-2",
+    bands=["B02", "B03", "B04", "B08"]
 )
 
 # Get vector data
 vector_data = await manager.get_vector_data(
     bbox=bbox,
-    layers=["buildings", "roads", "landuse"],
-    source="overture"  # Options: "overture", "osm", "wfs"
+    source="openstreetmap",
+    layers=["buildings", "roads", "landuse"]
 )
 
-# Calculate vegetation index
+# Calculate NDVI
 ndvi = calculate_ndvi(sentinel_data)
-
-# Combine data
-combined_data = {
-    "satellite": sentinel_data,
-    "vector": vector_data,
-    "indices": {"ndvi": ndvi}
-}
 ```
 
 ### 2. 🧠 Memory Management
-Multi-tier memory system for efficient data storage and retrieval:
+Provides a 4-tier memory system for efficient data storage and retrieval:
 
 ```python
-from memories.core.memory_manager import MemoryManager
-from memories.core.policies import MigrationPolicy
-
-# Define migration policy
-migration_policy = MigrationPolicy(
-    hot_to_warm_threshold=24,  # hours
-    warm_to_cold_threshold=72,  # hours
-    cold_to_glacier_threshold=30  # days
-)
+from memories.core import MemoryManager
 
 # Initialize memory manager
-manager = MemoryManager(
-    hot_memory_size=2,    # GB for GPU memory
-    warm_memory_size=8,   # GB for in-memory storage
-    cold_memory_size=50,  # GB for on-device storage
-    glacier_memory_size=500,  # GB for off-device storage
-    migration_policy=migration_policy
+memory_manager = MemoryManager(
+    hot_memory_size=2,    # GB (GPU memory)
+    warm_memory_size=8,   # GB (RAM)
+    cold_memory_size=50,  # GB (Disk)
+    glacier_enabled=True  # Off-device storage
 )
 
-# Store data with automatic tier placement
-manager.store(
-    key="location_123",
-    data=combined_data
+# Store data with automatic tier selection
+memory_manager.store(
+    key="location_data",
+    value=location_data,
+    priority="high"  # Influences tier selection
 )
 
-# Retrieve data (automatically fetches from appropriate tier)
-result = manager.retrieve(key="location_123")
+# Retrieve data (automatically promoted to appropriate tier)
+data = memory_manager.retrieve("location_data")
+
+# Explicitly store in specific tier
+memory_manager.store(
+    key="historical_data",
+    value=historical_data,
+    tier="cold"  # Options: "hot", "warm", "cold", "glacier"
+)
 
 # Create memory snapshot
-snapshot_id = manager.create_snapshot(
-    tiers=["hot", "warm"],
-    description="Pre-deployment state"
-)
+snapshot_id = memory_manager.create_snapshot()
+
+# Restore from snapshot
+memory_manager.restore_snapshot(snapshot_id)
 ```
 
 ### 3. 🤖 Model Integration
-Integration with multiple LLM providers:
+Provides a unified interface for working with various AI models:
 
 ```python
-from memories.models.load_model import LoadModel
-from memories.models.multi_model import MultiModelInference
+from memories.models import LoadModel
 
-# Initialize models
-openai_model = LoadModel(
+# Initialize local model
+local_model = LoadModel(
+    use_gpu=True,
+    model_provider="deepseek-ai",
+    deployment_type="local",
+    model_name="deepseek-coder-small"
+)
+
+# Generate text
+response = local_model.get_response("Write a function to calculate factorial")
+print(response["text"])
+
+# Initialize API-based model
+api_model = LoadModel(
     model_provider="openai",
     deployment_type="api",
-    model_name="gpt-4"
+    model_name="gpt-4",
+    api_key="your-api-key"
 )
 
-anthropic_model = LoadModel(
-    model_provider="anthropic",
-    deployment_type="api",
-    model_name="claude-3-opus"
+# Generate text with parameters
+response = api_model.get_response(
+    "Explain the impact of climate change on urban areas",
+    temperature=0.7,
+    max_tokens=500
 )
+print(response["text"])
 
-# Create multi-model inference
-multi_model = MultiModelInference(
-    models=[openai_model, anthropic_model],
-    aggregation_method="consensus"
-)
-
-# Get streaming response
-for chunk in openai_model.get_streaming_response("Analyze this urban area"):
-    print(chunk, end="", flush=True)
-
-# Get responses from all models
-results = multi_model.get_responses("Analyze this satellite image for urban development")
-
-# Get aggregated response
-consensus = multi_model.get_aggregated_response()
+# Clean up resources
+local_model.cleanup()
+api_model.cleanup()
 ```
 
-### 4. 🚀 Deployment
-Flexible deployment options:
+## 🔜 Coming in Version 2.1.0 (March 2025)
 
-```python
-from memories.deployments.standalone import StandaloneDeployment
-from memories.deployments.consensus import ConsensusDeployment
-from memories.deployments.swarmed import SwarmedDeployment
-
-# Standalone deployment (single node)
-standalone = StandaloneDeployment(
-    provider="gcp",
-    config={
-        "hardware": {
-            "cpu": {"vcpus": 8},
-            "memory": {"ram": 32},
-            "gpu": {"type": "nvidia-tesla-t4", "count": 1},
-            "storage": {"size": 100}
-        }
-    }
-)
-
-# Consensus deployment (multiple coordinated nodes)
-consensus = ConsensusDeployment(
-    provider="aws",
-    node_count=3,
-    config={
-        "hardware": {
-            "cpu": {"vcpus": 16},
-            "memory": {"ram": 64},
-            "gpu": {"type": "nvidia-a10g", "count": 1},
-            "storage": {"size": 200}
-        },
-        "consensus": {
-            "algorithm": "raft",
-            "timeout": 5000
-        }
-    }
-)
-
-# Swarmed deployment (distributed processing)
-swarmed = SwarmedDeployment(
-    provider="azure",
-    node_count=5,
-    config={
-        "hardware": {
-            "cpu": {"vcpus": 8},
-            "memory": {"ram": 32},
-            "storage": {"size": 100}
-        },
-        "swarm": {
-            "orchestrator": "kubernetes",
-            "scaling": {"min_nodes": 3, "max_nodes": 10}
-        }
-    }
-)
-
-# Deploy the application
-deployment_id = standalone.deploy()
-```
-
-## 🌍 Real-World Use Cases
-
-### Urban Planning
-Analyze urban development patterns and optimize city planning:
-
-```python
-from memories.examples.urban_planning import UrbanPlanner
-
-planner = UrbanPlanner(
-    city="San Francisco",
-    bbox=[-122.5, 37.7, -122.3, 37.8]
-)
-
-# Analyze building density
-density_map = planner.analyze_building_density()
-
-# Identify green spaces
-green_spaces = planner.identify_green_spaces()
-
-# Generate development recommendations
-recommendations = planner.generate_recommendations(
-    focus_areas=["housing", "transportation", "sustainability"]
-)
-```
-
-### Environmental Monitoring
-Track environmental changes and predict future trends:
-
-```python
-from memories.examples.environmental_monitoring import EnvironmentalMonitor
-
-monitor = EnvironmentalMonitor(
-    region="Amazon Rainforest",
-    start_date="2020-01-01",
-    end_date="2024-06-01"
-)
-
-# Track deforestation
-deforestation = monitor.track_deforestation()
-
-# Analyze climate impact
-climate_impact = monitor.analyze_climate_impact()
-
-# Predict future changes
-predictions = monitor.predict_changes(years_ahead=5)
-```
-
-### Disaster Response Planning
-Create disaster response plans based on historical and current data:
-
-```python
-from memories.examples.disaster_response import DisasterPlanner
-
-planner = DisasterPlanner(
-    region="Florida Coast",
-    disaster_type="hurricane"
-)
-
-# Generate flood risk maps
-flood_risk = planner.generate_flood_risk_map()
-
-# Create evacuation routes
-evacuation_routes = planner.create_evacuation_routes()
-
-# Identify critical infrastructure
-critical_infrastructure = planner.identify_critical_infrastructure()
-```
-
-## 📚 Documentation
-
-Comprehensive documentation is available at [https://docs.memories-dev.ai](https://docs.memories-dev.ai):
-
-- **Getting Started Guide**: Basic setup and first steps
-- **API Reference**: Detailed API documentation
-- **Tutorials**: Step-by-step guides for common tasks
-- **Examples**: Real-world use cases and implementations
-- **Deployment Guide**: Instructions for different deployment options
-- **Contributing Guide**: How to contribute to the project
+- **Maxar Integration**: Access to Maxar's high-resolution satellite imagery
+- **Sentinel-3 Support**: Integration with Sentinel-3 OLCI and SLSTR instruments
+- **Multi-source Fusion**: Advanced algorithms for combining data from multiple sources
+- **Function Calling**: Support for OpenAI and Anthropic function calling APIs
+- **Multi-model Inference**: Compare results from multiple models in parallel
+- **Memory Snapshots**: Point-in-time memory snapshots for backup and recovery
 
 ## 🤝 Contributing
 
-We welcome contributions from the community! Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to get started.
-
-## 📄 License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+We welcome contributions to the Memories library! Please see our [Contributing Guide](https://memories-dev.readthedocs.io/development/contributing.html) for more information.
 
 <p align="center">Built with 💜 by the memories-dev team</p>

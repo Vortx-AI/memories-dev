@@ -1,117 +1,106 @@
-# Models
+# Models Directory
 
-This directory contains the model management and API connector implementations for the Memories project. The system is designed to be modular and extensible, making it easy to add support for new models and providers.
+This directory contains the model integration components for the Memories project. The models module is designed to be modular and extensible, allowing for easy integration with various model providers.
 
-## What's New in Version 2.0.2
+## What's New in Version 2.0.2 (Scheduled for February 25, 2025)
+
+Since our initial release (v1.0.0 on February 14, 2025), we've made significant improvements to the model integration system:
 
 ### New Model Providers
-- **DeepSeek AI**: Added support for DeepSeek's code and language models
-- **Mistral AI**: Integrated Mistral's efficient language models
-- **Cohere**: Added support for Cohere's embedding and generation models
-- **Local Models**: Enhanced support for running models locally with optimized inference
+- **DeepSeek AI**: Integration with DeepSeek's powerful coding and general-purpose models
+- **Mistral AI**: Support for Mistral's efficient and high-performance models
+- **Cohere**: Integration with Cohere's state-of-the-art embedding and generation models
 
-### Improvements
+### New Features
 - **Multi-model Inference**: Compare results from multiple models in parallel
-- **Streaming Responses**: Added streaming capability for all supported providers
-- **Function Calling**: Support for OpenAI and Anthropic function calling APIs
-- **Improved Caching**: Intelligent response caching to reduce API costs
+- **Streaming Responses**: Real-time streaming for all supported model providers
+- **Function Calling**: Support for function calling with compatible models
+- **Improved Caching**: More efficient caching strategies for repeated operations
 - **Model Fallbacks**: Automatic fallback to alternative models when primary is unavailable
 
 ## Architecture
 
-The models system consists of several key components:
+The models directory is structured around several core components:
 
-### Core Components
-
-- `base_model.py`: Base implementation for local model management
-- `load_model.py`: High-level model loader that handles both local and API-based models
-- `api_connector.py`: API connectors for various model providers
-- `config/model_config.json`: Central configuration for all models and providers
-- `streaming.py`: Streaming response handlers (New in 2.0.2)
-- `caching.py`: Model response caching system (New in 2.0.2)
-- `function_calling.py`: Function calling utilities (New in 2.0.2)
-
-### Directory Structure
-
-```
-models/
-├── README.md
-├── __init__.py
-├── base_model.py
-├── load_model.py
-├── api_connector.py
-├── streaming.py
-├── caching.py
-├── function_calling.py
-└── config/
-    └── model_config.json
-```
+- **base_model.py**: Abstract base class defining the interface for all model implementations
+- **load_model.py**: Factory class for loading and initializing models
+- **api_connector.py**: Base class for API-based model connections
+- **streaming.py**: Utilities for handling streaming responses
+- **caching.py**: Caching mechanisms for model responses
+- **function_calling.py**: Utilities for function calling capabilities
 
 ## Adding a New Model Provider
 
-To add support for a new model provider:
+To add a new model provider, you need to:
 
-1. Add the provider configuration to `config/model_config.json`:
+1. Create a new JSON configuration file in the `configs` directory:
+
 ```json
 {
-    "models": {
-        "your-model-name": {
-            "name": "provider/model-name",
-            "provider": "your-provider",
-            "type": "local",  # or "api"
-            "config": {
-                "max_length": 2048,
-                "temperature": 0.7,
-                "top_p": 0.95,
-                "supports_streaming": true,
-                "supports_function_calling": false
-            }
-        }
+  "provider_name": "new-provider",
+  "models": {
+    "model-name-1": {
+      "context_length": 8192,
+      "supports_streaming": true,
+      "supports_function_calling": false
+    },
+    "model-name-2": {
+      "context_length": 16384,
+      "supports_streaming": true,
+      "supports_function_calling": true
     }
+  },
+  "api_base": "https://api.new-provider.com/v1",
+  "requires_api_key": true
 }
 ```
 
-2. Create a new connector class in `api_connector.py`:
+2. Create a new connector class that extends `APIConnector`:
+
 ```python
-class YourProviderConnector(APIConnector):
-    def __init__(self, api_key: str = None):
-        super().__init__(api_key)
-        # Initialize your provider's client
+from memories.models.api_connector import APIConnector
+
+class NewProviderConnector(APIConnector):
+    def __init__(self, api_key, model_name, **kwargs):
+        super().__init__(api_key=api_key, model_name=model_name, **kwargs)
+        self.provider = "new-provider"
         
-    def generate(self, prompt: str, **kwargs) -> str:
-        # Implement generation logic
+    async def generate(self, prompt, **kwargs):
+        # Implementation for the specific API
         pass
         
-    def generate_streaming(self, prompt: str, **kwargs) -> Iterator[str]:
-        # Implement streaming logic
+    async def generate_stream(self, prompt, **kwargs):
+        # Implementation for streaming
         pass
         
-    def generate_with_functions(self, prompt: str, functions: List[Dict], **kwargs) -> Dict:
-        # Implement function calling logic
+    async def function_call(self, prompt, functions, **kwargs):
+        # Implementation for function calling
         pass
 ```
 
-3. Register the connector in the `get_connector` function:
-```python
-connectors = {
-    "your-provider": YourProviderConnector,
-    # ... existing connectors ...
-}
-```
+3. Register the new connector in `load_model.py`
 
-## Using Models
+## Usage Examples
 
 ### Local Models
 
 ```python
 from memories.models.load_model import LoadModel
 
+# Initialize local model
 model = LoadModel(
-    model_provider="your-provider",
+    use_gpu=True,
+    model_provider="deepseek-ai",
     deployment_type="local",
-    model_name="your-model-name"
+    model_name="deepseek-coder-small"
 )
-response = model.get_response("Your prompt here")
+
+# Generate text
+response = model.get_response("Write a function to calculate factorial")
+print(response["text"])
+
+# Clean up resources
+model.cleanup()
 ```
 
 ### API-based Models
@@ -119,44 +108,55 @@ response = model.get_response("Your prompt here")
 ```python
 from memories.models.load_model import LoadModel
 
-model = LoadModel(
-    model_provider="your-provider",
-    deployment_type="api",
-    model_name="your-model-name",
-    api_key="your-api-key"
-)
-response = model.get_response("Your prompt here")
-```
-
-### Streaming Responses (New in 2.0.2)
-
-```python
-from memories.models.load_model import LoadModel
-
+# Initialize API-based model
 model = LoadModel(
     model_provider="openai",
     deployment_type="api",
     model_name="gpt-4",
+    api_key="your-api-key"
+)
+
+# Generate text with parameters
+response = model.get_response(
+    "Explain the impact of climate change on urban areas",
+    temperature=0.7,
+    max_tokens=500
+)
+print(response["text"])
+
+# Clean up resources
+model.cleanup()
+```
+
+### Streaming Responses
+
+```python
+from memories.models.load_model import LoadModel
+
+# Initialize model with streaming support
+model = LoadModel(
+    model_provider="anthropic",
+    deployment_type="api",
+    model_name="claude-3-opus",
     api_key="your-api-key"
 )
 
 # Get streaming response
-for chunk in model.get_streaming_response("Your prompt here"):
+for chunk in model.get_streaming_response(
+    "Write a short story about a robot that develops consciousness"
+):
     print(chunk, end="", flush=True)
+
+# Clean up resources
+model.cleanup()
 ```
 
-### Function Calling (New in 2.0.2)
+### Function Calling
 
 ```python
 from memories.models.load_model import LoadModel
 
-model = LoadModel(
-    model_provider="openai",
-    deployment_type="api",
-    model_name="gpt-4",
-    api_key="your-api-key"
-)
-
+# Define functions
 functions = [
     {
         "name": "get_weather",
@@ -167,6 +167,11 @@ functions = [
                 "location": {
                     "type": "string",
                     "description": "The city and state, e.g. San Francisco, CA"
+                },
+                "unit": {
+                    "type": "string",
+                    "enum": ["celsius", "fahrenheit"],
+                    "description": "The temperature unit to use"
                 }
             },
             "required": ["location"]
@@ -174,176 +179,112 @@ functions = [
     }
 ]
 
-response = model.get_response_with_functions("What's the weather in New York?", functions=functions)
-print(response)
+# Initialize model with function calling support
+model = LoadModel(
+    model_provider="openai",
+    deployment_type="api",
+    model_name="gpt-4",
+    api_key="your-api-key"
+)
+
+# Call function
+response = model.function_call(
+    "What's the weather like in San Francisco?",
+    functions=functions
+)
+
+print(f"Function: {response['function_name']}")
+print(f"Arguments: {response['arguments']}")
+
+# Clean up resources
+model.cleanup()
 ```
 
-### Multi-model Inference (New in 2.0.2)
+### Multi-model Inference
 
 ```python
 from memories.models.load_model import LoadModel
 from memories.models.multi_model import MultiModelInference
 
 # Initialize models
-openai_model = LoadModel(
-    model_provider="openai",
-    deployment_type="api",
-    model_name="gpt-4"
-)
-
-anthropic_model = LoadModel(
-    model_provider="anthropic",
-    deployment_type="api",
-    model_name="claude-3-opus"
-)
-
-deepseek_model = LoadModel(
-    model_provider="deepseek",
-    deployment_type="api",
-    model_name="deepseek-chat"
-)
+models = {
+    "openai": LoadModel(
+        model_provider="openai",
+        deployment_type="api",
+        model_name="gpt-4"
+    ),
+    "anthropic": LoadModel(
+        model_provider="anthropic",
+        deployment_type="api",
+        model_name="claude-3-opus"
+    ),
+    "deepseek": LoadModel(
+        model_provider="deepseek-ai",
+        deployment_type="api",
+        model_name="deepseek-chat"
+    )
+}
 
 # Create multi-model inference
-multi_model = MultiModelInference(
-    models=[openai_model, anthropic_model, deepseek_model],
-    aggregation_method="consensus"  # Options: "consensus", "voting", "best_confidence"
-)
+multi_model = MultiModelInference(models=models)
 
 # Get responses from all models
-results = multi_model.get_responses("Analyze this satellite image for urban development")
+responses = multi_model.get_responses(
+    "Explain how satellite imagery can be used for urban planning"
+)
 
-# Print results
-for provider, response in results.items():
-    print(f"{provider}: {response['text']}")
+# Print responses
+for provider, response in responses.items():
+    print(f"\n--- {provider.upper()} ---")
+    print(response["text"])
 
-# Get aggregated response
-consensus = multi_model.get_aggregated_response()
-print(f"Consensus: {consensus}")
+# Clean up resources
+multi_model.cleanup()
 ```
 
-## Model Providers (Updated for 2.0.2)
+## Supported Model Providers
 
 ### OpenAI
-- Models: GPT-3.5-Turbo, GPT-4, GPT-4-Turbo
-- Features: Streaming, Function Calling, Vision
+- **Models**: gpt-4, gpt-4-turbo, gpt-3.5-turbo
+- **Features**: Streaming, function calling, JSON mode
+- **Deployment**: API only
 
 ### Anthropic
-- Models: Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku
-- Features: Streaming, Tool Use, Vision
+- **Models**: claude-3-opus, claude-3-sonnet, claude-3-haiku
+- **Features**: Streaming, tool use
+- **Deployment**: API only
 
-### DeepSeek AI (New in 2.0.2)
-- Models: DeepSeek-Chat, DeepSeek-Coder
-- Features: Streaming, Code Generation
+### DeepSeek AI
+- **Models**: deepseek-chat, deepseek-coder
+- **Features**: Streaming, function calling
+- **Deployment**: API and local
 
-### Mistral AI (New in 2.0.2)
-- Models: Mistral-7B, Mixtral-8x7B, Mistral-Large
-- Features: Streaming, Tool Use
+### Mistral AI
+- **Models**: mistral-large, mistral-medium, mistral-small
+- **Features**: Streaming, tool use
+- **Deployment**: API only
 
-### Cohere (New in 2.0.2)
-- Models: Command, Command-R
-- Features: Streaming, RAG Optimization
+### Cohere
+- **Models**: command, command-light, command-r
+- **Features**: Streaming, tool use
+- **Deployment**: API only
 
 ### Local Models
-- Models: Llama 3, Phi-3, Gemma
-- Features: Optimized Inference, Quantization
+- **Models**: Various open-source models
+- **Features**: Depends on model capabilities
+- **Deployment**: Local only (requires sufficient hardware)
+
+## Coming in Version 2.1.0 (March 2025)
+
+- **Function Calling**: Enhanced support for OpenAI and Anthropic function calling APIs
+- **Multi-model Inference**: Compare results from multiple models in parallel with consensus mechanisms
+- **Model Quantization**: Support for quantized models to reduce memory footprint
+- **Custom Model Training**: Tools for fine-tuning models on custom datasets
+- **Model Performance Metrics**: Comprehensive benchmarking and evaluation tools
 
 ## Contributing
 
-### Guidelines
-
-1. **Code Style**
-   - Follow PEP 8 guidelines
-   - Use type hints
-   - Include docstrings for all classes and methods
-   - Add logging for important operations
-
-2. **Error Handling**
-   - Use appropriate exception types
-   - Include meaningful error messages
-   - Log errors with sufficient context
-   - Handle cleanup properly
-
-3. **Testing**
-   - Add unit tests for new functionality
-   - Include integration tests for API connectors
-   - Test both success and error cases
-   - Use mock objects for API calls in tests
-
-### Adding a New Feature
-
-1. Fork the repository
-2. Create a feature branch
-3. Implement your changes
-4. Add tests
-5. Update documentation
-6. Submit a pull request
-
-### Testing Your Changes
-
-1. Install development dependencies:
-```bash
-pip install -r requirements-dev.txt
-```
-
-2. Run tests:
-```bash
-python -m pytest tests/models/
-```
-
-3. Test with example script:
-```bash
-python examples/test_model.py
-```
-
-## Configuration
-
-### Environment Variables
-
-Required environment variables for different providers:
-
-```bash
-# OpenAI
-export OPENAI_API_KEY="your-key-here"
-
-# Anthropic
-export ANTHROPIC_API_KEY="your-key-here"
-
-# DeepSeek (New in 2.0.2)
-export DEEPSEEK_API_KEY="your-key-here"
-
-# Mistral AI (New in 2.0.2)
-export MISTRAL_API_KEY="your-key-here"
-
-# Cohere (New in 2.0.2)
-export COHERE_API_KEY="your-key-here"
-```
-
-### Model Configuration
-
-The `model_config.json` file contains all model-specific configurations:
-
-- Model parameters (temperature, max length, etc.)
-- Provider groupings
-- Deployment types
-- Global settings
-- Streaming and function calling capabilities (New in 2.0.2)
-- Fallback configurations (New in 2.0.2)
-
-## Troubleshooting
-
-Common issues and solutions:
-
-1. **ImportError**: Make sure all required packages are installed
-2. **API Errors**: Verify API key and model name
-3. **Memory Issues**: Check GPU memory usage and cleanup
-4. **Missing Configuration**: Ensure model_config.json is properly set up
-5. **Streaming Errors**: Verify model supports streaming (New in 2.0.2)
-6. **Function Calling Errors**: Check function schema format (New in 2.0.2)
-
-## Support
-
-- Create an issue for bugs or feature requests
-- Join our discord channel for discussions
+We welcome contributions to the models module! Please see our [Contributing Guide](https://memories-dev.readthedocs.io/development/contributing.html) for more information.
 
 <p align="center">Built with 💜 by the memories-dev team</p>
 

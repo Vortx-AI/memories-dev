@@ -1,424 +1,293 @@
 # Data Acquisition Module
 
-This module handles all data acquisition, processing, and storage operations for the Memories system. It provides a robust framework for collecting, processing, and managing various types of satellite and vector data sources.
+This module handles data acquisition, processing, and storage for the Memories system.
 
-## What's New in Version 2.0.2
+## What's New in Version 2.0.2 (Scheduled for February 25, 2025)
+
+Since our initial release (v1.0.0 on February 14, 2025), we've made significant improvements to the data acquisition module:
 
 ### New Data Sources
-- **Overture Maps**: Complete integration with Overture Maps Foundation data
-- **OpenStreetMap Enhanced**: Improved OSM data extraction with advanced filtering
-- **Maxar Open Data**: Access to Maxar's open satellite imagery
-- **Sentinel-3**: Added support for Sentinel-3 OLCI and SLSTR instruments
+- **Overture Maps**: Complete integration with Overture Maps for high-quality vector data
+- **OpenStreetMap Enhanced**: Improved OSM integration with advanced filtering and processing
+- **Earth Engine**: Integration with Google Earth Engine for advanced satellite data processing
 
-### Improvements
-- **Multi-source Fusion**: Combine data from multiple sources with automatic alignment
-- **Advanced Filtering**: Enhanced cloud masking and quality filtering
-- **Vector Data Processing**: Improved building footprint extraction and road network analysis
-- **Temporal Analysis**: Support for time-series analysis of satellite imagery
-- **Data Validation**: Automated quality checks and validation pipelines
+### New Features
+- **Multi-source Fusion**: Combine data from multiple sources for comprehensive analysis
+- **Advanced Filtering**: Sophisticated filtering options for all data sources
+- **Vector Data Processing**: Enhanced processing capabilities for vector data
+- **Temporal Analysis**: Track changes over time with temporal data analysis
+- **Automated Data Validation**: Validate data quality and completeness automatically
 
-## Structure
+## Architecture
+
+The data acquisition module is organized into several components:
 
 ```
 data_acquisition/
-├── sources/            # Source-specific implementations
-│   ├── __init__.py    # Source exports
-│   ├── base.py        # Base classes
-│   ├── sentinel_api.py # Sentinel-2 data source
-│   ├── sentinel3_api.py # Sentinel-3 data source (New in 2.0.2)
-│   ├── landsat_api.py # Landsat data source
-│   ├── maxar_api.py   # Maxar data source (New in 2.0.2)
-│   ├── wfs_api.py     # WFS data source
-│   ├── osm_api.py     # OpenStreetMap API
-│   ├── overture_api.py # Overture Maps API
-│   └── planetary_compute.py # Microsoft Planetary Computer
-├── processing/         # Data processing utilities (New in 2.0.2)
-│   ├── __init__.py    # Processing exports
-│   ├── cloud_mask.py  # Cloud masking algorithms
-│   ├── indices.py     # Spectral indices calculation
-│   ├── fusion.py      # Multi-source data fusion
-│   └── validation.py  # Data validation tools
-├── __init__.py        # Module initialization
-├── data_manager.py    # Core data management functionality
-└── README.md          # Module documentation
+├── __init__.py
+├── data_manager.py           # Main interface for data acquisition
+├── sources/                  # Data source implementations
+│   ├── __init__.py
+│   ├── sentinel_api.py       # Sentinel-2 data source
+│   ├── landsat_api.py        # Landsat data source
+│   ├── osm_api.py            # OpenStreetMap data source
+│   ├── overture_api.py       # Overture Maps data source
+│   ├── wfs_api.py            # WFS data source
+│   └── planetary_compute.py  # Microsoft Planetary Computer
+├── processing/               # Data processing utilities
+│   ├── __init__.py
+│   ├── cloud_mask.py         # Cloud masking for satellite imagery
+│   ├── indices.py            # Spectral indices calculation
+│   ├── fusion.py             # Multi-source data fusion
+│   └── validation.py         # Data validation utilities
+└── utils/                    # Utility functions
+    ├── __init__.py
+    ├── bbox.py               # Bounding box utilities
+    ├── caching.py            # Caching utilities
+    └── conversion.py         # Data format conversion utilities
 ```
-
-## Core Components
-
-### Data Manager (`data_manager.py`)
-The Data Manager serves as the central coordinator for all data operations, providing:
-- Data source registration and management
-- Satellite and vector data acquisition
-- Caching and data persistence
-- Training data preparation
-- Coordinate system and bbox handling
-
-Key features:
-- Asynchronous data fetching
-- Automatic caching with refresh capability
-- Support for multiple data formats
-- Error handling and logging
-- Flexible bbox input (tuples, lists, or Polygon objects)
-- Multi-source data fusion (New in 2.0.2)
-- Temporal analysis support (New in 2.0.2)
-
-### Data Sources (`sources/`)
-The module provides several data source implementations:
-
-#### Satellite Data Sources
-- `SentinelAPI`: Sentinel-2 L2A data
-  - 10m resolution bands (B02, B03, B04, B08)
-  - 20m resolution bands (B05-B07, B8A, B11, B12)
-  - Cloud cover filtering
-  - Quality indicators
-  - Atmospheric correction (New in 2.0.2)
-  
-- `Sentinel3API`: Sentinel-3 data (New in 2.0.2)
-  - OLCI instrument (21 bands, 300m resolution)
-  - SLSTR instrument (9 bands, 500m/1km resolution)
-  - Sea and land surface temperature
-  - Ocean color products
-  
-- `LandsatAPI`: Landsat Collection 2 Level 2
-  - Surface reflectance bands (SR_B2-SR_B7)
-  - Quality assessment
-  - 30m resolution
-  - Landsat 8 and 9 support (New in 2.0.2)
-  
-- `MaxarAPI`: Maxar Open Data (New in 2.0.2)
-  - High-resolution imagery (30-50cm)
-  - Disaster response data
-  - Open data program access
-  
-- `PlanetaryCompute`: Microsoft Planetary Computer
-  - Multiple collections support
-  - STAC API integration
-  - Cloud-optimized access
-  - Enhanced query capabilities (New in 2.0.2)
-
-#### Vector Data Sources
-- `OvertureAPI`: Overture Maps Foundation
-  - Building footprints
-  - Transportation networks
-  - Land use data
-  - Global coverage
-  - Places and POIs (New in 2.0.2)
-  - Administrative boundaries (New in 2.0.2)
-
-- `OSMAPI`: OpenStreetMap
-  - Buildings, roads, POIs
-  - Land use and natural features
-  - Real-time updates
-  - Advanced filtering (New in 2.0.2)
-  - Historical data access (New in 2.0.2)
-  
-- `WFSAPI`: Web Feature Service
-  - Standard OGC WFS support
-  - Vector data queries
-  - Custom layer support
-  - WFS 2.0 features (New in 2.0.2)
-
-### Data Processing (`processing/`) (New in 2.0.2)
-The new processing module provides utilities for:
-- Cloud masking with multiple algorithms
-- Spectral indices calculation (NDVI, NDWI, etc.)
-- Multi-source data fusion
-- Data validation and quality assessment
 
 ## Usage Examples
 
-### 1. Basic Data Manager Usage
+### Data Manager
+
+The `DataManager` class provides a unified interface for acquiring data from various sources:
 
 ```python
 from memories.data_acquisition.data_manager import DataManager
+import asyncio
 
-# Initialize data manager with cache directory
-manager = DataManager(cache_dir="./data_cache")
+# Initialize data manager
+data_manager = DataManager(cache_dir="./data_cache")
 
 # Define area of interest
-bbox = [-122.4, 37.7, -122.3, 37.8]  # [west, south, east, north]
+bbox = {
+    'xmin': -122.4018,
+    'ymin': 37.7914,
+    'xmax': -122.3928,
+    'ymax': 37.7994
+}
 
 # Get satellite data
-satellite_data = await manager.get_satellite_data(
+async def get_satellite_data():
+    satellite_data = await data_manager.get_satellite_data(
+        bbox_coords=bbox,
+        start_date="2023-01-01",
+        end_date="2023-01-31",
+        source="sentinel-2",
+        bands=["B02", "B03", "B04", "B08"],
+        cloud_cover_max=20
+    )
+    return satellite_data
+
+# Get vector data
+async def get_vector_data():
+    vector_data = await data_manager.get_vector_data(
+        bbox=bbox,
+        source="openstreetmap",
+        layers=["buildings", "roads", "landuse", "water"]
+    )
+    return vector_data
+
+# Run the async functions
+satellite_data = asyncio.run(get_satellite_data())
+vector_data = asyncio.run(get_vector_data())
+
+# Process the data
+from memories.data_acquisition.processing.indices import calculate_ndvi
+
+ndvi = calculate_ndvi(satellite_data)
+```
+
+### Sentinel-2 Data
+
+```python
+from memories.data_acquisition.sources.sentinel_api import SentinelAPI
+import asyncio
+
+# Initialize the API
+api = SentinelAPI(data_dir="./sentinel_data")
+await api.initialize()
+
+# Define area of interest
+bbox = {
+    'xmin': -122.4018,
+    'ymin': 37.7914,
+    'xmax': -122.3928,
+    'ymax': 37.7994
+}
+
+# Download specific bands with cloud cover filter
+result = await api.download_data(
     bbox=bbox,
     start_date="2023-01-01",
-    end_date="2023-12-31",
-    refresh=False  # Use cache if available
-)
-```
-
-### 2. Vector Data Acquisition
-
-```python
-# Get vector data for multiple layers
-vector_data = await manager.get_vector_data(
-    bbox=bbox,
-    layers=["buildings", "roads", "landuse"]
+    end_date="2023-01-31",
+    bands=["B04", "B08"],
+    cloud_cover=10.0
 )
 
-# Access individual sources
-overture_data = vector_data["overture"]
-osm_data = vector_data["osm"]
+if result["status"] == "success":
+    print(f"Downloaded files: {result['files']}")
+    print(f"Metadata: {result['metadata']}")
 ```
 
-### 3. Multi-source Data Fusion (New in 2.0.2)
+### OpenStreetMap Data
 
 ```python
-from memories.data_acquisition.processing.fusion import fuse_sources
+from memories.data_acquisition.sources.osm_api import OSMDataSource
+import asyncio
+
+# Initialize OSM data source
+osm_source = OSMDataSource(cache_dir="./osm_cache")
+
+# Define area of interest
+bbox = {
+    'xmin': -122.4018,
+    'ymin': 37.7914,
+    'xmax': -122.3928,
+    'ymax': 37.7994
+}
+
+# Get specific OSM features
+async def get_osm_data():
+    # Get buildings
+    buildings = await osm_source.get_buildings(bbox)
+    
+    # Get road network
+    roads = await osm_source.get_roads(bbox)
+    
+    # Get points of interest
+    pois = await osm_source.get_pois(bbox, categories=["amenity", "shop"])
+    
+    # Get land use polygons
+    landuse = await osm_source.get_landuse(bbox)
+    
+    return {
+        "buildings": buildings,
+        "roads": roads,
+        "pois": pois,
+        "landuse": landuse
+    }
+
+# Run the async function
+osm_data = asyncio.run(get_osm_data())
+
+# Access the data
+print(f"Found {len(osm_data['buildings'])} buildings")
+print(f"Found {len(osm_data['roads'])} road segments")
+```
+
+### Overture Maps Data
+
+```python
+from memories.data_acquisition.sources.overture_api import OvertureDataSource
+import asyncio
+
+# Initialize Overture data source with API key
+overture_source = OvertureDataSource(
+    api_key="your-overture-api-key",
+    cache_dir="./overture_cache"
+)
+
+# Define area of interest
+bbox = {
+    'xmin': -122.4018,
+    'ymin': 37.7914,
+    'xmax': -122.3928,
+    'ymax': 37.7994
+}
+
+# Get Overture data
+async def get_overture_data():
+    # Get places
+    places = await overture_source.get_places(
+        bbox=bbox,
+        categories=["restaurant", "cafe", "hotel"]
+    )
+    
+    # Get buildings with detailed attributes
+    buildings = await overture_source.get_buildings(
+        bbox=bbox,
+        include_height=True,
+        include_building_type=True
+    )
+    
+    return {
+        "places": places,
+        "buildings": buildings
+    }
+
+# Run the async function
+overture_data = asyncio.run(get_overture_data())
+```
+
+### Multi-source Data Fusion
+
+```python
+from memories.data_acquisition.data_manager import DataManager
+from memories.data_acquisition.processing.fusion import fuse_data
+import asyncio
+
+# Initialize data manager
+data_manager = DataManager(cache_dir="./data_cache")
+
+# Define area of interest
+bbox = {
+    'xmin': -122.4018,
+    'ymin': 37.7914,
+    'xmax': -122.3928,
+    'ymax': 37.7994
+}
 
 # Get data from multiple sources
-sentinel_data = await manager.get_satellite_data(
-    bbox=bbox,
-    start_date="2023-01-01",
-    end_date="2023-01-31",
-    collection="sentinel-2-l2a"
-)
+async def get_fused_data():
+    # Get satellite data
+    satellite_data = await data_manager.get_satellite_data(
+        bbox_coords=bbox,
+        start_date="2023-01-01",
+        end_date="2023-01-31"
+    )
+    
+    # Get OSM data
+    osm_data = await data_manager.get_vector_data(
+        bbox=bbox,
+        source="openstreetmap",
+        layers=["buildings", "roads"]
+    )
+    
+    # Get Overture data
+    overture_data = await data_manager.get_vector_data(
+        bbox=bbox,
+        source="overture",
+        layers=["places", "buildings"]
+    )
+    
+    # Fuse the data
+    fused_data = fuse_data(
+        sources=[
+            {"type": "satellite", "data": satellite_data},
+            {"type": "vector", "data": osm_data},
+            {"type": "vector", "data": overture_data}
+        ],
+        fusion_strategy="overlay"
+    )
+    
+    return fused_data
 
-landsat_data = await manager.get_satellite_data(
-    bbox=bbox,
-    start_date="2023-01-01",
-    end_date="2023-01-31",
-    collection="landsat-c2-l2"
-)
-
-# Fuse the data sources
-fused_data = fuse_sources(
-    sources=[sentinel_data, landsat_data],
-    method="weighted_average",
-    weights=[0.6, 0.4],
-    resolution=10.0
-)
-
-# Use the fused data
-analysis_result = await manager.analyze_data(fused_data)
+# Run the async function
+fused_data = asyncio.run(get_fused_data())
 ```
 
-### 4. Temporal Analysis (New in 2.0.2)
+## Coming in Version 2.1.0 (March 2025)
 
-```python
-from memories.data_acquisition.processing.indices import calculate_ndvi
-import matplotlib.pyplot as plt
-from datetime import datetime, timedelta
+- **Maxar Integration**: Access to Maxar's high-resolution satellite imagery
+- **Sentinel-3 Support**: Integration with Sentinel-3 OLCI and SLSTR instruments
+- **Multi-source Fusion**: Advanced algorithms for combining data from multiple sources
+- **Temporal Analysis**: Enhanced capabilities for tracking changes over time
+- **Custom Data Sources**: Framework for adding custom data sources
 
-# Define time period
-end_date = datetime.now()
-start_date = end_date - timedelta(days=365)
+## Contributing
 
-# Get time series data
-time_series = await manager.get_time_series(
-    bbox=bbox,
-    start_date=start_date.strftime("%Y-%m-%d"),
-    end_date=end_date.strftime("%Y-%m-%d"),
-    collection="sentinel-2-l2a",
-    frequency="monthly"
-)
-
-# Calculate NDVI for each time point
-ndvi_series = []
-dates = []
-
-for date, data in time_series.items():
-    ndvi = calculate_ndvi(data)
-    ndvi_mean = ndvi.mean()
-    ndvi_series.append(ndvi_mean)
-    dates.append(date)
-
-# Plot the results
-plt.figure(figsize=(12, 6))
-plt.plot(dates, ndvi_series, 'g-', marker='o')
-plt.title('NDVI Change Over Time')
-plt.xlabel('Date')
-plt.ylabel('Mean NDVI')
-plt.grid(True)
-plt.xticks(rotation=45)
-plt.tight_layout()
-plt.savefig('ndvi_trend.png')
-```
-
-### 5. Overture Maps Integration (New in 2.0.2)
-
-```python
-# Get building data from Overture Maps
-overture_buildings = await manager.get_vector_data(
-    bbox=bbox,
-    source="overture",
-    layers=["buildings"],
-    attributes=["height", "building_type", "last_updated"]
-)
-
-# Get places data from Overture Maps
-overture_places = await manager.get_vector_data(
-    bbox=bbox,
-    source="overture",
-    layers=["places"],
-    categories=["food_and_drink", "education", "healthcare"]
-)
-
-# Combine with OSM data for comparison
-osm_buildings = await manager.get_vector_data(
-    bbox=bbox,
-    source="osm",
-    layers=["buildings"]
-)
-
-# Compare building coverage
-building_comparison = await manager.compare_sources(
-    sources=[overture_buildings, osm_buildings],
-    metrics=["count", "area_coverage", "attribute_completeness"]
-)
-
-print(f"Overture buildings: {building_comparison['overture']['count']}")
-print(f"OSM buildings: {building_comparison['osm']['count']}")
-print(f"Coverage difference: {building_comparison['difference_percent']}%")
-```
-
-## Data Formats
-
-### Satellite Data
-- Sentinel-2:
-  - 10m resolution bands: B02 (Blue), B03 (Green), B04 (Red), B08 (NIR)
-  - 20m resolution bands: B05, B06, B07, B8A, B11, B12
-  - Cloud masks and quality indicators
-  
-- Sentinel-3 (New in 2.0.2):
-  - OLCI: 21 bands (400-1020nm), 300m resolution
-  - SLSTR: 9 bands (550-12000nm), 500m/1km resolution
-  
-- Landsat:
-  - Surface Reflectance bands: SR_B2 through SR_B7
-  - Quality Assessment bands
-  - 30m resolution
-
-- Maxar (New in 2.0.2):
-  - RGB and pan-sharpened imagery
-  - 30-50cm resolution
-  - Disaster response collections
-
-### Vector Data
-- GeoJSON format
-- Supported features:
-  - Buildings (footprints, height, type)
-  - Roads (geometry, classification)
-  - Land use (polygons, categories)
-  - Places and POIs (New in 2.0.2)
-  - Administrative boundaries (New in 2.0.2)
-
-## Caching
-
-The module implements a robust caching system:
-
-```python
-# Check cache status
-exists = manager.cache_exists("cache_key")
-
-# Get cached data
-data = manager.get_from_cache("cache_key")
-
-# Force refresh cached data
-new_data = await manager.get_satellite_data(
-    bbox=bbox,
-    refresh=True
-)
-
-# Set cache expiration (New in 2.0.2)
-manager.set_cache_policy(
-    max_age_days=30,
-    max_size_gb=10,
-    cleanup_strategy="lru"
-)
-```
-
-## Error Handling
-
-The module implements comprehensive error handling:
-
-```python
-try:
-    data = await manager.get_satellite_data(bbox=bbox)
-except ValueError as e:
-    # Handle invalid input parameters
-    print(f"Invalid input: {e}")
-except ConnectionError as e:
-    # Handle API connection issues (New in 2.0.2)
-    print(f"Connection error: {e}")
-    # Try fallback source
-    data = await manager.get_satellite_data(bbox=bbox, source="fallback")
-except Exception as e:
-    # Handle other errors
-    print(f"Error fetching data: {e}")
-```
-
-## Best Practices
-
-1. **Resource Management**
-   - Use appropriate timeouts for API calls
-   - Implement rate limiting for external services
-   - Clean up temporary files after processing
-   - Use connection pooling for multiple requests (New in 2.0.2)
-
-2. **Data Quality**
-   - Filter clouds and shadows in satellite data
-   - Validate vector geometries
-   - Check for data completeness
-   - Apply automated quality assessment (New in 2.0.2)
-
-3. **Performance**
-   - Use caching for frequently accessed data
-   - Implement parallel downloads where possible
-   - Optimize raster operations
-   - Use cloud-optimized formats (COG, ZARR) (New in 2.0.2)
-
-4. **Error Handling**
-   - Implement proper exception handling
-   - Log errors with sufficient context
-   - Provide meaningful error messages
-   - Use fallback sources when primary fails (New in 2.0.2)
-
-## Testing
-
-Tests are located in `tests/data_acquisition/` and cover:
-
-### Test Files
-- `test_data_manager.py`: Tests for the data manager functionality
-- `test_data_sources.py`: Tests for the data sources module
-- `test_sources.py`: Tests for individual source implementations
-- `test_processing.py`: Tests for processing utilities (New in 2.0.2)
-- `test_fusion.py`: Tests for multi-source fusion (New in 2.0.2)
-
-### Test Coverage
-- Unit tests for each component
-- Integration tests for data flow
-- Mock tests for external APIs
-- Cache management tests
-- Error handling scenarios
-- Performance benchmarks
-- Concurrent operations
-- Resource cleanup
-- Validation tests (New in 2.0.2)
-
-### Running Tests
-```bash
-# Run all data acquisition tests
-python -m pytest tests/data_acquisition/
-
-# Run specific test file
-python -m pytest tests/data_acquisition/test_data_manager.py
-
-# Run with coverage report
-python -m pytest tests/data_acquisition/ --cov=memories.data_acquisition
-```
-
-### Test Requirements
-Required packages for running tests are listed in `requirements-test.txt`:
-- pytest
-- pytest-asyncio
-- pytest-cov
-- aiohttp
-- numpy
-- rasterio
-- shapely
-- pystac-client
-- matplotlib (New in 2.0.2)
-- geopandas (New in 2.0.2)
+We welcome contributions to the data acquisition module! Please see our [Contributing Guide](https://memories-dev.readthedocs.io/development/contributing.html) for more information.
 
 <p align="center">Built with 💜 by the memories-dev team</p> 

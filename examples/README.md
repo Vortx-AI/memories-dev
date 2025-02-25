@@ -1,334 +1,257 @@
-# Memories-Dev Examples
+# Examples
 
-This directory contains example applications built using the Memories-Dev framework. Each example demonstrates different aspects of the framework's capabilities.
+This directory contains example applications built using the Memories-Dev framework.
 
-## What's New in Version 2.0.2
+## What's New in Version 2.0.2 (Scheduled for February 25, 2025)
+
+Since our initial release (v1.0.0 on February 14, 2025), we've added several new examples and improved existing ones:
 
 ### New Examples
-- **Urban Planning Assistant**: Analyze urban development using satellite imagery and vector data
-- **Environmental Monitoring**: Track deforestation and environmental changes over time
-- **Disaster Response Planning**: Create flood risk maps and evacuation plans
-- **Multi-Provider Model Comparison**: Compare responses from different LLM providers
+- **Urban Planning Assistant**: Analyze urban areas for development planning
+- **Environmental Monitoring**: Track changes in vegetation and land use over time
+- **Location Context Analyzer**: Generate rich contextual descriptions of locations
 
 ### Improvements
-- **Enhanced Visualization**: Added interactive maps and charts using Folium and Matplotlib
-- **Improved Data Integration**: Better integration with Overture Maps and OpenStreetMap
-- **Multi-modal Processing**: Combined satellite imagery with vector data for richer analysis
-- **Edge Deployment Examples**: Added examples for edge computing scenarios
+- **Enhanced Visualization**: All examples now include improved visualization options
+- **Performance Optimization**: Reduced memory usage and faster processing
+- **Better Documentation**: More detailed comments and usage instructions
 
 ## Available Examples
 
-### 1. Property Analyzer (`property_analyzer.py`)
-Analyzes real estate properties using satellite imagery and local context.
+### property_analyzer.py
 
+A tool for analyzing property characteristics and surrounding areas.
+
+**Setup:**
 ```bash
-# Set up environment variables
-export PLANETARY_COMPUTER_API_KEY=your_api_key
+# Install required dependencies
+pip install memories-dev[examples]
 
-# Run the example
-python property_analyzer.py
+# Set up environment variables
+export OPENSTREETMAP_API_KEY=your_api_key
+export OVERTURE_API_KEY=your_api_key
 ```
 
-**New in 2.0.2**: Added property valuation using historical satellite imagery and neighborhood analysis.
+**Usage:**
+```python
+from examples.property_analyzer import PropertyAnalyzer
 
-### 2. Water Bodies Monitor (`water_bodies_monitor.py`)
-Monitors and analyzes changes in global water bodies using satellite data.
+# Initialize the analyzer
+analyzer = PropertyAnalyzer()
 
-```bash
-# Set up environment variables
-export PLANETARY_COMPUTER_API_KEY=your_api_key
+# Analyze a property by address
+results = analyzer.analyze_by_address("123 Main St, San Francisco, CA")
 
-# Run the example
-python water_bodies_monitor.py
+# Or analyze by coordinates
+results = analyzer.analyze_by_coordinates(37.7749, -122.4194)
+
+# Get the analysis report
+print(results.summary)
+print(results.nearby_amenities)
+print(results.environmental_factors)
 ```
 
-**New in 2.0.2**: Added drought prediction and water quality assessment using multi-spectral analysis.
+### water_bodies_monitor.py
 
-### 3. Location Ambience (`location_ambience.py`)
-Analyzes the ambience and environmental characteristics of locations.
+A tool for monitoring water bodies and analyzing changes over time.
 
+**Setup:**
 ```bash
-# Set up environment variables
-export PLANETARY_COMPUTER_API_KEY=your_api_key
+# Install required dependencies
+pip install memories-dev[examples]
 
-# Run the example
-python location_ambience.py
+# Set up environment variables
+export OPENSTREETMAP_API_KEY=your_api_key
 ```
 
-**New in 2.0.2**: Added noise level estimation and air quality prediction using environmental data.
+**Usage:**
+```python
+from examples.water_bodies_monitor import WaterBodiesMonitor
+import asyncio
 
-### 4. Traffic Analyzer (`traffic_analyzer.py`)
-Analyzes traffic patterns and road conditions using satellite imagery.
+# Initialize the monitor
+monitor = WaterBodiesMonitor(cache_dir="./water_bodies_cache")
 
-```bash
-# Set up environment variables
-export PLANETARY_COMPUTER_API_KEY=your_api_key
+# Define area of interest
+bbox = {
+    'xmin': -122.5,
+    'ymin': 37.7,
+    'xmax': -122.3,
+    'ymax': 37.9
+}
 
-# Run the example
-python traffic_analyzer.py
+# Run the monitoring
+async def monitor_water():
+    # Get current water bodies
+    water_bodies = await monitor.get_water_bodies(bbox)
+    
+    # Analyze changes over time
+    changes = await monitor.analyze_changes(
+        bbox,
+        start_date="2023-01-01",
+        end_date="2023-12-31"
+    )
+    
+    return water_bodies, changes
+
+# Run the async function
+water_bodies, changes = asyncio.run(monitor_water())
+
+# Print results
+print(f"Found {len(water_bodies)} water bodies")
+print(f"Detected {len(changes)} significant changes")
 ```
 
-**New in 2.0.2**: Added congestion prediction and optimal route planning using historical traffic data.
+### location_ambience.py
 
-### 5. Urban Planning Assistant (`urban_planning.py`) - NEW
-Analyzes urban areas and provides planning recommendations.
+A tool for generating rich descriptions of locations based on available data.
 
+**Setup:**
 ```bash
-# Set up environment variables
-export PLANETARY_COMPUTER_API_KEY=your_api_key
-export OPENAI_API_KEY=your_openai_api_key
+# Install required dependencies
+pip install memories-dev[examples]
 
-# Run the example
-python urban_planning.py
+# Set up environment variables
+export OPENSTREETMAP_API_KEY=your_api_key
+export DEEPSEEK_API_KEY=your_api_key  # Or use another supported model provider
 ```
 
-### 6. Environmental Monitoring (`environmental_monitoring.py`) - NEW
-Tracks deforestation and environmental changes over time.
+**Usage:**
+```python
+from examples.location_ambience import LocationAmbience
+import asyncio
 
-```bash
-# Set up environment variables
-export PLANETARY_COMPUTER_API_KEY=your_api_key
-export ANTHROPIC_API_KEY=your_anthropic_api_key
+# Initialize the ambience generator
+ambience = LocationAmbience(
+    model_provider="deepseek-ai",
+    model_name="deepseek-coder-small"
+)
 
-# Run the example
-python environmental_monitoring.py
+# Define location
+location = {
+    'lat': 37.7749,
+    'lon': -122.4194,
+    'radius': 500  # meters
+}
+
+# Generate ambience description
+async def generate_ambience():
+    description = await ambience.generate_description(
+        location,
+        include_history=True,
+        include_culture=True,
+        include_architecture=True
+    )
+    return description
+
+# Run the async function
+description = asyncio.run(generate_ambience())
+
+# Print the description
+print(description)
 ```
 
-### 7. Disaster Response Planning (`disaster_response.py`) - NEW
-Creates flood risk maps and evacuation plans.
+### traffic_analyzer.py
 
+A tool for analyzing traffic patterns and road network characteristics.
+
+**Setup:**
 ```bash
-# Set up environment variables
-export PLANETARY_COMPUTER_API_KEY=your_api_key
-export OPENAI_API_KEY=your_openai_api_key
+# Install required dependencies
+pip install memories-dev[examples]
 
-# Run the example
-python disaster_response.py
+# Set up environment variables
+export OPENSTREETMAP_API_KEY=your_api_key
 ```
 
-### 8. Multi-Provider Model Comparison (`model_comparison.py`) - NEW
-Compares responses from different LLM providers.
+**Usage:**
+```python
+from examples.traffic_analyzer import TrafficAnalyzer
+import asyncio
 
-```bash
-# Set up environment variables
-export OPENAI_API_KEY=your_openai_api_key
-export ANTHROPIC_API_KEY=your_anthropic_api_key
-export DEEPSEEK_API_KEY=your_deepseek_api_key
+# Initialize the analyzer
+analyzer = TrafficAnalyzer(cache_dir="./traffic_cache")
 
-# Run the example
-python model_comparison.py
+# Define area of interest
+bbox = {
+    'xmin': -122.5,
+    'ymin': 37.7,
+    'xmax': -122.3,
+    'ymax': 37.9
+}
+
+# Analyze traffic
+async def analyze_traffic():
+    # Get road network
+    road_network = await analyzer.get_road_network(bbox)
+    
+    # Analyze connectivity
+    connectivity = await analyzer.analyze_connectivity(bbox)
+    
+    # Identify bottlenecks
+    bottlenecks = await analyzer.identify_bottlenecks(bbox)
+    
+    return {
+        'road_network': road_network,
+        'connectivity': connectivity,
+        'bottlenecks': bottlenecks
+    }
+
+# Run the async function
+traffic_analysis = asyncio.run(analyze_traffic())
+
+# Print results
+print(f"Road network has {len(traffic_analysis['road_network'])} segments")
+print(f"Connectivity score: {traffic_analysis['connectivity']['score']}")
+print(f"Identified {len(traffic_analysis['bottlenecks'])} bottlenecks")
 ```
 
 ## Requirements
 
-All examples require the following:
-
-1. Python 3.9 or higher (updated in 2.0.2)
-2. Memories-Dev framework v2.0.2 or higher
-3. Required environment variables set (see each example's documentation)
-4. Dependencies installed from `requirements.txt`
-
-Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+- Python 3.9+
+- memories-dev framework (version 2.0.2)
+- Environment variables for API access
+- Additional dependencies specified in each example
 
 ## Common Usage Pattern
 
 All examples follow a similar pattern:
 
-1. Initialize a memory store
-2. Process data and generate insights
-3. Store results in appropriate memory tiers
-
-Example:
-```python
-from memories import MemoryStore, Config
-from memories.data_acquisition.data_manager import DataManager
-from memories.models.load_model import LoadModel
-import asyncio
-
-# Initialize components
-config = Config(
-    storage_path="./data",
-    hot_memory_size=50,
-    warm_memory_size=200,
-    cold_memory_size=1000
-)
-memory_store = MemoryStore(config)
-data_manager = DataManager(cache_dir="./data_cache")
-model = LoadModel(
-    model_provider="openai",
-    deployment_type="api",
-    model_name="gpt-4"
-)
-
-# Define area of interest
-bbox = {
-    'xmin': -122.4018,
-    'ymin': 37.7914,
-    'xmax': -122.3928,
-    'ymax': 37.7994
-}
-
-# Process data
-async def analyze_location():
-    # Get satellite and vector data
-    satellite_data = await data_manager.get_satellite_data(
-        bbox_coords=bbox,
-        start_date="2023-01-01",
-        end_date="2023-01-31"
-    )
-    
-    vector_data = await data_manager.get_vector_data(
-        bbox=bbox,
-        layers=["buildings", "roads", "landuse"]
-    )
-    
-    # Generate insights with LLM
-    prompt = f"Analyze this location with the following data: {satellite_data}, {vector_data}"
-    insights = model.get_response(prompt)
-    
-    # Store results
-    memory_store.store(
-        location=bbox,
-        data_type="location_analysis",
-        content=insights["text"]
-    )
-    
-    return insights["text"]
-
-# Run the analysis
-results = asyncio.run(analyze_location())
-print(results)
-
-# Clean up
-model.cleanup()
-```
-
-## Visualization Examples
-
-### Interactive Maps with Folium (New in 2.0.2)
-
-```python
-import folium
-from folium.plugins import HeatMap
-
-# Create a map centered at the area of interest
-m = folium.Map(
-    location=[(bbox['ymin'] + bbox['ymax'])/2, (bbox['xmin'] + bbox['xmax'])/2],
-    zoom_start=15
-)
-
-# Add buildings
-for building in vector_data["buildings"][:1000]:  # Limit for performance
-    folium.Polygon(
-        locations=[[p[1], p[0]] for p in building.exterior.coords],
-        color='blue',
-        fill=True,
-        fill_color='blue',
-        fill_opacity=0.4
-    ).add_to(m)
-
-# Add a heatmap
-heat_data = []
-for point in data_points:
-    heat_data.append([point.lat, point.lon, point.value])
-
-HeatMap(heat_data).add_to(m)
-
-# Save the map
-m.save('analysis_map.html')
-```
-
-### Time Series Analysis with Matplotlib (New in 2.0.2)
-
-```python
-import matplotlib.pyplot as plt
-import numpy as np
-from datetime import datetime, timedelta
-
-# Generate dates
-end_date = datetime.now()
-start_date = end_date - timedelta(days=365)
-dates = [start_date + timedelta(days=i) for i in range(0, 365, 30)]
-
-# Generate values
-values = [0.65 - (i * 0.02) for i in range(len(dates))]
-
-# Create visualization
-plt.figure(figsize=(12, 6))
-plt.plot(dates, values, 'g-', marker='o')
-plt.title('Environmental Change Over Time')
-plt.xlabel('Date')
-plt.ylabel('NDVI (Normalized Difference Vegetation Index)')
-plt.grid(True)
-plt.xticks(rotation=45)
-plt.tight_layout()
-plt.savefig('environmental_trend.png')
-```
+1. Initialize the specific tool/analyzer
+2. Define the area of interest (coordinates, bounding box, or address)
+3. Call the appropriate methods to retrieve and analyze data
+4. Process and visualize the results
 
 ## Data Storage
 
-Each example stores its data in a different directory structure:
-- Property Analyzer: `./property_data/`
-- Water Bodies Monitor: `./water_bodies_data/`
-- Location Ambience: `./location_data/`
-- Traffic Analyzer: `./traffic_data/`
-- Urban Planning: `./urban_planning_data/` (New in 2.0.2)
-- Environmental Monitoring: `./environmental_data/` (New in 2.0.2)
-- Disaster Response: `./disaster_response_data/` (New in 2.0.2)
-- Model Comparison: `./model_comparison_data/` (New in 2.0.2)
+Each example stores its data in a configurable cache directory:
 
-## Edge Deployment Examples (New in 2.0.2)
+- `property_analyzer.py`: `./property_cache` (default)
+- `water_bodies_monitor.py`: `./water_bodies_cache` (default)
+- `location_ambience.py`: Uses in-memory cache only
+- `traffic_analyzer.py`: `./traffic_cache` (default)
 
-For edge deployment scenarios with limited connectivity:
+## Coming in Version 2.1.0 (March 2025)
 
-```python
-from memories.deployments.standalone import StandaloneDeployment
-from memories.models.load_model import LoadModel
-
-# Configure edge deployment
-edge_deployment = StandaloneDeployment(
-    provider="local",
-    config={
-        "hardware": {
-            "cpu": {"vcpus": 2},
-            "memory": {"ram": 8},
-            "storage": {"size": 50}
-        },
-        "network": {
-            "offline_mode": True,
-            "sync_interval": 3600  # Sync every hour when online
-        }
-    }
-)
-
-# Deploy the application
-deployment_id = edge_deployment.deploy()
-
-# Initialize local model for offline use
-model = LoadModel(
-    use_gpu=True,
-    model_provider="deepseek-ai",
-    deployment_type="local",
-    model_name="deepseek-coder-small"
-)
-
-# Process data locally
-response = model.get_response("Process this offline data")
-print(response["text"])
-
-# Clean up
-model.cleanup()
-```
+- **Disaster Response Planning**: Analyze areas for natural disaster risks and plan response
+- **Urban Heat Island Analysis**: Identify and analyze urban heat islands
+- **Maxar Integration Examples**: Demonstrate high-resolution imagery analysis
+- **Sentinel-3 Data Examples**: Show how to work with Sentinel-3 data
 
 ## Contributing
 
-Feel free to contribute your own examples! Follow these guidelines:
-1. Create a new Python file in the examples directory
-2. Add corresponding tests in `tests/examples/`
-3. Update this README with information about your example
-4. Ensure all tests pass before submitting a pull request
+We welcome contributions of new examples! To add your own example:
+
+1. Create a new Python file in the `examples` directory
+2. Follow the common pattern used in existing examples
+3. Add comprehensive documentation and comments
+4. Submit a pull request with your example
+
+Please ensure your example includes:
+- Clear setup instructions
+- Usage examples
+- Required dependencies
+- Proper error handling
+- Documentation comments
 
 <p align="center">Built with 💜 by the memories-dev team</p> 

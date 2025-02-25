@@ -1,331 +1,331 @@
 # Memory Management System
 
-This directory contains the implementation of a 4-tier memory management system designed for efficient data storage and retrieval across different performance requirements.
+This directory contains the core memory management system for the Memories project.
 
-## What's New in Version 2.0.2
+## What's New in Version 2.0.2 (Scheduled for February 25, 2025)
+
+Since our initial release (v1.0.0 on February 14, 2025), we've made significant improvements to the memory management system:
 
 ### New Features
-- **Memory Optimization**: Advanced memory usage optimization with automatic tier balancing
+- **Memory Optimization**: Advanced memory usage with automatic tier balancing
 - **Distributed Memory**: Support for distributed memory across multiple nodes
 - **Memory Snapshots**: Point-in-time memory snapshots for backup and recovery
-- **Memory Analytics**: Built-in analytics for memory usage patterns and optimization
+- **Memory Analytics**: Built-in analytics for memory usage and performance
 
 ### Improvements
-- **Enhanced GPU Support**: Improved CUDA integration with support for newer GPU architectures
-- **Memory Compression**: Intelligent compression algorithms for all memory tiers
-- **Query Performance**: Optimized query execution across memory tiers
-- **Memory Migration**: Smarter policies for moving data between tiers
-- **Persistence Options**: Additional persistence configurations for all memory tiers
+- **Enhanced GPU Support**: Better utilization of GPU memory for hot tier
+- **Memory Compression**: Intelligent compression for cold and glacier tiers
+- **Query Performance**: Faster memory retrieval with optimized indexing
+- **Memory Migration**: Improved policies for automatic data migration
+- **Persistence Options**: More flexible options for persistent storage
 
 ## Memory Tiers
 
+The memory management system is built on a 4-tier architecture designed for efficient data storage and retrieval:
+
 ### 1. Hot Memory (GPU Memory)
-- **Purpose**: Ultra-fast, GPU-accelerated memory for immediate inference and processing
-- **Characteristics**:
-  - Fastest possible access times
-  - GPU-accelerated operations
-  - Limited by GPU memory capacity
-  - Optimized for parallel processing
-  - Ideal for real-time inference and vector operations
-  - CUDA-accelerated similarity search
-  - Multi-GPU support (New in 2.0.2)
-  - Tensor optimization (New in 2.0.2)
+- **Purpose**: Ultra-fast access for active processing
+- **Characteristics**: 
+  - Highest speed, limited capacity
+  - Optimized for tensor operations
+  - Automatic garbage collection
+- **New in 2.0.2**:
+  - Multi-GPU support
+  - Tensor optimization
+  - Priority-based allocation
 
 ### 2. Warm Memory (CPU/In-Memory)
-- **Purpose**: Fast CPU-based memory and in-memory storage for frequent access
+- **Purpose**: Fast access for working data
 - **Characteristics**:
-  - Very fast key-value access
-  - Data persistence with AOF/RDB
-  - Supports complex data structures
-  - Ideal for frequently accessed data
-  - Scalable with Redis Cluster
-  - CPU-based processing when needed
-  - Memory compression (New in 2.0.2)
-  - Distributed caching (New in 2.0.2)
+  - High speed, moderate capacity
+  - RAM-based storage
+  - Efficient for structured data
+- **New in 2.0.2**:
+  - Memory pooling
+  - Shared memory support
+  - Improved serialization
 
 ### 3. Cold Memory (On-Device Storage)
-- **Purpose**: Efficient on-device storage for less frequently accessed data
+- **Purpose**: Persistent storage for less frequently accessed data
 - **Characteristics**:
-  - SQL-like query capabilities
-  - Efficient columnar storage
-  - ACID compliance
-  - Ideal for analytical queries
-  - Local storage with fast access
-  - Optimized for structured data
-  - Incremental backups (New in 2.0.2)
-  - Query optimization (New in 2.0.2)
+  - Moderate speed, high capacity
+  - Disk-based storage
+  - Automatic indexing
+- **New in 2.0.2**:
+  - Intelligent compression
+  - Partial loading
+  - Optimized file formats
 
 ### 4. Glacier Memory (Off-Device Storage)
-- **Purpose**: Long-term storage of historical data
+- **Purpose**: Long-term archival storage
 - **Characteristics**:
-  - Highly compressed storage
-  - Columnar format for efficient queries
-  - Ideal for archival and analytics
-  - Can be stored on external/network storage
-  - Cost-effective for large datasets
-  - Optimized for long-term retention
-  - Cloud storage integration (New in 2.0.2)
-  - Tiered archival policies (New in 2.0.2)
+  - Slow access, unlimited capacity
+  - Cloud or network storage
+  - Cost-optimized
+- **New in 2.0.2**:
+  - Multi-provider support
+  - Encrypted storage
+  - Batch operations
 
-## Memory Flow
+## Data Flow
 
-Data typically flows through the system in the following pattern:
+Data flows through the system as follows:
 
-1. New data enters through Hot Memory for immediate GPU processing
-2. Frequently accessed data moves to Warm Memory for CPU/in-memory operations
-3. Less frequently accessed data is moved to Cold Memory
-4. Historical data is archived in Glacier Memory
+1. New data enters the system in Hot or Warm Memory
+2. Based on access patterns and policies, data migrates between tiers
+3. Least recently used data moves to colder tiers
+4. Frequently accessed data in cold tiers is promoted to warmer tiers
+5. Data can be explicitly placed in specific tiers when needed
 
 ### Advanced Flow Control (New in 2.0.2)
 
-Version 2.0.2 introduces advanced flow control mechanisms:
+- **Predictive Caching**: Pre-loads data based on predicted access patterns
+- **Access-Based Migration**: Automatically moves data based on access frequency
+- **Batch Processing**: Efficiently processes large datasets across tiers
+- **Priority Queues**: Prioritizes critical data for faster access
 
-- **Predictive Caching**: Pre-loads data into higher tiers based on usage patterns
-- **Access-Based Migration**: Automatically moves data between tiers based on access frequency
-- **Batch Processing**: Optimizes data movement in batches to reduce overhead
-- **Priority Queues**: Assigns priorities to data for optimized tier placement
-
-## Usage
-
-The memory system is managed by the `MemoryManager` class, which provides a unified interface for:
-
-- Storing data across all tiers
-- Retrieving data from specific tiers
-- Managing data lifecycle
-- Cleaning up resources
+## Usage Examples
 
 ### Basic Usage
 
 ```python
-from memories.core.memory_manager import MemoryManager
+from memories.core import MemoryManager
 
-# Initialize memory manager with tier sizes
-manager = MemoryManager(
-    hot_memory_size=2,    # GB for GPU memory
-    warm_memory_size=8,   # GB for in-memory storage
-    cold_memory_size=50,  # GB for on-device storage
-    glacier_memory_size=500  # GB for off-device storage
+# Initialize memory manager
+memory_manager = MemoryManager(
+    hot_memory_size=2,    # GB
+    warm_memory_size=8,   # GB
+    cold_memory_size=50,  # GB
+    glacier_enabled=True
 )
 
-# Store data with automatic tier placement
-manager.store(
-    key="location_123",
-    data={
-        "satellite_image": image_data,
-        "vector_data": vector_features,
-        "metadata": metadata_dict
-    }
+# Store data in memory
+memory_manager.store(
+    key="location_data",
+    value=location_data,
+    tier="warm"  # Options: "hot", "warm", "cold", "glacier"
 )
 
-# Retrieve data (automatically fetches from appropriate tier)
-result = manager.retrieve(key="location_123")
+# Retrieve data from memory
+data = memory_manager.retrieve("location_data")
 
-# Explicitly retrieve from specific tier
-hot_result = manager.retrieve_from_tier(key="location_123", tier="hot")
+# Check if data exists
+exists = memory_manager.exists("location_data")
 
-# Clean up when done
-manager.cleanup()
+# Delete data
+memory_manager.delete("location_data")
 ```
 
 ### Advanced Usage (New in 2.0.2)
 
 ```python
-from memories.core.memory_manager import MemoryManager
-from memories.core.policies import MigrationPolicy, CompressionPolicy
+from memories.core import MemoryManager
+from memories.core.policies import MigrationPolicy
 
-# Define custom policies
+# Define custom migration policy
 migration_policy = MigrationPolicy(
     hot_to_warm_threshold=24,  # hours
     warm_to_cold_threshold=72,  # hours
     cold_to_glacier_threshold=30  # days
 )
 
-compression_policy = CompressionPolicy(
-    warm_compression_ratio=0.7,
-    cold_compression_ratio=0.5,
-    glacier_compression_ratio=0.3,
-    compression_algorithm="lz4"
+# Initialize memory manager with custom policy
+memory_manager = MemoryManager(
+    hot_memory_size=4,
+    warm_memory_size=16,
+    cold_memory_size=100,
+    glacier_enabled=True,
+    migration_policy=migration_policy
 )
 
-# Initialize with custom policies
-manager = MemoryManager(
-    hot_memory_size=2,
-    warm_memory_size=8,
-    cold_memory_size=50,
-    glacier_memory_size=500,
-    migration_policy=migration_policy,
-    compression_policy=compression_policy,
-    enable_distributed=True,
-    nodes=["node1:6379", "node2:6379"]
-)
-
-# Store with explicit tier placement
-manager.store_in_tier(
-    key="location_123",
-    data=location_data,
-    tier="warm",
+# Store data with metadata
+memory_manager.store(
+    key="satellite_imagery",
+    value=imagery_data,
     metadata={
-        "priority": "high",
-        "retention_days": 90,
-        "access_pattern": "frequent"
+        "location": "San Francisco",
+        "date": "2025-02-15",
+        "source": "sentinel-2"
+    }
+)
+
+# Query data by metadata
+results = memory_manager.query(
+    metadata_filter={
+        "location": "San Francisco",
+        "date": {"$gte": "2025-01-01"}
     }
 )
 
 # Create memory snapshot
-snapshot_id = manager.create_snapshot(
-    tiers=["hot", "warm"],
-    description="Pre-deployment state"
+snapshot_id = memory_manager.create_snapshot(
+    description="Pre-processing state"
 )
 
 # Restore from snapshot
-manager.restore_snapshot(snapshot_id)
+memory_manager.restore_snapshot(snapshot_id)
 
-# Get memory analytics
-analytics = manager.get_analytics(
-    time_range="last_7_days",
-    metrics=["usage", "hit_rate", "migration_count"]
-)
+# Get memory metrics
+metrics = memory_manager.get_metrics()
+print(f"Hot memory usage: {metrics['hot']['usage_percent']}%")
+print(f"Warm memory usage: {metrics['warm']['usage_percent']}%")
+print(f"Cold memory usage: {metrics['cold']['usage_percent']}%")
 
-# Optimize memory usage
-manager.optimize(target_tier="warm")
+# Compress cold memory
+memory_manager.compress(tier="cold", compression_level=5)
 ```
 
 ## Implementation Details
 
-Each memory tier is implemented as a separate class with consistent interfaces:
+### Hot Memory
 
-- `HotMemory`: GPU-accelerated storage using CUDA
-- `WarmMemory`: In-memory storage using Redis + CPU operations
-- `ColdMemory`: On-device storage using DuckDB
-- `GlacierMemory`: Off-device storage using Parquet
+```python
+from memories.core.hot_memory import HotMemory
 
-Each class implements the following methods:
-- `store(data)`: Store new data
-- `retrieve(query)`: Retrieve data matching query
-- `retrieve_all()`: Retrieve all stored data
-- `clear()`: Clear all data
-- `cleanup()`: Clean up resources
+# Initialize hot memory
+hot_memory = HotMemory(size_gb=2)
 
-### New Methods in 2.0.2
+# Store tensor data
+hot_memory.store("model_weights", model_weights_tensor)
 
-- `compress(data)`: Apply tier-specific compression
-- `decompress(data)`: Decompress tier-specific data
-- `create_snapshot()`: Create point-in-time snapshot
-- `restore_snapshot(snapshot_id)`: Restore from snapshot
-- `get_metrics()`: Retrieve performance metrics
-- `optimize()`: Optimize storage and access patterns
+# Retrieve tensor data
+weights = hot_memory.retrieve("model_weights")
+
+# New in 2.0.2: Tensor optimization
+hot_memory.optimize_layout("model_weights")
+
+# New in 2.0.2: Create snapshot
+hot_memory.create_snapshot("weights_snapshot")
+```
+
+### Warm Memory
+
+```python
+from memories.core.warm_memory import WarmMemory
+
+# Initialize warm memory
+warm_memory = WarmMemory(size_gb=8)
+
+# Store structured data
+warm_memory.store("vector_data", vector_data)
+
+# Retrieve data
+data = warm_memory.retrieve("vector_data")
+
+# New in 2.0.2: Memory pooling
+warm_memory.allocate_pool("frequent_access", size_mb=500)
+
+# New in 2.0.2: Get metrics
+metrics = warm_memory.get_metrics()
+```
+
+### Cold Memory
+
+```python
+from memories.core.cold_memory import ColdMemory
+
+# Initialize cold memory
+cold_memory = ColdMemory(
+    size_gb=50,
+    storage_path="./cold_storage"
+)
+
+# Store large dataset
+cold_memory.store("historical_data", historical_data)
+
+# Retrieve data
+data = cold_memory.retrieve("historical_data")
+
+# New in 2.0.2: Partial retrieval
+header = cold_memory.retrieve(
+    "historical_data", 
+    partial=True,
+    start=0,
+    end=1000
+)
+
+# New in 2.0.2: Compress data
+cold_memory.compress("historical_data")
+```
+
+### Glacier Memory
+
+```python
+from memories.core.glacier_memory import GlacierMemory
+
+# Initialize glacier memory
+glacier_memory = GlacierMemory(
+    provider="local",  # Options: "local", "s3", "gcs", "azure"
+    config={
+        "storage_path": "./glacier_storage"
+    }
+)
+
+# Store archival data
+glacier_memory.store("archive_2024", archive_data)
+
+# Retrieve data (may be slow)
+data = glacier_memory.retrieve("archive_2024")
+
+# New in 2.0.2: Batch operations
+glacier_memory.batch_store([
+    {"key": "archive_1", "value": archive_1},
+    {"key": "archive_2", "value": archive_2},
+    {"key": "archive_3", "value": archive_3}
+])
+```
 
 ## Configuration
 
 ### Memory Tier Configuration
 
 ```python
-# Configure individual tiers
-config = {
-    "hot": {
-        "device": "cuda:0",  # Use specific GPU
-        "precision": "float16",  # Use half precision
-        "max_batch_size": 64,
-        "enable_tensor_cores": True  # New in 2.0.2
-    },
-    "warm": {
-        "host": "localhost",
-        "port": 6379,
-        "db": 0,
-        "password": "password",
-        "cluster_mode": True,  # New in 2.0.2
-        "nodes": ["node1:6379", "node2:6379"]  # New in 2.0.2
-    },
-    "cold": {
-        "path": "./cold_storage.db",
-        "journal_mode": "WAL",
-        "synchronous": "NORMAL",
-        "temp_directory": "/tmp",
-        "enable_indexing": True  # New in 2.0.2
-    },
-    "glacier": {
-        "path": "./glacier_storage/",
-        "format": "parquet",
-        "compression": "snappy",
-        "partition_cols": ["year", "month"],
-        "cloud_provider": "aws",  # New in 2.0.2
-        "bucket": "memories-archive"  # New in 2.0.2
-    }
+# Hot Memory Configuration
+hot_config = {
+    "size_gb": 2,
+    "device": "cuda:0",  # or "cuda:1", etc.
+    "precision": "float16",  # or "float32", "bfloat16"
+    "garbage_collection_threshold": 0.8  # 80% usage triggers GC
 }
 
-# Initialize with configuration
-manager = MemoryManager(config=config)
+# Warm Memory Configuration
+warm_config = {
+    "size_gb": 8,
+    "serialization_format": "pickle",  # or "msgpack", "json"
+    "compression": "lz4",  # or "zstd", "none"
+    "shared_memory": False
+}
+
+# Cold Memory Configuration
+cold_config = {
+    "size_gb": 50,
+    "storage_path": "./cold_storage",
+    "file_format": "parquet",  # or "hdf5", "zarr"
+    "compression": "zstd",  # or "lz4", "snappy", "none"
+    "index_in_memory": True
+}
+
+# Glacier Memory Configuration
+glacier_config = {
+    "provider": "s3",  # or "gcs", "azure", "local"
+    "bucket": "memories-archive",
+    "prefix": "archive/",
+    "region": "us-west-2",
+    "encryption": "AES256"
+}
 ```
 
-## Performance Considerations
+## Coming in Version 2.1.0 (March 2025)
 
-- **Hot Memory**: Optimized for tensor operations and similarity search
-- **Warm Memory**: Balances speed and capacity for frequent access
-- **Cold Memory**: Provides query capabilities with reasonable performance
-- **Glacier Memory**: Optimized for storage efficiency over access speed
+- **Memory Snapshots**: Enhanced point-in-time memory snapshots for backup and recovery
+- **Multi-node Synchronization**: Improved synchronization for distributed memory
+- **Memory Visualization**: Tools for visualizing memory usage and data flow
+- **Custom Compression**: Support for custom compression algorithms
+- **Memory Policies**: More flexible policies for memory management
 
-### Performance Tuning (New in 2.0.2)
+## Contributing
 
-```python
-# Performance tuning example
-manager.tune_performance(
-    hot_memory_batch_size=32,
-    warm_memory_max_connections=100,
-    cold_memory_cache_size=1024,  # MB
-    glacier_memory_chunk_size=128  # MB
-)
-
-# Monitor performance
-metrics = manager.get_performance_metrics()
-print(f"Hot memory access time: {metrics['hot_access_time_ms']}ms")
-print(f"Warm memory hit rate: {metrics['warm_hit_rate']}%")
-print(f"Cold memory query time: {metrics['cold_query_time_ms']}ms")
-```
-
-## Error Handling
-
-The memory system includes comprehensive error handling:
-
-```python
-try:
-    result = manager.retrieve(key="location_123")
-except MemoryTierError as e:
-    print(f"Tier-specific error: {e}")
-    # Fall back to next tier
-    result = manager.retrieve_from_tier(key="location_123", tier="warm")
-except MemoryKeyError as e:
-    print(f"Key not found: {e}")
-    # Handle missing data
-except MemoryCapacityError as e:
-    print(f"Memory capacity exceeded: {e}")
-    # Trigger cleanup or expansion
-```
-
-## Best Practices
-
-1. **Tier Sizing**
-   - Size hot memory based on GPU capacity
-   - Size warm memory for frequently accessed data
-   - Size cold memory for analytical workloads
-   - Size glacier memory for long-term retention
-
-2. **Data Placement**
-   - Place inference data in hot memory
-   - Place frequently accessed metadata in warm memory
-   - Place historical data in cold memory
-   - Place archival data in glacier memory
-
-3. **Performance Optimization**
-   - Use batching for hot memory operations
-   - Use pipelining for warm memory operations
-   - Use indexing for cold memory queries
-   - Use partitioning for glacier memory storage
-
-4. **Resource Management**
-   - Monitor memory usage across tiers
-   - Implement automatic cleanup policies
-   - Use snapshots for critical states
-   - Implement proper error handling
+We welcome contributions to the memory management system! Please see our [Contributing Guide](https://memories-dev.readthedocs.io/development/contributing.html) for more information.
 
 <p align="center">Built with 💜 by the memories-dev team</p>
 
