@@ -27,13 +27,8 @@ class SentinelAPI:
         """
         self.data_dir = Path(data_dir)
         os.makedirs(self.data_dir, exist_ok=True)
-        
-        # Initialize the STAC client
-        self.client = pystac_client.Client.open(
-            "https://planetarycomputer.microsoft.com/api/stac/v1",
-            modifier=planetary_computer.sign_inplace
-        )
         self.logger = logging.getLogger(__name__)
+        self.client = None
 
     async def initialize(self) -> bool:
         """Initialize the Sentinel API.
@@ -104,7 +99,8 @@ class SentinelAPI:
         bbox: Dict[str, float],
         start_date: datetime,
         end_date: datetime,
-        bands: Optional[List[str]] = None
+        bands: Optional[List[str]] = None,
+        cloud_cover: float = 20.0
     ) -> Dict[str, Any]:
         """Download Sentinel-2 data for a given bounding box and time range.
 
@@ -113,10 +109,33 @@ class SentinelAPI:
             start_date: Start date for the search
             end_date: End date for the search
             bands: List of bands to download (default: ["B04", "B08"])
+            cloud_cover: Maximum cloud cover percentage (default: 20.0)
 
         Returns:
             Dict containing status, message (if error), and data (if success)
+
+        Raises:
+            ValueError: If bbox is invalid or if end_date is before start_date
         """
+        # Initialize if not already initialized
+        if self.client is None:
+            if not await self.initialize():
+                return {
+                    "status": "error",
+                    "message": "Failed to initialize Sentinel API"
+                }
+
+        # Validate bbox
+        if not all(k in bbox for k in ['xmin', 'ymin', 'xmax', 'ymax']):
+            raise ValueError("Invalid bbox: must contain xmin, ymin, xmax, ymax")
+        
+        if bbox['xmin'] >= bbox['xmax'] or bbox['ymin'] >= bbox['ymax']:
+            raise ValueError("Invalid bbox: min coordinates must be less than max coordinates")
+        
+        # Validate dates
+        if end_date < start_date:
+            raise ValueError("Invalid date range: end_date must be after start_date")
+
         if bands is None:
             bands = ["B04", "B08"]
 
@@ -132,14 +151,15 @@ class SentinelAPI:
         try:
             # Convert bbox to WKT format for searching
             bbox_coords = [bbox["xmin"], bbox["ymin"], bbox["xmax"], bbox["ymax"]]
-            bbox_wkt = f"POLYGON (({bbox_coords[0]} {bbox_coords[1]}, {bbox_coords[0]} {bbox_coords[3]}, {bbox_coords[2]} {bbox_coords[3]}, {bbox_coords[2]} {bbox_coords[1]}, {bbox_coords[0]} {bbox_coords[1]}))"
+            bbox_geom = box(bbox_coords[0], bbox_coords[1], bbox_coords[2], bbox_coords[3])
+            bbox_wkt = bbox_geom.wkt
 
             # Search for scenes
             search = self.client.search(
                 collections=["sentinel-2-l2a"],
                 intersects=bbox_wkt,
                 datetime=[start_date.isoformat(), end_date.isoformat()],
-                query={"eo:cloud_cover": {"lt": 20}}
+                query={"eo:cloud_cover": {"lt": cloud_cover}}
             )
             items = list(search.get_items())
 
@@ -166,7 +186,12 @@ class SentinelAPI:
                 try:
                     url = item.assets[band].href
                     logging.info(f"Downloading band {band} from {url}")
-                    # Download and process band data...
+                    success = await self.fetch_windowed_band(url, bbox, band)
+                    if not success:
+                        return {
+                            "status": "error",
+                            "message": f"Failed to download band {band}"
+                        }
                     downloaded_bands.append(band)
                 except Exception as e:
                     return {
