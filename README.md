@@ -2,7 +2,6 @@
 
 <div align="center">
 
-<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/The_Blue_Marble_%28remastered%29.jpg/600px-The_Blue_Marble_%28remastered%29.jpg" alt="Earth - The Blue Marble" width="400px">
 
 **Building the World's Memory for Artificial General Intelligence**
 
@@ -726,7 +725,7 @@ This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENS
 - [Discord Community](https://discord.gg/tGCVySkX4d)
 
 <p align="center">
-  <img src="https://github.com/Vortx-AI/memories-dev/raw/main/docs/source/_static/earth_memory_logo.png" alt="Earth Memory" width="150px">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/The_Blue_Marble_%28remastered%29.jpg/600px-The_Blue_Marble_%28remastered%29.jpg" alt="Earth - The Blue Marble" width="400px">
   <br>
   <b>Building the World's Memory for Artificial General Intelligence</b>
   <br>
