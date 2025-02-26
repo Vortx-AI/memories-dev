@@ -157,12 +157,16 @@ p {
 }
 
 .wy-nav-side {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
     width: 300px;
-    background-color: var(--nav-subtle-bg, #f8f9fa);
-    border-right: 1px solid var(--subtle-border, rgba(0, 0, 0, 0.07));
-    overflow-y: auto;
+    background: var(--bg-dark);
     z-index: 200;
-    box-shadow: none; /* Remove shadow that might be causing issues */
+    padding-bottom: 2em;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .wy-menu-vertical header, 
@@ -359,15 +363,18 @@ footer {
 }
 
 .btn-neutral {
-    background-color: var(--parchment);
-    color: var(--text-dark);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    background-color: var(--bg-light) !important;
+    color: var(--text-dark) !important;
+    border: 1px solid var(--nav-subtle-border);
+    padding: 0.5em 1em;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: all 0.2s ease;
 }
 
 .btn-neutral:hover {
-    background-color: var(--bg-light);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-    color: var(--primary-color);
+    background-color: var(--nav-subtle-hover) !important;
+    border-color: var(--nav-subtle-highlight);
 }
 
 .btn-primary {
@@ -790,18 +797,17 @@ tr:nth-child(even) {
 }
 
 .wy-nav-content-wrap {
-    background-color: var(--bg-color);
-    margin-left: 260px;
-    position: relative;
-    min-height: 100vh;
-    transition: margin-left 0.3s ease;
+    margin-left: 300px;
+    background: var(--bg-light);
+    min-height: 100%;
 }
 
 .wy-nav-content {
-    background-color: var(--bg-color);
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 2rem;
+    padding: 1.618em 3.236em;
+    height: 100%;
+    max-width: 1000px;
+    margin: auto;
+    background: var(--bg-light);
 }
 
 footer {
@@ -873,7 +879,7 @@ footer {
     
     .wy-nav-side {
         width: 240px;
-        left: -240px;
+        left: -300px;
     }
     
     .wy-nav-content-wrap {
@@ -890,14 +896,14 @@ footer {
         margin-left: 0;
         position: fixed;
         min-width: 100%;
-        left: 260px;
+        left: 300px;
         top: 0;
         height: 100%;
         overflow: hidden;
     }
     
     .wy-nav-content {
-        padding: 1.5em;
+        padding: 1em;
     }
     
     .contents.local, .contents.topic {
@@ -2113,8 +2119,8 @@ html.dark-theme table.docutils th {
 .rst-content {
     position: relative;
     z-index: 1;
-    width: 100%;
-    max-width: 100%;
+    min-height: 100%;
+    padding: 20px 0;
 }
 
 /* Responsive layout fixes */
