@@ -338,6 +338,12 @@ Table of Contents
    metrics/index
    metrics/environmental_metrics
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Documentation Guide
+   
+   matrix_theme_guide
+
 Indices and Tables
 =================
 

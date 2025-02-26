@@ -2,7 +2,7 @@ Memory System
 =============
 
 Core Memory Components
---------------------
+----------------------
 
 .. automodule:: memories.core.memory
    :members:
@@ -10,7 +10,7 @@ Core Memory Components
    :show-inheritance:
 
 Memory Operations
----------------
+----------------
 
 .. autoclass:: memories.core.memory.Memory
    :members:
@@ -47,7 +47,7 @@ Cold Memory
 Glacier Memory
 ~~~~~~~~~~~~~
 
-.. autoclass:: memories.core.memory.GlacierMemory
+.. autoclass:: memories.core.glacier.GlacierMemory
    :members:
    :undoc-members:
    :show-inheritance: 
