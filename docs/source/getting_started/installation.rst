@@ -238,4 +238,97 @@ Now that you have ``memories-dev`` installed, you can:
 * Follow the :ref:`quickstart` guide to run your first analysis
 * Explore the :ref:`examples` to see real-world applications
 * Learn about the 'core_concepts' of the framework
-* Configure your 'data_sources' for optimal performance 
+* Configure your 'data_sources' for optimal performance
+
+Installation Guide
+==================
+
+This guide will help you install Memories-Dev and its dependencies.
+
+Python Requirements
+-----------------
+
+The package requires Python 3.9 or later. We recommend using a virtual environment:
+
+.. code-block:: bash
+
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -U pip setuptools wheel
+
+Installing from PyPI
+------------------
+
+Install the package using pip:
+
+.. code-block:: bash
+
+   pip install memories-dev
+
+For development installation:
+
+.. code-block:: bash
+
+   git clone https://github.com/Vortx-AI/memories-dev.git
+   cd memories-dev
+   pip install -e ".[docs]"
+
+System Dependencies
+-----------------
+
+For PDF documentation generation with SVG support, you need either ``librsvg`` or ``inkscape``:
+
+macOS
+~~~~~
+
+Using Homebrew:
+
+.. code-block:: bash
+
+   brew install librsvg  # For rsvg-convert
+   # or
+   brew install inkscape  # Alternative
+
+Linux (Ubuntu/Debian)
+~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   sudo apt-get update
+   sudo apt-get install librsvg2-bin  # For rsvg-convert
+   # or
+   sudo apt-get install inkscape  # Alternative
+
+Windows
+~~~~~~~
+
+Using `Chocolatey <https://chocolatey.org/>`_:
+
+.. code-block:: bash
+
+   choco install librsvg  # For rsvg-convert
+   # or
+   choco install inkscape  # Alternative
+
+Additional Dependencies
+--------------------
+
+For full functionality, install optional dependencies:
+
+.. code-block:: bash
+
+   pip install "memories-dev[docs]"  # Documentation dependencies
+   pip install "memories-dev[gpu]"   # GPU support
+   pip install "memories-dev[all]"   # All optional dependencies
+
+Building Documentation
+-------------------
+
+To build the documentation:
+
+.. code-block:: bash
+
+   cd docs
+   pip install -r requirements.txt
+   make html     # For HTML documentation
+   make latexpdf # For PDF documentation (requires LaTeX) 

@@ -17,6 +17,8 @@ sphinx-autodoc-typehints>=1.24.0
 sphinxcontrib-mermaid>=0.9.2
 sphinx-math-dollar>=1.2.1
 rst2pdf>=0.103.1
+sphinxcontrib-svg2pdfconverter>=1.2.0
+cairosvg>=2.7.0
 
 # Parsing and notebook support
 myst-parser>=2.0.0
@@ -24,4 +26,9 @@ nbsphinx>=0.9.3
 ipython>=8.14.0
 
 # Core utilities
-packaging>=23.2 
+packaging>=23.2
+
+# PDF and image handling
+pillow>=10.0.0
+reportlab>=4.0.0
+svglib>=1.5.1 
