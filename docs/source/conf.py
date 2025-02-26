@@ -56,11 +56,25 @@ latex_elements = {
     'papersize': 'a4paper',
     'pointsize': '11pt',
     'figure_align': 'htbp',
+    'fontpkg': r'''
+        \usepackage{helvet}
+        \usepackage[scaled]{beramono}
+        \usepackage{inconsolata}
+        \renewcommand{\familydefault}{\sfdefault}
+    ''',
     'preamble': r'''
         \usepackage{graphicx}
         \usepackage{xcolor}
         \usepackage{fancyhdr}
         \usepackage{hyperref}
+        \usepackage{multicol}
+        \usepackage{amsmath}
+        \usepackage{amssymb}
+        \usepackage{enumitem}
+        \usepackage{adjustbox}
+        \usepackage{longtable}
+        \usepackage{tabulary}
+        \usepackage{booktabs}
         
         % Define company colors
         \definecolor{primary}{RGB}{15, 23, 42}  % Dark blue
@@ -92,18 +106,82 @@ latex_elements = {
             \end{titlepage}
         }
         \makeatother
+        
+        % Configure code blocks
+        \fvset{fontsize=\small}
+        \RecustomVerbatimEnvironment{Verbatim}{Verbatim}{
+            frame=single,
+            framesep=3mm,
+            rulecolor=\color{gray!40},
+            fontsize=\small
+        }
     ''',
-    'sphinxsetup': 'verbatimwithframe=false,VerbatimColor={rgb}{0.97,0.97,0.97}',
+    'sphinxsetup': '\
+        verbatimwithframe=false,\
+        VerbatimColor={rgb}{0.97,0.97,0.97},\
+        TitleColor={rgb}{0.06,0.09,0.16},\
+        hmargin={1in,1in},\
+        vmargin={1in,1in},\
+        verbatimhintsturnover=false,\
+        verbatimsep=3pt,\
+        verbatimcontinuedrdots=false\
+    ',
     'maketitle': r'\maketitle',
     'tableofcontents': r'\tableofcontents',
     'printindex': r'\printindex',
     'extraclassoptions': 'openany,oneside',
     'babel': '\\usepackage[english]{babel}',
-    'fontpkg': r'''
-        \usepackage{helvet}
-        \renewcommand{\familydefault}{\sfdefault}
-    ''',
+    'passoptionstopackages': r'\PassOptionsToPackage{svgnames}{xcolor}',
+    'fncychap': r'\usepackage[Bjarne]{fncychap}',
+    'geometry': r'\usepackage[margin=1in,includefoot]{geometry}'
 }
+
+# Grouping the document tree into LaTeX files
+latex_additional_files = []
+
+# If true, show page references after internal links
+latex_show_pagerefs = False
+
+# If true, show URL addresses after external links
+latex_show_urls = 'footnote'
+
+# Documents to append as an appendix to all manuals
+latex_appendices = []
+
+# If false, no module index is generated
+latex_domain_indices = True
+
+# -- Options for manual page output ---------------------------------------
+
+# One entry per manual page
+man_pages = [
+    (master_doc, 'memories-dev', 'Memories-Dev Documentation',
+     [author], 1)
+]
+
+# If true, show URL addresses after external links
+man_show_urls = True
+
+# -- Options for Texinfo output -------------------------------------------
+
+# Grouping the document tree into Texinfo files
+texinfo_documents = [
+    (master_doc, 'memories-dev', 'Memories-Dev Documentation',
+     author, 'memories-dev', 'Collective Memory Infrastructure for AGI.',
+     'Miscellaneous'),
+]
+
+# Documents to append as an appendix to all manuals
+texinfo_appendices = []
+
+# If false, no module index is generated
+texinfo_domain_indices = True
+
+# How to display URL addresses: 'footnote', 'no', or 'inline'
+texinfo_show_urls = 'footnote'
+
+# If true, do not generate a @detailmenu in the "Top" node's menu
+texinfo_no_detailmenu = False
 
 # Handle type hints based on Python version
 python_version = packaging_version.parse(platform.python_version())

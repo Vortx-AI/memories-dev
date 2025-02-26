@@ -20,6 +20,15 @@ build:
     - texlive-luatex
     - texlive-pictures
     - texlive-science
+    - texlive-plain-generic
+    - texlive-fonts-extra
+    - texlive-bibtex-extra
+    - texlive-latex-base
+    - texlive-font-utils
+    - texlive-humanities
+    - cm-super
+    - dvipng
+    - ghostscript
   jobs:
     pre_build:
       # Core setup
@@ -28,8 +37,13 @@ build:
       # Additional setup for comprehensive documentation
       - python -m pip install --upgrade pip setuptools wheel
       - python -m pip install sphinx-rtd-theme sphinx-copybutton sphinx-tabs
+      # Clean build directory
+      - cd docs && make clean
       # Generate API documentation
-      - sphinx-apidoc -o docs/source/api_reference memories/
+      - sphinx-apidoc -o docs/source/api_reference memories/ --force --separate --module-first --no-toc
+      # Create necessary directories
+      - mkdir -p docs/build/latex
+      - mkdir -p docs/build/pdf
 
 # Sphinx configuration
 sphinx:
