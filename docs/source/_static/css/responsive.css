@@ -1,0 +1,291 @@
+/* Memory Codex - Responsive Styles */
+
+/* Base responsive adjustments */
+@media (max-width: 1200px) {
+  .wy-nav-content {
+    max-width: 95%;
+    padding: var(--spacing-md);
+  }
+  
+  .book-container {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* Tablet styles */
+@media (max-width: 992px) {
+  :root {
+    --content-width: 95%;
+  }
+  
+  .book-cover-3d {
+    transform: rotateY(-20deg);
+  }
+  
+  .journey-map {
+    padding: var(--spacing-md);
+  }
+  
+  .journey-stages {
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+  }
+  
+  .journey-stage {
+    min-width: 110px;
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .footer-section {
+    padding: 0 var(--spacing-xs);
+  }
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  body {
+    font-size: 16px;
+  }
+  
+  .wy-nav-content {
+    margin: 0;
+    padding: var(--spacing-md);
+    border-radius: 0;
+    box-shadow: none;
+  }
+  
+  h1 {
+    font-size: 2em;
+  }
+  
+  h2 {
+    font-size: 1.5em;
+  }
+  
+  h3 {
+    font-size: 1.3em;
+  }
+  
+  .section > p:first-of-type::first-letter {
+    font-size: 2.8em;
+  }
+  
+  .book-page {
+    padding: var(--spacing-md);
+    margin: var(--spacing-sm) auto;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .book-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .reading-time {
+    margin-top: var(--spacing-xs);
+  }
+  
+  .book-cover-container {
+    width: 240px;
+    height: 320px;
+    margin: 2em auto;
+  }
+  
+  .book-front h1 {
+    font-size: 1.6em;
+  }
+  
+  .book-front h2 {
+    font-size: 0.9em;
+  }
+  
+  .journey-map {
+    padding: var(--spacing-sm);
+    margin: var(--spacing-md) 0;
+  }
+  
+  .journey-stages {
+    flex-direction: column;
+  }
+  
+  .journey-stage {
+    margin-bottom: var(--spacing-sm);
+    min-width: 100%;
+  }
+  
+  .stage-icon {
+    width: 50px;
+    height: 50px;
+    line-height: 50px;
+    font-size: 1.5em;
+  }
+  
+  .prev-next-buttons {
+    flex-direction: column;
+  }
+  
+  .prev-button, .next-button {
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .bookmarks-toggle {
+    bottom: var(--spacing-md);
+    right: var(--spacing-md);
+    width: 40px;
+    height: 40px;
+  }
+  
+  .book-footer-content {
+    flex-direction: column;
+  }
+  
+  .footer-section {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .earth-visualization {
+    width: 150px;
+    height: 150px;
+  }
+}
+
+/* Small mobile styles */
+@media (max-width: 480px) {
+  body {
+    font-size: 15px;
+  }
+  
+  .book-cover-container {
+    width: 200px;
+    height: 280px;
+  }
+  
+  .book-front h1 {
+    font-size: 1.4em;
+  }
+  
+  .book-decoration {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .earth-visualization {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .book-quote {
+    padding: var(--spacing-md);
+  }
+  
+  pre {
+    padding: var(--spacing-sm);
+    font-size: 0.8em;
+  }
+  
+  .copy-code-button, .code-language {
+    font-size: 0.7em;
+  }
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: white;
+    font-size: 12pt;
+  }
+  
+  .wy-nav-content {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+  
+  .book-cover-container, 
+  .journey-map, 
+  .book-footer,
+  .bookmarks-toggle,
+  .page-progress-indicator {
+    display: none;
+  }
+  
+  a {
+    text-decoration: none;
+    color: black;
+  }
+  
+  a::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+  
+  pre, blockquote, table {
+    page-break-inside: avoid;
+  }
+  
+  img {
+    max-width: 100% !important;
+  }
+  
+  p, h2, h3 {
+    orphans: 3;
+    widows: 3;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) {
+  .book-cover-3d:hover {
+    transform: rotateY(-30deg);
+  }
+  
+  .journey-stage:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .journey-stage.active {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* iOS specific fixes */
+@supports (-webkit-touch-callout: none) {
+  .book-cover-3d, .progress-bar, .page-turning, .page-loaded {
+    -webkit-transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Fix iOS specific issues */
+@supports (-webkit-overflow-scrolling: touch) {
+  .book-container {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  input, textarea, select, button {
+    font-size: 16px; /* Prevents zoom on focus */
+  }
+  
+  .wy-nav-content {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Fix scroll behavior */
+html, body {
+  scroll-behavior: smooth;
+}
+
+/* Fix overlay scrolling issues */
+.bookmarks-menu, .book-notification {
+  overscroll-behavior: contain;
+} 

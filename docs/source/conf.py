@@ -162,6 +162,8 @@ templates_path = ['_templates']
 html_css_files = [
     'custom.css',
     'code-highlight.css',
+    'css/book_style.css',
+    'css/responsive.css',
 ]
 
 # Add JavaScript files
@@ -311,54 +313,51 @@ intersphinx_mapping = {
 # Disable certain extensions for latex build
 def setup(app):
     # Make sure static directories exist
-    import os
-    static_dirs = [
-        '_static/images',
-        '_static/css',
-        '_static/js',
-    ]
+    static_dir = os.path.join(os.path.dirname(__file__), '_static')
+    css_dir = os.path.join(static_dir, 'css')
+    js_dir = os.path.join(static_dir, 'js')
+    images_dir = os.path.join(static_dir, 'images')
     
-    for dir_path in static_dirs:
-        full_path = os.path.join(os.path.dirname(__file__), dir_path)
-        if not os.path.exists(full_path):
-            os.makedirs(full_path)
+    for directory in [static_dir, css_dir, js_dir, images_dir]:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
     
-    # Add custom event handlers
+    # Add any paths that contain custom static files
+    app.add_css_file('css/book_style.css')
+    app.add_css_file('css/responsive.css')
     app.add_css_file('custom.css')
     
-    # Enable better algorithm rendering
+    # Add JavaScript for enhancing formulas
+    app.add_js_file('book_experience.js')
     app.add_js_file('formula_enhancer.js')
     
-    # Pass configuration options to JavaScript
+    # Pass configuration to JavaScript
     app.add_js_file(None, body=f'''
-        // Configuration options for documentation
-        window.DOCUMENTATION_OPTIONS = window.DOCUMENTATION_OPTIONS || {{}};
-        window.DOCUMENTATION_OPTIONS.DISABLE_ON_THIS_PAGE = false;
-        window.DOCUMENTATION_OPTIONS.MAX_NAV_DEPTH = 2;
-        window.DOCUMENTATION_OPTIONS.ENABLE_MERMAID = true;
-        window.DOCUMENTATION_OPTIONS.ENABLE_BOOK_EXPERIENCE = true;
+    document.addEventListener('DOMContentLoaded', function() {{
+        window.memoryCodexConfig = {{
+            navDepth: {html_theme_options.get('navigation_depth', 4)},
+            enableMermaid: {str(bool('sphinxcontrib.mermaid' in extensions)).lower()},
+            bookTitle: "Memory Codex",
+            bookSubtitle: "A Framework for Earth-Grounded AI",
+            enableBookExperience: true
+        }};
+    }});
     ''')
-    
-    # Fix math configuration
-    app.add_js_file(None, body=r'''
-        // Fix MathJax configuration
-        window.MathJax = {
-          tex: {
-            inlineMath: [['$', '$'], ['\(', '\)']],
-            displayMath: [['$$', '$$'], ['\[', '\]']],
+
+    # MathJax configuration
+    app.add_js_file(None, body='''
+    window.MathJax = {
+        tex: {
+            inlineMath: [['\\\\(', '\\\\)']],
+            displayMath: [['\\\\[', '\\\\]']],
             processEscapes: true,
             processEnvironments: true
-          },
-          options: {
-            ignoreHtmlClass: 'tex2jax_ignore',
-            processHtmlClass: 'tex2jax_process'
-          },
-          startup: {
-            ready: function() {
-              MathJax.startup.defaultReady();
-            }
-          }
-        };
+        },
+        options: {
+            ignoreHtmlClass: '.*',
+            processHtmlClass: 'math.*'
+        }
+    };
     ''')
     
     # Connect customization events
@@ -439,16 +438,7 @@ mathjax3_config = {
         'displayMath': [['$$', '$$'], ['\\[', '\\]']],
         'processEscapes': True,
         'processEnvironments': True,
-        'packages': ['base', 'ams', 'noerrors', 'noundefined', 'color', 'boldsymbol']
     },
-    'options': {
-        'ignoreHtmlClass': 'tex2jax_ignore',
-        'processHtmlClass': 'tex2jax_process'
-    },
-    'chtml': {
-        'scale': 1.1,
-        'displayAlign': 'center'
-    }
 }
 
 # Load MathJax on every page
