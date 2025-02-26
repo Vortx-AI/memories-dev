@@ -32,7 +32,7 @@ extensions = [
     'nbsphinx',
     'sphinx_copybutton',
     'myst_parser',
-    'sphinxcontrib.mermaid'  # Added mermaid support
+    'sphinxcontrib.mermaid'
 ]
 
 # Add enhanced extensions for better documentation
@@ -111,8 +111,7 @@ html_theme_options = {
     'sticky_navigation': True,
     'navigation_depth': 4,
     'includehidden': True,
-    'titles_only': False,
-    'analytics_id': 'UA-XXXXXXXX-1',  # Replace with your Google Analytics ID
+    'titles_only': False
 }
 
 # Enhanced theme options
@@ -120,10 +119,12 @@ html_theme_options.update({
     'style_nav_header_background': '#0f172a',  # Darker blue
     'body_max_width': '1200px',
     'navigation_with_keys': True,
-    'canonical_url': 'https://memories-dev.readthedocs.io/',
     'logo_only': True,
     'display_version': True,
 })
+
+# Base URL for the docs
+html_baseurl = 'https://memories-dev.readthedocs.io/'
 
 # HTML context
 html_context = {
@@ -134,129 +135,12 @@ html_context = {
     'conf_py_path': '/docs/source/',
 }
 
-# Logo configuration
-html_logo = '_static/memories_logo_light.png'
-html_favicon = '_static/favicon.ico'
-
-# Favicon configuration
-favicons = [
-    {
-        "rel": "icon",
-        "sizes": "16x16",
-        "href": "favicon-16x16.png",
-    },
-    {
-        "rel": "icon",
-        "sizes": "32x32",
-        "href": "favicon-32x32.png",
-    },
-    {
-        "rel": "apple-touch-icon",
-        "sizes": "180x180",
-        "href": "apple-touch-icon.png"
-    },
+# Mermaid configuration
+mermaid_params = [
+    '--theme', 'dark',
+    '--securityLevel', 'loose',
+    '--startOnLoad', 'true',
 ]
-
-# Custom sidebar templates
-html_sidebars = {
-    '**': [
-        'globaltoc.html',
-        'relations.html',
-        'sourcelink.html',
-        'searchbox.html',
-    ]
-}
-
-# Intersphinx configuration
-intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None),
-    'numpy': ('https://numpy.org/doc/stable/', None),
-    'pandas': ('https://pandas.pydata.org/docs/', None),
-    'torch': ('https://pytorch.org/docs/stable/', None),
-}
-
-# Napoleon settings
-napoleon_google_docstring = True
-napoleon_numpy_docstring = True
-napoleon_include_init_with_doc = True
-napoleon_include_private_with_doc = False
-napoleon_include_special_with_doc = True
-napoleon_use_admonition_for_examples = True
-napoleon_use_admonition_for_notes = True
-napoleon_use_admonition_for_references = True
-napoleon_use_ivar = False
-napoleon_attr_annotations = True
-
-# Autodoc settings
-autodoc_default_options = {
-    'members': True,
-    'member-order': 'bysource',
-    'special-members': '__init__',
-    'undoc-members': True,
-    'exclude-members': '__weakref__',
-    'show-inheritance': True
-}
-
-autodoc_class_signature = 'separated'
-autodoc_member_order = 'bysource'
-autodoc_warningiserror = False
-
-# NotFound page settings
-notfound_context = {
-    'title': 'Page Not Found',
-    'body': '''
-        <h1>Page Not Found</h1>
-        <p>Sorry, we couldn't find that page. Try using the navigation or search box.</p>
-    '''
-}
-notfound_no_urls_prefix = True
-notfound_template = '404.html'
-
-# Enable todo items
-todo_include_todos = True
-todo_emit_warnings = True
-todo_link_only = False
-
-# HoverXRef settings
-hoverxref_auto_ref = True
-hoverxref_domains = ['py']
-hoverxref_roles = [
-    'ref',
-    'doc',
-]
-hoverxref_role_types = {
-    'ref': 'tooltip',
-    'doc': 'tooltip',
-    'class': 'tooltip',
-    'func': 'tooltip',
-    'meth': 'tooltip',
-}
-
-# Copy button settings
-copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
-copybutton_prompt_is_regexp = True
-copybutton_only_copy_prompt_lines = True
-copybutton_remove_prompts = True
-
-# Mermaid settings
-mermaid_params = {
-    'theme': 'dark',
-    'securityLevel': 'loose',
-    'startOnLoad': True,
-    'flowchart': {
-        'useMaxWidth': False,
-        'htmlLabels': True,
-        'curve': 'basis'
-    },
-    'themeVariables': {
-        'primaryColor': '#0f172a',
-        'primaryTextColor': '#f8fafc',
-        'primaryBorderColor': '#1e293b',
-        'lineColor': '#3b82f6',
-        'secondaryColor': '#10b981',
-        'tertiaryColor': '#6366f1'
-    }
-}
 
 # MyST settings
 myst_enable_extensions = [
@@ -322,4 +206,5 @@ autodoc_mock_imports = [
     "xarray",
     "dask",
     "aiohttp",
+    "memories",  # Mock the memories package itself
 ] 

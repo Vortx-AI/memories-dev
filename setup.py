@@ -134,58 +134,27 @@ install_requires = get_core_deps() + get_version_specific_deps()
 
 setup(
     name="memories-dev",
-    version="1.1.8",
-    packages=find_packages(include=['memories', 'memories.*']),
-    
-    author="Memories-dev",
-    author_email="hello@memories.dev",
-    description="A Python package for managing and processing earth observation data",
-    long_description=open("README.md").read(),
-    long_description_content_type="text/markdown",
-    url="https://memories.dev",
-    license="Apache License 2.0",
-    
+    version="2.0.2",
+    packages=find_packages(),
     install_requires=install_requires,
-    
     extras_require={
-        "gpu": get_gpu_packages(),
-        "torch": get_torch_packages(),
-        "torch-geometric": get_torch_geometric_packages(),  # Separate extra for PyG packages
-        "dev": [
-            "pytest>=8.3.4",
-            "pytest-asyncio>=0.23.5",
-            "pytest-cov>=6.0.0",
-            "pytest-mock>=3.14.0",
-            "pytest-xdist>=3.6.1",
-            "pytest-benchmark>=4.0.0",
-            "pytest-timeout>=2.2.0",
-            "black>=24.1.0",
-            "flake8>=7.0.0",
-            "mypy>=1.8.0",
-            "isort>=5.13.0",
-            "pre-commit>=3.6.0"
-        ],
         "docs": [
-            "sphinx>=7.2.6",
+            "sphinx>=8.2.1",
             "sphinx-rtd-theme>=2.0.0",
-            "sphinx-autodoc-typehints>=2.0.1",
-            "nbsphinx>=0.9.3",
-            "pandoc>=2.3",
             "sphinx-copybutton>=0.5.2",
-            "myst-parser>=2.0.0",
             "sphinx-design>=0.5.0",
-            "sphinxcontrib-mermaid>=0.9.2",
             "sphinx-tabs>=3.4.1",
             "sphinx-togglebutton>=0.3.2",
             "sphinx-favicon>=1.0.1",
             "sphinx-sitemap>=2.5.1",
             "sphinx-last-updated-by-git>=0.3.6",
-            "platformdirs>=4.2.0"
-        ]
+            "sphinxcontrib-mermaid>=0.9.2",
+            "myst-parser>=2.0.0",
+            "nbsphinx>=0.9.3",
+            "packaging>=23.2",
+        ],
     },
-    
-    python_requires=">=3.9,<3.14.0",
-    
+    python_requires=">=3.8",
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
@@ -202,7 +171,6 @@ setup(
         "Intended Audience :: Developers",
         "Natural Language :: English"
     ],
-    
     entry_points={
         "console_scripts": [
             "memories=memories.cli:main",
@@ -210,7 +178,6 @@ setup(
             "memories-cuda-setup=cuda_setup:install_cuda_packages"
         ]
     },
-    
     package_data={
         "memories": [
             "config/*.yaml",
@@ -224,10 +191,8 @@ setup(
             "test_data/**/*.json"
         ]
     },
-    
     include_package_data=True,
     zip_safe=False,
-    
     project_urls={
         "Homepage": "https://memories.dev",
         "Documentation": "https://docs.memories.dev",
