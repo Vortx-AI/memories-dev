@@ -36,13 +36,13 @@ formats:
 # Python package installation
 python:
   install:
+    - requirements: docs/requirements.txt
     - method: pip
       path: .
       extra_requirements:
         - docs
         - examples
         - dev
-    - requirements: docs/requirements.txt
 
 # Repository configuration
 submodules:

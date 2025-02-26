@@ -16,6 +16,10 @@ version = '2.0.2'
 # The full version, including alpha/beta/rc tags
 release = '2.0.2'
 
+# The master toctree document
+master_doc = 'index'
+root_doc = 'index'
+
 # Add any Sphinx extension module names here
 extensions = [
     'sphinx.ext.autodoc',
@@ -32,11 +36,7 @@ extensions = [
     'nbsphinx',
     'sphinx_copybutton',
     'myst_parser',
-    'sphinxcontrib.mermaid'
-]
-
-# Add enhanced extensions for better documentation
-extensions += [
+    'sphinxcontrib.mermaid',
     'sphinx_design',           # Enhanced UI components
     'sphinx_tabs.tabs',        # Tabbed content
     'sphinx_togglebutton',     # Toggle buttons
@@ -45,6 +45,65 @@ extensions += [
     'sphinx_sitemap',          # Sitemap generation
     'sphinx_last_updated_by_git', # Last updated date from git
 ]
+
+# LaTeX configuration for PDF output
+latex_documents = [
+    (master_doc, 'memories-dev.tex', 'Memories-Dev Documentation',
+     'Memories-Dev', 'manual', True)
+]
+
+latex_elements = {
+    'papersize': 'a4paper',
+    'pointsize': '11pt',
+    'figure_align': 'htbp',
+    'preamble': r'''
+        \usepackage{graphicx}
+        \usepackage{xcolor}
+        \usepackage{fancyhdr}
+        \usepackage{hyperref}
+        
+        % Define company colors
+        \definecolor{primary}{RGB}{15, 23, 42}  % Dark blue
+        \definecolor{secondary}{RGB}{59, 130, 246}  % Blue
+        
+        % Custom header and footer
+        \pagestyle{fancy}
+        \fancyhead{}
+        \fancyhead[L]{\textcolor{primary}{\leftmark}}
+        \fancyhead[R]{\textcolor{primary}{\thepage}}
+        \fancyfoot{}
+        \fancyfoot[C]{\textcolor{primary}{Memories-Dev Documentation}}
+        
+        % Title page customization
+        \makeatletter
+        \def\maketitle{
+            \begin{titlepage}
+                \centering
+                \vspace*{2cm}
+                {\Huge\textcolor{primary}{\textbf{\@title}}\par}
+                \vspace{2cm}
+                {\Large\textcolor{secondary}{Version \version}\par}
+                \vspace{1.5cm}
+                {\large\textcolor{primary}{\@author}\par}
+                \vspace{1cm}
+                {\large\textcolor{primary}{\@date}\par}
+                \vfill
+                {\large\textcolor{primary}{© 2025 Memories-Dev. All rights reserved.}\par}
+            \end{titlepage}
+        }
+        \makeatother
+    ''',
+    'sphinxsetup': 'verbatimwithframe=false,VerbatimColor={rgb}{0.97,0.97,0.97}',
+    'maketitle': r'\maketitle',
+    'tableofcontents': r'\tableofcontents',
+    'printindex': r'\printindex',
+    'extraclassoptions': 'openany,oneside',
+    'babel': '\\usepackage[english]{babel}',
+    'fontpkg': r'''
+        \usepackage{helvet}
+        \renewcommand{\familydefault}{\sfdefault}
+    ''',
+}
 
 # Handle type hints based on Python version
 python_version = packaging_version.parse(platform.python_version())
@@ -87,12 +146,15 @@ source_suffix = {
     '.md': 'markdown',
 }
 
-# The master toctree document
-master_doc = 'index'
-root_doc = 'index'
-
 # List of patterns to exclude
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
+exclude_patterns = [
+    '_build',
+    'Thumbs.db',
+    '.DS_Store',
+    '**.ipynb_checkpoints',
+    'env',
+    'venv',
+]
 
 # The theme to use for HTML and HTML Help pages
 html_theme = 'sphinx_rtd_theme'
@@ -106,22 +168,15 @@ html_theme_options = {
     'display_version': True,
     'prev_next_buttons_location': 'both',
     'style_external_links': True,
-    'style_nav_header_background': '#2c3e50',
+    'style_nav_header_background': '#0f172a',
     'collapse_navigation': False,
     'sticky_navigation': True,
     'navigation_depth': 4,
     'includehidden': True,
-    'titles_only': False
-}
-
-# Enhanced theme options
-html_theme_options.update({
-    'style_nav_header_background': '#0f172a',  # Darker blue
+    'titles_only': False,
     'body_max_width': '1200px',
     'navigation_with_keys': True,
-    'logo_only': True,
-    'display_version': True,
-})
+}
 
 # Base URL for the docs
 html_baseurl = 'https://memories-dev.readthedocs.io/'
@@ -136,11 +191,8 @@ html_context = {
 }
 
 # Mermaid configuration
-mermaid_params = [
-    '--theme', 'dark',
-    '--securityLevel', 'loose',
-    '--startOnLoad', 'true',
-]
+mermaid_output_format = 'png'
+mermaid_params = ['--theme', 'default', '--width', '100%']
 
 # MyST settings
 myst_enable_extensions = [
@@ -174,37 +226,18 @@ search_language = "en"
 
 # Mock imports for documentation build
 autodoc_mock_imports = [
-    "cudf",
-    "cuspatial",
-    "faiss",
-    "torch",
-    "transformers",
-    "numpy",
-    "pandas",
-    "matplotlib",
-    "PIL",
-    "requests",
-    "yaml",
-    "dotenv",
-    "tqdm",
-    "pyarrow",
-    "nltk",
-    "langchain",
-    "pydantic",
-    "shapely",
-    "geopandas",
-    "rasterio",
-    "pyproj",
-    "pystac",
-    "mercantile",
-    "folium",
-    "rtree",
-    "geopy",
-    "osmnx",
-    "py6s",
-    "redis",
-    "xarray",
-    "dask",
-    "aiohttp",
-    "memories",  # Mock the memories package itself
-] 
+    "numpy", "pandas", "matplotlib", "PIL", "requests", "yaml",
+    "dotenv", "tqdm", "pyarrow", "nltk", "langchain", "pydantic",
+    "shapely", "geopandas", "rasterio", "pyproj", "pystac",
+    "mercantile", "folium", "rtree", "geopy", "osmnx", "py6s",
+    "redis", "xarray", "dask", "aiohttp", "memories",
+    "cudf", "cuspatial", "faiss", "torch", "transformers"
+]
+
+# Intersphinx configuration
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'pandas': ('https://pandas.pydata.org/docs/', None),
+    'matplotlib': ('https://matplotlib.org/stable/', None),
+} 
