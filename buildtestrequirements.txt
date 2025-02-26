@@ -94,7 +94,7 @@ sphinx-favicon>=1.0.1
 sphinx-sitemap>=2.5.1
 sphinx-last-updated-by-git>=0.3.6
 sphinx-math-dollar>=1.2.1  # Added for math rendering with $ syntax
-rst2pdf>=3.0  # Added for PDF documentation generation
+rst2pdf>=0.103.1  # For PDF documentation generation
 
 # System dependencies note (for GitHub Actions)
 # Requires: libopenblas-dev, gfortran

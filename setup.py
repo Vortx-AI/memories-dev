@@ -150,7 +150,7 @@ setup(
             "sphinx-last-updated-by-git>=0.3.6",
             "sphinxcontrib-mermaid>=0.9.2",
             "sphinx-math-dollar>=1.2.1",
-            "rst2pdf>=3.0",  # For PDF documentation generation
+            "rst2pdf>=0.103.1",  # For PDF documentation generation
             "myst-parser>=2.0.0",
             "nbsphinx>=0.9.3",
             "packaging>=23.2",
