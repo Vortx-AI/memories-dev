@@ -9,9 +9,15 @@ from typing import Optional
 import yaml
 from dotenv import load_dotenv
 import torch
+try:
+    import tensorflow as tf
+    TENSORFLOW_AVAILABLE = True
+except ImportError:
+    TENSORFLOW_AVAILABLE = False
 from ..models.base_model import BaseModel
 from ..utils.processors.gpu_stat import check_gpu_memory
 from ..synthetic.generator import initialize_stable_diffusion
+from ..config import Config, set_config, set_default_device, set_backend, configure_storage
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -29,24 +35,81 @@ def setup_environment(config_path: Optional[str] = None):
         load_dotenv()
         
         # Load configuration
-        config = load_config(config_path)
+        config_dict = load_config(config_path)
         
-        # Check GPU availability
-        if torch.cuda.is_available():
-            logger.info("GPU available, checking memory...")
-            check_gpu_memory()
+        # Create and initialize config
+        config = Config(
+            storage_path=config_dict.get('data', {}).get('storage', './data/storage'),
+            hot_memory_size=config_dict.get('memory', {}).get('hot', {}).get('max_size', 1000),
+            warm_memory_size=config_dict.get('memory', {}).get('warm', {}).get('max_size', 10000),
+            cold_memory_size=config_dict.get('memory', {}).get('cold', {}).get('max_size', 100000),
+            redis_url=config_dict.get('redis', {}).get('url', 'redis://localhost:6379'),
+            redis_db=config_dict.get('redis', {}).get('db', 0),
+            backend=config_dict.get('model', {}).get('backend', 'pytorch')
+        )
+        set_config(config)
+        
+        # Configure storage
+        storage_config = config_dict.get('storage', {})
+        if storage_config:
+            configure_storage(
+                storage_type=storage_config.get('type', 'local'),
+                base_path=storage_config.get('base_path', './data'),
+                cache_size_gb=storage_config.get('cache_size_gb', 5),
+                bucket_name=storage_config.get('bucket_name'),
+                region=storage_config.get('region'),
+                credentials=storage_config.get('credentials')
+            )
+        
+        # Configure ML backend and device
+        backend = config_dict.get('model', {}).get('backend', 'pytorch')
+        if backend == 'pytorch':
+            # Configure PyTorch
+            if torch.cuda.is_available():
+                logger.info("GPU available for PyTorch, checking memory...")
+                check_gpu_memory()
+                device = torch.device("cuda")
+                logger.info(f"Using GPU: {torch.cuda.get_device_name(0)}")
+            else:
+                logger.warning("GPU not available for PyTorch, using CPU")
+                device = torch.device("cpu")
+            set_default_device(device)
+            
+        elif backend == 'tensorflow' and TENSORFLOW_AVAILABLE:
+            # Configure TensorFlow
+            logger.info("Configuring TensorFlow backend")
+            gpus = tf.config.list_physical_devices('GPU')
+            if gpus:
+                try:
+                    # Configure memory growth for all GPUs
+                    for gpu in gpus:
+                        tf.config.experimental.set_memory_growth(gpu, True)
+                    logical_gpus = tf.config.list_logical_devices('GPU')
+                    logger.info(f"Available GPUs: {len(gpus)} physical, {len(logical_gpus)} logical")
+                except RuntimeError as e:
+                    logger.error(f"Error configuring TensorFlow GPUs: {e}")
+            else:
+                logger.warning("GPU not available for TensorFlow, using CPU")
+            set_backend('tensorflow')
         else:
-            logger.warning("No GPU available, using CPU")
+            if backend == 'tensorflow' and not TENSORFLOW_AVAILABLE:
+                logger.warning("TensorFlow not available, falling back to PyTorch")
+                config.backend = 'pytorch'
+                if torch.cuda.is_available():
+                    device = torch.device("cuda")
+                else:
+                    device = torch.device("cpu")
+                set_default_device(device)
             
         # Initialize models
-        initialize_models(config.get('models', {}))
+        initialize_models(config_dict.get('models', {}))
         
         # Initialize Stable Diffusion
-        if config.get('use_stable_diffusion', False):
+        if config_dict.get('use_stable_diffusion', False):
             initialize_stable_diffusion()
             
         # Set up data directories
-        setup_directories(config.get('directories', {}))
+        setup_directories(config_dict.get('directories', {}))
         
         logger.info("Setup completed successfully")
         
