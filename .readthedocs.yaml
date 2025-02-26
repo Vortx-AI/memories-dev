@@ -53,9 +53,15 @@ sphinx:
 
 # Documentation formats
 formats:
-  - pdf
-  - epub
   - htmlzip
+
+# Custom PDF build command that places PDF in the expected location
+# This ensures only ONE PDF is created and placed where ReadTheDocs expects it
+build_pdf: 
+  builder: custom
+  use_system_packages: true
+  commands:
+    - cd docs && make rtd-pdf
 
 # Python package installation
 python:
