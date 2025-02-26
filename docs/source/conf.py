@@ -62,7 +62,7 @@ latex_domain_indices = False
 latex_use_parts = False
 latex_use_modindex = False
 
-# LaTeX elements configuration
+# LaTeX elements configuration - simplified for better compatibility
 latex_elements = {
     'papersize': 'a4paper',
     'pointsize': '11pt',
@@ -70,21 +70,15 @@ latex_elements = {
     'fontpkg': r'''
         \usepackage{helvet}
         \usepackage[scaled]{beramono}
-        \usepackage{inconsolata}
         \renewcommand{\familydefault}{\sfdefault}
     ''',
     'preamble': r'''
         \usepackage{graphicx}
         \usepackage{xcolor}
         \usepackage{fancyhdr}
-        \usepackage{hyperref}
-        \usepackage{multicol}
         \usepackage{amsmath}
         \usepackage{amssymb}
-        \usepackage{enumitem}
-        \usepackage{adjustbox}
         \usepackage{longtable}
-        \usepackage{tabulary}
         \usepackage{booktabs}
         
         % Define company colors
@@ -94,57 +88,23 @@ latex_elements = {
         % Custom header and footer
         \pagestyle{fancy}
         \fancyhead{}
-        \fancyhead[L]{\textcolor{primary}{\leftmark}}
-        \fancyhead[R]{\textcolor{primary}{\thepage}}
+        \fancyhead[L]{\leftmark}
+        \fancyhead[R]{\thepage}
         \fancyfoot{}
-        \fancyfoot[C]{\textcolor{primary}{Memories-Dev Documentation}}
-        
-        % Title page customization
-        \makeatletter
-        \def\maketitle{
-            \begin{titlepage}
-                \centering
-                \vspace*{2cm}
-                {\Huge\textcolor{primary}{\textbf{\@title}}\par}
-                \vspace{2cm}
-                {\Large\textcolor{secondary}{Version \version}\par}
-                \vspace{1.5cm}
-                {\large\textcolor{primary}{\@author}\par}
-                \vspace{1cm}
-                {\large\textcolor{primary}{\@date}\par}
-                \vfill
-                {\large\textcolor{primary}{© 2025 Memories-Dev. All rights reserved.}\par}
-            \end{titlepage}
-        }
-        \makeatother
-        
-        % Configure code blocks
-        \fvset{fontsize=\small}
-        \RecustomVerbatimEnvironment{Verbatim}{Verbatim}{
-            frame=single,
-            framesep=3mm,
-            rulecolor=\color{gray!40},
-            fontsize=\small
-        }
+        \fancyfoot[C]{Memories-Dev Documentation}
     ''',
     'sphinxsetup': '\
         verbatimwithframe=false,\
         VerbatimColor={rgb}{0.97,0.97,0.97},\
         TitleColor={rgb}{0.06,0.09,0.16},\
         hmargin={1in,1in},\
-        vmargin={1in,1in},\
-        verbatimhintsturnover=false,\
-        verbatimsep=3pt,\
-        verbatimcontinuedrdots=false\
+        vmargin={1in,1in}\
     ',
     'maketitle': r'\maketitle',
     'tableofcontents': r'\tableofcontents',
     'printindex': r'\printindex',
     'extraclassoptions': 'openany,oneside',
-    'babel': '\\usepackage[english]{babel}',
-    'passoptionstopackages': r'\PassOptionsToPackage{svgnames}{xcolor}',
     'fncychap': r'\usepackage[Bjarne]{fncychap}',
-    'geometry': r'\usepackage[margin=1in,includefoot]{geometry}'
 }
 
 # If true, show page references after internal links
