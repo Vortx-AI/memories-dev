@@ -2,9 +2,6 @@
 API Reference
 =================
 
-.. contents:: On this page
-   :local:
-   :depth: 2
 
 Introduction
 -----------

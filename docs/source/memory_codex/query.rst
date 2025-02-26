@@ -2,9 +2,6 @@
 Memory Querying
 ======================
 
-.. contents:: On this page
-   :local:
-   :depth: 2
 
 Introduction to Memory Querying
 -------------------------------

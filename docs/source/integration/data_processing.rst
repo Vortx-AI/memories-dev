@@ -2,9 +2,6 @@
 Data Processing
 ======================
 
-.. contents:: On this page
-   :local:
-   :depth: 2
 
 Introduction to Earth Data Processing
 ---------------------------------

@@ -2,9 +2,6 @@
 Data Integration
 ================
 
-.. contents:: On This Page
-   :local:
-   :depth: 2
 
 Overview
 --------

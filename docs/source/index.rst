@@ -113,9 +113,6 @@ memories-dev: Earth-Grounded AI Framework
 
 memories-dev is a Python package that provides a structured framework for building AI systems with deep understanding of Earth's systems through scientifically rigorous memory.
 
-.. contents:: On This Page
-   :local:
-   :depth: 2
 
 .. toctree::
    :maxdepth: 2

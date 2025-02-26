@@ -384,6 +384,7 @@ function setupTooltips() {
  */
 function fixOnThisPageSection() {
     const contentsLocal = document.querySelector('.contents.local');
+    const mainContent = document.querySelector('.wy-nav-content-wrap');
     
     // Check if we should completely disable the "On This Page" section
     const disableOnThisPage = (
@@ -399,9 +400,19 @@ function fixOnThisPageSection() {
             return;
         }
         
-        // Fix positioning
-        contentsLocal.style.position = 'relative';
+        // Ensure main content is visible
+        if (mainContent) {
+            mainContent.style.display = 'block';
+        }
+        
+        // Fix positioning without affecting page layout
+        contentsLocal.style.position = 'sticky';
+        contentsLocal.style.top = '70px';
         contentsLocal.style.zIndex = '5';
+        contentsLocal.style.float = 'right';
+        contentsLocal.style.width = '250px';
+        contentsLocal.style.marginLeft = '20px';
+        contentsLocal.style.marginBottom = '20px';
         
         // Add proper spacing
         const contentElements = document.querySelectorAll('.section');
@@ -421,20 +432,41 @@ function fixOnThisPageSection() {
         const title = contentsLocal.querySelector('.topic-title');
         if (title) {
             title.textContent = 'On This Page';
+            title.style.marginBottom = '10px';
+            title.style.fontWeight = '600';
         }
         
         // Fix for mobile view
-        if (window.innerWidth <= 768) {
-            contentsLocal.style.display = 'none';
-        }
-        
-        // Add resize handler
-        window.addEventListener('resize', function() {
+        function updateDisplay() {
             if (window.innerWidth <= 768) {
                 contentsLocal.style.display = 'none';
             } else {
                 contentsLocal.style.display = 'block';
+                contentsLocal.style.position = 'sticky';
             }
+        }
+        
+        // Initial check
+        updateDisplay();
+        
+        // Add resize handler
+        window.removeEventListener('resize', updateDisplay); // Remove any existing handlers
+        window.addEventListener('resize', updateDisplay);
+        
+        // Ensure links work properly
+        const links = contentsLocal.querySelectorAll('a');
+        links.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if (targetId && targetId.startsWith('#')) {
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        history.pushState(null, null, targetId);
+                    }
+                }
+            });
         });
     }
 }

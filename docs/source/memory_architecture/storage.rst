@@ -2,9 +2,6 @@
 Memory Storage
 ======================
 
-.. contents:: On this page
-   :local:
-   :depth: 2
 
 Introduction to Memory Storage
 --------------------------

@@ -264,35 +264,48 @@ footer p {
 
 /* Fix for "On This Page" section causing UI glitches */
 .wy-nav-content .contents.local {
-    background-color: #f8f9fa;
-    border-radius: 4px;
+    position: sticky;
+    top: 70px;
+    float: right;
+    width: 250px;
+    margin-left: 20px;
+    margin-bottom: 20px;
     padding: 15px;
-    margin-bottom: 24px;
-    border: 1px solid #e5e5e5;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    font-size: 14px;
+    z-index: 5;
 }
 
 .wy-nav-content .contents.local .topic-title {
     font-weight: 600;
-    color: #333;
+    color: #1a1a1a;
     margin-bottom: 10px;
-    font-size: 1.1em;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #e9ecef;
 }
 
 .wy-nav-content .contents.local ul {
-    margin-bottom: 0;
+    margin: 0;
+    padding-left: 15px;
+    list-style-type: none;
 }
 
 .wy-nav-content .contents.local li {
-    margin-bottom: 5px;
+    margin: 5px 0;
+    line-height: 1.4;
 }
 
 .wy-nav-content .contents.local a {
-    color: #3b82f6;
+    color: #2980b9;
     text-decoration: none;
+    transition: color 0.2s ease;
 }
 
 .wy-nav-content .contents.local a:hover {
+    color: #3091d1;
     text-decoration: underline;
 }
 
@@ -301,6 +314,25 @@ footer p {
     .wy-nav-content .contents.local {
         display: none;
     }
+}
+
+/* Dark theme support */
+html.dark-theme .wy-nav-content .contents.local {
+    background: #2d333b;
+    border-color: #444c56;
+}
+
+html.dark-theme .wy-nav-content .contents.local .topic-title {
+    color: #e6edf3;
+    border-bottom-color: #444c56;
+}
+
+html.dark-theme .wy-nav-content .contents.local a {
+    color: #58a6ff;
+}
+
+html.dark-theme .wy-nav-content .contents.local a:hover {
+    color: #79c0ff;
 }
 
 /* Enhanced Progress Tracker Styles */
@@ -402,19 +434,6 @@ html.dark-theme a {
 
 html.dark-theme .btn-primary {
     background-color: #2563eb;
-}
-
-html.dark-theme .wy-nav-content .contents.local {
-    background-color: #272727;
-    border-color: #444;
-}
-
-html.dark-theme .wy-nav-content .contents.local .topic-title {
-    color: #e0e0e0;
-}
-
-html.dark-theme .wy-nav-content .contents.local a {
-    color: #7eb6ff;
 }
 
 html.dark-theme .progress-stats {

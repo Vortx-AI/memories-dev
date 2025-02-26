@@ -1,0 +1,120 @@
+/* Custom width adjustments */
+.wy-nav-content {
+    max-width: none !important;
+}
+
+/* Main content area */
+.wy-nav-content-wrap {
+    margin-left: 300px;
+    background: #fcfcfc;
+}
+
+/* Sidebar */
+.wy-nav-side {
+    width: 300px;
+    padding-bottom: 2em;
+}
+
+/* Fix for mobile responsiveness */
+@media screen and (max-width: 768px) {
+    .wy-nav-content-wrap {
+        margin-left: 0;
+    }
+    
+    .wy-nav-side {
+        width: 100%;
+    }
+}
+
+/* Ensure content is visible */
+.rst-content {
+    display: block !important;
+}
+
+/* Fix table of contents visibility */
+.toc-backref {
+    display: inline-block;
+}
+
+/* Ensure main content area is visible */
+.document {
+    display: block !important;
+}
+
+/* Fix navigation menu */
+.wy-menu-vertical {
+    width: 100%;
+}
+
+/* Ensure section titles are visible */
+.section {
+    display: block !important;
+}
+
+/* Fix header visibility */
+.section > h1,
+.section > h2,
+.section > h3,
+.section > h4,
+.section > h5,
+.section > h6 {
+    display: block !important;
+}
+
+/* Fix paragraph visibility */
+.section > p {
+    display: block !important;
+}
+
+/* Fix code block visibility */
+.highlight {
+    display: block !important;
+}
+
+/* Fix list visibility */
+.section > ul,
+.section > ol {
+    display: block !important;
+}
+
+/* Fix admonition visibility */
+.admonition {
+    display: block !important;
+}
+
+/* Fix table visibility */
+.table-wrapper {
+    display: block !important;
+}
+
+/* Fix image visibility */
+.figure {
+    display: block !important;
+}
+
+/* Ensure proper spacing */
+.wy-nav-content {
+    padding: 1.618em 3.236em;
+}
+
+/* Fix breadcrumbs */
+.wy-breadcrumbs {
+    display: block !important;
+}
+
+/* Fix search box */
+.wy-side-nav-search {
+    display: block;
+    width: 300px;
+    padding: 1em;
+}
+
+/* Fix version number display */
+.version {
+    display: block !important;
+}
+
+/* Fix footer */
+footer {
+    display: block !important;
+} 

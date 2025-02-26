@@ -2,9 +2,6 @@
 Contributing Guide
 ======================
 
-.. contents:: On this page
-   :local:
-   :depth: 2
 
 Thank you for your interest in contributing to the Memory Codex project! This guide will help you get started with the contribution process.
 

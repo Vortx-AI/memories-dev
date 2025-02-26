@@ -2,9 +2,6 @@
 Setting Up Your Observatory
 ==========================
 
-.. contents:: On this page
-   :local:
-   :depth: 2
 
 Introduction
 ------------

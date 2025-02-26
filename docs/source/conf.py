@@ -342,16 +342,18 @@ html_theme_options = {
     'style_nav_header_background': '#1a5276',
     'logo_only': True,
     'display_version': True,
-    'prev_next_buttons_location': 'both',
     'style_external_links': True,
     'vcs_pageview_mode': 'blob',
-    'body_max_width': 'none',
     'navigation_with_keys': True,
     'globaltoc_collapse': False,
     'globaltoc_maxdepth': 4,
-    'show_toc_level': 3,
-    'toc_title': 'On This Page',
-    'show_nav_level': 2,
+    'canonical_url': 'https://memories-dev.readthedocs.io/',
+    'analytics_id': None,
+    'sticky_navigation': True,
+    'navigation_depth': 4,
+    'includehidden': True,
+    'titles_only': False,
+    'sidebarwidth': 300
 }
 
 # MathJax 3 configuration
@@ -384,7 +386,6 @@ html_static_path = ['_static']
 html_sidebars = {
     '**': [
         'globaltoc.html',
-        'localtoc.html',
         'relations.html',
         'sourcelink.html',
         'searchbox.html',
@@ -415,7 +416,7 @@ html_context = {
     'enable_formula_enhancer': True,
     'default_theme': 'dark',  # Options: 'dark', 'light', 'auto'
     'show_tour_on_first_visit': True,
-    'disable_on_this_page': False,  # Set to False to enable the "On This Page" section
+    'disable_on_this_page': True,  # Set to True to disable the "On This Page" section
 }
 
 # Matrix theme title

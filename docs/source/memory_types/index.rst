@@ -2,9 +2,6 @@
 Memory Types
 ======================
 
-.. contents:: On this page
-   :local:
-   :depth: 2
 
 Introduction to Earth Memory Types
 -------------------------------
