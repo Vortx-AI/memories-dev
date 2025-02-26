@@ -29,8 +29,10 @@ body {
 }
 
 .wy-nav-content {
-    max-width: 1000px;
-    margin: 0 auto;
+    max-width: 1000px !important;
+    margin: 0 auto !important;
+    padding: 1.618em 3.236em !important;
+    width: 100% !important;
     background-color: #ffffff;
 }
 
@@ -65,7 +67,7 @@ body {
     }
     
     .wy-nav-content-wrap {
-        margin-left: 0;
+        margin-left: 0 !important;
         transition: transform 0.3s ease;
     }
     
@@ -262,58 +264,44 @@ footer p {
     z-index: 50;
 }
 
-/* Fix for "On This Page" section causing UI glitches */
-.wy-nav-content .contents.local {
-    position: sticky;
-    top: 70px;
-    float: right;
-    width: 250px;
-    margin-left: 20px;
-    margin-bottom: 20px;
-    padding: 15px;
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    font-size: 14px;
-    z-index: 5;
+/* Hide "On This Page" section completely */
+.contents.local,
+.contents.topic {
+    display: none !important;
 }
 
-.wy-nav-content .contents.local .topic-title {
-    font-weight: 600;
-    color: #1a1a1a;
-    margin-bottom: 10px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid #e9ecef;
+/* Adjust main content width */
+.wy-nav-content {
+    max-width: 1000px !important;
+    margin: 0 auto !important;
+    padding: 1.618em 3.236em !important;
+    width: 100% !important;
+    position: relative !important;
 }
 
-.wy-nav-content .contents.local ul {
-    margin: 0;
-    padding-left: 15px;
-    list-style-type: none;
+.wy-nav-content-wrap {
+    margin-left: 300px !important;
+    background: #fcfcfc !important;
 }
 
-.wy-nav-content .contents.local li {
-    margin: 5px 0;
-    line-height: 1.4;
-}
-
-.wy-nav-content .contents.local a {
-    color: #2980b9;
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-.wy-nav-content .contents.local a:hover {
-    color: #3091d1;
-    text-decoration: underline;
-}
-
-/* Hide "On This Page" on mobile to prevent UI glitches */
+/* Responsive adjustments */
 @media screen and (max-width: 768px) {
-    .wy-nav-content .contents.local {
-        display: none;
+    .wy-nav-content-wrap {
+        margin-left: 0 !important;
     }
+    
+    .wy-nav-content {
+        padding: 1em !important;
+    }
+}
+
+/* Remove any potential "On This Page" remnants in dark theme */
+html.dark-theme .contents.local,
+html.dark-theme .contents.topic,
+html.dark-theme [role="navigation"] .local {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 /* Dark theme support */

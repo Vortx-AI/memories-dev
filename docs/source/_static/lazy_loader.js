@@ -383,91 +383,28 @@ function setupTooltips() {
  * Fix "On This Page" section UI glitches
  */
 function fixOnThisPageSection() {
-    const contentsLocal = document.querySelector('.contents.local');
-    const mainContent = document.querySelector('.wy-nav-content-wrap');
+    // Remove all instances of "On This Page" sections
+    const contentsLocals = document.querySelectorAll('.contents.local, .contents.topic');
+    contentsLocals.forEach(section => {
+        if (section) {
+            section.remove(); // Fully remove from DOM
+        }
+    });
     
-    // Check if we should completely disable the "On This Page" section
-    const disableOnThisPage = (
-        typeof DOCUMENTATION_OPTIONS !== 'undefined' && 
-        DOCUMENTATION_OPTIONS.CONTEXT && 
-        DOCUMENTATION_OPTIONS.CONTEXT.disable_on_this_page === true
-    );
+    // Ensure main content takes full width
+    const mainContent = document.querySelector('.wy-nav-content');
+    if (mainContent) {
+        mainContent.style.display = 'block';
+        mainContent.style.width = '100%';
+        mainContent.style.maxWidth = '1000px';
+        mainContent.style.margin = '0 auto';
+        mainContent.style.padding = '1.618em 3.236em';
+    }
     
-    if (contentsLocal) {
-        if (disableOnThisPage) {
-            // Completely remove the "On This Page" section
-            contentsLocal.style.display = 'none';
-            return;
-        }
-        
-        // Ensure main content is visible
-        if (mainContent) {
-            mainContent.style.display = 'block';
-        }
-        
-        // Fix positioning without affecting page layout
-        contentsLocal.style.position = 'sticky';
-        contentsLocal.style.top = '70px';
-        contentsLocal.style.zIndex = '5';
-        contentsLocal.style.float = 'right';
-        contentsLocal.style.width = '250px';
-        contentsLocal.style.marginLeft = '20px';
-        contentsLocal.style.marginBottom = '20px';
-        
-        // Add proper spacing
-        const contentElements = document.querySelectorAll('.section');
-        contentElements.forEach(section => {
-            section.style.position = 'relative';
-            section.style.zIndex = '1';
-        });
-        
-        // Fix for nested lists causing overflow
-        const nestedLists = contentsLocal.querySelectorAll('ul ul');
-        nestedLists.forEach(list => {
-            list.style.marginLeft = '15px';
-            list.style.paddingLeft = '0';
-        });
-        
-        // Add proper heading
-        const title = contentsLocal.querySelector('.topic-title');
-        if (title) {
-            title.textContent = 'On This Page';
-            title.style.marginBottom = '10px';
-            title.style.fontWeight = '600';
-        }
-        
-        // Fix for mobile view
-        function updateDisplay() {
-            if (window.innerWidth <= 768) {
-                contentsLocal.style.display = 'none';
-            } else {
-                contentsLocal.style.display = 'block';
-                contentsLocal.style.position = 'sticky';
-            }
-        }
-        
-        // Initial check
-        updateDisplay();
-        
-        // Add resize handler
-        window.removeEventListener('resize', updateDisplay); // Remove any existing handlers
-        window.addEventListener('resize', updateDisplay);
-        
-        // Ensure links work properly
-        const links = contentsLocal.querySelectorAll('a');
-        links.forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const targetId = this.getAttribute('href');
-                if (targetId && targetId.startsWith('#')) {
-                    const targetElement = document.querySelector(targetId);
-                    if (targetElement) {
-                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        history.pushState(null, null, targetId);
-                    }
-                }
-            });
-        });
+    // Adjust content wrapper
+    const contentWrap = document.querySelector('.wy-nav-content-wrap');
+    if (contentWrap) {
+        contentWrap.style.marginLeft = window.innerWidth > 768 ? '300px' : '0';
     }
 }
 

@@ -59,7 +59,7 @@ function fixOnThisPageSection() {
     // Update the title
     const title = onThisPageSection.querySelector('.topic-title');
     if (title) {
-        title.textContent = 'On This Page';
+        title.textContent = 'On This Pagess';
         title.style.fontWeight = '600';
         title.style.marginBottom = '10px';
         title.style.color = '#333';

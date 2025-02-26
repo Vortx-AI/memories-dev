@@ -415,7 +415,7 @@ html_context = {
     'enable_mobile_enhancer': True,
     'enable_formula_enhancer': True,
     'default_theme': 'dark',  # Options: 'dark', 'light', 'auto'
-    'show_tour_on_first_visit': True,
+    'show_tour_on_first_visit': False,
     'disable_on_this_page': True,  # Set to True to disable the "On This Page" section
 }
 
