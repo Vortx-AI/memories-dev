@@ -1,7 +1,14 @@
 // Formula Enhancer for memories-dev documentation
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize formula enhancer
-    initializeFormulaEnhancer();
+    // Initialize formula enhancer once MathJax is loaded
+    if (window.MathJax) {
+        initializeFormulaEnhancer();
+    } else {
+        // Wait for MathJax to load
+        window.addEventListener('load', function() {
+            setTimeout(initializeFormulaEnhancer, 500);
+        });
+    }
 });
 
 /**
@@ -22,6 +29,9 @@ function initializeFormulaEnhancer() {
     
     // Fix formula rendering issues
     fixFormulaRenderingIssues();
+
+    // Add equation numbering
+    addEquationNumbering();
 }
 
 /**
@@ -31,31 +41,64 @@ function configureMathJax() {
     if (window.MathJax) {
         // For MathJax v3
         if (window.MathJax.version && window.MathJax.version[0] === '3') {
-            window.MathJax.startup = window.MathJax.startup || {};
-            window.MathJax.startup.ready = () => {
-                window.MathJax.startup.defaultReady();
-                enhanceFormulaDisplay();
+            // Check if already configured
+            if (window.MathJax.startup && window.MathJax.startup._initialized) {
+                return;
+            }
+            
+            // Configure MathJax
+            window.MathJax = {
+                tex: {
+                    inlineMath: [['$', '$'], ['\\(', '\\)']],
+                    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                    processEscapes: true,
+                    processEnvironments: true,
+                    tags: 'ams',
+                    packages: ['base', 'ams', 'noerrors', 'noundefined', 'color', 'boldsymbol']
+                },
+                options: {
+                    ignoreHtmlClass: 'tex2jax_ignore',
+                    processHtmlClass: 'tex2jax_process'
+                },
+                chtml: {
+                    scale: 1.1,
+                    displayAlign: 'center'
+                },
+                startup: {
+                    ready: function() {
+                        window.MathJax.startup.defaultReady();
+                        enhanceFormulaDisplay();
+                    }
+                }
             };
         } 
         // For MathJax v2
         else if (window.MathJax.Hub) {
+            window.MathJax.Hub.Config({
+                tex2jax: {
+                    inlineMath: [['$', '$'], ['\\(', '\\)']],
+                    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                    processEscapes: true,
+                    processEnvironments: true
+                },
+                TeX: {
+                    equationNumbers: { autoNumber: "AMS" },
+                    extensions: ["color.js", "AMSmath.js", "AMSsymbols.js", "noErrors.js", "noUndefined.js"]
+                },
+                'HTML-CSS': {
+                    availableFonts: ['TeX'],
+                    scale: 110,
+                    linebreaks: { automatic: true }
+                },
+                SVG: {
+                    linebreaks: { automatic: true }
+                }
+            });
+            
             window.MathJax.Hub.Register.StartupHook('End', function() {
                 enhanceFormulaDisplay();
             });
         }
-    } else {
-        // If MathJax is not loaded yet, wait for it
-        const checkMathJax = setInterval(function() {
-            if (window.MathJax) {
-                clearInterval(checkMathJax);
-                configureMathJax();
-            }
-        }, 500);
-        
-        // Stop checking after 10 seconds
-        setTimeout(function() {
-            clearInterval(checkMathJax);
-        }, 10000);
     }
 }
 
@@ -71,252 +114,227 @@ function addFormulaStyles() {
             position: relative;
             overflow-x: auto;
             padding: 1rem;
-            background-color: var(--primary-light, #f8f9fa);
+            background-color: var(--code-bg, #f8f9fa);
             border-radius: 4px;
-            border-left: 3px solid var(--accent-color, #4285f4);
+            border-left: 3px solid var(--accent-color, #3b82f6);
         }
         
         /* Inline formula */
         .math {
-            font-family: 'STIXGeneral', 'Georgia', 'Times', serif;
+            display: inline-block;
+            vertical-align: middle;
+            max-width: 100%;
+            overflow-x: auto;
+            padding: 0 0.2em;
         }
         
         /* Display formula */
         .math-display {
             display: block;
             overflow-x: auto;
-            overflow-y: hidden;
-            padding: 0.5rem 0;
-        }
-        
-        /* Formula number */
-        .formula-number {
-            position: absolute;
-            right: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 0.9rem;
-            color: var(--text-muted, #5f6368);
-            user-select: none;
+            max-width: 100%;
+            margin: 1rem 0;
+            text-align: center;
         }
         
         /* Formula copy button */
-        .formula-copy {
+        .formula-copy-btn {
             position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
+            top: 0.25rem;
+            right: 0.25rem;
             background-color: transparent;
             border: none;
-            color: var(--text-muted, #5f6368);
-            cursor: pointer;
             padding: 0.25rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: var(--code-text-muted, #6c757d);
             border-radius: 3px;
             opacity: 0;
-            transition: opacity 0.2s ease, background-color 0.2s ease;
+            transition: opacity 0.2s, background-color 0.2s;
         }
         
-        .formula-container:hover .formula-copy {
-            opacity: 0.7;
+        .formula-container:hover .formula-copy-btn {
+            opacity: 1;
         }
         
-        .formula-copy:hover {
-            opacity: 1 !important;
-            background-color: rgba(0, 0, 0, 0.05);
+        .formula-copy-btn:hover {
+            background-color: var(--accent-light, #dbeafe);
+            color: var(--accent-color, #3b82f6);
         }
         
-        .formula-copy svg {
-            width: 16px;
-            height: 16px;
+        /* Equation numbering */
+        .equation-number {
+            float: right;
+            color: var(--code-text-muted, #6c757d);
+            font-size: 0.9rem;
         }
         
-        /* Formula tooltip */
-        .formula-tooltip {
-            position: absolute;
-            top: -2rem;
-            right: 0.5rem;
-            background-color: var(--text-color, #202124);
-            color: white;
-            padding: 0.25rem 0.5rem;
-            border-radius: 3px;
-            font-size: 0.8rem;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            pointer-events: none;
+        /* Dark mode support */
+        html.dark-theme .formula-container {
+            background-color: var(--code-bg, #1e293b);
+            border-left-color: var(--accent-color, #3b82f6);
         }
         
-        .formula-tooltip.visible {
-            opacity: 0.9;
+        html.dark-theme .formula-copy-btn:hover {
+            background-color: var(--accent-dark, #1e40af);
+            color: var(--accent-light, #dbeafe);
         }
         
-        /* Formula label */
-        .formula-label {
-            font-size: 0.8rem;
-            color: var(--text-muted, #5f6368);
-            margin-top: 0.25rem;
-            text-align: right;
+        /* Formula loading state */
+        .formula-loading {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            vertical-align: middle;
+            border: 2px solid var(--accent-light, #dbeafe);
+            border-top: 2px solid var(--accent-color, #3b82f6);
+            border-radius: 50%;
+            animation: formula-spin 1s linear infinite;
         }
         
-        /* MathJax specific styles */
-        .MathJax_Display {
-            margin: 0 !important;
-        }
-        
-        .MathJax {
-            outline: none;
-        }
-        
-        /* Responsive styles */
-        @media (max-width: 768px) {
-            .formula-container {
-                padding: 0.75rem;
-                margin: 1rem 0;
-            }
-            
-            .formula-number {
-                font-size: 0.8rem;
-            }
-            
-            .formula-copy {
-                opacity: 0.7;
-            }
+        @keyframes formula-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     `;
-    
     document.head.appendChild(style);
 }
 
 /**
- * Enhance formula display
+ * Enhance formula display with custom styling
  */
 function enhanceFormulaDisplay() {
-    // Process all display math elements
-    const displayMath = document.querySelectorAll('.math-display, .MathJax_Display');
+    // Find all math display containers
+    const mathElements = document.querySelectorAll('.math-display, .math');
     
-    displayMath.forEach((element, index) => {
-        // Skip elements that are already enhanced
+    mathElements.forEach(element => {
+        const isDisplayMath = element.classList.contains('math-display');
+        
+        // Skip if already enhanced
         if (element.parentElement.classList.contains('formula-container')) {
             return;
         }
         
-        // Create formula container
+        // Create container
         const container = document.createElement('div');
-        container.className = 'formula-container';
-        container.setAttribute('role', 'math');
-        container.setAttribute('aria-label', 'Mathematical formula');
+        container.className = isDisplayMath ? 'formula-container display-formula' : 'formula-container inline-formula';
         
-        // Add formula number
-        const formulaNumber = document.createElement('div');
-        formulaNumber.className = 'formula-number';
-        formulaNumber.textContent = `(${index + 1})`;
-        
-        // Wrap formula in container
+        // Insert container before math element
         element.parentNode.insertBefore(container, element);
+        
+        // Move math element into container
         container.appendChild(element);
-        container.appendChild(formulaNumber);
         
         // Add copy button
         addCopyButtonToFormula(container, element);
     });
+}
+
+/**
+ * Add equation numbering to display equations
+ */
+function addEquationNumbering() {
+    // Find all display math containers
+    const displayEquations = document.querySelectorAll('.display-formula');
     
-    // Process all inline math elements
-    const inlineMath = document.querySelectorAll('.math:not(.math-display), .MathJax:not(.MathJax_Display)');
+    let equationCounter = 1;
     
-    inlineMath.forEach(element => {
-        // Skip elements that are already enhanced
-        if (element.classList.contains('enhanced')) {
+    displayEquations.forEach(container => {
+        // Skip if already numbered
+        if (container.querySelector('.equation-number')) {
             return;
         }
         
-        // Add enhanced class
-        element.classList.add('enhanced');
+        // Create equation number element
+        const numberElement = document.createElement('div');
+        numberElement.className = 'equation-number';
+        numberElement.textContent = `(${equationCounter})`;
         
-        // Add title attribute for hover preview
-        if (element.textContent) {
-            element.setAttribute('title', element.textContent);
-        }
+        // Add number to container
+        container.appendChild(numberElement);
+        
+        // Increment counter
+        equationCounter++;
     });
 }
 
 /**
  * Add copy button to formula
- * @param {HTMLElement} container - The formula container
- * @param {HTMLElement} formula - The formula element
  */
 function addCopyButtonToFormula(container, formula) {
+    // Skip if already has copy button
+    if (container.querySelector('.formula-copy-btn')) {
+        return;
+    }
+    
     // Create copy button
-    const copyButton = document.createElement('button');
-    copyButton.className = 'formula-copy';
-    copyButton.setAttribute('aria-label', 'Copy formula');
-    copyButton.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-        </svg>
-    `;
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'formula-copy-btn';
+    copyBtn.setAttribute('aria-label', 'Copy formula');
+    copyBtn.setAttribute('title', 'Copy formula');
+    copyBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/></svg>';
     
-    // Create tooltip
-    const tooltip = document.createElement('div');
-    tooltip.className = 'formula-tooltip';
-    tooltip.textContent = 'Copied!';
-    
-    // Add copy button and tooltip to container
-    container.appendChild(copyButton);
-    container.appendChild(tooltip);
-    
-    // Add event listener to copy button
-    copyButton.addEventListener('click', function() {
-        // Get formula text
-        let formulaText = '';
+    // Add click event
+    copyBtn.addEventListener('click', function(e) {
+        e.preventDefault();
         
-        // Try to get LaTeX source
-        if (formula.tagName === 'SCRIPT' && formula.type === 'math/tex') {
-            formulaText = formula.textContent;
-        } else if (formula.classList.contains('MathJax') || formula.classList.contains('MathJax_Display')) {
-            // For MathJax v3
-            if (window.MathJax && window.MathJax.version && window.MathJax.version[0] === '3') {
-                const mjxContainer = formula.closest('.MathJax');
-                if (mjxContainer && mjxContainer.dataset.mathml) {
-                    formulaText = mjxContainer.dataset.mathml;
-                }
-            } 
-            // For MathJax v2
-            else if (window.MathJax && window.MathJax.Hub) {
-                const jax = window.MathJax.Hub.getAllJax(formula);
-                if (jax && jax.length > 0) {
-                    formulaText = jax[0].originalText;
-                }
-            }
-        } else {
-            // Fallback to element text
-            formulaText = formula.textContent;
-        }
+        // Get formula text
+        const formulaText = getFormulaText(formula);
         
         // Copy to clipboard
-        if (formulaText) {
-            navigator.clipboard.writeText(formulaText).then(function() {
-                // Show tooltip
-                tooltip.classList.add('visible');
-                
-                // Hide tooltip after 2 seconds
-                setTimeout(function() {
-                    tooltip.classList.remove('visible');
-                }, 2000);
-            }).catch(function(err) {
-                console.error('Could not copy formula: ', err);
-            });
-        }
+        navigator.clipboard.writeText(formulaText).then(() => {
+            // Show success state
+            copyBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg>';
+            
+            // Reset after 2 seconds
+            setTimeout(() => {
+                copyBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/></svg>';
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy formula:', err);
+        });
     });
+    
+    // Add button to container
+    container.appendChild(copyBtn);
+}
+
+/**
+ * Get the LaTeX representation of a formula element
+ */
+function getFormulaText(formulaElement) {
+    // Try to get source from data attribute first
+    const source = formulaElement.getAttribute('data-source');
+    if (source) {
+        return source;
+    }
+    
+    // Try to extract from MathJax v3 output
+    const mjxContainer = formulaElement.querySelector('.MathJax');
+    if (mjxContainer && mjxContainer.hasAttribute('data-latex')) {
+        return mjxContainer.getAttribute('data-latex');
+    }
+    
+    // For MathJax v2
+    if (window.MathJax && window.MathJax.Hub) {
+        const jax = window.MathJax.Hub.getAllJax(formulaElement);
+        if (jax && jax.length > 0) {
+            return jax[0].originalText;
+        }
+    }
+    
+    // Fallback to the element's text content
+    return formulaElement.textContent;
 }
 
 /**
  * Add copy button to all formulas
  */
 function addCopyButtonToFormulas() {
-    // Process all formula containers that don't have copy buttons
-    const containers = document.querySelectorAll('.formula-container:not(:has(.formula-copy))');
+    const formulaContainers = document.querySelectorAll('.formula-container');
     
-    containers.forEach(container => {
-        const formula = container.querySelector('.math-display, .MathJax_Display');
+    formulaContainers.forEach(container => {
+        const formula = container.querySelector('.math, .math-display');
         if (formula) {
             addCopyButtonToFormula(container, formula);
         }
@@ -324,52 +342,50 @@ function addCopyButtonToFormulas() {
 }
 
 /**
- * Fix formula rendering issues
+ * Fix common formula rendering issues
  */
 function fixFormulaRenderingIssues() {
-    // Fix overflow issues
-    const mathElements = document.querySelectorAll('.MathJax_Display, .math-display');
-    mathElements.forEach(element => {
-        element.style.overflowX = 'auto';
-        element.style.overflowY = 'hidden';
-    });
-    
-    // Fix alignment issues
-    const alignedMath = document.querySelectorAll('.align, .align\\*');
-    alignedMath.forEach(element => {
-        element.style.display = 'block';
-        element.style.width = '100%';
-    });
-    
-    // Fix equation numbering
-    const equations = document.querySelectorAll('.equation');
-    equations.forEach((equation, index) => {
-        const number = equation.querySelector('.eqno');
-        if (number) {
-            number.textContent = `(${index + 1})`;
+    // Ensure MathJax is loaded and math is rendered
+    if (window.MathJax) {
+        if (window.MathJax.typesetPromise) {
+            // MathJax v3
+            window.MathJax.typesetPromise().catch(err => {
+                console.error('MathJax typeset error:', err);
+            });
+        } else if (window.MathJax.Hub) {
+            // MathJax v2
+            window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub]);
         }
-    });
+    }
     
-    // Add observer for dynamically loaded content
-    const observer = new MutationObserver(function(mutations) {
-        let mathAdded = false;
+    // Add observer for new content
+    const observer = new MutationObserver(mutations => {
+        let shouldRerender = false;
         
-        mutations.forEach(function(mutation) {
-            if (mutation.addedNodes.length) {
-                mutation.addedNodes.forEach(function(node) {
-                    if (node.nodeType === 1) { // Element node
-                        const mathElements = node.querySelectorAll('.math, .MathJax');
-                        if (mathElements.length) {
-                            mathAdded = true;
-                        }
+        mutations.forEach(mutation => {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                // Check if added nodes contain math
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === Node.ELEMENT_NODE && 
+                        (node.querySelector('.math, .math-display') || 
+                         node.classList.contains('math') || 
+                         node.classList.contains('math-display'))) {
+                        shouldRerender = true;
                     }
                 });
             }
         });
         
-        if (mathAdded) {
-            // Re-run enhanceFormulaDisplay after a short delay
-            setTimeout(enhanceFormulaDisplay, 500);
+        if (shouldRerender && window.MathJax) {
+            if (window.MathJax.typesetPromise) {
+                // MathJax v3
+                window.MathJax.typesetPromise().catch(err => {
+                    console.error('MathJax typeset error:', err);
+                });
+            } else if (window.MathJax.Hub) {
+                // MathJax v2
+                window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub]);
+            }
         }
     });
     

@@ -5,7 +5,23 @@ Time Series Decomposition
 Overview
 --------
 
-The time series decomposition module in memories-dev provides tools for analyzing temporal patterns in Earth observation data. The implementation is based on the actual code in `memories/utils/processors/advanced_processor.py`.
+The time series decomposition module in memories-dev provides tools for analyzing temporal patterns in Earth observation data. Time series decomposition is essential for understanding underlying trends, seasonal patterns, and anomalies in environmental data. The implementation is based on the actual code in `memories/utils/processors/advanced_processor.py`.
+
+Mathematical Foundation
+----------------------
+
+Time series decomposition is based on the principle that a time series $Y(t)$ can be broken down into several components:
+
+$Y(t) = T(t) + S(t) + R(t)$
+
+Where:
+- $T(t)$ represents the trend component
+- $S(t)$ represents the seasonal component
+- $R(t)$ represents the residual (or irregular) component
+
+This additive model is appropriate when the magnitude of seasonal fluctuations does not vary with the level of the time series. For cases where the seasonal pattern varies with the level of the series, a multiplicative model may be more appropriate:
+
+$Y(t) = T(t) \times S(t) \times R(t)$
 
 Core Implementation
 -------------------
@@ -20,7 +36,7 @@ The main time series analysis functionality is implemented in the `analyze_time_
         dates: List[datetime],
         method: str = "linear"
     ) -> Dict:
-""""""""""
+        """
         Analyze time series of images.
         
         Args:
@@ -30,7 +46,7 @@ The main time series analysis functionality is implemented in the `analyze_time_
             
         Returns:
             Dictionary containing analysis results
-""""""""""""""""""""""""""""""""""""""
+        """
 
 Analysis Methods
 ----------------
@@ -38,7 +54,17 @@ Analysis Methods
 1. Linear Trend Analysis
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The linear trend analysis calculates pixel-wise trends over time:
+The linear trend analysis calculates pixel-wise trends over time. For each pixel at position $(i,j)$ and band $b$, we fit a linear model:
+
+$Y_{b,i,j}(t) = \alpha_{b,i,j} + \beta_{b,i,j} \cdot t + \epsilon_{b,i,j}(t)$
+
+Where:
+- $Y_{b,i,j}(t)$ is the value at time $t$
+- $\alpha_{b,i,j}$ is the intercept
+- $\beta_{b,i,j}$ is the slope (trend coefficient)
+- $\epsilon_{b,i,j}(t)$ is the error term
+
+The implementation calculates these coefficients using least squares fitting:
 
 .. code-block:: python
 
@@ -56,7 +82,18 @@ The linear trend analysis calculates pixel-wise trends over time:
 2. Seasonal Decomposition
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For seasonal patterns, we use the statsmodels implementation:
+For seasonal patterns, we use the statsmodels implementation of the classical seasonal decomposition method. This algorithm follows these steps:
+
+1. Estimate the trend component $T(t)$ using a moving average
+2. De-trend the series by removing the trend: $Y(t) - T(t)$
+3. Estimate the seasonal component $S(t)$ by averaging the de-trended values for each time unit across periods
+4. Calculate the residual: $R(t) = Y(t) - T(t) - S(t)$
+
+The moving average window for trend estimation is typically the period length. For a series with period $p$, the centered moving average at time $t$ is:
+
+$T(t) = \frac{1}{p} \sum_{i=-\lfloor p/2 \rfloor}^{\lfloor p/2 \rfloor} Y(t+i)$
+
+The implementation:
 
 .. code-block:: python
 
@@ -88,27 +125,38 @@ For seasonal patterns, we use the statsmodels implementation:
 Data Smoothing
 --------------
 
-For noise reduction, we implement a smoothing function:
+For noise reduction, we implement a smoothing function based on a weighted moving average. For a time series point $Y(t)$, the smoothed value $\hat{Y}(t)$ is:
+
+$\hat{Y}(t) = \frac{\sum_{i=-w}^{w} K(i) \cdot Y(t+i)}{\sum_{i=-w}^{w} K(i)}$
+
+Where:
+- $w$ is the window size parameter (half-width)
+- $K(i)$ is the kernel function that assigns weights to points
+
+A common kernel is the Gaussian kernel:
+
+$K(i) = e^{-\frac{i^2}{2\sigma^2}}$
+
+Where $\sigma$ controls the width of the kernel.
 
 .. code-block:: python
 
     def smooth_timeseries(
         data: np.ndarray,
-        window_size: int = 5
+        window_size: int = 5,
+        kernel: str = "gaussian"
     ) -> np.ndarray:
-""""""""""""""""
+        """
         Apply smoothing to time series data.
         
         Args:
-            data: Input time series
-            window_size: Smoothing window size
+            data: Time series data array
+            window_size: Size of smoothing window
+            kernel: Type of kernel ("gaussian", "uniform")
             
         Returns:
-            Smoothed time series
-""""""""""""""""""""
-        kernel = np.ones(window_size) / window_size
-        smoothed = ndimage.convolve1d(data, kernel, mode='reflect')
-        return smoothed
+            Smoothed data array
+        """
 
 Configuration
 -------------
@@ -165,9 +213,9 @@ The time series analysis can be used with Earth Engine data:
         band: str,
         temporal_resolution: str = "month"
     ) -> Dict:
-""""""""""
+        """
         Get time series data from Earth Engine.
-"""""""""""""""""""""""""""""""""""""""
+        """
         # Implementation from memories/data_acquisition/sources/earth_engine_api.py
 
 Performance Considerations

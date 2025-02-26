@@ -123,12 +123,29 @@ function initializeTheme() {
 
 /**
  * Update Mermaid diagrams theme when theme is changed
+ * @param {boolean} isDarkTheme - Whether the theme is dark
  */
 function updateMermaidTheme(isDarkTheme) {
     if (window.mermaid) {
         try {
+            // Try to reinitialize mermaid with the new theme
             window.mermaid.initialize({
-                theme: isDarkTheme ? 'dark' : 'default'
+                theme: isDarkTheme ? 'dark' : 'default',
+                themeVariables: isDarkTheme ? {
+                    primaryColor: '#3b82f6',
+                    primaryTextColor: '#f8fafc',
+                    primaryBorderColor: '#4b5563',
+                    lineColor: '#94a3b8',
+                    secondaryColor: '#9333ea',
+                    tertiaryColor: '#1e293b'
+                } : {
+                    primaryColor: '#3b82f6',
+                    primaryTextColor: '#1e293b',
+                    primaryBorderColor: '#e2e8f0',
+                    lineColor: '#64748b',
+                    secondaryColor: '#9333ea',
+                    tertiaryColor: '#f8fafc'
+                }
             });
             
             // Find all mermaid diagrams
@@ -145,10 +162,19 @@ function updateMermaidTheme(isDarkTheme) {
                 // Clear the current diagram
                 diagram.innerHTML = '';
                 
-                // Re-render with new theme
-                window.mermaid.render('mermaid-svg-' + Math.random().toString(36).substr(2, 9), code, function(svgCode) {
-                    diagram.innerHTML = svgCode;
-                });
+                // Re-render with new theme - use a unique ID to prevent conflicts
+                const uniqueId = 'mermaid-diagram-' + Math.random().toString(36).substring(2, 15);
+                
+                // Render the diagram
+                try {
+                    window.mermaid.render(uniqueId, code, function(svgCode) {
+                        diagram.innerHTML = svgCode;
+                    });
+                } catch (renderError) {
+                    console.error('Error rendering mermaid diagram:', renderError);
+                    // Fallback - show original code
+                    diagram.innerHTML = `<pre>${code}</pre>`;
+                }
             });
         } catch (e) {
             console.error('Error updating mermaid diagrams:', e);

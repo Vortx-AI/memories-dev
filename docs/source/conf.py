@@ -48,6 +48,7 @@ extensions = [
     'sphinx.ext.duration',     # Build duration tracking
     'sphinx_sitemap',          # Sitemap generation
     'sphinx_last_updated_by_git', # Last updated date from git
+    'sphinx_math_dollar',      # Allow $ for math
 ]
 
 # LaTeX configuration for PDF output
@@ -154,18 +155,21 @@ elif python_version >= packaging_version.parse('3.12'):
 else:
     autodoc_typehints = 'none'
 
-# Add any paths that contain templates here
+# Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
-# These paths are either relative to html_static_path or fully qualified paths (eg. https://...)
+# Add CSS files
 html_css_files = [
-    'css/consolidated.css',  # Single consolidated CSS file
-    'book_style.css',        # Book styling
+    'custom.css',
+    'code-highlight.css',
 ]
 
+# Add JavaScript files
 html_js_files = [
-    'js/consolidated.js',    # Single consolidated JavaScript file
-    'book_experience.js',    # Book experience enhancements
+    'theme_toggle.js',
+    'book_experience.js',
+    'code-highlight.js',
+    'formula_enhancer.js',
 ]
 
 # The suffix of source filenames
@@ -206,6 +210,8 @@ html_theme_options = {
     'style_external_links': True,
     'analytics_anonymize_ip': True,
     'canonical_url': 'https://memories-dev.readthedocs.io/',
+    'enable_book_experience': True,
+    'enable_mermaid': True,
 }
 
 # Base URL for the docs
@@ -235,13 +241,13 @@ html_context = {
 html_title = "Memories-Dev Documentation"
 
 # Matrix theme favicon
-html_favicon = '_static/images/favicon.ico'
+html_favicon = '_static/favicon.ico'
 
 # Matrix theme logo
-html_logo = '_static/images/logo.png'
+html_logo = '_static/logo.png'
 
 # Mermaid configuration
-mermaid_version = "latest"  # Use the latest version
+mermaid_version = "latest"
 mermaid_init_js = """
     mermaid.initialize({
         startOnLoad: true,
@@ -304,23 +310,30 @@ intersphinx_mapping = {
 
 # Disable certain extensions for latex build
 def setup(app):
-    # Add consolidated CSS and JS files
-    app.add_css_file('css/custom.css')
-    app.add_css_file('book_style.css')
+    # Make sure static directories exist
+    import os
+    static_dirs = [
+        '_static/images',
+        '_static/css',
+        '_static/js',
+    ]
     
-    # Add JavaScript enhancements
-    app.add_js_file('lazy_loader.js')
-    app.add_js_file('nav_enhancer.js')
-    app.add_js_file('progress_tracker.js')
-    app.add_js_file('theme_toggle.js')
-    app.add_js_file('doc_fixes.js')
-    app.add_js_file('book_experience.js')
+    for dir_path in static_dirs:
+        full_path = os.path.join(os.path.dirname(__file__), dir_path)
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+    
+    # Add custom event handlers
+    app.add_css_file('custom.css')
+    
+    # Enable better algorithm rendering
+    app.add_js_file('formula_enhancer.js')
     
     # Pass configuration options to JavaScript
     app.add_js_file(None, body=f'''
         // Configuration options for documentation
         window.DOCUMENTATION_OPTIONS = window.DOCUMENTATION_OPTIONS || {{}};
-        window.DOCUMENTATION_OPTIONS.DISABLE_ON_THIS_PAGE = {str(html_context.get('disable_on_this_page', 'false')).lower()};
+        window.DOCUMENTATION_OPTIONS.DISABLE_ON_THIS_PAGE = false;
         window.DOCUMENTATION_OPTIONS.MAX_NAV_DEPTH = 2;
         window.DOCUMENTATION_OPTIONS.ENABLE_MERMAID = true;
         window.DOCUMENTATION_OPTIONS.ENABLE_BOOK_EXPERIENCE = true;
@@ -415,41 +428,37 @@ def on_build_finished(app, exception):
 mathjax_path = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'
 mathjax_options = {
     'async': 'async',
-}
-mathjax_config = {
-    'tex2jax': {
-        'inlineMath': [['$', '$'], ['\\(', '\\)']],
-        'displayMath': [['$$', '$$'], ['\\[', '\\]']],
-        'processEscapes': True,
-        'processEnvironments': True,
-    },
-    'HTML-CSS': {
-        'availableFonts': ['TeX'],
-        'scale': 100,
-        'linebreaks': {'automatic': True},
-    },
-    'SVG': {
-        'linebreaks': {'automatic': True},
-    },
-    'CommonHTML': {
-        'linebreaks': {'automatic': True},
-    },
+    'integrity': 'sha384-3fdYQ4JGDbBTF+DTq9P2UNGt/TJ9KaQzv/YCjJU2AvH2amRVTJXbs3a3eDYfuAS',
+    'crossorigin': 'anonymous',
 }
 
-# MathJax configuration for formula enhancer
+# Define MathJax3 configuration
 mathjax3_config = {
     'tex': {
         'inlineMath': [['$', '$'], ['\\(', '\\)']],
         'displayMath': [['$$', '$$'], ['\\[', '\\]']],
         'processEscapes': True,
         'processEnvironments': True,
-        'packages': ['base', 'ams', 'noerrors', 'noundefined']
+        'packages': ['base', 'ams', 'noerrors', 'noundefined', 'color', 'boldsymbol']
     },
     'options': {
         'ignoreHtmlClass': 'tex2jax_ignore',
         'processHtmlClass': 'tex2jax_process'
+    },
+    'chtml': {
+        'scale': 1.1,
+        'displayAlign': 'center'
     }
 }
+
+# Load MathJax on every page
+html_js_files = [
+    mathjax_path
+]
+
+# Enable dollar sign as math delimiter for consistency
+math_dollar_inline = True
+math_dollar_displayed = True
 
 # Lazy loading for images
 html_scaled_image_link = False
@@ -478,3 +487,6 @@ pdf_verbosity = 0
 pdf_use_index = False
 pdf_use_modindex = False
 pdf_use_coverpage = True
+
+# Enable the book experience for all pages by default
+book_experience_enabled = True

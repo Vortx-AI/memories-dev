@@ -1,0 +1,115 @@
+{% extends "!layout.html" %}
+
+{% block extrahead %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ pathto('_static/custom.css', 1) }}" type="text/css" />
+{% endblock %}
+
+{% block sidebartitle %}
+    {{ super() }}
+    <div class="book-progress-container">
+        <div class="book-progress-bar" id="reading-progress"></div>
+        <div class="book-progress-text">
+            <span id="current-chapter">Chapter</span>
+            <span id="reading-percentage">0%</span>
+        </div>
+    </div>
+{% endblock %}
+
+{% block footer %}
+{{ super() }}
+<div class="floating-toc-button" id="floating-toc-button">
+    <span class="icon">≡</span>
+</div>
+
+<div class="floating-toc" id="floating-toc">
+    <div class="floating-toc-header">
+        <h3>Table of Contents</h3>
+        <button class="close-toc-button" id="close-toc-button">×</button>
+    </div>
+    <div class="floating-toc-content">
+        {{ toc }}
+    </div>
+</div>
+
+<div class="navigation-panel">
+    <div class="nav-panel-inner">
+        <div class="nav-section prev-section">
+            {%- if prev %}
+            <a href="{{ prev.link|e }}" class="nav-panel-link prev-link">
+                <span class="nav-direction">Previous</span>
+                <span class="nav-title">{{ prev.title }}</span>
+            </a>
+            {%- endif %}
+        </div>
+        <div class="nav-section next-section">
+            {%- if next %}
+            <a href="{{ next.link|e }}" class="nav-panel-link next-link">
+                <span class="nav-direction">Next</span>
+                <span class="nav-title">{{ next.title }}</span>
+            </a>
+            {%- endif %}
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    // Floating TOC functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const floatingTocButton = document.getElementById('floating-toc-button');
+        const floatingToc = document.getElementById('floating-toc');
+        const closeTocButton = document.getElementById('close-toc-button');
+        
+        if (floatingTocButton && floatingToc && closeTocButton) {
+            floatingTocButton.addEventListener('click', function() {
+                floatingToc.classList.add('active');
+            });
+            
+            closeTocButton.addEventListener('click', function() {
+                floatingToc.classList.remove('active');
+            });
+            
+            // Close TOC when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!floatingToc.contains(event.target) && event.target !== floatingTocButton) {
+                    floatingToc.classList.remove('active');
+                }
+            });
+        }
+        
+        // Reading progress functionality
+        const progressBar = document.getElementById('reading-progress');
+        const readingPercentage = document.getElementById('reading-percentage');
+        const currentChapter = document.getElementById('current-chapter');
+        
+        if (progressBar && readingPercentage) {
+            window.addEventListener('scroll', function() {
+                const scrollTop = window.scrollY;
+                const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+                const scrollPercent = scrollTop / docHeight * 100;
+                
+                progressBar.style.width = scrollPercent + '%';
+                readingPercentage.textContent = Math.round(scrollPercent) + '%';
+                
+                // Update current chapter based on scroll position
+                const headings = document.querySelectorAll('h1, h2');
+                if (headings.length > 0) {
+                    let currentHeadingIndex = 0;
+                    
+                    for (let i = 0; i < headings.length; i++) {
+                        if (headings[i].getBoundingClientRect().top < 100) {
+                            currentHeadingIndex = i;
+                        } else {
+                            break;
+                        }
+                    }
+                    
+                    if (currentHeadingIndex >= 0) {
+                        currentChapter.textContent = headings[currentHeadingIndex].textContent;
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %} 
