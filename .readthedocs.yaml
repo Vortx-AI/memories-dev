@@ -66,11 +66,7 @@ python:
     - requirements: docs/requirements.txt
     - method: pip
       path: .
-    - requirements: requirements-dev.txt
-    # Install rst2pdf for PDF generation
-    - requirements: requirements-dev.txt
-      extra_requirements:
-        - docs
+    # We don't need requirements-dev.txt since we have all PDF generation packages in docs/requirements.txt
     - method: pip
       path: .
       extra_requirements:
