@@ -1,9 +1,32 @@
 Data Sources
 ============
 
-.. image:: /_static/images/data_acquisition_workflow.txt
-   :alt: Data Acquisition Workflow
+.. code-block:: text
    :align: center
+
+   +---------------------+     +----------------------+     +----------------------+
+   |                     |     |                      |     |                      |
+   |  Define Area of     |     |  Initialize          |     |  Query Available     |
+   |  Interest (AOI)     +---->+  Data Manager        +---->+  Data Sources        |
+   |                     |     |                      |     |                      |
+   +---------------------+     +----------------------+     +----------+-----------+
+                                                                       |
+                                                                       v
+   +---------------------+     +----------------------+     +----------------------+
+   |                     |     |                      |     |                      |
+   |  Process and        |     |  Download Selected   |     |  Filter by Date,     |
+   |  Store Results      +<----+  Data                +<----+  Cloud Cover, etc.   |
+   |                     |     |                      |     |                      |
+   +---------------------+     +----------------------+     +----------------------+
+           |
+           v
+   +---------------------+     +----------------------+     +----------------------+
+   |                     |     |                      |     |                      |
+   |  Analyze Data with  |     |  Generate            |     |  Store in            |
+   |  Models             +---->+  Insights            +---->+  Memory System       |
+   |                     |     |                      |     |                      |
+   +---------------------+     +----------------------+     +----------------------+
+   ```
 
 Overview
 --------
@@ -249,9 +272,43 @@ Example Output:
     Max NDVI: 0.89
     Visualization saved to: ./sentinel_data/ndvi_visualization.png
 
-.. image:: /_static/images/satellite_analysis_result.txt
-   :alt: Satellite Analysis Result
+.. code-block:: text
    :align: center
+
+   SATELLITE IMAGE ANALYSIS RESULT
+   ===============================
+   
+   Location: San Francisco Bay Area
+   Coordinates: 37.7749° N, 122.4194° W
+   Date: 2024-02-15
+   Source: Sentinel-2
+   
+   ANALYSIS METRICS:
+   ----------------
+   - Vegetation Index (NDVI): 0.68 (Healthy)
+   - Urban Density: 78% (High)
+   - Water Bodies: 22% of area
+   - Cloud Cover: 5%
+   
+   DETECTED FEATURES:
+   ----------------
+   - Buildings: 1,245 structures
+   - Roads: 87 km total length
+   - Water: San Francisco Bay
+   - Parks: Golden Gate Park, other green spaces
+   
+   CHANGE DETECTION (vs. 2023-02-15):
+   --------------------------------
+   - Vegetation: +2.3% increase
+   - Urban Area: +0.8% increase
+   - Water Bodies: -0.1% decrease
+   
+   INSIGHTS:
+   --------
+   - Healthy vegetation in park areas
+   - Moderate urban development in northern sectors
+   - Stable coastline with minimal erosion
+   - Clear atmospheric conditions
 
 Error Handling
 ------------

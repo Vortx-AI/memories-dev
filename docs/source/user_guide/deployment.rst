@@ -1,9 +1,32 @@
 Deployment
 ==========
 
-.. image:: /_static/images/deployment_workflow.txt
-   :alt: Deployment Workflow
+.. code-block:: text
    :align: center
+
+   +---------------------+     +----------------------+     +----------------------+
+   |                     |     |                      |     |                      |
+   |  Select Deployment  |     |  Choose Cloud        |     |  Configure           |
+   |  Pattern            +---->+  Provider            +---->+  Resources           |
+   |                     |     |                      |     |                      |
+   +---------------------+     +----------------------+     +----------+-----------+
+                                                                       |
+                                                                       v
+   +---------------------+     +----------------------+     +----------------------+
+   |                     |     |                      |     |                      |
+   |  Monitor            |     |  Deploy              |     |  Validate            |
+   |  Performance        +<----+  System              +<----+  Configuration       |
+   |                     |     |                      |     |                      |
+   +---------------------+     +----------------------+     +----------------------+
+           |
+           v
+   +---------------------+     +----------------------+     +----------------------+
+   |                     |     |                      |     |                      |
+   |  Scale Resources    |     |  Optimize            |     |  Update/Maintain     |
+   |  as Needed          +---->+  Configuration       +---->+  Deployment          |
+   |                     |     |                      |     |                      |
+   +---------------------+     +----------------------+     +----------------------+
+   ```
 
 Overview
 --------

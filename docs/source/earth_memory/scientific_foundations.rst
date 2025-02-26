@@ -14,81 +14,7 @@ The core spatial analysis is based on the following mathematical concepts:
 
 1. **Spatial Point Processes**
 
-.. math::
-
-   f(s) = \mu(s) + \sum_{i=1}^{n} k_i(s - s_i)
-
-where:
-- \(f(s)\) is the spatial field at location s
-- \(\mu(s)\) is the mean function
-- \(k_i\) are kernel functions
-- \(s_i\) are observation locations
-
-2. **Kriging Interpolation**
-
-For spatial interpolation, we use Universal Kriging with the variogram model:
-
-.. math::
-
-   \gamma(h) = c_0 + c_1\left(1 - \exp\left(-\frac{h}{a}\right)\right)
-
-where:
-- \(\gamma(h)\) is the semivariogram
-- \(c_0\) is the nugget effect
-- \(c_1\) is the sill
-- \(a\) is the range
-- \(h\) is the lag distance
-
-Temporal Analysis
-^^^^^^^^^^^^^^^
-
-Our temporal analysis framework incorporates:
-
-1. **Time Series Decomposition**
-
-.. math::
-
-   Y_t = T_t + S_t + R_t
-
-where:
-- \(Y_t\) is the observed value at time t
-- \(T_t\) is the trend component
-- \(S_t\) is the seasonal component
-- \(R_t\) is the residual component
-
-2. **Change Detection**
-
-We use the CUSUM (Cumulative Sum) algorithm for change detection:
-
-.. math::
-
-   S_t = \max(0, S_{t-1} + (X_t - \mu_0) - k)
-
-where:
-- \(S_t\) is the CUSUM statistic at time t
-- \(X_t\) is the observation at time t
-- \(\mu_0\) is the target mean
-- \(k\) is the allowance value
-
-Multi-Modal Data Fusion
----------------------
-
-Our data fusion approach uses:
-
-1. **Bayesian Fusion Framework**
-
-.. math::
-
-   P(x|D_1,D_2) \propto P(D_1|x)P(D_2|x)P(x)
-
-where:
-- \(P(x|D_1,D_2)\) is the posterior probability
-- \(P(D_1|x)\) and \(P(D_2|x)\) are likelihood functions
-- \(P(x)\) is the prior probability
-
-2. **Feature-Level Fusion**
-
-.. mermaid::
+.. math:: f(s) = \mu(s) + \sum_{i=1}^{n} k_i(s - s_i) where: - \(f(s)\) is the spatial field at location s - \(\mu(s)\) is the mean function - \(k_i\) are kernel functions - \(s_i\) are observation locations 2. **Kriging Interpolation** For spatial interpolation, we use Universal Kriging with the variogram model: .. math:: \gamma(h) = c_0 + c_1\left(1 - \exp\left(-\frac{h}{a}\right)\right) where: - \(\gamma(h)\) is the semivariogram - \(c_0\) is the nugget effect - \(c_1\) is the sill - \(a\) is the range - \(h\) is the lag distance Temporal Analysis ^^^^^^^^^^^^^^^ Our temporal analysis framework incorporates: 1. **Time Series Decomposition** .. math:: Y_t = T_t + S_t + R_t where: - \(Y_t\) is the observed value at time t - \(T_t\) is the trend component - \(S_t\) is the seasonal component - \(R_t\) is the residual component 2. **Change Detection** We use the CUSUM (Cumulative Sum) algorithm for change detection: .. math:: S_t = \max(0, S_{t-1} + (X_t - \mu_0) - k) where: - \(S_t\) is the CUSUM statistic at time t - \(X_t\) is the observation at time t - \(\mu_0\) is the target mean - \(k\) is the allowance value Multi-Modal Data Fusion --------------------- Our data fusion approach uses: 1. **Bayesian Fusion Framework** .. math:: P(x|D_1,D_2) \propto P(D_1|x)P(D_2|x)P(x) where: - \(P(x|D_1,D_2)\) is the posterior probability - \(P(D_1|x)\) and \(P(D_2|x)\) are likelihood functions - \(P(x)\) is the prior probability 2. **Feature-Level Fusion** .. mermaid::
    graph TD
        subgraph "Data Sources"
            A1[Satellite Data]
@@ -122,34 +48,7 @@ Scientific Validation Methods
 
 1. **Cross-Validation Framework**
 
-.. math::
-
-   RMSE = \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2}
-
-where:
-- \(y_i\) are observed values
-- \(\hat{y}_i\) are predicted values
-
-2. **Uncertainty Quantification**
-
-We use Bayesian methods for uncertainty quantification:
-
-.. math::
-
-   \sigma^2_{pred} = k(x_*, x_*) - k(x_*, X)[K + \sigma^2_n I]^{-1}k(X, x_*)
-
-where:
-- \(k(\cdot,\cdot)\) is the kernel function
-- \(X\) is the training data
-- \(x_*\) is the test point
-- \(\sigma^2_n\) is the noise variance
-
-Performance Metrics
------------------
-
-1. **Spatial Accuracy Metrics**
-
-.. list-table::
+.. math:: RMSE = \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2} where: - \(y_i\) are observed values - \(\hat{y}_i\) are predicted values 2. **Uncertainty Quantification** We use Bayesian methods for uncertainty quantification: .. math:: \sigma^2_{pred} = k(x_*, x_*) - k(x_*, X)[K + \sigma^2_n I]^{-1}k(X, x_*) where: - \(k(\cdot,\cdot)\) is the kernel function - \(X\) is the training data - \(x_*\) is the test point - \(\sigma^2_n\) is the noise variance Performance Metrics ----------------- 1. **Spatial Accuracy Metrics** .. list-table::
    :header-rows: 1
    :widths: 30 50 20
 

@@ -1,9 +1,32 @@
 Memory System
 =============
 
-.. image:: /_static/images/memory_system_workflow.txt
-   :alt: Memory System Workflow
+.. code-block:: text
+   :caption: Memory System Workflow
    :align: center
+
+   +---------------------+     +----------------------+     +----------------------+
+   |                     |     |                      |     |                      |
+   |  Initialize         |     |  Configure Memory    |     |  Create Memory       |
+   |  MemoryManager      +---->+  Tiers               +---->+  Store               |
+   |                     |     |                      |     |                      |
+   +---------------------+     +----------------------+     +----------+-----------+
+                                                                      |
+                                                                      v
+   +---------------------+     +----------------------+     +----------------------+
+   |                     |     |                      |     |                      |
+   |  Retrieve Data      |     |  Store Data in       |     |  Process and         |
+   |  When Needed        +<----+  Appropriate Tier    +<----+  Organize Data       |
+   |                     |     |                      |     |                      |
+   +---------------------+     +----------------------+     +----------------------+
+           |
+           v
+   +---------------------+     +----------------------+     +----------------------+
+   |                     |     |                      |     |                      |
+   |  Apply Memory       |     |  Optimize Memory     |     |  Create Memory       |
+   |  Operations         +---->+  Usage               +---->+  Snapshots           |
+   |                     |     |                      |     |                      |
+   +---------------------+     +----------------------+     +----------------------+
 
 Overview
 --------
@@ -15,9 +38,36 @@ Memory Tiers
 
 The system implements a 4-tier memory architecture:
 
-.. image:: /_static/images/memory_system_visualization.txt
-   :alt: Memory System Visualization
+.. code-block:: text
+   :caption: Memory System Visualization
    :align: center
+
+   ┌───────────────────────────────────────────────────────────────┐
+   │                    MEMORY SYSTEM ARCHITECTURE                 │
+   └───────────────────────────────────────────────────────────────┘
+                                  │
+      ┌───────────────────────────┼───────────────────────────┐
+      │                           │                           │
+   ┌──▼───┐                    ┌──▼───┐                    ┌──▼───┐
+   │ HOT  │◄───── Access ─────►│ WARM │◄───── Access ─────►│ COLD │
+   │ TIER │      Frequency     │ TIER │      Frequency     │ TIER │
+   └──┬───┘                    └──┬───┘                    └──┬───┘
+      │                           │                           │
+      │     ┌───────────────┐     │     ┌───────────────┐     │     ┌───────────────┐
+      ├────►│  GPU MEMORY   │     ├────►│     RAM       │     ├────►│  LOCAL DISK   │
+      │     └───────────────┘     │     └───────────────┘     │     └───────────────┘
+      │     ┌───────────────┐     │     ┌───────────────┐     │     ┌───────────────┐
+      └────►│ TENSOR CORES  │     └────►│  CPU CACHE    │     └────►│     SSD       │
+            └───────────────┘           └───────────────┘           └───────────────┘
+                                                                     │
+                                                              ┌──────▼──────┐
+                                                              │  GLACIER    │
+                                                              │    TIER     │
+                                                              └──────┬──────┘
+                                                                     │
+                                                              ┌──────▼──────┐
+                                                              │CLOUD STORAGE│
+                                                              └─────────────┘
 
 1. **Hot Memory (GPU Memory)**
    - Fastest access time (< 1ms)

@@ -60,59 +60,7 @@ Information Flow Optimization
 
 The system optimizes information flow using principles from information theory. The core equation governing information transfer is:
 
-.. math::
-
-   I(X;Y) = \sum_{y \in Y} \sum_{x \in X} p(x,y) \log \left( \frac{p(x,y)}{p(x)p(y)} \right)
-
-Where:
-- :math:`I(X;Y)` is the mutual information between source X and destination Y
-- :math:`p(x,y)` is the joint probability distribution
-- :math:`p(x)` and :math:`p(y)` are the marginal probability distributions
-
-This principle guides the design of data routing and filtering mechanisms to maximize information transfer while minimizing redundancy.
-
-Parallel Processing Efficiency
----------------------------
-
-The efficiency of parallel processing in the data flow is modeled using Amdahl's Law:
-
-.. math::
-
-   S(n) = \frac{1}{(1-p) + \frac{p}{n}}
-
-Where:
-- :math:`S(n)` is the theoretical speedup
-- :math:`n` is the number of processors
-- :math:`p` is the proportion of the program that can be parallelized
-
-The system architecture is designed to maximize the parallelizable portion (p) of data processing tasks.
-
-Geospatial Data Transformation
----------------------------
-
-Geospatial data transformations follow rigorous mathematical principles. For coordinate transformations:
-
-.. math::
-
-   \begin{bmatrix} x' \\ y' \\ 1 \end{bmatrix} = 
-   \begin{bmatrix} 
-   a & b & c \\
-   d & e & f \\
-   0 & 0 & 1
-   \end{bmatrix}
-   \begin{bmatrix} x \\ y \\ 1 \end{bmatrix}
-
-Where the transformation matrix encodes rotation, scaling, and translation operations for accurate geospatial alignment.
-
-Detailed Component Data Flows
-===========================
-
-Acquisition Layer
---------------
-
-The data acquisition layer handles the ingestion of data from various sources:
-
-.. mermaid::
+.. math:: I(X;Y) = \sum_{y \in Y} \sum_{x \in X} p(x,y) \log \left( \frac{p(x,y)}{p(x)p(y)} \right) Where: - :math:`I(X;Y)` is the mutual information between source X and destination Y - :math:`p(x,y)` is the joint probability distribution - :math:`p(x)` and :math:`p(y)` are the marginal probability distributions This principle guides the design of data routing and filtering mechanisms to maximize information transfer while minimizing redundancy. Parallel Processing Efficiency --------------------------- The efficiency of parallel processing in the data flow is modeled using Amdahl's Law: .. math:: S(n) = \frac{1}{(1-p) + \frac{p}{n}} Where: - :math:`S(n)` is the theoretical speedup - :math:`n` is the number of processors - :math:`p` is the proportion of the program that can be parallelized The system architecture is designed to maximize the parallelizable portion (p) of data processing tasks. Geospatial Data Transformation --------------------------- Geospatial data transformations follow rigorous mathematical principles. For coordinate transformations: .. math:: \begin{bmatrix} x' \\ y' \\ 1 \end{bmatrix} = \begin{bmatrix} a & b & c \\ d & e & f \\ 0 & 0 & 1 \end{bmatrix} \begin{bmatrix} x \\ y \\ 1 \end{bmatrix} Where the transformation matrix encodes rotation, scaling, and translation operations for accurate geospatial alignment. Detailed Component Data Flows =========================== Acquisition Layer -------------- The data acquisition layer handles the ingestion of data from various sources: .. mermaid::
    :align: center
 
    flowchart LR

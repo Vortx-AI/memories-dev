@@ -124,60 +124,7 @@ Vector Embeddings and Similarity
 
 Data retrieval in the memory system relies on vector embeddings and similarity metrics. The primary similarity measure used is cosine similarity:
 
-.. math::
-
-   \text{similarity}(A, B) = \cos(\theta) = \frac{A \cdot B}{||A|| \cdot ||B||} = \frac{\sum_{i=1}^{n} A_i B_i}{\sqrt{\sum_{i=1}^{n} A_i^2} \sqrt{\sum_{i=1}^{n} B_i^2}}
-
-Where:
-- :math:`A` and :math:`B` are vector embeddings
-- :math:`\theta` is the angle between vectors
-- :math:`||A||` and :math:`||B||` are the magnitudes of the vectors
-
-For efficient nearest-neighbor search, the system uses FAISS (Facebook AI Similarity Search) with an L2 distance metric:
-
-.. math::
-
-   L2(A, B) = ||A - B||_2 = \sqrt{\sum_{i=1}^{n} (A_i - B_i)^2}
-
-Temporal Decay Function
---------------------
-
-The memory system implements a temporal decay function to model the importance of data over time:
-
-.. math::
-
-   \text{importance}(t) = \alpha \cdot e^{-\lambda (t_{\text{now}} - t)}
-
-Where:
-- :math:`t` is the timestamp of the data
-- :math:`t_{\text{now}}` is the current time
-- :math:`\alpha` is the initial importance
-- :math:`\lambda` is the decay rate parameter
-
-This function helps determine when data should be migrated between memory tiers.
-
-Spatial Indexing
--------------
-
-For efficient spatial queries, the system uses geospatial indexing techniques. The primary approach is based on geohash encoding, which maps 2D coordinates to a 1D string:
-
-.. math::
-
-   \text{geohash}(lat, lon, \text{precision}) = \text{base32_encode}(\text{interleave_bits}(lat, lon), \text{precision})
-
-This enables efficient range queries and proximity searches in the spatial domain.
-
-Implementation Details
-===================
-
-The memory system is implemented through several key classes:
-
-MemoryManager
------------
-
-The ``MemoryManager`` class coordinates all memory operations across the different tiers:
-
-.. code-block:: python
+.. math:: similarity(A, B) = \cos(\theta) = \frac{A \cdot B}{||A|| \cdot ||B||} = \frac{\sum_{i=1}^{n} A_i B_i}{\sqrt{\sum_{i=1}^{n} A_i^2} \sqrt{\sum_{i=1}^{n} B_i^2}} Where: - :math:`A` and :math:`B` are vector embeddings - :math:`\theta` is the angle between vectors - :math:`||A||` and :math:`||B||` are the magnitudes of the vectors For efficient nearest-neighbor search, the system uses FAISS (Facebook AI Similarity Search) with an L2 distance metric: .. math:: L2(A, B) = ||A - B||_2 = \sqrt{\sum_{i=1}^{n} (A_i - B_i)^2} Temporal Decay Function -------------------- The memory system implements a temporal decay function to model the importance of data over time: .. math:: importance(t) = \alpha \cdot e^{-\lambda (t_{now} - t)} Where: - :math:`t` is the timestamp of the data - :math:`t_{now}` is the current time - :math:`\alpha` is the initial importance - :math:`\lambda` is the decay rate parameter This function helps determine when data should be migrated between memory tiers. Spatial Indexing ------------- For efficient spatial queries, the system uses geospatial indexing techniques. The primary approach is based on geohash encoding, which maps 2D coordinates to a 1D string: .. math:: geohash(lat, lon, precision) = \text{base32\_encode}(\text{interleave\_bits}(lat, lon)) This enables efficient range queries and proximity searches in the spatial domain. Implementation Details =================== The memory system is implemented through several key classes: MemoryManager ----------- The ``MemoryManager`` class coordinates all memory operations across the different tiers: .. code-block:: python
 
    class MemoryManager:
        """Memory manager that handles different memory tiers:

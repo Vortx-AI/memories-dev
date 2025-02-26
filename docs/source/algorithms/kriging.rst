@@ -12,52 +12,7 @@ Mathematical Foundation
 
 The basic equation for Kriging estimation at an unsampled location \(s_0\) is:
 
-.. math::
-
-   \hat{Z}(s_0) = \sum_{i=1}^n \lambda_i Z(s_i)
-
-where:
-- \(\hat{Z}(s_0)\) is the predicted value at location \(s_0\)
-- \(\lambda_i\) are the Kriging weights
-- \(Z(s_i)\) are the observed values at sampled locations
-
-The weights \(\lambda_i\) are determined by solving the Kriging system:
-
-.. math::
-
-   \begin{bmatrix} 
-   \gamma(h_{11}) & \gamma(h_{12}) & \cdots & \gamma(h_{1n}) & 1 \\
-   \gamma(h_{21}) & \gamma(h_{22}) & \cdots & \gamma(h_{2n}) & 1 \\
-   \vdots & \vdots & \ddots & \vdots & \vdots \\
-   \gamma(h_{n1}) & \gamma(h_{n2}) & \cdots & \gamma(h_{nn}) & 1 \\
-   1 & 1 & \cdots & 1 & 0
-   \end{bmatrix}
-   \begin{bmatrix}
-   \lambda_1 \\
-   \lambda_2 \\
-   \vdots \\
-   \lambda_n \\
-   \mu
-   \end{bmatrix} =
-   \begin{bmatrix}
-   \gamma(h_{10}) \\
-   \gamma(h_{20}) \\
-   \vdots \\
-   \gamma(h_{n0}) \\
-   1
-   \end{bmatrix}
-
-where:
-- \(\gamma(h)\) is the semivariogram function
-- \(h_{ij}\) is the distance between points i and j
-- \(\mu\) is the Lagrange multiplier
-
-Implementation
-------------
-
-Here's how to use Kriging in memories-dev:
-
-.. code-block:: python
+.. math:: \hat{Z}(s_0) = \sum_{i=1}^n \lambda_i Z(s_i) where: - \(\hat{Z}(s_0)\) is the predicted value at location \(s_0\) - \(\lambda_i\) are the Kriging weights - \(Z(s_i)\) are the observed values at sampled locations The weights \(\lambda_i\) are determined by solving the Kriging system: .. math:: \begin{bmatrix} \gamma(h_{11}) & \gamma(h_{12}) & \cdots & \gamma(h_{1n}) & 1 \\ \gamma(h_{21}) & \gamma(h_{22}) & \cdots & \gamma(h_{2n}) & 1 \\ \vdots & \vdots & \ddots & \vdots & \vdots \\ \gamma(h_{n1}) & \gamma(h_{n2}) & \cdots & \gamma(h_{nn}) & 1 \\ 1 & 1 & \cdots & 1 & 0 \end{bmatrix} \begin{bmatrix} \lambda_1 \\ \lambda_2 \\ \vdots \\ \lambda_n \\ \mu \end{bmatrix} = \begin{bmatrix} \gamma(h_{10}) \\ \gamma(h_{20}) \\ \vdots \\ \gamma(h_{n0}) \\ 1 \end{bmatrix} where: - \(\gamma(h)\) is the semivariogram function - \(h_{ij}\) is the distance between points i and j - \(\mu\) is the Lagrange multiplier Implementation ------------ Here's how to use Kriging in memories-dev: .. code-block:: python
 
     from memories.spatial import Kriging
     
@@ -92,35 +47,7 @@ memories-dev supports several variogram models:
 
 1. **Exponential Model**
 
-.. math::
-
-   \gamma(h) = c_0 + c_1\left(1 - \exp\left(-\frac{h}{a}\right)\right)
-
-2. **Spherical Model**
-
-.. math::
-
-   \gamma(h) = \begin{cases}
-   c_0 + c_1\left(\frac{3h}{2a} - \frac{h^3}{2a^3}\right) & \text{for } h \leq a \\
-   c_0 + c_1 & \text{for } h > a
-   \end{cases}
-
-3. **Gaussian Model**
-
-.. math::
-
-   \gamma(h) = c_0 + c_1\left(1 - \exp\left(-\frac{h^2}{a^2}\right)\right)
-
-where:
-- \(c_0\) is the nugget effect
-- \(c_1\) is the sill
-- \(a\) is the range
-- \(h\) is the lag distance
-
-Visualization
------------
-
-.. mermaid::
+.. math:: \gamma(h) = c_0 + c_1\left(1 - \exp\left(-\frac{h}{a}\right)\right) 2. **Spherical Model** .. math:: \gamma(h) = \begin{cases} c_0 + c_1\left(\frac{3h}{2a} - \frac{h^3}{2a^3}\right) & \text{for } h \leq a \\ c_0 + c_1 & \text{for } h > a \end{cases} 3. **Gaussian Model** .. math:: \gamma(h) = c_0 + c_1\left(1 - \exp\left(-\frac{h^2}{a^2}\right)\right) where: - \(c_0\) is the nugget effect - \(c_1\) is the sill - \(a\) is the range - \(h\) is the lag distance Visualization ----------- .. mermaid::
    graph TB
        subgraph "Input Data"
            A1[Sample Points]

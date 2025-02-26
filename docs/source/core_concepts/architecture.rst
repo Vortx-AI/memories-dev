@@ -83,21 +83,7 @@ The architecture of ``memories-dev`` is grounded in several scientific disciplin
 
 The mathematical foundation includes:
 
-.. math::
-
-   I(X;Y) = \sum_{y \in Y} \sum_{x \in X} p(x,y) \log \left( \frac{p(x,y)}{p(x)p(y)} \right)
-
-Where :math:`I(X;Y)` represents the mutual information between two variables, used for quantifying the relevance of different data sources.
-
-Data Acquisition Layer
-====================
-
-The Data Acquisition Layer is responsible for retrieving data from various sources and preparing it for use in the framework.
-
-Components
----------
-
-.. list-table::
+.. math:: I(X;Y) = \sum_{y \in Y} \sum_{x \in X} p(x,y) \log \left( \frac{p(x,y)}{p(x)p(y)} \right) Where :math:`I(X;Y)` represents the mutual information between two variables, used for quantifying the relevance of different data sources. Data Acquisition Layer ==================== The Data Acquisition Layer is responsible for retrieving data from various sources and preparing it for use in the framework. Components --------- .. list-table::
    :header-rows: 1
    :widths: 25 75
 
@@ -285,34 +271,7 @@ The memory system uses several mathematical concepts:
 
 1. **Spatial Indexing**: R-tree structures partition space using minimum bounding rectangles (MBRs):
 
-   .. math::
-
-      \text{overlap}(R_1, R_2) = \prod_{i=1}^{d} \max(0, \min(R_{1,i}^{high}, R_{2,i}^{high}) - \max(R_{1,i}^{low}, R_{2,i}^{low}))
-
-   Where :math:`R_1` and :math:`R_2` are rectangles in d-dimensional space.
-
-2. **Temporal Indexing**: Time-based indexing using interval trees:
-
-   .. math::
-
-      \text{overlaps}(I_1, I_2) = \max(I_{1,start}, I_{2,start}) \leq \min(I_{1,end}, I_{2,end})
-
-   Where :math:`I_1` and :math:`I_2` are time intervals.
-
-3. **Memory Tier Scoring**: Scoring function for determining memory tier placement:
-
-   .. math::
-
-      \text{score}(i) = \alpha \cdot \text{recency}(i) + \beta \cdot \text{frequency}(i) + \gamma \cdot \text{size}(i) + \delta \cdot \text{relevance}(i)
-
-   Where :math:`\alpha`, :math:`\beta`, :math:`\gamma`, and :math:`\delta` are weighting parameters.
-
-Implementation Details
--------------------
-
-The Memory Management Layer uses a combination of specialized data structures and database technologies:
-
-.. code-block:: python
+   .. math:: overlap(R_1, R_2) = \prod_{i=1}^{d} \max(0, \min(R_{1,i}^{high}, R_{2,i}^{high}) - \max(R_{1,i}^{low}, R_{2,i}^{low})) Where :math:`R_1` and :math:`R_2` are rectangles in d-dimensional space. 2. **Temporal Indexing**: Time-based indexing using interval trees: .. math:: overlaps(I_1, I_2) = \max(I_{1,start}, I_{2,start}) \leq \min(I_{1,end}, I_{2,end}) Where :math:`I_1` and :math:`I_2` are time intervals. 3. **Memory Tier Scoring**: Scoring function for determining memory tier placement: .. math:: score(i) = \alpha \cdot recency(i) + \beta \cdot frequency(i) + \gamma \cdot size(i) + \delta \cdot relevance(i) Where :math:`\alpha`, :math:`\beta`, :math:`\gamma`, and :math:`\delta` are weighting parameters. Implementation Details ------------------- The Memory Management Layer uses a combination of specialized data structures and database technologies: .. code-block:: python
 
    class TemporalMemoryManager:
        def __init__(self, config=None):
@@ -527,34 +486,7 @@ The Model Integration Layer incorporates several advanced mathematical concepts:
 
 1. **Change Detection**: Using difference operators on image pairs:
 
-   .. math::
-
-      D(I_1, I_2) = |I_2 - I_1| > \tau
-
-   Where :math:`I_1` and :math:`I_2` are images at different times, and :math:`\tau` is a threshold.
-
-2. **Time Series Forecasting**: Using autoregressive integrated moving average (ARIMA) models:
-
-   .. math::
-
-      \phi(B)(1-B)^d X_t = \theta(B)\varepsilon_t
-
-   Where :math:`\phi(B)` and :math:`\theta(B)` are polynomials in the backshift operator :math:`B`.
-
-3. **Uncertainty Quantification**: Using Monte Carlo dropout for uncertainty estimation:
-
-   .. math::
-
-      \text{Var}[y] \approx \frac{1}{T} \sum_{t=1}^{T} f(x; \hat{W}_t)^2 - \left(\frac{1}{T} \sum_{t=1}^{T} f(x; \hat{W}_t)\right)^2
-
-   Where :math:`\hat{W}_t` represents model weights with dropout applied.
-
-Implementation Details
--------------------
-
-The Model Integration Layer uses a modular approach to model management:
-
-.. code-block:: python
+   .. math:: D(I_1, I_2) = |I_2 - I_1| > \tau Where :math:`I_1` and :math:`I_2` are images at different times, and :math:`\tau` is a threshold. 2. **Time Series Forecasting**: Using autoregressive integrated moving average (ARIMA) models: .. math:: \phi(B)(1-B)^d X_t = \theta(B)\varepsilon_t Where :math:`\phi(B)` and :math:`\theta(B)` are polynomials in the backshift operator :math:`B`. 3. **Uncertainty Quantification**: Using Monte Carlo dropout for uncertainty estimation: .. math:: Var[y] \approx \frac{1}{T} \sum_{t=1}^{T} f(x; \hat{W}_t)^2 - \left(\frac{1}{T} \sum_{t=1}^{T} f(x; \hat{W}_t)\right)^2 Where :math:`\hat{W}_t` represents model weights with dropout applied. Implementation Details ------------------- The Model Integration Layer uses a modular approach to model management: .. code-block:: python
 
    class ModelManager:
        def __init__(self):

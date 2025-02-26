@@ -20,22 +20,7 @@ Memory Management Algorithms
 Tiered Memory Management
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. math::
-
-   \text{score}(i) = \alpha \cdot \text{recency}(i) + \beta \cdot \text{frequency}(i) + \gamma \cdot \text{size}(i) + \delta \cdot \text{relevance}(i)
-
-Where:
-- :math:`\text{recency}(i)` is the normalized time since last access
-- :math:`\text{frequency}(i)` is the normalized access frequency
-- :math:`\text{size}(i)` is the normalized size of the item
-- :math:`\text{relevance}(i)` is the normalized relevance score
-- :math:`\alpha, \beta, \gamma, \delta` are weighting parameters
-
-This algorithm is used to determine which memory items should be moved between tiers (hot, warm, cold, glacier) based on their usage patterns and relevance scores.
-
-**Implementation:**
-
-.. code-block:: python
+.. math:: score(i) = \alpha \cdot recency(i) + \beta \cdot frequency(i) + \gamma \cdot size(i) + \delta \cdot relevance(i) Where: - :math:`recency(i)` is the normalized time since last access - :math:`frequency(i)` is the normalized access frequency - :math:`size(i)` is the normalized size of the item - :math:`relevance(i)` is the normalized relevance score - :math:`\alpha, \beta, \gamma, \delta` are weighting parameters This algorithm is used to determine which memory items should be moved between tiers (hot, warm, cold, glacier) based on their usage patterns and relevance scores. **Implementation:** .. code-block:: python
 
    def calculate_memory_tier_score(item):
        recency = normalize(time.time() - item.last_accessed)
@@ -69,25 +54,7 @@ Memory Compression
 
 The framework implements adaptive compression algorithms to optimize storage usage in the memory system.
 
-.. math::
-
-   \text{compression\_ratio}(i) = \frac{\text{original\_size}(i)}{\text{compressed\_size}(i)}
-
-Dynamic compression level selection based on item properties:
-
-.. math::
-
-   \text{compression\_level}(i) = 
-   \begin{cases}
-   \text{high}, & \text{if tier}(i) = \text{cold} \lor \text{tier}(i) = \text{glacier} \\
-   \text{medium}, & \text{if tier}(i) = \text{warm} \land \text{type}(i) \in \text{compressible\_types} \\
-   \text{low}, & \text{if tier}(i) = \text{hot} \land \text{type}(i) \in \text{compressible\_types} \\
-   \text{none}, & \text{otherwise}
-   \end{cases}
-
-**Implementation:**
-
-.. code-block:: python
+.. math:: \text{compression\_ratio}(i) = \frac{\text{original\_size}(i)}{\text{compressed\_size}(i)} Dynamic compression level selection based on item properties: .. math:: \text{compression\_level}(i) = \begin{cases} high, & \text{if tier}(i) = cold \lor tier(i) = glacier \\ medium, & \text{if tier}(i) = warm \land type(i) \in \text{compressible\_types} \\ low, & \text{if tier}(i) = hot \land type(i) \in \text{compressible\_types} \\ none, & otherwise \end{cases} **Implementation:** .. code-block:: python
 
    def select_compression_algorithm(item):
        if item.tier in ["cold", "glacier"]:
@@ -121,23 +88,7 @@ The terrain analyzer implements several algorithms for extracting information fr
 
 **Slope Calculation:**
 
-.. math::
-
-   \text{slope} = \arctan\left(\sqrt{\left(\frac{dz}{dx}\right)^2 + \left(\frac{dz}{dy}\right)^2}\right) \cdot \frac{180}{\pi}
-
-Where:
-- :math:`\frac{dz}{dx}` is the rate of change of elevation in the x direction
-- :math:`\frac{dz}{dy}` is the rate of change of elevation in the y direction
-
-**Aspect Calculation:**
-
-.. math::
-
-   \text{aspect} = 57.29578 \cdot \arctan2\left(\frac{dz}{dy}, -\frac{dz}{dx}\right)
-
-**Implementation:**
-
-.. code-block:: python
+.. math:: slope = \arctan\left(\sqrt{\left(\frac{dz}{dx}\right)^2 + \left(\frac{dz}{dy}\right)^2}\right) \cdot \frac{180}{\pi} Where: - :math:`\frac{dz}{dx}` is the rate of change of elevation in the x direction - :math:`\frac{dz}{dy}` is the rate of change of elevation in the y direction **Aspect Calculation:** .. math:: aspect = 57.29578 \cdot \arctan2\left(\frac{dz}{dy}, -\frac{dz}{dx}\right) **Implementation:** .. code-block:: python
 
    def calculate_slope(dem, cell_size):
        dzdx = np.zeros_like(dem)
@@ -167,29 +118,7 @@ The climate analyzer implements time series analysis algorithms for processing c
 
 **Anomaly Detection:**
 
-.. math::
-
-   \text{anomaly}(t) = \frac{x(t) - \mu}{\sigma}
-
-Where:
-- :math:`x(t)` is the observation at time t
-- :math:`\mu` is the mean of the time series
-- :math:`\sigma` is the standard deviation of the time series
-
-**Trend Analysis:**
-
-.. math::
-
-   \hat{y}(t) = \beta_0 + \beta_1 t
-
-Where:
-- :math:`\hat{y}(t)` is the predicted value at time t
-- :math:`\beta_0` is the intercept
-- :math:`\beta_1` is the slope (trend)
-
-**Implementation:**
-
-.. code-block:: python
+.. math:: anomaly(t) = \frac{x(t) - \mu}{\sigma} Where: - :math:`x(t)` is the observation at time t - :math:`\mu` is the mean of the time series - :math:`\sigma` is the standard deviation of the time series **Trend Analysis:** .. math:: \hat{y}(t) = \beta_0 + \beta_1 t Where: - :math:`\hat{y}(t)` is the predicted value at time t - :math:`\beta_0` is the intercept - :math:`\beta_1` is the slope (trend) **Implementation:** .. code-block:: python
 
    def detect_anomalies(time_series, threshold=3.0):
        mean = np.mean(time_series)
@@ -222,27 +151,7 @@ The water resource analyzer implements algorithms for detecting water bodies and
 
 **Normalized Difference Water Index (NDWI):**
 
-.. math::
-
-   \text{NDWI} = \frac{\text{Green} - \text{NIR}}{\text{Green} + \text{NIR}}
-
-Where:
-- Green is the green band of the satellite image
-- NIR is the near-infrared band of the satellite image
-
-**Modified Normalized Difference Water Index (MNDWI):**
-
-.. math::
-
-   \text{MNDWI} = \frac{\text{Green} - \text{SWIR}}{\text{Green} + \text{SWIR}}
-
-Where:
-- Green is the green band of the satellite image
-- SWIR is the shortwave infrared band of the satellite image
-
-**Implementation:**
-
-.. code-block:: python
+.. math:: NDWI = \frac{Green - NIR}{Green + NIR} Where: - Green is the green band of the satellite image - NIR is the near-infrared band of the satellite image **Modified Normalized Difference Water Index (MNDWI):** .. math:: MNDWI = \frac{Green - SWIR}{Green + SWIR} Where: - Green is the green band of the satellite image - SWIR is the shortwave infrared band of the satellite image **Implementation:** .. code-block:: python
 
    def calculate_ndwi(green_band, nir_band):
        ndwi = (green_band - nir_band) / (green_band + nir_band)
@@ -266,28 +175,7 @@ The framework implements algorithms for fusing data from multiple modalities (sa
 
 **Feature-Level Fusion:**
 
-.. math::
-
-   F = [F_1, F_2, \ldots, F_n]
-
-Where:
-- :math:`F_i` represents features extracted from modality i
-- :math:`F` is the concatenated feature vector
-
-**Decision-Level Fusion:**
-
-.. math::
-
-   D = \sum_{i=1}^{n} w_i \cdot D_i
-
-Where:
-- :math:`D_i` represents the decision from modality i
-- :math:`w_i` is the weight assigned to modality i
-- :math:`D` is the final fused decision
-
-**Implementation:**
-
-.. code-block:: python
+.. math:: F = [F_1, F_2, \ldots, F_n] Where: - :math:`F_i` represents features extracted from modality i - :math:`F` is the concatenated feature vector **Decision-Level Fusion:** .. math:: D = \sum_{i=1}^{n} w_i \cdot D_i Where: - :math:`D_i` represents the decision from modality i - :math:`w_i` is the weight assigned to modality i - :math:`D` is the final fused decision **Implementation:** .. code-block:: python
 
    def feature_level_fusion(features_list):
        return np.concatenate(features_list, axis=1)
@@ -305,31 +193,7 @@ The framework implements spatiotemporal interpolation algorithms for filling gap
 
 **Inverse Distance Weighting (IDW):**
 
-.. math::
-
-   \hat{z}(s_0) = \frac{\sum_{i=1}^{n} w_i z(s_i)}{\sum_{i=1}^{n} w_i}
-
-Where:
-- :math:`\hat{z}(s_0)` is the interpolated value at location :math:`s_0`
-- :math:`z(s_i)` is the observed value at location :math:`s_i`
-- :math:`w_i = \frac{1}{d(s_0, s_i)^p}` is the weight based on distance
-- :math:`d(s_0, s_i)` is the distance between locations :math:`s_0` and :math:`s_i`
-- :math:`p` is the power parameter (typically 2)
-
-**Spatiotemporal Kriging:**
-
-.. math::
-
-   \hat{Z}(s_0, t_0) = \sum_{i=1}^{n} \lambda_i Z(s_i, t_i)
-
-Where:
-- :math:`\hat{Z}(s_0, t_0)` is the interpolated value at location :math:`s_0` and time :math:`t_0`
-- :math:`Z(s_i, t_i)` is the observed value at location :math:`s_i` and time :math:`t_i`
-- :math:`\lambda_i` are the kriging weights determined by solving a system of equations based on the spatiotemporal variogram
-
-**Implementation:**
-
-.. code-block:: python
+.. math:: \hat{z}(s_0) = \frac{\sum_{i=1}^{n} w_i z(s_i)}{\sum_{i=1}^{n} w_i} Where: - :math:`\hat{z}(s_0)` is the interpolated value at location :math:`s_0` - :math:`z(s_i)` is the observed value at location :math:`s_i` - :math:`w_i = \frac{1}{d(s_0, s_i)^p}` is the weight based on distance - :math:`d(s_0, s_i)` is the distance between locations :math:`s_0` and :math:`s_i` - :math:`p` is the power parameter (typically 2) **Spatiotemporal Kriging:** .. math:: \hat{Z}(s_0, t_0) = \sum_{i=1}^{n} \lambda_i Z(s_i, t_i) Where: - :math:`\hat{Z}(s_0, t_0)` is the interpolated value at location :math:`s_0` and time :math:`t_0` - :math:`Z(s_i, t_i)` is the observed value at location :math:`s_i` and time :math:`t_i` - :math:`\lambda_i` are the kriging weights determined by solving a system of equations based on the spatiotemporal variogram **Implementation:** .. code-block:: python
 
    def idw_interpolation(points, values, target_points, p=2):
        result = np.zeros(len(target_points))
