@@ -38,11 +38,10 @@ build:
   jobs:
     pre_build:
       # Core setup
+      - pip install --upgrade pip setuptools wheel
       - pip install -e .
-      - pip install -r docs/requirements.txt
-      # Additional setup for comprehensive documentation
-      - python -m pip install --upgrade pip setuptools wheel
-      - python -m pip install sphinx-rtd-theme sphinx-copybutton sphinx-tabs
+      - pip install -r docs/requirements-docs.txt
+      - pip install -r docs/build-requirements.txt
       # Install SVG conversion tools
       - pip install cairosvg svglib
       # Clean build directory
@@ -52,13 +51,9 @@ build:
       # Create necessary directories
       - mkdir -p docs/build/latex
       - mkdir -p docs/build/pdf
-      # Configure ImageMagick policy - with enhanced error handling
+      # Configure ImageMagick policy
       - |
-        # Create policy directories with proper permissions
-        mkdir -p ~/.config/ImageMagick || true
-        chmod 755 ~/.config/ImageMagick || true
-        
-        # Create a custom policy file with broader permissions
+        mkdir -p ~/.config/ImageMagick
         cat > ~/.config/ImageMagick/policy.xml << 'EOL'
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE policymap [
@@ -71,112 +66,13 @@ build:
           <!ATTLIST policy value CDATA #IMPLIED>
         ]>
         <policymap>
-          <!-- Enable PDF operations -->
           <policy domain="coder" rights="read|write" pattern="PDF" />
-          <policy domain="delegate" rights="read|write" pattern="PDF" />
-          <policy domain="coder" rights="read|write" pattern="LABEL" />
-          <!-- Enable SVG operations -->
           <policy domain="coder" rights="read|write" pattern="SVG" />
-          <policy domain="delegate" rights="read|write" pattern="SVG" />
-          <!-- Enable general image operations -->
-          <policy domain="coder" rights="read|write" pattern="PNG" />
-          <policy domain="coder" rights="read|write" pattern="JPEG" />
-          <policy domain="coder" rights="read|write" pattern="GIF" />
-          <!-- Enable delegate operations -->
-          <policy domain="delegate" rights="read|write" pattern="gs" />
-          <policy domain="delegate" rights="read|write" pattern="ps" />
-          <policy domain="delegate" rights="read|write" pattern="ps2" />
-          <policy domain="delegate" rights="read|write" pattern="ps3" />
-          <policy domain="delegate" rights="read|write" pattern="eps" />
-          <policy domain="delegate" rights="read|write" pattern="pdf" />
-          <policy domain="delegate" rights="read|write" pattern="xps" />
-          <!-- Security settings -->
-          <policy domain="path" rights="none" pattern="@*" />
-          <policy domain="cache" name="shared-secret" value="passphrase" stealth="true" />
-          <!-- Resource limits -->
           <policy domain="resource" name="memory" value="2GiB"/>
           <policy domain="resource" name="map" value="4GiB"/>
           <policy domain="resource" name="disk" value="8GiB"/>
-          <policy domain="resource" name="time" value="300"/>
         </policymap>
         EOL
-        
-        # Set proper permissions for the policy file
-        chmod 644 ~/.config/ImageMagick/policy.xml || true
-        
-        # Set environment variables for ImageMagick
-        export MAGICK_CONFIGURE_PATH=~/.config/ImageMagick
-        export MAGICK_HOME=~/.config/ImageMagick
-        export MAGICK_THREAD_LIMIT=1  # Prevent threading issues
-        
-        # Create a delegates.xml file to ensure proper delegate handling
-        cat > ~/.config/ImageMagick/delegates.xml << 'EOL'
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE delegatemap [
-          <!ELEMENT delegatemap (delegate)+>
-          <!ELEMENT delegate (#PCDATA)>
-          <!ATTLIST delegate decode CDATA #IMPLIED>
-          <!ATTLIST delegate encode CDATA #IMPLIED>
-          <!ATTLIST delegate mode CDATA #IMPLIED>
-          <!ATTLIST delegate command CDATA #REQUIRED>
-        ]>
-        <delegatemap>
-          <delegate decode="pdf" command="gs -q -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 -sDEVICE=pngalpha -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r72x72 -dFirstPage=%i -dLastPage=%i &quot;%i&quot; &quot;%o&quot;"/>
-          <delegate decode="eps" command="gs -q -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 -sDEVICE=pngalpha -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r72x72 &quot;%i&quot; &quot;%o&quot;"/>
-          <delegate decode="ps" command="gs -q -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 -sDEVICE=pngalpha -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r72x72 &quot;%i&quot; &quot;%o&quot;"/>
-          <delegate decode="svg" command="rsvg-convert -o &quot;%o&quot; &quot;%i&quot;"/>
-        </delegatemap>
-        EOL
-        
-        # Set proper permissions for the delegates file
-        chmod 644 ~/.config/ImageMagick/delegates.xml || true
-        
-        # Verify policy file exists and is readable
-        if [ -f ~/.config/ImageMagick/policy.xml ]; then
-          echo "Custom ImageMagick policy file created successfully"
-          ls -l ~/.config/ImageMagick/policy.xml
-          cat ~/.config/ImageMagick/policy.xml
-        else
-          echo "Warning: Failed to create custom ImageMagick policy file"
-          ls -la ~/.config/ImageMagick || true
-        fi
-        
-        # Verify delegates file exists and is readable
-        if [ -f ~/.config/ImageMagick/delegates.xml ]; then
-          echo "Custom ImageMagick delegates file created successfully"
-          ls -l ~/.config/ImageMagick/delegates.xml
-          cat ~/.config/ImageMagick/delegates.xml
-        else
-          echo "Warning: Failed to create custom ImageMagick delegates file"
-        fi
-        
-        # Verify ImageMagick installation and configuration
-        convert -version || true
-        identify -list policy || true
-        identify -list delegate || true
-        
-        # Try to modify system policy files as fallback (if we have permission)
-        for policy_file in /etc/ImageMagick*/policy.xml /usr/local/etc/ImageMagick*/policy.xml; do
-          if [ -f "$policy_file" ]; then
-            echo "Found system policy file: $policy_file"
-            if [ -w "$policy_file" ]; then
-              cp "$policy_file" "$policy_file.bak" 2>/dev/null || true
-              sed -i.bak 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' "$policy_file" 2>/dev/null || true
-              sed -i.bak 's/rights="none" pattern="SVG"/rights="read|write" pattern="SVG"/' "$policy_file" 2>/dev/null || true
-              echo "Modified system policy file: $policy_file"
-            else
-              echo "Cannot modify system policy file (no write permission): $policy_file"
-            fi
-          fi
-        done
-    post_create_environment:
-      # Install dependencies for building docs
-      - pip install -r docs/requirements-docs.txt
-      - pip install -r docs/build-requirements.txt
-    post_build:
-      # Generate PDF version
-      - python -m sphinx.cmd.build -b latex docs/source/ docs/build/latex
-      - cd docs/build/latex && make
 
 # Sphinx configuration
 sphinx:
