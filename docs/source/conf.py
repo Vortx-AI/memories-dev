@@ -84,27 +84,91 @@ latex_use_modindex = False
 
 # LaTeX elements configuration - simplified for better compatibility
 latex_elements = {
-    # Remove all font packages that might cause conflicts
-    'fontpkg': '',
-    # Use basic article class
     'papersize': 'letterpaper',
     'pointsize': '10pt',
-    # Simplify preamble
-    'preamble': '',
-    # Use a simple title page
-    'maketitle': '\\maketitle',
-    # No figure conversion
-    'figure_align': 'htbp',
-    # Disable mermaid diagrams
-    # 'usepackage_tikz': False,  # Removed this unknown key
-    # Don't include hyperref
-    'hyperref': '',
-    # Don't handle math specially
+    'preamble': r'''
+        \usepackage{hyperref}
+        \usepackage{bookmark}
+        \usepackage{amsthm}
+        \usepackage{amsmath}
+        \usepackage{amssymb}
+        \usepackage{graphicx}
+        \usepackage{float}
+        \usepackage{fancyhdr}
+        \usepackage{titlesec}
+        \usepackage{tocloft}
+        \usepackage{etoolbox}
+        \usepackage{longtable}
+        \usepackage{multirow}
+        \usepackage{multicol}
+        \usepackage{tabularx}
+        \usepackage{enumitem}
+        \usepackage{xcolor}
+        \usepackage{fontawesome5}
+        \usepackage{caption}
+        \usepackage{subcaption}
+        \usepackage{listings}
+        \usepackage{geometry}
+        \usepackage{microtype}
+        \usepackage{pdflscape}
+        \usepackage{rotating}
+        \usepackage{makeidx}
+        \usepackage{fancyvrb}
+        \usepackage{upquote}
+        \usepackage{capt-of}
+        \usepackage{needspace}
+        \usepackage{xspace}
+        \usepackage{textcomp}
+        \usepackage{calc}
+        \usepackage{titlesec}
+        \usepackage{framed}
+        \usepackage{soul}
+        \usepackage{changepage}
+        \usepackage{setspace}
+        \usepackage{footmisc}
+        \usepackage{parskip}
+        \usepackage{ragged2e}
+        \usepackage{marginnote}
+        \usepackage{wrapfig}
+        \usepackage{url}
+        \usepackage{bookmark}
+        \usepackage{hyperref}
+        
+        % Configure hyperref
+        \hypersetup{
+            colorlinks=true,
+            linkcolor=blue,
+            filecolor=magenta,      
+            urlcolor=cyan,
+            pdftitle={Memories-Dev Documentation},
+            pdfpagemode=FullScreen,
+        }
+        
+        % Fix for phantomsection
+        \providecommand*{\phantomsection}{}
+        
+        % Configure listings for code blocks
+        \lstset{
+            basicstyle=\small\ttfamily,
+            breaklines=true,
+            breakatwhitespace=true,
+            frame=single,
+            numbers=left,
+            numberstyle=\tiny,
+            showstringspaces=false,
+            tabsize=4
+        }
+    ''',
+    'figure_align': 'H',
     'sphinxsetup': 'verbatimwithframe=false',
-    # Use basic article layout
     'fncychap': '',
-    # Simplify packages
-    'passoptionstopackages': '\\PassOptionsToPackage{draft}{graphicx}',
+    'maketitle': '\\maketitle',
+    'fontpkg': r'''
+        \usepackage{lmodern}
+        \usepackage[T1]{fontenc}
+        \usepackage{textcomp}
+    ''',
+    'passoptionstopackages': '',
 }
 
 # If true, show page references after internal links
@@ -496,16 +560,15 @@ nitpicky = False  # Don't be too strict on references
 keep_warnings = False  # Don't store warnings in output 
 # -- Options for PDF output using rst2pdf ---------------------------------
 pdf_documents = [
-    ('index', 'memories-dev', 'Memories-Dev Documentation', 'Memories-Dev Team'),
+    ('index', 'memories-dev', 'Memories-Dev Documentation', 'Memories-dev'),
 ]
-pdf_stylesheets = ['sphinx', 'letter', '_styles/custom']
-pdf_style_path = ['.', '_styles']
-pdf_language = 'en_US'
-pdf_fit_mode = "shrink"
-pdf_break_level = 0
-pdf_verbosity = 0
-pdf_use_index = False
+pdf_stylesheets = ['sphinx', 'kerning', 'a4']
+pdf_use_index = True
+pdf_toc_depth = 3
 pdf_use_modindex = False
+pdf_break_level = 1
+pdf_inline_footnotes = True
+pdf_extensions = ['vectorpdf']
 pdf_use_coverpage = True
 
 # Enable the book experience for all pages by default
