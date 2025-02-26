@@ -48,32 +48,53 @@ Formula Database
 Spatial Statistics
 ^^^^^^^^^^^^^^^^^^
 
-.. math-index::
-   :maxdepth: 2
-   
-   * Moran's I: $I = \frac{n}{W} \frac{\sum_i\sum_j w_{ij}(x_i-\bar{x})(x_j-\bar{x})}{\sum_i(x_i-\bar{x})^2}$
-   * Geary's C: $C = \frac{(n-1)}{2W} \frac{\sum_i\sum_j w_{ij}(x_i-x_j)^2}{\sum_i(x_i-\bar{x})^2}$
-   * Ripley's K: $K(r) = \lambda^{-1}\mathbb{E}[number\:of\:points\:within\:distance\:r\:of\:a\:random\:point]$
+Key spatial statistics formulas used in the framework:
+
+.. math::
+
+   \text{Moran's I} = \frac{n}{W} \frac{\sum_i\sum_j w_{ij}(x_i-\bar{x})(x_j-\bar{x})}{\sum_i(x_i-\bar{x})^2}
+
+.. math::
+
+   \text{Geary's C} = \frac{(n-1)}{2W} \frac{\sum_i\sum_j w_{ij}(x_i-x_j)^2}{\sum_i(x_i-\bar{x})^2}
+
+.. math::
+
+   \text{Ripley's K} = \lambda^{-1}\mathbb{E}[\text{number of points within distance r of a random point}]
 
 Temporal Statistics
 ^^^^^^^^^^^^^^^^^^^
 
-.. math-index::
-   :maxdepth: 2
-   
-   * Autocorrelation: $\rho_k = \frac{\sum_{t=1}^{n-k}(x_t-\bar{x})(x_{t+k}-\bar{x})}{\sum_{t=1}^n(x_t-\bar{x})^2}$
-   * CUSUM: $S_t = \max(0, S_{t-1} + (X_t - \mu_0) - k)$
-   * Trend Component: $T_t = \frac{1}{2q+1}\sum_{j=-q}^q x_{t+j}$
+Key temporal analysis formulas:
+
+.. math::
+
+   \text{Autocorrelation} = \frac{\sum_{t=1}^{n-k}(x_t-\bar{x})(x_{t+k}-\bar{x})}{\sum_{t=1}^n(x_t-\bar{x})^2}
+
+.. math::
+
+   \text{CUSUM} = \max(0, S_{t-1} + (X_t - \mu_0) - k)
+
+.. math::
+
+   \text{Trend Component} = \frac{1}{2q+1}\sum_{j=-q}^q x_{t+j}
 
 Performance Metrics
 ^^^^^^^^^^^^^^^^^^^
 
-.. math-index::
-   :maxdepth: 2
-   
-   * RMSE: $RMSE = \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2}$
-   * MAE: $MAE = \frac{1}{n}\sum_{i=1}^{n}|y_i - \hat{y}_i|$
-   * R²: $R^2 = 1 - \frac{\sum_i(y_i - \hat{y}_i)^2}{\sum_i(y_i - \bar{y})^2}$
+Standard evaluation metrics:
+
+.. math::
+
+   \text{RMSE} = \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2}
+
+.. math::
+
+   \text{MAE} = \frac{1}{n}\sum_{i=1}^{n}|y_i - \hat{y}_i|
+
+.. math::
+
+   R^2 = 1 - \frac{\sum_i(y_i - \hat{y}_i)^2}{\sum_i(y_i - \bar{y})^2}
 
 Code Examples
 -------------
@@ -318,3 +339,37 @@ Technical Standards
 1. ISO 19115-1:2014 - Geographic information -- Metadata
 2. OGC 06-121r9 - OGC Web Services Common Standard
 3. ISO 19157:2013 - Geographic information -- Data quality 
+
+Technical Reference
+===================
+
+This section provides detailed technical information about the algorithms and methods used in the memories-dev framework.
+
+System Architecture
+-----------------
+
+.. mermaid::
+
+   graph TD
+       Client[Client Applications] --> API[API Gateway]
+       API --> Server[Memories Server]
+       Server --> Models[Model System]
+       Server --> DataAcq[Data Acquisition]
+       Models --> LocalModels[Local Models]
+       Models --> APIModels[API-based Models]
+       DataAcq --> VectorData[Vector Data Sources]
+       DataAcq --> SatelliteData[Satellite Data]
+       Server --> Storage[Persistent Storage]
+
+Uncertainty Propagation
+---------------------
+
+.. mermaid::
+
+   graph TD
+       A1[Input Uncertainty] --> B1[Monte Carlo]
+       A2[Model Uncertainty] --> B2[Bayesian Methods]
+       A3[Parameter Error] --> B3[Ensemble Methods]
+       B1 --> C1[Confidence Intervals]
+       B2 --> C2[Prediction Intervals]
+       B3 --> C3[Error Bounds] 

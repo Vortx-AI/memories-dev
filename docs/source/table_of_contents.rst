@@ -1,10 +1,8 @@
-=======================
+==========================
 Complete Table of Contents
-=======================
+==========================
 
-.. contents:: On this page
-   :local:
-   :depth: 1
+This page provides a comprehensive overview of all documentation sections.
 
 Foundations
 ----------
@@ -25,7 +23,7 @@ Foundations
     * Next Steps
 
 Core Concepts
------------
+------------
 
 * :doc:`core_concepts/index`
     * Memory Architecture
@@ -54,7 +52,7 @@ Core Concepts
     * Cross-domain Analysis
 
 Memory Architecture
------------------
+------------------
 
 * :doc:`memory_architecture/index`
     * Overview of Memory Tiers
@@ -74,7 +72,7 @@ Memory Architecture
     * Performance Considerations
 
 Memory Types
----------
+-----------
 
 * :doc:`memory_types/index`
     * Introduction to Earth Memory Types
@@ -85,7 +83,7 @@ Memory Types
     * Creating Custom Memory Types
 
 Earth Memory
-----------
+-----------
 
 * :doc:`earth_memory/index`
     * Earth Memory Overview
@@ -123,7 +121,7 @@ Memory Codex
     * Advanced Query Capabilities
 
 Implementation
-------------
+-------------
 
 * :doc:`setup/observatory`
     * Setting Up Your Observatory
@@ -151,7 +149,7 @@ Implementation
     * Deployment Strategies
 
 Application Examples
------------------
+------------------
 
 * :doc:`examples/index`
     * Overview of Case Studies
@@ -174,7 +172,7 @@ Application Examples
     * Impact Assessment
 
 Technical Reference
-----------------
+-----------------
 
 * :doc:`api/index`
     * Complete API Reference
@@ -196,7 +194,7 @@ Technical Reference
     * System Monitoring
 
 Contributing
-----------
+-----------
 
 * :doc:`contributing/index`
     * Getting Started with Contributions
@@ -205,7 +203,7 @@ Contributing
     * Documentation Guidelines
 
 Legal
-----
+-----
 
 * :doc:`license`
     * MIT License

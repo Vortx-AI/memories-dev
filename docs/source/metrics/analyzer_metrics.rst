@@ -8,7 +8,7 @@ Terrain Analysis
 ---------------
 
 Elevation Accuracy
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 .. math::
 
