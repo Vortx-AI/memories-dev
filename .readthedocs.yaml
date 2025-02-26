@@ -29,6 +29,12 @@ build:
     - cm-super
     - dvipng
     - ghostscript
+    - librsvg2-bin  # For SVG to PDF conversion
+    - inkscape      # Alternative SVG converter
+    - pdf2svg       # For PDF to SVG conversion if needed
+    - imagemagick   # For image processing
+    - fonts-liberation  # Additional fonts
+    - fonts-freefont-ttf  # More fonts
   jobs:
     pre_build:
       # Core setup
@@ -37,6 +43,8 @@ build:
       # Additional setup for comprehensive documentation
       - python -m pip install --upgrade pip setuptools wheel
       - python -m pip install sphinx-rtd-theme sphinx-copybutton sphinx-tabs
+      # Install SVG conversion tools
+      - pip install cairosvg svglib
       # Clean build directory
       - cd docs && make clean
       # Generate API documentation
@@ -44,6 +52,8 @@ build:
       # Create necessary directories
       - mkdir -p docs/build/latex
       - mkdir -p docs/build/pdf
+      # Configure ImageMagick policy to allow PDF operations
+      - sudo sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' /etc/ImageMagick-6/policy.xml || true
     post_build:
       # Use our custom PDF build script instead of LaTeX
       - python fix_scripts/simple_pdf_build.py

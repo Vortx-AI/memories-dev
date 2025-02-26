@@ -34,6 +34,12 @@ pyyaml>=6.0.1
 recommonmark>=0.7.1
 pillow==11.1.0
 
+# SVG and image processing
+sphinxcontrib-svg2pdfconverter>=1.2.0
+cairosvg>=2.7.0
+svglib>=1.5.1
+wand>=0.6.11  # For ImageMagick integration
+
 # Additional utilities
 markdown==3.4.3
 sphinx-markdown-tables==0.0.17
