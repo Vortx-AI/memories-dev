@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add breadcrumbs
     addBreadcrumbs();
     
-    // Add section navigation
-    addSectionNavigation();
+    // Add section navigation - removed as requested
+    // addSectionNavigation();
     
     // Add back to top button
     addBackToTopButton();

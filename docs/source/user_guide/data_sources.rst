@@ -2,55 +2,30 @@ Data Sources
 ============
 
 .. code-block:: text
-   :align: center
-
-   +---------------------+     +----------------------+     +----------------------+
-   |                     |     |                      |     |                      |
-   |  Define Area of     |     |  Initialize          |     |  Query Available     |
-   |  Interest (AOI)     +---->+  Data Manager        +---->+  Data Sources        |
-   |                     |     |                      |     |                      |
-   +---------------------+     +----------------------+     +----------+-----------+
-                                                                       |
-                                                                       v
-   +---------------------+     +----------------------+     +----------------------+
-   |                     |     |                      |     |                      |
-   |  Process and        |     |  Download Selected   |     |  Filter by Date,     |
-   |  Store Results      +<----+  Data                +<----+  Cloud Cover, etc.   |
-   |                     |     |                      |     |                      |
-   +---------------------+     +----------------------+     +----------------------+
-           |
-           v
-   +---------------------+     +----------------------+     +----------------------+
-   |                     |     |                      |     |                      |
-   |  Analyze Data with  |     |  Generate            |     |  Store in            |
-   |  Models             +---->+  Insights            +---->+  Memory System       |
-   |                     |     |                      |     |                      |
-   +---------------------+     +----------------------+     +----------------------+
-   ```
-
+   
 Overview
 --------
 
 memories-dev provides a comprehensive data acquisition system that supports multiple data sources for creating and enriching memories, including satellite imagery, vector data, and environmental metrics.
 
 Supported Data Sources
--------------------
+----------------------
 
 Satellite Data
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 - **Sentinel-2**: High-resolution multispectral imagery via Planetary Computer
 - **Landsat**: Medium-resolution multispectral imagery
 - **Earth Engine**: Access to Google Earth Engine datasets
 - **COG/STAC**: Cloud-optimized GeoTIFF and SpatioTemporal Asset Catalog
 
 Vector Data
-~~~~~~~~~~
+~~~~~~~~~~~
 - **OpenStreetMap**: Comprehensive global mapping data
 - **Overture Maps**: Detailed vector mapping data
 - **WFS Services**: Web Feature Service endpoints
 
 Data Manager
------------
+------------
 
 The ``DataManager`` class provides a unified interface for accessing all data sources:
 
@@ -122,7 +97,7 @@ Example Output:
     Training data: success
 
 Advanced Usage: Multi-Source Data Fusion
---------------------------------------
+----------------------------------------
 
 Combining multiple data sources for comprehensive analysis:
 
@@ -179,7 +154,7 @@ Example Output:
     vegetation_health: Good (NDVI: 0.68)
 
 Sentinel API
------------
+------------
 
 The ``SentinelAPI`` class provides direct access to Sentinel-2 data:
 
@@ -273,45 +248,35 @@ Example Output:
     Visualization saved to: ./sentinel_data/ndvi_visualization.png
 
 .. code-block:: text
-   :align: center
-
-   SATELLITE IMAGE ANALYSIS RESULT
-   ===============================
    
-   Location: San Francisco Bay Area
-   Coordinates: 37.7749° N, 122.4194° W
-   Date: 2024-02-15
-   Source: Sentinel-2
-   
-   ANALYSIS METRICS:
-   ----------------
+-----------------
    - Vegetation Index (NDVI): 0.68 (Healthy)
    - Urban Density: 78% (High)
    - Water Bodies: 22% of area
    - Cloud Cover: 5%
    
    DETECTED FEATURES:
-   ----------------
+------------------
    - Buildings: 1,245 structures
    - Roads: 87 km total length
    - Water: San Francisco Bay
    - Parks: Golden Gate Park, other green spaces
    
    CHANGE DETECTION (vs. 2023-02-15):
-   --------------------------------
+----------------------------------
    - Vegetation: +2.3% increase
    - Urban Area: +0.8% increase
    - Water Bodies: -0.1% decrease
    
    INSIGHTS:
-   --------
+---------
    - Healthy vegetation in park areas
    - Moderate urban development in northern sectors
    - Stable coastline with minimal erosion
    - Clear atmospheric conditions
 
 Error Handling
-------------
+--------------
 
 The data acquisition components include robust error handling:
 
@@ -354,7 +319,7 @@ The data acquisition components include robust error handling:
     asyncio.run(handle_data_errors())
 
 Best Practices
-------------
+--------------
 
 1. **Efficient Data Acquisition**:
    - Use the smallest possible bounding box for your area of interest

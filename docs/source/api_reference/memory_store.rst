@@ -2,7 +2,7 @@ MemoryStore
 ===========
 
 Core Memory Management
--------------------
+----------------------
 
 .. automodule:: memories.core.memory
    :members:
@@ -10,7 +10,7 @@ Core Memory Management
    :show-inheritance:
 
 MemoryStore Class
----------------
+-----------------
 
 .. autoclass:: memories.core.memory.MemoryStore
    :members:
@@ -18,10 +18,10 @@ MemoryStore Class
    :show-inheritance:
 
 Memory Tiers
------------
+------------
 
 Hot Memory
-~~~~~~~~~
+~~~~~~~~~~
 
 .. autoclass:: memories.core.hot.HotMemory
    :members:
@@ -29,7 +29,7 @@ Hot Memory
    :show-inheritance:
 
 Warm Memory
-~~~~~~~~~~
+~~~~~~~~~~~
 
 .. autoclass:: memories.core.warm.WarmMemory
    :members:
@@ -37,7 +37,7 @@ Warm Memory
    :show-inheritance:
 
 Cold Memory
-~~~~~~~~~~
+~~~~~~~~~~~
 
 .. autoclass:: memories.core.cold.ColdMemory
    :members:
@@ -45,7 +45,7 @@ Cold Memory
    :show-inheritance:
 
 Glacier Memory
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 .. autoclass:: memories.core.glacier.GlacierMemory
    :members:
@@ -53,7 +53,7 @@ Glacier Memory
    :show-inheritance:
 
 Example Usage
------------
+-------------
 
 .. code-block:: python
 
@@ -85,7 +85,7 @@ Example Usage
     )
 
 Configuration Options
-------------------
+---------------------
 
 The MemoryStore can be configured with various options:
 

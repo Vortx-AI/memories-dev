@@ -8,7 +8,7 @@ Welcome to the Function Catalog section of the memories-dev documentation. This 
    The Function Catalog is an essential reference for developers working with the memories-dev API. It provides detailed information about each function, including parameters, return values, and usage examples.
 
 How to Use This Catalog
-----------------------
+-----------------------
 
 Functions in this catalog are organized by module and purpose. You can:
 
@@ -26,10 +26,10 @@ Each function entry includes:
 - Links to related functions and classes
 
 Core Functions
--------------
+--------------
 
 Memory Management
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 .. py:function:: memories.MemoryStore.store(key, data, metadata=None, tier=None)
    :noindex:
@@ -100,7 +100,7 @@ Memory Management
            query={
                "location": {
                    "lat": {"$gte": 37.7, "$lte": 37.8},
-                   "lon": {"$gte": -122.5, "$lte": -122.4}
+                   "lon": {"$gte": - 122.5, "$lte": -122.4}
                }
            },
            limit=5,
@@ -108,7 +108,7 @@ Memory Management
        )
 
 Earth Analyzers
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
 .. py:function:: memories.core.analyzers.TerrainAnalyzer.analyze(location, resolution='medium')
    :noindex:
@@ -158,7 +158,7 @@ Earth Analyzers
        )
 
 Model Integration
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 .. py:function:: memories.models.load_model.LoadModel.__init__(model_provider, model_name, **kwargs)
    :noindex:
@@ -211,7 +211,7 @@ Model Integration
        )
 
 Data Acquisition
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 .. py:function:: memories.data_acquisition.SatelliteClient.get_imagery(location, date, resolution='medium')
    :noindex:
@@ -238,7 +238,7 @@ Data Acquisition
        )
 
 Utility Functions
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 .. py:function:: memories.utils.geo_utils.calculate_distance(point1, point2)
    :noindex:
@@ -290,7 +290,7 @@ Utility Functions
        print(f"Point is inside polygon: {is_inside}")
 
 Function Categories
------------------
+-------------------
 
 .. toctree::
    :maxdepth: 2
@@ -302,7 +302,7 @@ Function Categories
    utility_functions
 
 Alphabetical Index
-----------------
+------------------
 
 This section provides an alphabetical listing of all functions in the framework:
 
@@ -334,8 +334,8 @@ This section provides an alphabetical listing of all functions in the framework:
      - memories.core.analyzers
 
 Function Search
--------------
+---------------
 
 Use the search box at the top of this page to find specific functions. You can search by function name, module name, or functionality.
 
-For a comprehensive API reference, see the :doc:`API Reference </api_reference/index>` section. 
+For a comprehensive API reference, see the 'index>' section. 

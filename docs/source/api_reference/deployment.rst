@@ -1,5 +1,5 @@
 Deployment Options
-=================
+==================
 
 Overview
 --------
@@ -7,10 +7,10 @@ Overview
 The memories-dev library supports multiple deployment configurations to meet various operational requirements. This guide covers the available deployment types, configuration options, and best practices.
 
 Deployment Types
----------------
+----------------
 
 Local Deployment
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 Run models and data processing locally on your machine:
 
@@ -27,7 +27,7 @@ Run models and data processing locally on your machine:
     )
 
 API Deployment
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 Connect to provider APIs for model inference:
 
@@ -44,10 +44,10 @@ Connect to provider APIs for model inference:
     )
 
 Cloud Deployment
---------------
+----------------
 
 Standalone Deployment
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 Configure a single-instance deployment on cloud platforms:
 
@@ -71,7 +71,7 @@ Configure a single-instance deployment on cloud platforms:
     deployment.deploy()
 
 Distributed Deployment
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 Configure a high-reliability distributed deployment:
 
@@ -95,7 +95,7 @@ Configure a high-reliability distributed deployment:
     deployment.deploy()
 
 Container Deployment
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 Deploy using container orchestration:
 
@@ -119,10 +119,10 @@ Deploy using container orchestration:
     deployment.deploy()
 
 Configuration Options
--------------------
+---------------------
 
 Common Configuration Parameters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. list-table::
    :header-rows: 1
@@ -148,7 +148,7 @@ Common Configuration Parameters
      - Storage size in GB
 
 Security Configuration
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -163,7 +163,7 @@ Security Configuration
     })
 
 Scaling Configuration
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -176,7 +176,7 @@ Scaling Configuration
     })
 
 Monitoring and Logging
---------------------
+----------------------
 
 Enable monitoring and logging:
 
@@ -196,7 +196,7 @@ Enable monitoring and logging:
     })
 
 Best Practices
-------------
+--------------
 
 1. **Resource Sizing**: Choose appropriate instance types based on your workload requirements.
 2. **High Availability**: Use distributed deployments for critical applications.
@@ -207,7 +207,7 @@ Best Practices
 7. **Testing**: Test your deployment configuration in a staging environment before production.
 
 Example: Complete Deployment
---------------------------
+----------------------------
 
 .. code-block:: python
 

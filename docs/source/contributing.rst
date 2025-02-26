@@ -10,7 +10,7 @@ We love your input! We want to make contributing to memories.dev as easy and tra
 - Becoming a maintainer
 
 Development Process
------------------
+-------------------
 
 We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
 
@@ -22,24 +22,24 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
 6. Issue that pull request!
 
 Pull Request Process
-------------------
+--------------------
 
 1. Update the README.md with details of changes to the interface, if applicable.
 2. Update the docs/ with any necessary documentation changes.
 3. The PR will be merged once you have the sign-off of at least one other developer.
 
 Any contributions you make will be under the Apache License 2.0
-------------------------------------------------------------
+---------------------------------------------------------------
 
 In short, when you submit code changes, your submissions are understood to be under the same [Apache License 2.0](http://choosealicense.com/licenses/apache-2.0/) that covers the project. Feel free to contact the maintainers if that's a concern.
 
 Report bugs using GitHub's [issue tracker](https://github.com/Vortx-AI/memories-dev/issues)
----------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------
 
 We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/Vortx-AI/memories-dev/issues/new); it's that easy!
 
 Write bug reports with detail, background, and sample code
-------------------------------------------------------
+----------------------------------------------------------
 
 **Great Bug Reports** tend to have:
 

@@ -2,7 +2,7 @@ Utilities
 =========
 
 General Utilities
----------------
+-----------------
 
 .. automodule:: memories.utils
    :members:
@@ -10,7 +10,7 @@ General Utilities
    :show-inheritance:
 
 Data Processing
--------------
+---------------
 
 .. automodule:: memories.utils.data
    :members:
@@ -18,7 +18,7 @@ Data Processing
    :show-inheritance:
 
 Text Processing
--------------
+---------------
 
 .. automodule:: memories.utils.text
    :members:
@@ -26,7 +26,7 @@ Text Processing
    :show-inheritance:
 
 File Operations
--------------
+---------------
 
 .. automodule:: memories.utils.file
    :members:
@@ -34,7 +34,7 @@ File Operations
    :show-inheritance:
 
 Configuration
------------
+-------------
 
 .. automodule:: memories.utils.config
    :members:

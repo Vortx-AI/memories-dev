@@ -10,7 +10,7 @@ Core Memory Components
    :show-inheritance:
 
 Memory Operations
-----------------
+-----------------
 
 .. autoclass:: memories.core.memory.Memory
    :members:
@@ -18,10 +18,10 @@ Memory Operations
    :show-inheritance:
 
 Memory Types
------------
+------------
 
 Hot Memory
-~~~~~~~~~
+~~~~~~~~~~
 
 .. autoclass:: memories.core.memory.HotMemory
    :members:
@@ -29,7 +29,7 @@ Hot Memory
    :show-inheritance:
 
 Warm Memory
-~~~~~~~~~~
+~~~~~~~~~~~
 
 .. autoclass:: memories.core.memory.WarmMemory
    :members:
@@ -37,7 +37,7 @@ Warm Memory
    :show-inheritance:
 
 Cold Memory
-~~~~~~~~~~
+~~~~~~~~~~~
 
 .. autoclass:: memories.core.memory.ColdMemory
    :members:
@@ -45,7 +45,7 @@ Cold Memory
    :show-inheritance:
 
 Glacier Memory
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 .. autoclass:: memories.core.glacier.GlacierMemory
    :members:

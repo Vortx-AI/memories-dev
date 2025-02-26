@@ -4,14 +4,14 @@ Changelog
 All notable changes to this project will be documented in this file.
 
 [1.1.8] - 2025-02-16
-------------------
+--------------------
 
 Changed
 ~~~~~~~
 - Bumped version to 1.1.8 for maintenance release
 
 [1.1.7] - 2025-02-16
-------------------
+--------------------
 
 Added
 ~~~~~
@@ -25,7 +25,7 @@ Fixed
 - Made matplotlib a compulsory dependency to prevent import errors
 
 [1.1.6] - 2025-02-16
-------------------
+--------------------
 
 Added
 ~~~~~

@@ -4,10 +4,10 @@ Best Practices
 This guide outlines best practices for using the memories-dev framework effectively and efficiently.
 
 System Design
-------------
+-------------
 
 Memory Tier Selection
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 Choose the appropriate memory tier based on your data access patterns:
 
@@ -32,7 +32,7 @@ Choose the appropriate memory tier based on your data access patterns:
     )
 
 Data Organization
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 Structure your data for optimal retrieval:
 
@@ -53,10 +53,10 @@ Structure your data for optimal retrieval:
     )
 
 Performance Optimization
-----------------------
+------------------------
 
 Resource Management
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 Monitor and manage system resources:
 
@@ -79,7 +79,7 @@ Monitor and manage system resources:
     )
 
 Batch Processing
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 Optimize batch operations:
 
@@ -97,7 +97,7 @@ Security
 --------
 
 Data Protection
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 Implement robust security measures:
 
@@ -117,7 +117,7 @@ Implement robust security measures:
     )
 
 Error Handling
--------------
+--------------
 
 Implement proper error handling:
 
@@ -142,7 +142,7 @@ Implement proper error handling:
             raise
 
 Monitoring and Logging
---------------------
+----------------------
 
 Set up comprehensive monitoring:
 
@@ -225,7 +225,7 @@ Follow deployment best practices:
    - Configure auto-scaling
 
 Documentation
-------------
+-------------
 
 Maintain comprehensive documentation:
 

@@ -1,88 +1,184 @@
 #!/usr/bin/env python3
 """
-Fix ReadTheDocs PDF build issues by correcting malformed LaTeX math equations.
+Script to fix math equation rendering issues in documentation.
+
+This script addresses:
+1. Incorrect math directive usage
+2. MathJax configuration issues
+3. Improper math formatting
+4. Missing or incorrect delimiters
 """
 
 import os
 import re
-import glob
+import sys
+import argparse
+from pathlib import Path
 
-def fix_math_equations(file_path):
-    """Fix LaTeX math equations in a single RST file."""
-    print(f"Processing: {file_path}")
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
-    
-    original_content = content
-    
-    # Fix equations with problematic \text{} commands
-    # Find all math blocks
-    math_blocks = re.findall(r'\.\.[\s]+math::(.*?)(?=\.\.[\s]+|$)', content, re.DOTALL)
-    
-    for block in math_blocks:
-        fixed_block = block
-        
-        # Fix \text{precision} to just precision
-        fixed_block = re.sub(r'\\text{(\w+)}', r'\1', fixed_block)
-        
-        # Fix functions like base32_encode to be properly escaped for LaTeX
-        fixed_block = re.sub(r'\\text{(\w+)_(\w+)}', r'\\text{\1\\_\2}', fixed_block)
-        
-        # Fix end{split} issues by making sure it's properly closed and opened
-        if '\\begin{split}' in fixed_block and '\\end{split}' in fixed_block:
-            # Ensure proper split environment
-            split_content = re.search(r'\\begin{split}(.*?)\\end{split}', fixed_block, re.DOTALL)
-            if split_content:
-                split_text = split_content.group(1)
-                # Add alignment points if missing
-                if '&' not in split_text:
-                    lines = split_text.strip().split('\n')
-                    aligned_lines = []
-                    for line in lines:
-                        line = line.strip()
-                        if '=' in line:
-                            parts = line.split('=', 1)
-                            aligned_lines.append(f"{parts[0].strip()} &= {parts[1].strip()}")
-                        else:
-                            aligned_lines.append(line)
-                    new_split = '\\begin{split}\n' + '\\\\\n'.join(aligned_lines) + '\n\\end{split}'
-                    fixed_block = fixed_block.replace(split_content.group(0), new_split)
-        
-        # Fix other potential issues
-        # Remove unnecessary spaces
-        fixed_block = re.sub(r'\s+', ' ', fixed_block)
-        
-        # Replace original block with fixed block
-        content = content.replace(block, fixed_block)
-    
-    # Additional fixes for specific cases
-    # Fix geohash equation specifically
-    geohash_fix = r'\text{geohash}(lat, lon, precision) = \text{base32\_encode}(\text{interleave\_bits}(lat, lon))'
+def fix_math_directive(content):
+    """Fix math directive issues."""
+    # Remove unsupported options like 'alt'
     content = re.sub(
-        r'\\text{geohash}\(lat, lon, \\text{precision}\) = \\text{base32_encode}\(\\text{interleave_bits}\(lat, lon\), \\text{precision}\)', 
-        geohash_fix, 
+        r'(\.\. math::)\s+(:alt:.*?)\s+',
+        r'\1\n\n',
+        content,
+        flags=re.DOTALL
+    )
+    
+    # Fix math directive formatting
+    def fix_math_block(match):
+        math_content = match.group(1).strip()
+        # Split into lines and remove common indentation
+        lines = math_content.split('\n')
+        if len(lines) > 1:
+            # Find minimum indentation (ignoring empty lines)
+            indents = [len(line) - len(line.lstrip()) for line in lines if line.strip()]
+            if indents:
+                min_indent = min(indents)
+                # Remove that indentation from each line
+                math_content = '\n'.join(line[min_indent:] if line.strip() else line for line in lines)
+        
+        # Ensure proper indentation for the math content
+        indented_content = '\n   '.join([''] + math_content.split('\n'))
+        
+        return f".. math::{indented_content}\n"
+    
+    content = re.sub(
+        r'\.\. math::(.*?)(?=\n\S|\Z)',
+        fix_math_block,
+        content,
+        flags=re.DOTALL
+    )
+    
+    return content
+
+def fix_inline_math(content):
+    """Fix inline math formatting."""
+    # Ensure consistent inline math delimiters
+    # Convert :math:`...` to $...$
+    content = re.sub(
+        r':math:`([^`]+)`',
+        r'$\1$',
         content
     )
     
-    # Write the fixed content back only if changed
+    # Fix common issues with inline math
+    # Replace spaces around operators
+    content = re.sub(
+        r'\$([^$]*?)\s*([+\-*/=])\s*([^$]*?)\$',
+        r'$\1 \2 \3$',
+        content
+    )
+    
+    return content
+
+def fix_display_math(content):
+    """Fix display math formatting."""
+    # Ensure consistent display math delimiters
+    # Convert $$...$$ to proper math directive
+    def replace_double_dollar(match):
+        math_content = match.group(1).strip()
+        indented_content = '\n   '.join([''] + math_content.split('\n'))
+        return f"\n.. math::{indented_content}\n"
+    
+    content = re.sub(
+        r'\$\$(.*?)\$\$',
+        replace_double_dollar,
+        content,
+        flags=re.DOTALL
+    )
+    
+    return content
+
+def fix_math_in_rst_file(file_path):
+    """Fix math issues in a single RST file."""
+    print(f"Processing {file_path}...")
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+    except UnicodeDecodeError:
+        print(f"Warning: Could not read {file_path} as UTF-8, skipping")
+        return
+    
+    # Apply fixes
+    original_content = content
+    content = fix_math_directive(content)
+    content = fix_inline_math(content)
+    content = fix_display_math(content)
+    
+    # Write back if changed
     if content != original_content:
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(content)
-        print(f"Fixed math equations in: {file_path}")
-        return True
-    return False
+        print(f"Fixed math issues in {file_path}")
+    else:
+        print(f"No math issues to fix in {file_path}")
+
+def fix_mathjax_config(conf_py_path):
+    """Fix MathJax configuration in conf.py."""
+    if not os.path.exists(conf_py_path):
+        print(f"Warning: {conf_py_path} not found, skipping MathJax config fix")
+        return
+    
+    with open(conf_py_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    # Check if we need to update MathJax configuration
+    if 'mathjax_config' in content and 'mathjax3_config' not in content:
+        # Add proper MathJax v3 configuration
+        mathjax3_config = """
+# MathJax v3 configuration
+mathjax3_config = {
+    'tex': {
+        'inlineMath': [['$', '$'], ['\\\\(', '\\\\)']],
+        'displayMath': [['$$', '$$'], ['\\\\[', '\\\\]']],
+        'processEscapes': True,
+        'processEnvironments': True
+    },
+    'options': {
+        'ignoreHtmlClass': 'tex2jax_ignore',
+        'processHtmlClass': 'tex2jax_process'
+    }
+}
+"""
+        # Add after mathjax_config
+        content = re.sub(
+            r'(mathjax_config\s*=\s*{[^}]*})',
+            r'\1\n\n' + mathjax3_config,
+            content
+        )
+        
+        with open(conf_py_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        print(f"Updated MathJax configuration in {conf_py_path}")
+    else:
+        print(f"MathJax configuration in {conf_py_path} is already up to date")
 
 def main():
-    """Main function to fix all RST files with math equations."""
-    # Find all RST files
-    rst_files = glob.glob('docs/source/**/*.rst', recursive=True)
+    parser = argparse.ArgumentParser(description='Fix math equation rendering issues in documentation.')
+    parser.add_argument('--docs-dir', default='docs/source', help='Path to the documentation source directory')
+    args = parser.parse_args()
     
-    fixed_count = 0
-    for file_path in rst_files:
-        if fix_math_equations(file_path):
-            fixed_count += 1
+    docs_dir = args.docs_dir
     
-    print(f"Fixed math equations in {fixed_count} RST files")
+    if not os.path.isdir(docs_dir):
+        print(f"Error: {docs_dir} is not a directory")
+        sys.exit(1)
+    
+    # Fix MathJax configuration
+    conf_py_path = os.path.join(docs_dir, 'conf.py')
+    fix_mathjax_config(conf_py_path)
+    
+    # Process all RST files
+    for root, _, files in os.walk(docs_dir):
+        for file in files:
+            if file.endswith('.rst'):
+                file_path = os.path.join(root, file)
+                fix_math_in_rst_file(file_path)
+    
+    print("All math equation issues fixed")
 
 if __name__ == "__main__":
     main() 

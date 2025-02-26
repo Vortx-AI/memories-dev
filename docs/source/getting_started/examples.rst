@@ -7,10 +7,10 @@ Examples
 This page provides practical examples of using the ``memories-dev`` framework for various real-world applications. Each example includes complete code that you can adapt for your own projects.
 
 Basic Examples
-============
+==============
 
 Historical Imagery Analysis
--------------------------
+---------------------------
 
 This example demonstrates how to retrieve and analyze historical satellite imagery for a specific location:
 
@@ -67,7 +67,7 @@ This example demonstrates how to retrieve and analyze historical satellite image
        asyncio.run(analyze_historical_imagery())
 
 Environmental Monitoring
-----------------------
+------------------------
 
 This example shows how to monitor environmental changes such as deforestation:
 
@@ -137,10 +137,10 @@ This example shows how to monitor environmental changes such as deforestation:
        asyncio.run(monitor_deforestation())
 
 Intermediate Examples
-===================
+=====================
 
 Real Estate Analysis
-------------------
+--------------------
 
 This example demonstrates how to analyze a property and its surroundings over time:
 
@@ -207,7 +207,7 @@ This example demonstrates how to analyze a property and its surroundings over ti
        asyncio.run(analyze_property())
 
 Urban Development Analysis
-------------------------
+--------------------------
 
 This example shows how to analyze urban development patterns over time:
 
@@ -276,10 +276,10 @@ This example shows how to analyze urban development patterns over time:
        asyncio.run(analyze_urban_development())
 
 Advanced Examples
-===============
+=================
 
 Multi-Location Comparative Analysis
----------------------------------
+-----------------------------------
 
 This example demonstrates how to compare multiple locations over time:
 
@@ -365,7 +365,7 @@ This example demonstrates how to compare multiple locations over time:
        asyncio.run(compare_locations())
 
 Custom Analysis Pipeline
----------------------
+------------------------
 
 This example shows how to create a custom analysis pipeline for specific needs:
 
@@ -476,7 +476,7 @@ This example shows how to create a custom analysis pipeline for specific needs:
        asyncio.run(custom_pipeline_analysis())
 
 Integration with External Data
-----------------------------
+------------------------------
 
 This example demonstrates how to integrate external data sources with the framework:
 
@@ -585,10 +585,10 @@ This example demonstrates how to integrate external data sources with the framew
        asyncio.run(integrated_analysis())
 
 Real-World Applications
-=====================
+=======================
 
 Disaster Impact Assessment
-------------------------
+--------------------------
 
 This example shows how to assess the impact of natural disasters:
 
@@ -679,7 +679,7 @@ This example shows how to assess the impact of natural disasters:
        asyncio.run(analyze_disaster_impact())
 
 Historical Site Reconstruction
-----------------------------
+------------------------------
 
 This example demonstrates how to reconstruct historical sites using multiple data sources:
 
@@ -757,12 +757,12 @@ This example demonstrates how to reconstruct historical sites using multiple dat
        asyncio.run(reconstruct_historical_site())
 
 Next Steps
-=========
+==========
 
 After exploring these examples, you might want to:
 
 * Adapt them to your specific use cases
 * Combine multiple examples to create more complex applications
-* Explore the :ref:`api_reference` for detailed information about each component
-* Learn about :ref:`advanced_features` for more sophisticated analyses
-* Check out the :ref:`tutorials` for step-by-step guides on specific tasks 
+* Explore the 'api_reference' for detailed information about each component
+* Learn about 'advanced_features' for more sophisticated analyses
+* Check out the 'tutorials' for step-by-step guides on specific tasks 

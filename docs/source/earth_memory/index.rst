@@ -12,7 +12,7 @@ Earth Memory
    :backlinks: none
 
 Introduction
-===========
+============
 
 Earth Memory is the core concept behind the memories-dev framework, providing AI systems with a comprehensive understanding of the physical world through temporal and spatial data integration. Unlike traditional AI approaches that rely on text corpora or unstructured documents, Earth Memory connects AI directly to objective Earth observation data - the pure source of truth about our physical world.
 
@@ -80,7 +80,7 @@ Earth Memory is the core concept behind the memories-dev framework, providing AI
    </style>
 
 What is Earth Memory?
--------------------
+---------------------
 
 Earth Memory is a sophisticated system that:
 
@@ -90,7 +90,7 @@ Earth Memory is a sophisticated system that:
 4. **Provides contextual information to AI systems**, enabling them to reason about the physical world with factual accuracy
 
 Why Earth Memory Matters
----------------------
+------------------------
 
 Traditional AI systems face significant limitations when reasoning about the physical world:
 
@@ -107,7 +107,7 @@ Earth Memory solves these problems by:
 - Eliminating hallucinations through grounding in factual, observable data
 
 Earth Memory Components
-=====================
+=======================
 
 The Earth Memory system consists of several key components:
 
@@ -131,9 +131,9 @@ The Earth Memory system consists of several key components:
      - Prepares Earth Memory data for consumption by AI models
 
 Data Sources
-----------
+------------
 
-Earth Memory integrates data from a wide variety of sources to create a comprehensive understanding of the physical world. For detailed information on supported data sources, see the :doc:`data_sources` documentation.
+Earth Memory integrates data from a wide variety of sources to create a comprehensive understanding of the physical world. For detailed information on supported data sources, see the 'data_sources' documentation.
 
 Key data source categories include:
 
@@ -145,7 +145,7 @@ Key data source categories include:
 - **Real-time Sensors and IoT**: Current conditions from sensors and connected devices
 
 Memory Tiers
-----------
+------------
 
 Earth Memory organizes data into four tiers based on access frequency and importance:
 
@@ -157,7 +157,7 @@ Earth Memory organizes data into four tiers based on access frequency and import
 For detailed information on memory tiers, see the :doc:`/core_concepts/memory_system` documentation.
 
 Temporal Engine
-------------
+---------------
 
 The Temporal Engine processes and analyzes how locations change over time, enabling:
 
@@ -194,7 +194,7 @@ Example usage:
     )
 
 Spatial Engine
------------
+--------------
 
 The Spatial Engine manages geographic relationships and spatial analysis, enabling:
 
@@ -234,7 +234,7 @@ Example usage:
     )
 
 Analysis Pipeline
---------------
+-----------------
 
 The Analysis Pipeline extracts insights and patterns from raw data, enabling:
 
@@ -270,7 +270,7 @@ Example usage:
     )
 
 Context Formatter
---------------
+-----------------
 
 The Context Formatter prepares Earth Memory data for consumption by AI models, enabling:
 
@@ -310,7 +310,7 @@ Example usage:
     )
 
 Earth Memory vs. Traditional AI Approaches
-=======================================
+==========================================
 
 .. raw:: html
 
@@ -459,12 +459,12 @@ Earth Memory vs. Traditional AI Approaches
    </style>
 
 Earth Memory Applications
-======================
+=========================
 
 Earth Memory enables a wide range of applications across different domains:
 
 Real Estate Analysis
------------------
+--------------------
 
 Earth Memory provides comprehensive property analysis, including:
 
@@ -495,7 +495,7 @@ Example usage:
     )
 
 Environmental Monitoring
----------------------
+------------------------
 
 Earth Memory enables sophisticated environmental monitoring, including:
 
@@ -526,7 +526,7 @@ Example usage:
     )
 
 Climate Risk Assessment
---------------------
+-----------------------
 
 Earth Memory supports comprehensive climate risk assessment, including:
 
@@ -557,7 +557,7 @@ Example usage:
     )
 
 Historical Reconstruction
-----------------------
+-------------------------
 
 Earth Memory supports historical reconstruction of places, including:
 
@@ -590,12 +590,12 @@ Example usage:
     )
 
 Advanced Features
-==============
+=================
 
 Earth Memory includes several advanced features that enhance its capabilities:
 
 Asynchronous Processing
---------------------
+-----------------------
 
 Earth Memory uses asynchronous processing to efficiently handle multiple data sources and analysis tasks:
 
@@ -618,7 +618,7 @@ Earth Memory uses asynchronous processing to efficiently handle multiple data so
     results = asyncio.run(process_locations())
 
 Multi-dimensional Scoring
-----------------------
+-------------------------
 
 Earth Memory uses sophisticated scoring algorithms to evaluate locations across multiple dimensions:
 
@@ -645,7 +645,7 @@ Earth Memory uses sophisticated scoring algorithms to evaluate locations across 
     overall_score = scorer.calculate_overall_score(scores)
 
 Vector-Based Storage
------------------
+--------------------
 
 Earth Memory uses vector-based storage for efficient retrieval of similar locations or features:
 
@@ -670,7 +670,7 @@ Earth Memory uses vector-based storage for efficient retrieval of similar locati
     )
 
 Distributed Processing
--------------------
+----------------------
 
 Earth Memory supports distributed processing for handling large-scale data:
 
@@ -691,7 +691,7 @@ Earth Memory supports distributed processing for handling large-scale data:
     )
 
 Best Practices
-============
+==============
 
 Follow these best practices when working with Earth Memory:
 
@@ -728,13 +728,13 @@ Follow these best practices when working with Earth Memory:
    Implement validation checks to ensure analysis results are accurate.
 
 Next Steps
-=========
+==========
 
 Now that you understand Earth Memory, you can:
 
-1. Explore :doc:`data_sources` to learn about the data sources available in memories-dev
+1. Explore 'data_sources' to learn about the data sources available in memories-dev
 2. Check out the :doc:`/core_concepts/memory_system` to understand how data is stored and managed
-3. Learn about :doc:`/analysis/index` capabilities for extracting insights from Earth Memory
+3. Learn about 'index' capabilities for extracting insights from Earth Memory
 4. See :doc:`/getting_started/examples` for practical applications of Earth Memory
 
 .. toctree::

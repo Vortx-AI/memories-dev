@@ -14,10 +14,10 @@ API Reference
    utils
 
 Core Components
--------------
+---------------
 
 Memory System
-~~~~~~~~~~~
+~~~~~~~~~~~~~
 
 .. automodule:: memories.core.memory
    :members:
@@ -26,7 +26,7 @@ Memory System
 
 
 Models
-~~~~~
+~~~~~~
 
 .. automodule:: memories.models.load_model
    :members:
@@ -34,7 +34,7 @@ Models
    :show-inheritance:
 
 Utilities
-~~~~~~~~
+~~~~~~~~~
 
 .. automodule:: memories.utils
    :members:

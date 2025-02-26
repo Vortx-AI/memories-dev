@@ -7,7 +7,7 @@ Architecture
 The ``memories-dev`` framework is designed with a modular, layered architecture that enables flexible integration of various data sources, processing capabilities, and applications. This page provides an overview of the system architecture and explains how the different components work together.
 
 System Overview
-=============
+===============
 
 At a high level, the ``memories-dev`` framework consists of four main layers:
 
@@ -17,57 +17,53 @@ At a high level, the ``memories-dev`` framework consists of four main layers:
 4. **Application Layer**: Provides domain-specific applications built on top of the framework.
 
 .. mermaid::
-   :caption: High-Level Architecture
-   :align: center
 
-   graph TB
-       subgraph "Data Acquisition Layer"
-           A1[Satellite Imagery APIs]
-           A2[Historical Maps]
-           A3[GIS Data Sources]
-           A4[Environmental Data]
-           A5[Socioeconomic Data]
-       end
-
-       subgraph "Memory Management Layer"
-           B1[Temporal Memory Manager]
-           B2[Spatial Memory Manager]
-           B3[Context Memory Manager]
-           B4[Relationship Memory Manager]
-       end
-
-       subgraph "Model Integration Layer"
-           C1[Computer Vision Models]
-           C2[NLP Models]
-           C3[Time Series Models]
-           C4[Geospatial Models]
-           C5[Multi-Modal Models]
-       end
-
-       subgraph "Application Layer"
-           D1[Real Estate Analysis]
-           D2[Urban Planning]
-           D3[Environmental Monitoring]
-           D4[Historical Research]
-           D5[Disaster Response]
-       end
-
-       A1 & A2 & A3 & A4 & A5 --> B1 & B2 & B3 & B4
-       B1 & B2 & B3 & B4 --> C1 & C2 & C3 & C4 & C5
-       C1 & C2 & C3 & C4 & C5 --> D1 & D2 & D3 & D4 & D5
-
-       classDef acquisition fill:#3b82f6,color:#fff,stroke:#2563eb
-       classDef memory fill:#10b981,color:#fff,stroke:#059669
-       classDef model fill:#8b5cf6,color:#fff,stroke:#7c3aed
-       classDef application fill:#f59e0b,color:#fff,stroke:#d97706
-       
-       class A1,A2,A3,A4,A5 acquisition
-       class B1,B2,B3,B4 memory
-       class C1,C2,C3,C4,C5 model
-       class D1,D2,D3,D4,D5 application
+                       A1[Satellite Imagery APIs]
+                       A2[Historical Maps]
+                       A3[GIS Data Sources]
+                       A4[Environmental Data]
+                       A5[Socioeconomic Data]
+                   end
+            
+                   subgraph "Memory Management Layer"
+                       B1[Temporal Memory Manager]
+                       B2[Spatial Memory Manager]
+                       B3[Context Memory Manager]
+                       B4[Relationship Memory Manager]
+                   end
+            
+                   subgraph "Model Integration Layer"
+                       C1[Computer Vision Models]
+                       C2[NLP Models]
+                       C3[Time Series Models]
+                       C4[Geospatial Models]
+                       C5[Multi-Modal Models]
+                   end
+            
+                   subgraph "Application Layer"
+                       D1[Real Estate Analysis]
+                       D2[Urban Planning]
+                       D3[Environmental Monitoring]
+                       D4[Historical Research]
+                       D5[Disaster Response]
+                   end
+            
+                   A1 & A2 & A3 & A4 & A5 --> B1 & B2 & B3 & B4
+                   B1 & B2 & B3 & B4 --> C1 & C2 & C3 & C4 & C5
+                   C1 & C2 & C3 & C4 & C5 --> D1 & D2 & D3 & D4 & D5
+            
+                   classDef acquisition fill:#3b82f6,color:#fff,stroke:#2563eb
+                   classDef memory fill:#10b981,color:#fff,stroke:#059669
+                   classDef model fill:#8b5cf6,color:#fff,stroke:#7c3aed
+                   classDef application fill:#f59e0b,color:#fff,stroke:#d97706
+                   
+                   class A1,A2,A3,A4,A5 acquisition
+                   class B1,B2,B3,B4 memory
+                   class C1,C2,C3,C4,C5 model
+                   class D1,D2,D3,D4,D5 application
 
 Scientific Foundation
-==================
+=====================
 
 The architecture of ``memories-dev`` is grounded in several scientific disciplines:
 
@@ -83,7 +79,14 @@ The architecture of ``memories-dev`` is grounded in several scientific disciplin
 
 The mathematical foundation includes:
 
-.. math:: I(X;Y) = \sum_{y \in Y} \sum_{x \in X} p(x,y) \log \left( \frac{p(x,y)}{p(x)p(y)} \right) Where :math:`I(X;Y)` represents the mutual information between two variables, used for quantifying the relevance of different data sources. Data Acquisition Layer ==================== The Data Acquisition Layer is responsible for retrieving data from various sources and preparing it for use in the framework. Components --------- .. list-table::
+
+
+
+
+.. math::
+   
+
+I(X;Y) = \sum_{y \in Y} \sum_{x \in X} p(x,y) \log \left( \frac{p(x,y)}{p(x)p(y)} \right) Where $I(X;Y)$ represents the mutual information between two variables, used for quantifying the relevance of different data sources. Data Acquisition Layer = =================== The Data Acquisition Layer is responsible for retrieving data from various sources and preparing it for use in the framework. Components --------- .. list-table::
    :header-rows: 1
    :widths: 25 75
 
@@ -101,7 +104,7 @@ The mathematical foundation includes:
      - Retrieves demographic, economic, and social data from census bureaus and other sources. Includes methods for addressing data gaps and inconsistencies across different jurisdictions.
 
 Key Features
-----------
+------------
 
 - **Asynchronous Data Retrieval**: All data acquisition operations are asynchronous, allowing for efficient concurrent data retrieval.
 - **Caching System**: Intelligent caching of retrieved data to minimize redundant API calls and improve performance.
@@ -112,7 +115,7 @@ Key Features
 - **Uncertainty Quantification**: Methods for estimating and propagating uncertainty in acquired data.
 
 Implementation Details
--------------------
+----------------------
 
 The Data Acquisition Layer uses a provider pattern with a common interface for each data type:
 
@@ -231,12 +234,12 @@ Each specific provider implements these methods with appropriate error handling 
        return imagery, ndvi_timeseries, buildings
 
 Memory Management Layer
-=====================
+=======================
 
 The Memory Management Layer is responsible for storing, organizing, and retrieving data in a way that preserves temporal and spatial relationships.
 
 Components
----------
+----------
 
 .. list-table::
    :header-rows: 1
@@ -254,7 +257,7 @@ Components
      - Tracks relationships between different data elements across time and space. Uses a hypergraph data structure to represent complex multi-entity relationships.
 
 Key Features
-----------
+------------
 
 - **Temporal Indexing**: Efficient indexing of data by time, enabling quick retrieval of historical states.
 - **Spatial Indexing**: Geographic indexing using techniques like quadtrees, R-trees, or geohashes for efficient spatial queries.
@@ -265,137 +268,155 @@ Key Features
 - **Compression**: Adaptive compression strategies based on data type and access frequency.
 
 Mathematical Foundation
---------------------
+-----------------------
 
 The memory system uses several mathematical concepts:
 
 1. **Spatial Indexing**: R-tree structures partition space using minimum bounding rectangles (MBRs):
 
-   .. math:: overlap(R_1, R_2) = \prod_{i=1}^{d} \max(0, \min(R_{1,i}^{high}, R_{2,i}^{high}) - \max(R_{1,i}^{low}, R_{2,i}^{low})) Where :math:`R_1` and :math:`R_2` are rectangles in d-dimensional space. 2. **Temporal Indexing**: Time-based indexing using interval trees: .. math:: overlaps(I_1, I_2) = \max(I_{1,start}, I_{2,start}) \leq \min(I_{1,end}, I_{2,end}) Where :math:`I_1` and :math:`I_2` are time intervals. 3. **Memory Tier Scoring**: Scoring function for determining memory tier placement: .. math:: score(i) = \alpha \cdot recency(i) + \beta \cdot frequency(i) + \gamma \cdot size(i) + \delta \cdot relevance(i) Where :math:`\alpha`, :math:`\beta`, :math:`\gamma`, and :math:`\delta` are weighting parameters. Implementation Details ------------------- The Memory Management Layer uses a combination of specialized data structures and database technologies: .. code-block:: python
+   
 
-   class TemporalMemoryManager:
-       def __init__(self, config=None):
-           self.config = config or default_config
-           self.db = self._initialize_database()
-           self.index = self._build_temporal_index()
-           
-       def _initialize_database(self):
-           """Initialize the underlying database."""
-           if self.config.storage_type == "sqlite":
-               return SqliteStorage(self.config.storage_path)
-           elif self.config.storage_type == "postgresql":
-               return PostgresStorage(
-                   host=self.config.db_host,
-                   port=self.config.db_port,
-                   database=self.config.db_name,
-                   user=self.config.db_user,
-                   password=self.config.db_password
-               )
-           else:
-               raise ValueError(f"Unsupported storage type: {self.config.storage_type}")
-               
-       def _build_temporal_index(self):
-           """Build the temporal index from the database."""
-           index = IntervalTree()
-           for record in self.db.get_all_records():
-               valid_time = (record.valid_from, record.valid_to)
-               transaction_time = (record.transaction_from, record.transaction_to)
-               index.add(valid_time[0], valid_time[1], {
-                   "id": record.id,
-                   "transaction_time": transaction_time
-               })
-           return index
-           
-       def store(self, data, valid_time, metadata=None):
-           """Store data with its valid time."""
-           transaction_time = (datetime.now(), datetime.max)
-           record_id = self.db.insert(
-               data=data,
-               valid_from=valid_time[0],
-               valid_to=valid_time[1],
-               transaction_from=transaction_time[0],
-               transaction_to=transaction_time[1],
-               metadata=metadata
-           )
-           self.index.add(valid_time[0], valid_time[1], {
-               "id": record_id,
-               "transaction_time": transaction_time
-           })
-           return record_id
-           
-       def update(self, record_id, data, valid_time=None, metadata=None):
-           """Update an existing record."""
-           # Get the current record
-           current = self.db.get(record_id)
-           
-           # Close the current transaction time
-           self.db.update(
-               record_id=current.id,
-               transaction_to=datetime.now()
-           )
-           
-           # Create a new version
-           new_valid_time = valid_time or (current.valid_from, current.valid_to)
-           new_transaction_time = (datetime.now(), datetime.max)
-           new_data = data if data is not None else current.data
-           new_metadata = metadata if metadata is not None else current.metadata
-           
-           new_record_id = self.db.insert(
-               data=new_data,
-               valid_from=new_valid_time[0],
-               valid_to=new_valid_time[1],
-               transaction_from=new_transaction_time[0],
-               transaction_to=new_transaction_time[1],
-               metadata=new_metadata,
-               previous_version=record_id
-           )
-           
-           # Update the index
-           self.index.remove_overlap(current.valid_from, current.valid_to)
-           self.index.add(new_valid_time[0], new_valid_time[1], {
-               "id": new_record_id,
-               "transaction_time": new_transaction_time
-           })
-           
-           return new_record_id
-           
-       def query(self, time_point=None, time_range=None, as_of=None):
-           """Query the temporal memory."""
-           results = []
-           
-           # Default to current time for as_of if not specified
-           as_of = as_of or datetime.now()
-           
-           if time_point is not None:
-               # Query for a specific point in time
-               overlapping = self.index.at(time_point)
-               for interval in overlapping:
-                   record_id = interval.data["id"]
-                   record = self.db.get(record_id)
-                   
-                   # Check if the record was valid at the as_of time
-                   if (record.transaction_from <= as_of and 
-                       (record.transaction_to is None or record.transaction_to > as_of)):
-                       results.append(record)
-           elif time_range is not None:
-               # Query for a time range
-               overlapping = self.index.overlap(time_range[0], time_range[1])
-               for interval in overlapping:
-                   record_id = interval.data["id"]
-                   record = self.db.get(record_id)
-                   
-                   # Check if the record was valid at the as_of time
-                   if (record.transaction_from <= as_of and 
-                       (record.transaction_to is None or record.transaction_to > as_of)):
-                       results.append(record)
-           else:
-               # Query for all records
-               for record in self.db.get_all_records():
-                   if (record.transaction_from <= as_of and 
-                       (record.transaction_to is None or record.transaction_to > as_of)):
-                       results.append(record)
-                       
-           return results
+
+
+.. math::
+   
+
+overlap(R_1, R_2) = \prod_{i=1}^{d} \max(0, \min(R_{1,i}^{high}, R_{2,i}^{high}) - \max(R_{1,i}^{low}, R_{2,i}^{low})) Where $R_1$ and $R_2$ are rectangles in d - dimensional space. 2. **Temporal Indexing**: Time-based indexing using interval trees: 
+
+
+.. math::
+   
+
+overlaps(I_1, I_2) = \max(I_{1,start}, I_{2,start}) \leq \min(I_{1,end}, I_{2,end}) Where $I_1$ and $I_2$ are time intervals. 3. * *Memory Tier Scoring**: Scoring function for determining memory tier placement: 
+
+.. math::
+   
+
+score(i) = \alpha \cdot recency(i) + \beta \cdot frequency(i) + \gamma \cdot size(i) + \delta \cdot relevance(i) Where $\alpha$, $\beta$, $\gamma$, and $\delta$ are weighting parameters. Implementation Details - ------------------ The Memory Management Layer uses a combination of specialized data structures and database technologies: .. code-block:: python
+      
+         class TemporalMemoryManager:
+             def __init__(self, config=None):
+                 self.config = config or default_config
+                 self.db = self._initialize_database()
+                 self.index = self._build_temporal_index()
+                 
+             def _initialize_database(self):
+                 """Initialize the underlying database."""
+                 if self.config.storage_type == "sqlite":
+                     return SqliteStorage(self.config.storage_path)
+                 elif self.config.storage_type == "postgresql":
+                     return PostgresStorage(
+                         host=self.config.db_host,
+                         port=self.config.db_port,
+                         database=self.config.db_name,
+                         user=self.config.db_user,
+                         password=self.config.db_password
+                     )
+                 else:
+                     raise ValueError(f"Unsupported storage type: {self.config.storage_type}")
+                     
+             def _build_temporal_index(self):
+                 """Build the temporal index from the database."""
+                 index = IntervalTree()
+                 for record in self.db.get_all_records():
+                     valid_time = (record.valid_from, record.valid_to)
+                     transaction_time = (record.transaction_from, record.transaction_to)
+                     index.add(valid_time[0], valid_time[1], {
+                         "id": record.id,
+                         "transaction_time": transaction_time
+                     })
+                 return index
+                 
+             def store(self, data, valid_time, metadata=None):
+                 """Store data with its valid time."""
+                 transaction_time = (datetime.now(), datetime.max)
+                 record_id = self.db.insert(
+                     data=data,
+                     valid_from=valid_time[0],
+                     valid_to=valid_time[1],
+                     transaction_from=transaction_time[0],
+                     transaction_to=transaction_time[1],
+                     metadata=metadata
+                 )
+                 self.index.add(valid_time[0], valid_time[1], {
+                     "id": record_id,
+                     "transaction_time": transaction_time
+                 })
+                 return record_id
+                 
+             def update(self, record_id, data, valid_time=None, metadata=None):
+                 """Update an existing record."""
+                 # Get the current record
+                 current = self.db.get(record_id)
+                 
+                 # Close the current transaction time
+                 self.db.update(
+                     record_id=current.id,
+                     transaction_to=datetime.now()
+                 )
+                 
+                 # Create a new version
+                 new_valid_time = valid_time or (current.valid_from, current.valid_to)
+                 new_transaction_time = (datetime.now(), datetime.max)
+                 new_data = data if data is not None else current.data
+                 new_metadata = metadata if metadata is not None else current.metadata
+                 
+                 new_record_id = self.db.insert(
+                     data=new_data,
+                     valid_from=new_valid_time[0],
+                     valid_to=new_valid_time[1],
+                     transaction_from=new_transaction_time[0],
+                     transaction_to=new_transaction_time[1],
+                     metadata=new_metadata,
+                     previous_version=record_id
+                 )
+                 
+                 # Update the index
+                 self.index.remove_overlap(current.valid_from, current.valid_to)
+                 self.index.add(new_valid_time[0], new_valid_time[1], {
+                     "id": new_record_id,
+                     "transaction_time": new_transaction_time
+                 })
+                 
+                 return new_record_id
+                 
+             def query(self, time_point=None, time_range=None, as_of=None):
+                 """Query the temporal memory."""
+                 results = []
+                 
+                 # Default to current time for as_of if not specified
+                 as_of = as_of or datetime.now()
+                 
+                 if time_point is not None:
+                     # Query for a specific point in time
+                     overlapping = self.index.at(time_point)
+                     for interval in overlapping:
+                         record_id = interval.data["id"]
+                         record = self.db.get(record_id)
+                         
+                         # Check if the record was valid at the as_of time
+                         if (record.transaction_from <= as_of and 
+                             (record.transaction_to is None or record.transaction_to > as_of)):
+                             results.append(record)
+                 elif time_range is not None:
+                     # Query for a time range
+                     overlapping = self.index.overlap(time_range[0], time_range[1])
+                     for interval in overlapping:
+                         record_id = interval.data["id"]
+                         record = self.db.get(record_id)
+                         
+                         # Check if the record was valid at the as_of time
+                         if (record.transaction_from <= as_of and 
+                             (record.transaction_to is None or record.transaction_to > as_of)):
+                             results.append(record)
+                 else:
+                     # Query for all records
+                     for record in self.db.get_all_records():
+                         if (record.transaction_from <= as_of and 
+                             (record.transaction_to is None or record.transaction_to > as_of)):
+                             results.append(record)
+                             
+                 return results
 
 .. code-block:: python
 
@@ -444,12 +465,12 @@ The memory system uses several mathematical concepts:
    )
 
 Model Integration Layer
-=====================
+=======================
 
 The Model Integration Layer incorporates various AI models for analyzing and processing data.
 
 Components
----------
+----------
 
 .. list-table::
    :header-rows: 1
@@ -469,7 +490,7 @@ Components
      - Models that integrate multiple data types (imagery, text, vector data) for comprehensive analysis. Implements cross-modal attention mechanisms.
 
 Key Features
-----------
+------------
 
 - **Model Registry**: Central registry of available models with metadata about capabilities and requirements.
 - **Inference Optimization**: Optimized model inference with support for batching, caching, and hardware acceleration.
@@ -480,72 +501,90 @@ Key Features
 - **Versioning**: Tracking of model versions and their performance characteristics.
 
 Mathematical Foundation
---------------------
+-----------------------
 
 The Model Integration Layer incorporates several advanced mathematical concepts:
 
 1. **Change Detection**: Using difference operators on image pairs:
 
-   .. math:: D(I_1, I_2) = |I_2 - I_1| > \tau Where :math:`I_1` and :math:`I_2` are images at different times, and :math:`\tau` is a threshold. 2. **Time Series Forecasting**: Using autoregressive integrated moving average (ARIMA) models: .. math:: \phi(B)(1-B)^d X_t = \theta(B)\varepsilon_t Where :math:`\phi(B)` and :math:`\theta(B)` are polynomials in the backshift operator :math:`B`. 3. **Uncertainty Quantification**: Using Monte Carlo dropout for uncertainty estimation: .. math:: Var[y] \approx \frac{1}{T} \sum_{t=1}^{T} f(x; \hat{W}_t)^2 - \left(\frac{1}{T} \sum_{t=1}^{T} f(x; \hat{W}_t)\right)^2 Where :math:`\hat{W}_t` represents model weights with dropout applied. Implementation Details ------------------- The Model Integration Layer uses a modular approach to model management: .. code-block:: python
+   
 
-   class ModelManager:
-       def __init__(self):
-           self.models = {}
-           self.model_registry = ModelRegistry()
-           
-       def load_model(self, model_id, **kwargs):
-           """Load a model from the registry."""
-           if model_id in self.models:
-               return self.models[model_id]
-               
-           model_info = self.model_registry.get_model_info(model_id)
-           if model_info is None:
-               raise ValueError(f"Model {model_id} not found in registry")
-               
-           model_class = self._get_model_class(model_info.type)
-           model = model_class(
-               model_path=model_info.path,
-               **{**model_info.default_params, **kwargs}
-           )
-           
-           self.models[model_id] = model
-           return model
-           
-       def _get_model_class(self, model_type):
-           """Get the appropriate model class for a given type."""
-           if model_type == "computer_vision":
-               return ComputerVisionModel
-           elif model_type == "nlp":
-               return NLPModel
-           elif model_type == "time_series":
-               return TimeSeriesModel
-           elif model_type == "geospatial":
-               return GeospatialModel
-           elif model_type == "multi_modal":
-               return MultiModalModel
-           else:
-               raise ValueError(f"Unsupported model type: {model_type}")
-               
-       def unload_model(self, model_id):
-           """Unload a model to free resources."""
-           if model_id in self.models:
-               model = self.models[model_id]
-               model.unload()
-               del self.models[model_id]
-               
-       def create_pipeline(self, pipeline_config):
-           """Create a model pipeline from a configuration."""
-           pipeline = ModelPipeline()
-           
-           for step_config in pipeline_config:
-               model = self.load_model(step_config["model_id"])
-               pipeline.add_step(
-                   model=model,
-                   input_mapping=step_config.get("input_mapping", {}),
-                   output_mapping=step_config.get("output_mapping", {})
-               )
-               
-           return pipeline
+
+
+.. math::
+   
+
+D(I_1, I_2) = |I_2 - I_1| > \tau Where $I_1$ and $I_2$ are images at different times, and $\tau$ is a threshold. 2. * *Time Series Forecasting**: Using autoregressive integrated moving average (ARIMA) models: 
+
+
+.. math::
+   
+
+\phi(B)(1-B)^d X_t = \theta(B)\varepsilon_t Where $\phi(B)$ and $\theta(B)$ are polynomials in the backshift operator $B$. 3. * *Uncertainty Quantification**: Using Monte Carlo dropout for uncertainty estimation: 
+
+.. math::
+   
+
+Var[y] \approx \frac{1}{T} \sum_{t=1}^{T} f(x; \hat{W}_t)^2 - \left(\frac{1}{T} \sum_{t=1}^{T} f(x; \hat{W}_t)\right)^2 Where $\hat{W}_t$ represents model weights with dropout applied. Implementation Details ------------------- The Model Integration Layer uses a modular approach to model management: .. code-block:: python
+      
+         class ModelManager:
+             def __init__(self):
+                 self.models = {}
+                 self.model_registry = ModelRegistry()
+                 
+             def load_model(self, model_id, **kwargs):
+                 """Load a model from the registry."""
+                 if model_id in self.models:
+                     return self.models[model_id]
+                     
+                 model_info = self.model_registry.get_model_info(model_id)
+                 if model_info is None:
+                     raise ValueError(f"Model {model_id} not found in registry")
+                     
+                 model_class = self._get_model_class(model_info.type)
+                 model = model_class(
+                     model_path=model_info.path,
+                     **{**model_info.default_params, **kwargs}
+                 )
+                 
+                 self.models[model_id] = model
+                 return model
+                 
+             def _get_model_class(self, model_type):
+                 """Get the appropriate model class for a given type."""
+                 if model_type == "computer_vision":
+                     return ComputerVisionModel
+                 elif model_type == "nlp":
+                     return NLPModel
+                 elif model_type == "time_series":
+                     return TimeSeriesModel
+                 elif model_type == "geospatial":
+                     return GeospatialModel
+                 elif model_type == "multi_modal":
+                     return MultiModalModel
+                 else:
+                     raise ValueError(f"Unsupported model type: {model_type}")
+                     
+             def unload_model(self, model_id):
+                 """Unload a model to free resources."""
+                 if model_id in self.models:
+                     model = self.models[model_id]
+                     model.unload()
+                     del self.models[model_id]
+                     
+             def create_pipeline(self, pipeline_config):
+                 """Create a model pipeline from a configuration."""
+                 pipeline = ModelPipeline()
+                 
+                 for step_config in pipeline_config:
+                     model = self.load_model(step_config["model_id"])
+                     pipeline.add_step(
+                         model=model,
+                         input_mapping=step_config.get("input_mapping", {}),
+                         output_mapping=step_config.get("output_mapping", {})
+                     )
+                     
+                 return pipeline
 
 .. code-block:: python
 
@@ -594,12 +633,12 @@ The Model Integration Layer incorporates several advanced mathematical concepts:
    )
 
 Application Layer
-===============
+=================
 
 The Application Layer provides domain-specific applications built on top of the framework's core capabilities.
 
 Components
----------
+----------
 
 .. list-table::
    :header-rows: 1
@@ -619,7 +658,7 @@ Components
      - Assesses the impact of natural disasters and monitors recovery efforts.
 
 Key Features
-----------
+------------
 
 - **Domain-Specific Logic**: Specialized algorithms and workflows for specific application domains.
 - **Integrated Analysis**: Combining multiple data sources and models for comprehensive analysis.
@@ -650,12 +689,12 @@ Key Features
    print(f"Future Projections: {analysis.future_projections}")
 
 Cross-Cutting Concerns
-====================
+======================
 
 Several components and services span across all layers of the architecture:
 
 Configuration System
-------------------
+--------------------
 
 A centralized configuration system that allows customization of all aspects of the framework:
 
@@ -671,7 +710,7 @@ A centralized configuration system that allows customization of all aspects of t
    })
 
 Logging and Monitoring
---------------------
+----------------------
 
 Comprehensive logging and monitoring capabilities:
 
@@ -686,7 +725,7 @@ Comprehensive logging and monitoring capabilities:
    logger.error("Error that occurred during operation")
 
 Error Handling
-------------
+--------------
 
 Robust error handling throughout the framework:
 
@@ -704,7 +743,7 @@ Robust error handling throughout the framework:
        # Handle processing error
 
 Concurrency Management
--------------------
+----------------------
 
 Tools for managing asynchronous operations and concurrency:
 
@@ -723,7 +762,7 @@ Tools for managing asynchronous operations and concurrency:
    results = await task_manager.gather()
 
 Caching System
-------------
+--------------
 
 A multi-level caching system for optimizing performance:
 
@@ -745,12 +784,12 @@ A multi-level caching system for optimizing performance:
        cache.set(key, imagery, ttl_days=30)
 
 Deployment Options
-================
+==================
 
 The ``memories-dev`` framework supports multiple deployment options:
 
 Local Deployment
---------------
+----------------
 
 For development and small-scale usage:
 
@@ -763,7 +802,7 @@ For development and small-scale usage:
    python my_analysis_script.py
 
 Server Deployment
----------------
+-----------------
 
 For multi-user environments:
 
@@ -782,7 +821,7 @@ For multi-user environments:
    server.start()
 
 Cloud Deployment
---------------
+----------------
 
 For scalable, distributed processing:
 
@@ -803,7 +842,7 @@ For scalable, distributed processing:
    deployment.deploy("my_application.py")
 
 Design Principles
-===============
+=================
 
 The architecture of the ``memories-dev`` framework is guided by several key design principles:
 
@@ -822,9 +861,9 @@ The architecture of the ``memories-dev`` framework is guided by several key desi
 7. **Resilience**: Robust error handling, retry mechanisms, and fallback strategies to handle failures gracefully.
 
 Next Steps
-=========
+==========
 
 * Learn about the :ref:`memory_system` that forms the core of the framework
-* Explore the :ref:`data_sources` available for acquiring data
-* Understand how :ref:`async_processing` works in the framework
+* Explore the 'data_sources' available for acquiring data
+* Understand how 'async_processing' works in the framework
 * Check out the :ref:`examples` to see the architecture in action 

@@ -1,10 +1,10 @@
 Data Utilities
-=============
+==============
 
 The Data Utilities module provides a comprehensive suite of tools for efficient data processing, querying, and manipulation within the memories.dev framework. These utilities are designed to handle large-scale data operations with optimal performance and memory efficiency.
 
 🔑 Key Features
-------------
+--------------
 
 - **High-Performance Querying**:
   - Efficient processing of large-scale parquet datasets
@@ -25,10 +25,10 @@ The Data Utilities module provides a comprehensive suite of tools for efficient 
   - Performance monitoring
 
 Data Acquisition
---------------
+----------------
 
 Data Manager
-~~~~~~~~~~~
+~~~~~~~~~~~~
 
 .. automodule:: memories.data_acquisition.data_manager
    :members:
@@ -36,7 +36,7 @@ Data Manager
    :show-inheritance:
 
 Sentinel API
-~~~~~~~~~~~
+~~~~~~~~~~~~
 
 .. automodule:: memories.data_acquisition.sources.sentinel_api
    :members:
@@ -44,7 +44,7 @@ Sentinel API
    :show-inheritance:
 
 Landsat API
-~~~~~~~~~~
+~~~~~~~~~~~
 
 .. automodule:: memories.data_acquisition.sources.landsat_api
    :members:
@@ -52,7 +52,7 @@ Landsat API
    :show-inheritance:
 
 OpenStreetMap API
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 .. automodule:: memories.data_acquisition.sources.osm_api
    :members:
@@ -60,7 +60,7 @@ OpenStreetMap API
    :show-inheritance:
 
 Overture API
-~~~~~~~~~~
+~~~~~~~~~~~~
 
 .. automodule:: memories.data_acquisition.sources.overture_api
    :members:
@@ -68,10 +68,10 @@ Overture API
    :show-inheritance:
 
 Data Processing
--------------
+---------------
 
 Image Processing
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 .. automodule:: memories.utils.processors.image_processor
    :members:
@@ -79,7 +79,7 @@ Image Processing
    :show-inheritance:
 
 Vector Processing
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 .. automodule:: memories.utils.processors.vector_processor
    :members:
@@ -87,7 +87,7 @@ Vector Processing
    :show-inheritance:
 
 Data Fusion
-~~~~~~~~~
+~~~~~~~~~~~
 
 .. automodule:: memories.utils.processors.data_fusion
    :members:
@@ -95,7 +95,7 @@ Data Fusion
    :show-inheritance:
 
 Caching System
-------------
+--------------
 
 .. automodule:: memories.utils.cache
    :members:
@@ -103,7 +103,7 @@ Caching System
    :show-inheritance:
 
 DuckDB Query Utilities
--------------------
+----------------------
 
 .. automodule:: memories.utils.duckdb_utils
    :members:
@@ -111,12 +111,12 @@ DuckDB Query Utilities
    :show-inheritance:
 
 query_multiple_parquet
-------------------
+----------------------
 
 .. autofunction:: memories.utils.duckdb_utils.query_multiple_parquet
 
 Parameters
-~~~~~~~~~
+~~~~~~~~~~
 
 - **parquet_files** (List[str]): 
   - List of parquet file paths or glob patterns
@@ -166,10 +166,10 @@ Raises
   - Large result sets
 
 📊 Example Usage
---------------
+---------------
 
 Basic Queries
-~~~~~~~~~~~
+~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -187,7 +187,7 @@ Basic Queries
             WHERE timestamp >= '2025-02-01'
             ORDER BY timestamp DESC
             LIMIT 1000
-        """
+""""""""""
     )
     
     # Spatial query with aggregation
@@ -202,11 +202,11 @@ Basic Queries
             GROUP BY location
             HAVING event_count > 100
             ORDER BY avg_temp DESC
-        """
+""""""""""""""""""""""
     )
 
 Advanced Operations
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -257,7 +257,7 @@ Advanced Operations
     )
 
 ⚡ Performance Optimization
------------------------
+--------------------------
 
 1. **Data Organization**
    - Partition files by date/time
@@ -278,10 +278,10 @@ Advanced Operations
    - Clean up resources
 
 🔧 Troubleshooting
----------------
+-----------------
 
 Common Issues
-~~~~~~~~~~~
+~~~~~~~~~~~~~
 
 1. **Performance Problems**
    - Reduce result set size
@@ -302,15 +302,15 @@ Common Issues
    - Verify results
 
 📚 See Also
---------
+----------
 
-- :ref:`memory_store` - Core memory storage interface
-- :ref:`data_processing` - Data processing utilities
-- :ref:`query_optimization` - Query optimization guide
-- :ref:`performance_tuning` - Performance tuning tips
+- 'memory_store' - Core memory storage interface
+- 'data_processing' - Data processing utilities
+- 'query_optimization' - Query optimization guide
+- 'performance_tuning' - Performance tuning tips
 
 Example Usage
------------
+-------------
 
 .. code-block:: python
 

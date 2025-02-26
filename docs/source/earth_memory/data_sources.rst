@@ -12,17 +12,17 @@ Data Sources
    :backlinks: none
 
 Introduction
-===========
+============
 
 The Earth Memory system integrates a diverse range of data sources to create a comprehensive understanding of the physical world. This document provides detailed information about the data sources supported by the memories-dev framework, including configuration options, usage examples, and best practices.
 
 Satellite Imagery
-===============
+=================
 
 Satellite imagery provides visual data of the Earth's surface, enabling analysis of land cover, urban development, environmental changes, and more.
 
 Supported Providers
-----------------
+-------------------
 
 The memories-dev framework supports multiple satellite imagery providers:
 
@@ -56,7 +56,7 @@ The memories-dev framework supports multiple satellite imagery providers:
      - Synthetic Aperture Radar (SAR) imagery
 
 Configuration
------------
+-------------
 
 Configure satellite imagery providers using the following options:
 
@@ -90,7 +90,7 @@ Configure satellite imagery providers using the following options:
     )
 
 Usage Example
------------
+-------------
 
 .. code-block:: python
 
@@ -129,12 +129,12 @@ Usage Example
     )
 
 Geospatial Vector Data
-===================
+======================
 
 Geospatial vector data represents discrete geographic features like buildings, roads, administrative boundaries, and points of interest.
 
 Supported Sources
---------------
+-----------------
 
 The memories-dev framework supports multiple vector data sources:
 
@@ -165,7 +165,7 @@ The memories-dev framework supports multiple vector data sources:
      - Buildings, places, transportation, administrative areas
 
 Configuration
------------
+-------------
 
 Configure vector data sources using the following options:
 
@@ -196,7 +196,7 @@ Configure vector data sources using the following options:
     )
 
 Usage Example
------------
+-------------
 
 .. code-block:: python
 
@@ -234,12 +234,12 @@ Usage Example
     )
 
 Environmental Data
-===============
+==================
 
 Environmental data includes climate, weather, air quality, water resources, and other environmental metrics.
 
 Supported Sources
---------------
+-----------------
 
 The memories-dev framework supports multiple environmental data sources:
 
@@ -270,7 +270,7 @@ The memories-dev framework supports multiple environmental data sources:
      - Stream flow, groundwater, water quality
 
 Configuration
------------
+-------------
 
 Configure environmental data sources using the following options:
 
@@ -301,7 +301,7 @@ Configure environmental data sources using the following options:
     )
 
 Usage Example
------------
+-------------
 
 .. code-block:: python
 
@@ -341,12 +341,12 @@ Usage Example
     )
 
 Historical Maps and Imagery
-========================
+===========================
 
 Historical maps and imagery provide views of locations from the past, enabling analysis of changes over time.
 
 Supported Sources
---------------
+-----------------
 
 The memories-dev framework supports multiple historical data sources:
 
@@ -377,7 +377,7 @@ The memories-dev framework supports multiple historical data sources:
      - Satellite imagery (1960-1972)
 
 Configuration
------------
+-------------
 
 Configure historical data sources using the following options:
 
@@ -408,7 +408,7 @@ Configure historical data sources using the following options:
     )
 
 Usage Example
------------
+-------------
 
 .. code-block:: python
 
@@ -447,12 +447,12 @@ Usage Example
     )
 
 Socioeconomic Data
-===============
+==================
 
 Socioeconomic data includes demographics, economic indicators, housing, transportation, and other human activity metrics.
 
 Supported Sources
---------------
+-----------------
 
 The memories-dev framework supports multiple socioeconomic data sources:
 
@@ -483,7 +483,7 @@ The memories-dev framework supports multiple socioeconomic data sources:
      - Various socioeconomic datasets
 
 Configuration
------------
+-------------
 
 Configure socioeconomic data sources using the following options:
 
@@ -515,7 +515,7 @@ Configure socioeconomic data sources using the following options:
     )
 
 Usage Example
------------
+-------------
 
 .. code-block:: python
 
@@ -555,12 +555,12 @@ Usage Example
     )
 
 Real-time Sensors and IoT
-======================
+=========================
 
 Real-time sensors and IoT devices provide current conditions from various sources, enabling near-real-time monitoring and analysis.
 
 Supported Sources
---------------
+-----------------
 
 The memories-dev framework supports multiple real-time data sources:
 
@@ -591,7 +591,7 @@ The memories-dev framework supports multiple real-time data sources:
      - Various sensor data
 
 Configuration
------------
+-------------
 
 Configure real-time data sources using the following options:
 
@@ -625,7 +625,7 @@ Configure real-time data sources using the following options:
     )
 
 Usage Example
------------
+-------------
 
 .. code-block:: python
 
@@ -664,12 +664,12 @@ Usage Example
     await monitor.stop()
 
 Custom Data Sources
-===============
+===================
 
 The memories-dev framework supports integration of custom data sources to meet specific needs.
 
 Creating a Custom Data Source
---------------------------
+-----------------------------
 
 Create a custom data source by implementing the `DataSource` interface:
 
@@ -698,7 +698,7 @@ Create a custom data source by implementing the `DataSource` interface:
             return visualization
 
 Registering a Custom Data Source
------------------------------
+--------------------------------
 
 Register a custom data source with the Earth Memory system:
 
@@ -728,12 +728,12 @@ Register a custom data source with the Earth Memory system:
     )
 
 Data Source Integration
-====================
+=======================
 
 The memories-dev framework provides tools for integrating and combining data from multiple sources.
 
 Data Fusion
----------
+-----------
 
 Combine data from multiple sources for comprehensive analysis:
 
@@ -769,7 +769,7 @@ Combine data from multiple sources for comprehensive analysis:
     )
 
 Data Harmonization
----------------
+------------------
 
 Harmonize data from different sources to ensure consistency:
 
@@ -802,12 +802,12 @@ Harmonize data from different sources to ensure consistency:
     )
 
 Caching and Performance
-====================
+=======================
 
 The memories-dev framework includes caching mechanisms to improve performance when working with data sources.
 
 Cache Configuration
----------------
+-------------------
 
 Configure caching for data sources:
 
@@ -836,7 +836,7 @@ Configure caching for data sources:
     cache_manager.clear_all_caches()
 
 Performance Optimization
---------------------
+------------------------
 
 Optimize performance when working with data sources:
 
@@ -865,12 +865,12 @@ Optimize performance when working with data sources:
     )
 
 Troubleshooting
-============
+===============
 
 Common issues and solutions when working with data sources:
 
 API Rate Limiting
---------------
+-----------------
 
 Many data sources implement rate limiting. To handle this:
 
@@ -893,7 +893,7 @@ Many data sources implement rate limiting. To handle this:
         data = await data_source.get_data(location="San Francisco, CA")
 
 Missing or Incomplete Data
------------------------
+--------------------------
 
 Handle missing or incomplete data:
 
@@ -928,7 +928,7 @@ Handle missing or incomplete data:
             )
 
 Geospatial Alignment Issues
-------------------------
+---------------------------
 
 Handle geospatial alignment issues:
 
@@ -963,7 +963,7 @@ Handle geospatial alignment issues:
         )
 
 Best Practices
-============
+==============
 
 Follow these best practices when working with data sources:
 
@@ -1000,11 +1000,11 @@ Follow these best practices when working with data sources:
    Match data resolution to your needs - higher resolution requires more processing resources.
 
 Next Steps
-=========
+==========
 
 Now that you understand the data sources available in the memories-dev framework, you can:
 
 1. Explore the :doc:`/earth_memory/index` documentation to learn about the Earth Memory system
-2. Check out the :doc:`/earth_memory/satellite_imagery` documentation for detailed information about satellite imagery
-3. Learn about :doc:`/earth_memory/environmental_data` for environmental data integration
+2. Check out the 'satellite_imagery' documentation for detailed information about satellite imagery
+3. Learn about 'environmental_data' for environmental data integration
 4. See :doc:`/getting_started/examples` for practical applications of Earth Memory data sources 

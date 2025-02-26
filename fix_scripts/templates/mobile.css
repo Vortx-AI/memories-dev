@@ -1,0 +1,98 @@
+/* Mobile-specific enhancements for memories-dev documentation */
+
+/* Mobile overlay for better UX */
+#mobile-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 199; /* Just below sidebar */
+}
+
+@media screen and (max-width: 768px) {
+    /* Show overlay when sidebar is open */
+    .wy-nav-side.shift + #mobile-overlay {
+        display: block;
+    }
+    
+    /* Better mobile nav button */
+    .wy-nav-top i {
+        font-size: 24px;
+        padding: 8px;
+        cursor: pointer;
+    }
+    
+    /* Improve readability on small screens */
+    .wy-nav-content {
+        padding: 1rem;
+    }
+    
+    /* Make code blocks scroll horizontally on mobile */
+    pre {
+        white-space: pre;
+        overflow-x: auto;
+        word-wrap: normal;
+    }
+    
+    /* Improve table display on small screens */
+    table.docutils {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+    }
+    
+    /* Better form elements on mobile */
+    input[type="text"], input[type="email"], input[type="search"], textarea {
+        font-size: 16px !important; /* Prevent iOS zoom on focus */
+    }
+    
+    /* Fix hero banner on mobile */
+    .hero-banner {
+        padding: 1.5rem 1rem;
+    }
+    
+    .hero-content h1 {
+        font-size: 1.8rem;
+    }
+    
+    .hero-content p {
+        font-size: 1rem;
+    }
+    
+    /* Fix comparison table on mobile */
+    .comparison-section {
+        padding: 1rem;
+    }
+    
+    .comparison-table h2 {
+        font-size: 1.5rem;
+    }
+    
+    /* Fix footer on mobile */
+    footer {
+        padding: 1rem;
+    }
+}
+
+/* Better tablet display */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+    .wy-nav-content {
+        padding: 1.5rem;
+    }
+    
+    pre {
+        font-size: 13px;
+    }
+    
+    /* Adjust sidebar width on tablets */
+    .wy-nav-side {
+        width: 250px;
+    }
+    
+    .wy-nav-content-wrap {
+        margin-left: 250px;
+    }
+} 

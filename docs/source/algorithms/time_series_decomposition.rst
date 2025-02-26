@@ -1,6 +1,6 @@
 ======================
 Time Series Decomposition
-======================
+=========================
 
 Overview
 --------
@@ -8,7 +8,7 @@ Overview
 The time series decomposition module in memories-dev provides tools for analyzing temporal patterns in Earth observation data. The implementation is based on the actual code in `memories/utils/processors/advanced_processor.py`.
 
 Core Implementation
-----------------
+-------------------
 
 The main time series analysis functionality is implemented in the `analyze_time_series` method:
 
@@ -20,7 +20,7 @@ The main time series analysis functionality is implemented in the `analyze_time_
         dates: List[datetime],
         method: str = "linear"
     ) -> Dict:
-        """
+""""""""""
         Analyze time series of images.
         
         Args:
@@ -30,13 +30,13 @@ The main time series analysis functionality is implemented in the `analyze_time_
             
         Returns:
             Dictionary containing analysis results
-        """
+""""""""""""""""""""""""""""""""""""""
 
 Analysis Methods
--------------
+----------------
 
 1. Linear Trend Analysis
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 The linear trend analysis calculates pixel-wise trends over time:
 
@@ -54,7 +54,7 @@ The linear trend analysis calculates pixel-wise trends over time:
                 coefficients[band, i, j] = np.polyfit(time_index, values, 1)[0]
 
 2. Seasonal Decomposition
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For seasonal patterns, we use the statsmodels implementation:
 
@@ -86,7 +86,7 @@ For seasonal patterns, we use the statsmodels implementation:
             residual[:, pixel] = decomp.resid
 
 Data Smoothing
-------------
+--------------
 
 For noise reduction, we implement a smoothing function:
 
@@ -96,7 +96,7 @@ For noise reduction, we implement a smoothing function:
         data: np.ndarray,
         window_size: int = 5
     ) -> np.ndarray:
-        """
+""""""""""""""""
         Apply smoothing to time series data.
         
         Args:
@@ -105,13 +105,13 @@ For noise reduction, we implement a smoothing function:
             
         Returns:
             Smoothed time series
-        """
+""""""""""""""""""""
         kernel = np.ones(window_size) / window_size
         smoothed = ndimage.convolve1d(data, kernel, mode='reflect')
         return smoothed
 
 Configuration
------------
+-------------
 
 Analysis parameters are defined in `analysis_config.py`:
 
@@ -126,7 +126,7 @@ Analysis parameters are defined in `analysis_config.py`:
     }
 
 Usage Example
------------
+-------------
 
 Here's how to use the time series analysis in your code:
 
@@ -150,7 +150,7 @@ Here's how to use the time series analysis in your code:
     residual = results["decomposition"]["band_0"]["residual"]
 
 Integration with Earth Engine
--------------------------
+-----------------------------
 
 The time series analysis can be used with Earth Engine data:
 
@@ -165,13 +165,13 @@ The time series analysis can be used with Earth Engine data:
         band: str,
         temporal_resolution: str = "month"
     ) -> Dict:
-        """
+""""""""""
         Get time series data from Earth Engine.
-        """
+"""""""""""""""""""""""""""""""""""""""
         # Implementation from memories/data_acquisition/sources/earth_engine_api.py
 
 Performance Considerations
-----------------------
+--------------------------
 
 1. Memory Usage
    - For large datasets, data is processed in tiles
@@ -193,7 +193,7 @@ Performance Considerations
        }
 
 Future Developments
-----------------
+-------------------
 
 Planned enhancements to the time series analysis module:
 1. Implementation of more advanced decomposition methods

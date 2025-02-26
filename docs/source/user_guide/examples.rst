@@ -4,7 +4,7 @@ Examples
 The Memories-Dev framework includes several example applications that demonstrate its capabilities and usage patterns.
 
 Property Analyzer
----------------
+-----------------
 
 The Property Analyzer example demonstrates how to analyze real estate properties using satellite imagery and local context.
 
@@ -35,7 +35,7 @@ Key features:
 - Automated recommendations generation
 
 Location Ambience Analyzer
-------------------------
+--------------------------
 
 The Location Ambience Analyzer evaluates the environmental and urban characteristics of locations.
 
@@ -54,7 +54,7 @@ Features:
 - Location-specific recommendations
 
 Traffic Analyzer
---------------
+----------------
 
 The Traffic Analyzer monitors and analyzes traffic patterns and road conditions.
 
@@ -73,7 +73,7 @@ Features:
 - Traffic-based recommendations
 
 Water Bodies Monitor
-------------------
+--------------------
 
 The Water Bodies Monitor tracks changes in water bodies using satellite data.
 
@@ -91,7 +91,7 @@ Features:
 - Environmental impact assessment
 
 Common Usage Patterns
--------------------
+---------------------
 
 All examples follow these common patterns:
 
@@ -111,7 +111,7 @@ All examples follow these common patterns:
     - Clean up old or irrelevant data
 
 Requirements
------------
+------------
 
 To run the examples, you need:
 

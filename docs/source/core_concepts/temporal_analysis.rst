@@ -1,5 +1,5 @@
 Temporal Analysis
-================
+=================
 
 Overview
 --------
@@ -7,10 +7,10 @@ Overview
 Temporal analysis in memories-dev provides tools and methods for analyzing time-series data and temporal patterns.
 
 Core Concepts
------------
+-------------
 
 Time Series Data
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 Working with time series data:
 
@@ -36,7 +36,7 @@ Working with time series data:
     )
 
 Temporal Decomposition
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 Decomposing time series:
 
@@ -58,7 +58,7 @@ Decomposing time series:
     )
 
 Pattern Detection
---------------
+-----------------
 
 Detecting temporal patterns:
 
@@ -80,7 +80,7 @@ Detecting temporal patterns:
     )
 
 Change Detection
--------------
+----------------
 
 Detecting changes in time series:
 
@@ -104,7 +104,7 @@ Detecting changes in time series:
     )
 
 Forecasting
----------
+-----------
 
 Time series forecasting:
 
@@ -130,7 +130,7 @@ Time series forecasting:
     )
 
 Temporal Correlation
------------------
+--------------------
 
 Analyzing temporal correlations:
 
@@ -151,7 +151,7 @@ Analyzing temporal correlations:
     )
 
 Visualization
------------
+-------------
 
 Visualizing temporal data:
 
@@ -179,7 +179,7 @@ Visualizing temporal data:
     )
 
 Advanced Topics
-------------
+---------------
 
 1. Temporal Clustering
    - Time series clustering
@@ -206,7 +206,7 @@ Advanced Topics
    - Cross-scale patterns
 
 Best Practices
-------------
+--------------
 
 1. Data Preparation
    - Handle missing values

@@ -4,10 +4,10 @@ Configuration
 This guide explains how to configure the memories-dev framework for your specific needs.
 
 Basic Configuration
-------------------
+-------------------
 
 Environment Setup
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 Configure the framework using environment variables or a configuration file:
 
@@ -30,7 +30,7 @@ Configure the framework using environment variables or a configuration file:
     )
 
 Memory Configuration
--------------------
+--------------------
 
 Configure different memory tiers:
 
@@ -61,7 +61,7 @@ Configure different memory tiers:
     }
 
 Storage Configuration
---------------------
+---------------------
 
 Configure storage backends:
 
@@ -86,8 +86,7 @@ Configure storage backends:
         }
     }
 
-Network Configuration
---------------------
+Network Configuration - --------------------
 
 Configure network settings:
 
@@ -109,7 +108,7 @@ Configure network settings:
     }
 
 Security Configuration
----------------------
+----------------------
 
 Configure security settings:
 
@@ -131,7 +130,7 @@ Configure security settings:
     }
 
 Monitoring Configuration
------------------------
+------------------------
 
 Configure monitoring and logging:
 
@@ -157,7 +156,7 @@ Configure monitoring and logging:
     }
 
 Performance Configuration
-------------------------
+-------------------------
 
 Configure performance settings:
 
@@ -180,7 +179,7 @@ Configure performance settings:
     }
 
 Model Configuration
-------------------
+-------------------
 
 Configure AI models:
 
@@ -205,7 +204,7 @@ Configure AI models:
     }
 
 Advanced Configuration
----------------------
+----------------------
 
 Fine-tune advanced settings:
 
@@ -230,7 +229,7 @@ Fine-tune advanced settings:
     }
 
 Configuration Validation
------------------------
+------------------------
 
 Validate your configuration:
 
@@ -249,7 +248,7 @@ Validate your configuration:
         print(f"Connection error: {e}")
 
 Configuration Best Practices
--------------------------
+----------------------------
 
 1. Security
    - Never hardcode sensitive values

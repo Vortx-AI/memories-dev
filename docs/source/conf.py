@@ -25,6 +25,7 @@ latex_only_doc = 'index'
 
 # Add any Sphinx extension module names here
 extensions = [
+    'rst2pdf.pdfbuilder',
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
@@ -158,17 +159,11 @@ templates_path = ['_templates']
 
 # These paths are either relative to html_static_path or fully qualified paths (eg. https://...)
 html_css_files = [
-    'custom.css',
-    'code-highlight.css',
-    'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+    'css/consolidated.css',  # Single consolidated CSS file
 ]
 
 html_js_files = [
-    'https://buttons.github.io/buttons.js',
-    'custom.js',
-    'theme_toggle.js',
-    'search_enhancer.js',
-    'nav_enhancer.js',
+    'js/consolidated.js',  # Single consolidated JavaScript file
 ]
 
 # The suffix of source filenames
@@ -193,20 +188,22 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files
 html_static_path = ['_static']
 
-# Theme options
+# Prevent duplicate static files
+html_copy_source = False
+html_show_sourcelink = False
+
+# Optimize static file handling
 html_theme_options = {
-    'logo_only': False,
-    'display_version': True,
-    'prev_next_buttons_location': 'both',
-    'style_external_links': True,
-    'style_nav_header_background': '#1a1a1a',  # Professional dark background
+    'navigation_depth': 2,
     'collapse_navigation': False,
     'sticky_navigation': True,
-    'navigation_depth': 4,
-    'includehidden': True,
-    'titles_only': False,
-    'body_max_width': '1200px',
-    'navigation_with_keys': True,
+    'includehidden': False,
+    'titles_only': True,
+    'display_version': True,
+    'prev_next_buttons_location': 'bottom',
+    'style_external_links': True,
+    'analytics_anonymize_ip': True,
+    'canonical_url': 'https://memories-dev.readthedocs.io/',
 }
 
 # Base URL for the docs
@@ -219,6 +216,17 @@ html_context = {
     'github_repo': 'memories-dev',
     'github_version': 'main',
     'conf_py_path': '/docs/source/',
+    'enable_api_explorer': False,
+    'enable_code_playground': False,
+    'enable_guided_tour': False,
+    'enable_feedback_collector': False,
+    'enable_progress_tracker': False,
+    'enable_version_selector': True,
+    'enable_mobile_enhancer': True,
+    'enable_formula_enhancer': True,
+    'default_theme': 'dark',  # Options: 'dark', 'light', 'auto'
+    'show_tour_on_first_visit': False,
+    'disable_on_this_page': True,  # Set to True to completely disable the "On This Page" section
 }
 
 # Matrix theme title
@@ -236,16 +244,13 @@ mermaid_params = ['--theme', 'default', '--width', '100%']
 
 # MyST settings
 myst_enable_extensions = [
+    'rst2pdf.pdfbuilder',
     'amsmath',
     'colon_fence',
     'deflist',
     'dollarmath',
     'html_admonition',
     'html_image',
-    'replacements',
-    'smartquotes',
-    'substitution',
-    'tasklist',
 ]
 
 # Add any extra paths that contain custom files
@@ -284,8 +289,172 @@ intersphinx_mapping = {
 
 # Disable certain extensions for latex build
 def setup(app):
-    app.connect('builder-inited', lambda app: app.builder.name == 'latex' and 
-                app.config.extensions.pop(app.config.extensions.index('sphinx.ext.autodoc'), None))
-    app.connect('builder-inited', lambda app: app.builder.name == 'latex' and 
-                app.config.extensions.pop(app.config.extensions.index('sphinxcontrib.mermaid'), None) 
-                if 'sphinxcontrib.mermaid' in app.config.extensions else None) 
+    # Add consolidated CSS and JS files
+    app.add_css_file("css/consolidated.css")
+    app.add_js_file("js/consolidated.js")
+    
+    
+    
+    # Add our comprehensive fixes JavaScript
+    
+    
+    # Add other JavaScript files
+    
+    
+    
+    
+    
+    # Pass configuration options to JavaScript
+    app.add_js_file(None, body=f'''
+        // Configuration options for documentation
+        window.DOCUMENTATION_OPTIONS.DISABLE_ON_THIS_PAGE = {str(html_context.get('disable_on_this_page', 'false')).lower()};
+        window.DOCUMENTATION_OPTIONS.MAX_NAV_DEPTH = 2;
+        window.DOCUMENTATION_OPTIONS.ENABLE_MERMAID = true;
+    ''')
+    
+    # Fix math configuration
+    app.add_js_file(None, body='''
+        // Fix MathJax configuration
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\(', '\)']],
+            displayMath: [['$$', '$$'], ['\[', '\]']],
+            processEscapes: true,
+            processEnvironments: true
+          },
+          options: {
+            ignoreHtmlClass: 'tex2jax_ignore',
+            processHtmlClass: 'tex2jax_process'
+          },
+          startup: {
+            ready: function() {
+              MathJax.startup.defaultReady();
+            }
+          }
+        };
+    ''')
+    
+    # Add custom event handlers
+    app.connect('builder-inited', on_builder_inited)
+    app.connect('build-finished', on_build_finished)
+
+def on_builder_inited(app):
+    """Run when the builder is initialized."""
+    # Fix title underline warnings by patching docutils
+    try:
+        from docutils.parsers.rst.states import Body
+        original_section = Body.section
+        
+        def patched_section(self, title, source, style, lineno, messages):
+            """Patch the section method to fix title underline warnings."""
+            if style == '=':
+                # Ensure the underline is long enough
+                title_length = len(title)
+                if style * title_length != style * title_length:
+                    style = style * title_length
+            return original_section(self, title, source, style, lineno, messages)
+        
+        Body.section = patched_section
+    except Exception as e:
+        print(f"Warning: Could not patch docutils for title underlines: {e}")
+
+def on_build_finished(app, exception):
+    """Run when the build is finished."""
+    if exception is None:  # Only run if build succeeded
+        import os
+        import shutil
+        
+        # Ensure _static directories exist in the output
+        static_dir = os.path.join(app.outdir, '_static')
+        css_dir = os.path.join(static_dir, 'css')
+        os.makedirs(css_dir, exist_ok=True)
+        
+        # Copy our custom files if they don't exist in the output
+        source_static = os.path.join(app.srcdir, '_static')
+        
+        # Helper function to copy files
+        def copy_if_newer(src, dst):
+            if os.path.exists(src) and (not os.path.exists(dst) or os.path.getmtime(src) > os.path.getmtime(dst)):
+                shutil.copy2(src, dst)
+        
+        # Copy JS files
+        for js_file in ['doc_fixes.js', 'lazy_loader.js', 'progress_tracker.js', 'nav_enhancer.js', 'theme_toggle.js']:
+            src = os.path.join(source_static, js_file)
+            dst = os.path.join(static_dir, js_file)
+            copy_if_newer(src, dst)
+        
+        # Copy CSS files
+        for css_file in ['custom.css', 'mobile.css']:
+            src = os.path.join(source_static, 'css', css_file)
+            dst = os.path.join(css_dir, css_file)
+            copy_if_newer(src, dst)
+        
+        print("Custom files copied to output directory.")
+
+# MathJax configuration for better formula rendering
+mathjax_path = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'
+mathjax_options = {
+    'async': 'async',
+}
+mathjax_config = {
+    'tex2jax': {
+        'inlineMath': [['$', '$'], ['\\(', '\\)']],
+        'displayMath': [['$$', '$$'], ['\\[', '\\]']],
+        'processEscapes': True,
+        'processEnvironments': True,
+    },
+    'HTML-CSS': {
+        'availableFonts': ['TeX'],
+        'scale': 100,
+        'linebreaks': {'automatic': True},
+    },
+    'SVG': {
+        'linebreaks': {'automatic': True},
+    },
+    'CommonHTML': {
+        'linebreaks': {'automatic': True},
+    },
+}
+
+# MathJax configuration for formula enhancer
+mathjax3_config = {
+    'tex': {
+        'inlineMath': [['$', '$'], ['\\(', '\\)']],
+        'displayMath': [['$$', '$$'], ['\\[', '\\]']],
+        'processEscapes': True,
+        'processEnvironments': True,
+        'packages': ['base', 'ams', 'noerrors', 'noundefined']
+    },
+    'options': {
+        'ignoreHtmlClass': 'tex2jax_ignore',
+        'processHtmlClass': 'tex2jax_process'
+    }
+}
+
+# Lazy loading for images
+html_scaled_image_link = False
+
+# Disable smart quotes - they can cause problems 
+smartquotes = False
+
+# Other HTML options
+html_use_index = True
+html_split_index = False
+html_show_sphinx = False
+
+# Performance improvements
+nitpicky = False  # Don't be too strict on references
+keep_warnings = False  # Don't store warnings in output 
+# -- Options for PDF output using rst2pdf ---------------------------------
+pdf_documents = [
+    ('index', 'memories-dev', 'Memories-Dev Documentation', 'Memories-Dev Team'),
+]
+pdf_stylesheets = ['sphinx', 'letter', '_styles/custom']
+pdf_style_path = ['.', '_styles']
+pdf_language = 'en_US'
+pdf_fit_mode = "shrink"
+pdf_break_level = 0
+pdf_verbosity = 0
+pdf_use_index = False
+pdf_use_modindex = False
+pdf_use_coverpage = True

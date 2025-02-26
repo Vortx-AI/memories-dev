@@ -3,72 +3,20 @@ Memory System
 
 .. code-block:: text
    :caption: Memory System Workflow
-   :align: center
-
-   +---------------------+     +----------------------+     +----------------------+
-   |                     |     |                      |     |                      |
-   |  Initialize         |     |  Configure Memory    |     |  Create Memory       |
-   |  MemoryManager      +---->+  Tiers               +---->+  Store               |
-   |                     |     |                      |     |                      |
-   +---------------------+     +----------------------+     +----------+-----------+
-                                                                      |
-                                                                      v
-   +---------------------+     +----------------------+     +----------------------+
-   |                     |     |                      |     |                      |
-   |  Retrieve Data      |     |  Store Data in       |     |  Process and         |
-   |  When Needed        +<----+  Appropriate Tier    +<----+  Organize Data       |
-   |                     |     |                      |     |                      |
-   +---------------------+     +----------------------+     +----------------------+
-           |
-           v
-   +---------------------+     +----------------------+     +----------------------+
-   |                     |     |                      |     |                      |
-   |  Apply Memory       |     |  Optimize Memory     |     |  Create Memory       |
-   |  Operations         +---->+  Usage               +---->+  Snapshots           |
-   |                     |     |                      |     |                      |
-   +---------------------+     +----------------------+     +----------------------+
-
+   
 Overview
 --------
 
 The Memory System is the core component of the memories-dev framework, providing efficient storage, retrieval, and management of data across different memory tiers. It is designed to optimize performance by keeping frequently accessed data in faster memory while moving less frequently accessed data to slower, more cost-effective storage.
 
 Memory Tiers
------------
+------------
 
 The system implements a 4-tier memory architecture:
 
 .. code-block:: text
    :caption: Memory System Visualization
-   :align: center
-
-   ┌───────────────────────────────────────────────────────────────┐
-   │                    MEMORY SYSTEM ARCHITECTURE                 │
-   └───────────────────────────────────────────────────────────────┘
-                                  │
-      ┌───────────────────────────┼───────────────────────────┐
-      │                           │                           │
-   ┌──▼───┐                    ┌──▼───┐                    ┌──▼───┐
-   │ HOT  │◄───── Access ─────►│ WARM │◄───── Access ─────►│ COLD │
-   │ TIER │      Frequency     │ TIER │      Frequency     │ TIER │
-   └──┬───┘                    └──┬───┘                    └──┬───┘
-      │                           │                           │
-      │     ┌───────────────┐     │     ┌───────────────┐     │     ┌───────────────┐
-      ├────►│  GPU MEMORY   │     ├────►│     RAM       │     ├────►│  LOCAL DISK   │
-      │     └───────────────┘     │     └───────────────┘     │     └───────────────┘
-      │     ┌───────────────┐     │     ┌───────────────┐     │     ┌───────────────┐
-      └────►│ TENSOR CORES  │     └────►│  CPU CACHE    │     └────►│     SSD       │
-            └───────────────┘           └───────────────┘           └───────────────┘
-                                                                     │
-                                                              ┌──────▼──────┐
-                                                              │  GLACIER    │
-                                                              │    TIER     │
-                                                              └──────┬──────┘
-                                                                     │
-                                                              ┌──────▼──────┐
-                                                              │CLOUD STORAGE│
-                                                              └─────────────┘
-
+   
 1. **Hot Memory (GPU Memory)**
    - Fastest access time (< 1ms)
    - Limited capacity (typically 8-32GB)
@@ -94,10 +42,10 @@ The system implements a 4-tier memory architecture:
    - Supports high compression ratios
 
 Basic Usage
-----------
+-----------
 
 Using the MemoryManager
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -142,10 +90,10 @@ Example Output:
     Cold memory usage: 0.00%
 
 Advanced Usage
------------
+--------------
 
 Memory Tier Migration
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 The system automatically migrates data between tiers based on access patterns:
 
@@ -215,7 +163,7 @@ Example Output:
     'data_4' is now in warm memory
 
 Memory Snapshots
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 Create and restore memory snapshots:
 
@@ -263,7 +211,7 @@ Create and restore memory snapshots:
     os.remove(snapshot_path)
 
 Memory Analytics
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 Monitor and analyze memory usage:
 
@@ -326,7 +274,7 @@ Monitor and analyze memory usage:
     memory_manager.cleanup()
 
 Distributed Memory
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 For multi-node deployments:
 
@@ -360,7 +308,7 @@ For multi-node deployments:
     memory_manager.cleanup()
 
 Best Practices
-------------
+--------------
 
 1. **Memory Sizing**:
    - Allocate appropriate sizes for each memory tier based on your workload

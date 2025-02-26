@@ -1,5 +1,5 @@
 Sentinel API
-===========
+============
 
 Overview
 --------
@@ -7,7 +7,7 @@ Overview
 The ``SentinelAPI`` class provides a comprehensive interface for accessing and downloading Sentinel-2 satellite imagery data through the Planetary Computer STAC API. This module handles authentication, data discovery, filtering, and downloading.
 
 Class Reference
---------------
+---------------
 
 .. autoclass:: memories.data_acquisition.sources.sentinel_api.SentinelAPI
    :members:
@@ -15,7 +15,7 @@ Class Reference
    :show-inheritance:
 
 Key Features
------------
+------------
 
 - **Cloud Cover Filtering**: Filter imagery based on cloud coverage percentage
 - **Spatial Filtering**: Query data for specific geographic regions using bounding boxes
@@ -25,10 +25,10 @@ Key Features
 - **Error Handling**: Robust validation and error reporting
 
 Basic Usage
-----------
+-----------
 
 Initialization
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -41,7 +41,7 @@ Initialization
     await api.initialize()
 
 Downloading Data
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -68,10 +68,10 @@ Downloading Data
         print(f"Error: {result['error']}")
 
 Advanced Usage
-------------
+--------------
 
 Error Handling
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -88,7 +88,7 @@ Error Handling
         print(f"Unexpected error: {e}")
 
 Concurrent Operations
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -127,7 +127,7 @@ Concurrent Operations
         return results
 
 Input Validation
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 The API performs validation on all inputs:
 
@@ -152,7 +152,7 @@ Example:
         print(f"Validation error: {e}")
 
 Best Practices
-------------
+--------------
 
 1. **Minimize Data Volume**: Request only the bands you need for your analysis
 2. **Use Cloud Cover Filtering**: Set appropriate cloud cover thresholds to get usable imagery

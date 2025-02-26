@@ -7,7 +7,7 @@ Data Flow
 The data flow architecture in ``memories-dev`` represents the heart of the system's ability to transform raw Earth observation data into actionable intelligence. This documentation explains the entire data lifecycle, from initial acquisition to delivery of insights.
 
 Core Data Flow Principles
-========================
+=========================
 
 The data flow in ``memories-dev`` is built on several key principles:
 
@@ -18,72 +18,82 @@ The data flow in ``memories-dev`` is built on several key principles:
 5. **Pipeline Architecture**: Sequential and branching processing stages with clear interfaces
 
 System-Level Data Flow
-=====================
+======================
 
 The following diagram illustrates the high-level data flow through the system:
 
 .. mermaid::
-   :align: center
 
-   flowchart TD
-       A[Data Sources] --> B[Acquisition Layer]
-       B --> C[Processing Layer]
-       C --> D[Memory Layer]
-       D --> E[Analysis Layer]
-       E --> F[Model Integration Layer]
-       F --> G[Application Layer]
-       
-       B -.-> D
-       D -.-> C
-       E -.-> D
-       F -.-> D
-       
-       style A fill:#1e40af,color:white
-       style B fill:#1d4ed8,color:white
-       style C fill:#b91c1c,color:white
-       style D fill:#047857,color:white
-       style E fill:#7c3aed,color:white
-       style F fill:#6d28d9,color:white
-       style G fill:#9a3412,color:white
-       
-       %% Bidirectional flows shown as dotted lines
+                   C --> D[Memory Layer]
+                   D --> E[Analysis Layer]
+                   E --> F[Model Integration Layer]
+                   F --> G[Application Layer]
+                   
+                   B -.-> D
+                   D -.-> C
+                   E -.-> D
+                   F -.-> D
+                   
+                   style A fill:#1e40af,color:white
+                   style B fill:#1d4ed8,color:white
+                   style C fill:#b91c1c,color:white
+                   style D fill:#047857,color:white
+                   style E fill:#7c3aed,color:white
+                   style F fill:#6d28d9,color:white
+                   style G fill:#9a3412,color:white
+                   
+                   %% Bidirectional flows shown as dotted lines
 
 This architecture enables data to flow efficiently while maintaining appropriate feedback loops between components.
 
 Scientific Foundations of Data Flow
-================================
+===================================
 
 The data flow architecture in ``memories-dev`` is grounded in several scientific principles from distributed systems, information theory, and geospatial computing.
 
 Information Flow Optimization
---------------------------
+-----------------------------
 
 The system optimizes information flow using principles from information theory. The core equation governing information transfer is:
 
-.. math:: I(X;Y) = \sum_{y \in Y} \sum_{x \in X} p(x,y) \log \left( \frac{p(x,y)}{p(x)p(y)} \right) Where: - :math:`I(X;Y)` is the mutual information between source X and destination Y - :math:`p(x,y)` is the joint probability distribution - :math:`p(x)` and :math:`p(y)` are the marginal probability distributions This principle guides the design of data routing and filtering mechanisms to maximize information transfer while minimizing redundancy. Parallel Processing Efficiency --------------------------- The efficiency of parallel processing in the data flow is modeled using Amdahl's Law: .. math:: S(n) = \frac{1}{(1-p) + \frac{p}{n}} Where: - :math:`S(n)` is the theoretical speedup - :math:`n` is the number of processors - :math:`p` is the proportion of the program that can be parallelized The system architecture is designed to maximize the parallelizable portion (p) of data processing tasks. Geospatial Data Transformation --------------------------- Geospatial data transformations follow rigorous mathematical principles. For coordinate transformations: .. math:: \begin{bmatrix} x' \\ y' \\ 1 \end{bmatrix} = \begin{bmatrix} a & b & c \\ d & e & f \\ 0 & 0 & 1 \end{bmatrix} \begin{bmatrix} x \\ y \\ 1 \end{bmatrix} Where the transformation matrix encodes rotation, scaling, and translation operations for accurate geospatial alignment. Detailed Component Data Flows =========================== Acquisition Layer -------------- The data acquisition layer handles the ingestion of data from various sources: .. mermaid::
-   :align: center
 
-   flowchart LR
-       A1[Satellite Imagery APIs] --> A[Data Acquisition Manager]
-       A2[Vector Databases] --> A
-       A3[Sensor Networks] --> A
-       A4[Environmental APIs] --> A
-       
-       A --> B1[Data Validation]
-       A --> B2[Format Conversion]
-       A --> B3[Metadata Extraction]
-       
-       B1 & B2 & B3 --> C[Validated Data]
-       
-       style A1 fill:#1e40af,color:white
-       style A2 fill:#1e40af,color:white
-       style A3 fill:#1e40af,color:white
-       style A4 fill:#1e40af,color:white
-       style A fill:#1d4ed8,color:white
-       style B1 fill:#1d4ed8,color:white
-       style B2 fill:#1d4ed8,color:white
-       style B3 fill:#1d4ed8,color:white
-       style C fill:#1d4ed8,color:white
+
+
+
+.. math::
+   
+
+I(X;Y) = \sum_{y \in Y} \sum_{x \in X} p(x,y) \log \left( \frac{p(x,y)}{p(x)p(y)} \right) Where: - $I(X;Y)$ is the mutual information between source X and destination Y - $p(x,y)$ is the joint probability distribution - $p(x)$ and $p(y)$ are the marginal probability distributions This principle guides the design of data routing and filtering mechanisms to maximize information transfer while minimizing redundancy. Parallel Processing Efficiency - -------------------------- The efficiency of parallel processing in the data flow is modeled using Amdahl's Law: 
+
+
+.. math::
+   
+
+S(n) = \frac{1}{(1-p) + \frac{p}{n}} Where: - $S(n)$ is the theoretical speedup - $n$ is the number of processors - $p$ is the proportion of the program that can be parallelized The system architecture is designed to maximize the parallelizable portion (p) of data processing tasks. Geospatial Data Transformation --------------------------- Geospatial data transformations follow rigorous mathematical principles. For coordinate transformations: 
+
+.. math::
+   
+
+\begin{bmatrix} x' \\ y' \\ 1 \end{bmatrix} = \begin{bmatrix} a & b & c \\ d & e & f \\ 0 & 0 & 1 \end{bmatrix} \begin{bmatrix} x \\ y \\ 1 \end{bmatrix} Where the transformation matrix encodes rotation, scaling, and translation operations for accurate geospatial alignment. Detailed Component Data Flows =========================== Acquisition Layer -------------- The data acquisition layer handles the ingestion of data from various sources: .. mermaid::
+
+                         A3[Sensor Networks] --> A
+                         A4[Environmental APIs] --> A
+                         
+                         A --> B1[Data Validation]
+                         A --> B2[Format Conversion]
+                         A --> B3[Metadata Extraction]
+                         
+                         B1 & B2 & B3 --> C[Validated Data]
+                         
+                         style A1 fill:#1e40af,color:white
+                         style A2 fill:#1e40af,color:white
+                         style A3 fill:#1e40af,color:white
+                         style A4 fill:#1e40af,color:white
+                         style A fill:#1d4ed8,color:white
+                         style B1 fill:#1d4ed8,color:white
+                         style B2 fill:#1d4ed8,color:white
+                         style B3 fill:#1d4ed8,color:white
+                         style C fill:#1d4ed8,color:white
 
 **Key Operations:**
 
@@ -167,30 +177,25 @@ The ``DataManager`` class integrates with various data sources through specializ
         return data
 
 Processing Layer
--------------
+----------------
 
 The processing layer transforms raw data into structured formats suitable for analysis:
 
 .. mermaid::
-   :align: center
 
-   flowchart TD
-       A[Raw Data] --> B[Processing Manager]
-       
-       B --> C1[Data Cleaning]
-       B --> C2[Feature Extraction]
-       B --> C3[Temporal Alignment]
-       B --> C4[Spatial Registration]
-       
-       C1 & C2 & C3 & C4 --> D[Processed Data]
-       
-       style A fill:#1d4ed8,color:white
-       style B fill:#b91c1c,color:white
-       style C1 fill:#b91c1c,color:white
-       style C2 fill:#b91c1c,color:white
-       style C3 fill:#b91c1c,color:white
-       style C4 fill:#b91c1c,color:white
-       style D fill:#b91c1c,color:white
+                   B --> C2[Feature Extraction]
+                   B --> C3[Temporal Alignment]
+                   B --> C4[Spatial Registration]
+                   
+                   C1 & C2 & C3 & C4 --> D[Processed Data]
+                   
+                   style A fill:#1d4ed8,color:white
+                   style B fill:#b91c1c,color:white
+                   style C1 fill:#b91c1c,color:white
+                   style C2 fill:#b91c1c,color:white
+                   style C3 fill:#b91c1c,color:white
+                   style C4 fill:#b91c1c,color:white
+                   style D fill:#b91c1c,color:white
 
 **Key Operations:**
 
@@ -285,32 +290,27 @@ The processing layer implements several scientific algorithms, including:
         return processed_data
 
 Memory Layer
----------
+------------
 
 The memory layer stores and organizes data across tiers for optimal access and cost-efficiency:
 
 .. mermaid::
-   :align: center
 
-   flowchart LR
-       A[Data] --> B[Memory Manager]
-       
-       B --> C1[Hot Memory Tier]
-       B --> C2[Warm Memory Tier]
-       B --> C3[Cold Memory Tier]
-       B --> C4[Glacier Memory Tier]
-       
-       C1 -.-> B
-       C2 -.-> B
-       C3 -.-> B
-       C4 -.-> B
-       
-       style A fill:#b91c1c,color:white
-       style B fill:#047857,color:white
-       style C1 fill:#047857,color:white
-       style C2 fill:#047857,color:white
-       style C3 fill:#047857,color:white
-       style C4 fill:#047857,color:white
+                   B --> C2[Warm Memory Tier]
+                   B --> C3[Cold Memory Tier]
+                   B --> C4[Glacier Memory Tier]
+                   
+                   C1 -.-> B
+                   C2 -.-> B
+                   C3 -.-> B
+                   C4 -.-> B
+                   
+                   style A fill:#b91c1c,color:white
+                   style B fill:#047857,color:white
+                   style C1 fill:#047857,color:white
+                   style C2 fill:#047857,color:white
+                   style C3 fill:#047857,color:white
+                   style C4 fill:#047857,color:white
 
 **Key Operations:**
 
@@ -331,7 +331,7 @@ The memory layer is implemented through the ``MemoryManager`` class, which coord
         - Warm Memory: CPU and Redis for fast in-memory access
         - Cold Memory: DuckDB for efficient on-device storage
         - Glacier Memory: Parquet files for off-device compressed storage
-        """
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
         
         def __init__(
             self,
@@ -406,30 +406,25 @@ The memory system uses vector embeddings and similarity search for efficient dat
     )
 
 Analysis Layer
------------
+--------------
 
 The analysis layer applies various analytical techniques to extract insights from the data:
 
 .. mermaid::
-   :align: center
 
-   flowchart TD
-       A[Processed Data] --> B[Analysis Manager]
-       
-       B --> C1[Statistical Analysis]
-       B --> C2[Spatial Analysis]
-       B --> C3[Temporal Analysis]
-       B --> C4[Machine Learning]
-       
-       C1 & C2 & C3 & C4 --> D[Analysis Results]
-       
-       style A fill:#047857,color:white
-       style B fill:#7c3aed,color:white
-       style C1 fill:#7c3aed,color:white
-       style C2 fill:#7c3aed,color:white
-       style C3 fill:#7c3aed,color:white
-       style C4 fill:#7c3aed,color:white
-       style D fill:#7c3aed,color:white
+                   B --> C2[Spatial Analysis]
+                   B --> C3[Temporal Analysis]
+                   B --> C4[Machine Learning]
+                   
+                   C1 & C2 & C3 & C4 --> D[Analysis Results]
+                   
+                   style A fill:#047857,color:white
+                   style B fill:#7c3aed,color:white
+                   style C1 fill:#7c3aed,color:white
+                   style C2 fill:#7c3aed,color:white
+                   style C3 fill:#7c3aed,color:white
+                   style C4 fill:#7c3aed,color:white
+                   style D fill:#7c3aed,color:white
 
 **Key Operations:**
 
@@ -491,30 +486,25 @@ The analysis layer implements various scientific algorithms:
         return analysis_results
 
 Model Integration Layer
--------------------
+-----------------------
 
 The model integration layer incorporates AI models for advanced analysis:
 
 .. mermaid::
-   :align: center
 
-   flowchart TD
-       A[Analysis Results] --> B[Model Integration Manager]
-       
-       B --> C1[Computer Vision Models]
-       B --> C2[NLP Models]
-       B --> C3[Time Series Models]
-       B --> C4[Multi-Modal Models]
-       
-       C1 & C2 & C3 & C4 --> D[Model Outputs]
-       
-       style A fill:#7c3aed,color:white
-       style B fill:#6d28d9,color:white
-       style C1 fill:#6d28d9,color:white
-       style C2 fill:#6d28d9,color:white
-       style C3 fill:#6d28d9,color:white
-       style C4 fill:#6d28d9,color:white
-       style D fill:#6d28d9,color:white
+                   B --> C2[NLP Models]
+                   B --> C3[Time Series Models]
+                   B --> C4[Multi-Modal Models]
+                   
+                   C1 & C2 & C3 & C4 --> D[Model Outputs]
+                   
+                   style A fill:#7c3aed,color:white
+                   style B fill:#6d28d9,color:white
+                   style C1 fill:#6d28d9,color:white
+                   style C2 fill:#6d28d9,color:white
+                   style C3 fill:#6d28d9,color:white
+                   style C4 fill:#6d28d9,color:white
+                   style D fill:#6d28d9,color:white
 
 **Key Operations:**
 
@@ -556,30 +546,25 @@ The model integration layer incorporates AI models for advanced analysis:
         return model_outputs
 
 Application Layer
---------------
+-----------------
 
 The application layer delivers insights to end-users through various interfaces:
 
 .. mermaid::
-   :align: center
 
-   flowchart TD
-       A[Model Outputs] --> B[Application Manager]
-       
-       B --> C1[Visualization]
-       B --> C2[Reporting]
-       B --> C3[API Endpoints]
-       B --> C4[Decision Support]
-       
-       C1 & C2 & C3 & C4 --> D[End Users]
-       
-       style A fill:#6d28d9,color:white
-       style B fill:#9a3412,color:white
-       style C1 fill:#9a3412,color:white
-       style C2 fill:#9a3412,color:white
-       style C3 fill:#9a3412,color:white
-       style C4 fill:#9a3412,color:white
-       style D fill:#1e40af,color:white
+                   B --> C2[Reporting]
+                   B --> C3[API Endpoints]
+                   B --> C4[Decision Support]
+                   
+                   C1 & C2 & C3 & C4 --> D[End Users]
+                   
+                   style A fill:#6d28d9,color:white
+                   style B fill:#9a3412,color:white
+                   style C1 fill:#9a3412,color:white
+                   style C2 fill:#9a3412,color:white
+                   style C3 fill:#9a3412,color:white
+                   style C4 fill:#9a3412,color:white
+                   style D fill:#1e40af,color:white
 
 **Key Operations:**
 
@@ -621,12 +606,12 @@ The application layer delivers insights to end-users through various interfaces:
         return delivery_results
 
 Data Flow Optimization
-===================
+======================
 
 The ``memories-dev`` framework implements several optimization techniques to ensure efficient data flow:
 
 Caching Strategy
--------------
+----------------
 
 The system uses a multi-level caching strategy to minimize redundant operations:
 
@@ -652,7 +637,7 @@ The system uses a multi-level caching strategy to minimize redundant operations:
             json.dump(data, f)
 
 Parallel Processing
-----------------
+-------------------
 
 The system leverages asynchronous and parallel processing for improved performance:
 
@@ -697,7 +682,7 @@ The system leverages asynchronous and parallel processing for improved performan
         return combined_data
 
 Data Compression
--------------
+----------------
 
 The system implements data compression techniques to reduce storage and transmission requirements:
 
@@ -723,7 +708,7 @@ The system implements data compression techniques to reduce storage and transmis
         return compressed
 
 Adaptive Data Routing
-------------------
+---------------------
 
 The system implements adaptive data routing to optimize processing paths:
 
@@ -751,7 +736,7 @@ The system implements adaptive data routing to optimize processing paths:
             return "general_processing"
 
 Monitoring and Metrics
-===================
+======================
 
 The data flow system includes comprehensive monitoring capabilities:
 
@@ -804,14 +789,14 @@ The data flow system includes comprehensive monitoring capabilities:
             return summary
 
 Conclusion
-=========
+==========
 
 The data flow architecture in ``memories-dev`` provides a robust foundation for processing Earth observation data. By implementing asynchronous processing, parallel execution, intelligent caching, and adaptive routing, the system achieves high performance and scalability while maintaining flexibility for diverse data sources and applications.
 
 For more information on specific components of the data flow, see the following sections:
 
-- :ref:`data_acquisition` - Details on acquiring data from various sources
-- :ref:`data_processing` - Information on data processing techniques
+- 'data_acquisition' - Details on acquiring data from various sources
+- 'data_processing' - Information on data processing techniques
 - :ref:`memory_system` - Documentation on the memory system for data storage
-- :ref:`analysis` - Guide to analytical capabilities
-- :ref:`models` - Information on AI model integration 
+- 'analysis' - Guide to analytical capabilities
+- 'models' - Information on AI model integration 

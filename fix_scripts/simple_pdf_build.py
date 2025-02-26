@@ -190,6 +190,56 @@ def fix_documentation_issues():
     
     print("Running fix_math_equations.py...")
     subprocess.call([sys.executable, "fix_scripts/fix_math_equations.py"])
+    
+    print("Ensuring static CSS directory exists...")
+    css_dir = "docs/source/_static/css"
+    if not os.path.exists(css_dir):
+        os.makedirs(css_dir)
+    
+    print("Applying UI fixes...")
+    # Ensure the JS files are properly included
+    copy_if_not_exists("docs/source/_static/lazy_loader.js", "docs/build/html/_static/lazy_loader.js")
+    copy_if_not_exists("docs/source/_static/css/custom.css", "docs/build/html/_static/css/custom.css")
+    
+    # Fix depth display issues in generated HTML
+    fix_toc_depth_issues("docs/build/html")
+    
+    print("Documentation fixes applied successfully.")
+
+def copy_if_not_exists(src, dst):
+    """Copy a file if it exists at source and not at destination."""
+    if os.path.exists(src) and not os.path.exists(dst):
+        # Create destination directory if needed
+        dst_dir = os.path.dirname(dst)
+        if not os.path.exists(dst_dir):
+            os.makedirs(dst_dir)
+        shutil.copy2(src, dst)
+        print(f"Copied {src} to {dst}")
+
+def fix_toc_depth_issues(html_dir):
+    """Fix TOC depth display issues in HTML files."""
+    # Find all HTML files
+    for root, _, files in os.walk(html_dir):
+        for file in files:
+            if file.endswith(".html"):
+                html_path = os.path.join(root, file)
+                try:
+                    # Read the HTML content
+                    with open(html_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    # Fix deep TOC nesting issues
+                    # Add CSS classes to control TOC depth visibility
+                    content = content.replace(
+                        '<div class="wy-menu wy-menu-vertical"',
+                        '<div class="wy-menu wy-menu-vertical" data-max-depth="2"'
+                    )
+                    
+                    # Write the updated content
+                    with open(html_path, 'w', encoding='utf-8') as f:
+                        f.write(content)
+                except Exception as e:
+                    print(f"Error processing {html_path}: {str(e)}")
 
 def build_pdf():
     """Build the PDF using rst2pdf directly."""

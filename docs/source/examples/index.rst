@@ -1,10 +1,21 @@
 Examples
 ========
 
-This section provides comprehensive examples of using memories.dev for various real-world applications.
+This section contains examples and tutorials for using the memories-dev framework.
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Examples
+
+   math_examples
+   climate_analysis
+   water_bodies_monitor
+   urban_growth
+   biodiversity_assessment
+   disaster_response
 
 🌍 Environmental Monitoring
-------------------------
+--------------------------
 
 .. toctree::
    :maxdepth: 1
@@ -14,7 +25,7 @@ This section provides comprehensive examples of using memories.dev for various r
    vegetation_tracking
 
 🏙️ Urban Development
-------------------
+--------------------
 
 .. toctree::
    :maxdepth: 1
@@ -24,7 +35,7 @@ This section provides comprehensive examples of using memories.dev for various r
    urban_growth
 
 🔍 Advanced Analysis
------------------
+-------------------
 
 .. toctree::
    :maxdepth: 1
@@ -34,10 +45,10 @@ This section provides comprehensive examples of using memories.dev for various r
    spatial_analysis
 
 Basic Examples
-------------
+--------------
 
 Memory Formation
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -58,7 +69,7 @@ Memory Formation
     )
 
 Query and Analysis
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -76,10 +87,10 @@ Query and Analysis
     )
 
 Advanced Usage
------------
+--------------
 
 Multi-Source Integration
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -97,7 +108,7 @@ Multi-Source Integration
     )
 
 Custom Analysis
-^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -117,7 +128,7 @@ Custom Analysis
     results = analyzer.analyze(memories)
 
 Performance Tips
--------------
+----------------
 
 1. **Memory Management**
    - Use appropriate batch sizes
