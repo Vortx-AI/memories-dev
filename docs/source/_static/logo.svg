@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="200" height="60" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .title { font: bold 24px sans-serif; fill: #1a5276; }
+    .subtitle { font: 14px sans-serif; fill: #2c3e50; }
+  </style>
+  <rect width="200" height="60" fill="white"/>
+  <text x="10" y="35" class="title">memories-dev</text>
+  <text x="10" y="50" class="subtitle">Earth-Grounded AI</text>
+</svg> 

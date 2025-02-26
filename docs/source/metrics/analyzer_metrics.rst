@@ -22,7 +22,7 @@ Where:
 Target value: < 5 m for high-resolution analysis
 
 Slope and Aspect Accuracy
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. math::
 
@@ -46,7 +46,7 @@ Climate Analysis
 --------------
 
 Temperature Prediction
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 .. math::
 
@@ -59,7 +59,7 @@ Where:
 Target value: < 1°C for short-term predictions
 
 Precipitation Prediction
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. math::
 
@@ -72,10 +72,10 @@ Where:
 Target value: < 5 mm/day for short-term predictions
 
 Water Resource Analysis
---------------------
+---------------------
 
 Water Body Detection
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 .. math::
 

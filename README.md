@@ -895,14 +895,12 @@ agent = RealEstateAgent(
     analyzers=["terrain", "climate", "water", "environmental"]
 )
 
-# Analyze property environment
-analysis = await agent.analyze_property_environment(
-    property_id="PROP001",
-    include_historical_data=True,
-    prediction_horizon_years=10
-)
+# Add property and analyze
+property_id = await agent.add_property(property_data)
+analysis = await agent.analyze_property_environment(property_id)
 
-print(f"Environmental Analysis: {analysis}")
+print(f"Property added: {property_id}")
+print(f"Environmental analysis: {analysis}")
 ```
 
 ### Environmental Monitoring

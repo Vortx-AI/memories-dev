@@ -1,5 +1,47 @@
 /* Enhanced Book Experience Styling */
 
+/* Color Variables */
+:root {
+    --primary-color: #1a5276;
+    --primary-light: #2980b9;
+    --primary-dark: #154360;
+    --accent-color: #27ae60;
+    --accent-light: #2ecc71;
+    --accent-dark: #229954;
+    --text-color: #2c3e50;
+    --text-muted: #7f8c8d;
+    --border-color: #bdc3c7;
+    --code-bg: #f9f9f9;
+    --code-color: #2c3e50;
+    --link-color: #2980b9;
+    --link-hover: #3498db;
+    --success-color: #27ae60;
+    --warning-color: #f39c12;
+    --error-color: #c0392b;
+    --info-color: #2980b9;
+}
+
+/* Dark Theme Colors */
+[data-theme="dark"] {
+    --primary-color: #2980b9;
+    --primary-light: #3498db;
+    --primary-dark: #2472a4;
+    --accent-color: #2ecc71;
+    --accent-light: #27ae60;
+    --accent-dark: #229954;
+    --text-color: #ecf0f1;
+    --text-muted: #95a5a6;
+    --border-color: #34495e;
+    --code-bg: #2c3e50;
+    --code-color: #ecf0f1;
+    --link-color: #3498db;
+    --link-hover: #2980b9;
+    --success-color: #27ae60;
+    --warning-color: #f39c12;
+    --error-color: #e74c3c;
+    --info-color: #3498db;
+}
+
 /* Journey Buttons */
 .journey-buttons {
     display: flex;

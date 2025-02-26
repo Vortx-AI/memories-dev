@@ -172,9 +172,9 @@ templates_path = ['_templates']
 
 # Add CSS files
 html_css_files = [
-    'custom.css',
-    'css/book_style.css',
+    'css/enhanced_book.css',
     'css/responsive.css',
+    'custom.css',
 ]
 
 # Add JavaScript files
@@ -207,8 +207,6 @@ exclude_patterns = [
 html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
-# further.  For a list of options available for each theme, see the
-# documentation.
 html_theme_options = {
     'navigation_depth': 4,
     'collapse_navigation': False,
@@ -218,7 +216,16 @@ html_theme_options = {
     'display_version': True,
     'prev_next_buttons_location': 'both',
     'style_external_links': True,
-    'style_nav_header_background': '#2b3035',
+    'style_nav_header_background': '#1a5276',  # Updated to match primary color
+    'logo_only': True,  # Only show the logo
+    'display_version': True,
+    'prev_next_buttons_location': 'both',
+    'style_external_links': True,
+    'vcs_pageview_mode': 'blob',
+    'body_max_width': 'none',  # Allow full width
+    'navigation_with_keys': True,
+    'globaltoc_collapse': False,
+    'globaltoc_maxdepth': 4,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -269,7 +276,7 @@ html_title = "Memories-Dev Documentation"
 html_favicon = '_static/favicon.ico'
 
 # Matrix theme logo
-html_logo = '_static/logo.png'
+html_logo = '_static/logo.svg'  # Updated to use our new SVG logo
 
 # Mermaid configuration
 mermaid_version = "latest"

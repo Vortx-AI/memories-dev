@@ -4,6 +4,26 @@
 memories-dev: Earth-Grounded AI Framework
 =====================================
 
+.. image:: https://img.shields.io/badge/version-2.0.2-blue.svg
+   :target: https://github.com/Vortx-AI/memories-dev
+   :alt: Version
+
+.. image:: https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue
+   :target: https://pypi.org/project/memories-dev/
+   :alt: Python Versions
+
+.. image:: https://img.shields.io/badge/license-MIT-green.svg
+   :target: https://opensource.org/licenses/MIT
+   :alt: License
+
+.. image:: https://img.shields.io/badge/docs-latest-brightgreen.svg
+   :target: https://memories-dev.readthedocs.io/
+   :alt: Documentation
+
+.. image:: https://img.shields.io/badge/code%20style-black-black
+   :target: https://github.com/psf/black
+   :alt: Code Style
+
 memories-dev is a Python package that provides a structured framework for building AI systems with deep understanding of Earth's systems through scientifically rigorous memory.
 
 .. contents:: On This Page
