@@ -11,9 +11,9 @@ Core Mathematical Concepts
    :maxdepth: 2
 
    earth_memory/scientific_foundations
-   technical/spatial_statistics
-   technical/temporal_analysis
-   technical/data_fusion
+   algorithms/kriging
+   algorithms/point_pattern
+   algorithms/time_series_decomposition
 
 Algorithms & Methods
 --------------------
@@ -23,24 +23,24 @@ Spatial Analysis
 
 * :doc:`/algorithms/kriging`
 * :doc:`/algorithms/point_pattern`
-* 'spatial_interpolation'
-* 'viewshed_analysis'
+* :doc:`/algorithms/spatial_interpolation`
+* :doc:`/algorithms/viewshed_analysis`
 
 Temporal Analysis
 ^^^^^^^^^^^^^^^^^
 
-* 'change_detection'
+* :doc:`/algorithms/change_detection`
 * :doc:`/algorithms/time_series_decomposition`
-* 'trend_analysis'
-* 'forecasting'
+* :doc:`/algorithms/trend_analysis`
+* :doc:`/algorithms/forecasting`
 
 Data Fusion
 ^^^^^^^^^^^
 
-* 'bayesian_fusion'
-* 'feature_fusion'
-* 'decision_fusion'
-* 'uncertainty_quantification'
+* :doc:`/algorithms/bayesian_fusion`
+* :doc:`/algorithms/feature_fusion`
+* :doc:`/algorithms/decision_fusion`
+* :doc:`/algorithms/uncertainty_quantification`
 
 Formula Database
 ----------------
@@ -172,54 +172,60 @@ Cross-Validation
 
 .. mermaid::
 
-                       A3[Test Set]
-                   end
-                   
-                   subgraph "Model Validation"
-                       B1[K-Fold Cross Validation]
-                       B2[Hold-Out Validation]
-                       B3[Leave-One-Out CV]
-                   end
-                   
-                   subgraph "Performance Assessment"
-                       C1[Error Metrics]
-                       C2[Statistical Tests]
-                       C3[Uncertainty Analysis]
-                   end
-                   
-                   A1 --> B1
-                   A2 --> B2
-                   A3 --> B3
-                   B1 --> C1
-                   B2 --> C2
-                   B3 --> C3
+    %%{init: {'theme': 'neutral'}}%%
+    flowchart TD
+        A1[Training Set]
+        A2[Validation Set]
+        A3[Test Set]
+        
+        subgraph ModelValidation["Model Validation"]
+            B1[K-Fold Cross Validation]
+            B2[Hold-Out Validation]
+            B3[Leave-One-Out CV]
+        end
+        
+        subgraph PerformanceAssessment["Performance Assessment"]
+            C1[Error Metrics]
+            C2[Statistical Tests]
+            C3[Uncertainty Analysis]
+        end
+        
+        A1 --> B1
+        A2 --> B2
+        A3 --> B3
+        B1 --> C1
+        B2 --> C2
+        B3 --> C3
 
 Uncertainty Quantification
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. mermaid::
 
-                       A3[Parameter Error]
-                   end
-                   
-                   subgraph "Propagation Methods"
-                       B1[Monte Carlo]
-                       B2[Bayesian Methods]
-                       B3[Ensemble Methods]
-                   end
-                   
-                   subgraph "Uncertainty Metrics"
-                       C1[Confidence Intervals]
-                       C2[Prediction Intervals]
-                       C3[Error Bounds]
-                   end
-                   
-                   A1 --> B1
-                   A2 --> B2
-                   A3 --> B3
-                   B1 --> C1
-                   B2 --> C2
-                   B3 --> C3
+    %%{init: {'theme': 'neutral'}}%%
+    flowchart TD
+        A1[Input Error]
+        A2[Model Error]
+        A3[Parameter Error]
+        
+        subgraph PropagationMethods["Propagation Methods"]
+            B1[Monte Carlo]
+            B2[Bayesian Methods]
+            B3[Ensemble Methods]
+        end
+        
+        subgraph UncertaintyMetrics["Uncertainty Metrics"]
+            C1[Confidence Intervals]
+            C2[Prediction Intervals]
+            C3[Error Bounds]
+        end
+        
+        A1 --> B1
+        A2 --> B2
+        A3 --> B3
+        B1 --> C1
+        B2 --> C2
+        B3 --> C3
 
 Technical Specifications
 ------------------------

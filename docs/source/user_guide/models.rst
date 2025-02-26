@@ -317,33 +317,25 @@ Using multiple models in a pipeline:
    Deployment: Local (GPU)
 
 Analysis Results
-==============
+---------------
 
 Findings
 --------
-   The satellite imagery shows significant urban development in the northeastern 
-   quadrant of the region over the past 12 months. Specifically:
-   
-   1. Construction of approximately 37 new residential buildings
-   2. Expansion of road network by 4.2 km
-   3. Reduction in vegetation cover by 3.1%
-   4. New commercial development near the highway intersection
+- Significant vegetation changes in urban areas
+- Clear development patterns along transport corridors
+- Strong correlation with climate impacts
 
 Environmental Impact
 ------------------
-   - Moderate reduction in permeable surfaces
-   - Potential increase in urban heat island effect
-   - Minimal impact on existing water bodies
-   - Loss of small woodland area (approximately 1.2 hectares)
+- Heat island mitigation through green spaces
+- Improved air quality in vegetated areas
+- Enhanced ecosystem resilience
 
 Recommendations
 -------------
-   1. Monitor stormwater runoff in newly developed areas
-   2. Consider green infrastructure to mitigate heat island effect
-   3. Implement vegetation buffers around new developments
-   4. Preserve remaining natural areas to maintain ecological balance
-   
-   CONFIDENCE SCORE: 87%
+- Expand green infrastructure initiatives
+- Optimize urban density planning
+- Implement climate adaptation measures
 
 GPU Acceleration
 ----------------
@@ -413,3 +405,107 @@ Best Practices
    - Use GPU acceleration when available
    - Implement proper prompt engineering
    - Consider quantized models for faster inference 
+
+.. mermaid::
+
+    flowchart TD
+        A1[Satellite Imagery APIs]
+        A2[Historical Maps]
+        A3[GIS Data Sources]
+        A4[Environmental Data]
+        A5[Socioeconomic Data]
+
+        subgraph MemoryManagement["Memory Management Layer"]
+            B1[Temporal Memory Manager]
+            B2[Spatial Memory Manager]
+            B3[Context Memory Manager]
+            B4[Relationship Memory Manager]
+        end
+
+        subgraph ModelIntegration["Model Integration Layer"]
+            C1[Computer Vision Models]
+            C2[NLP Models]
+            C3[Time Series Models]
+            C4[Geospatial Models]
+            C5[Multi-Modal Models]
+        end
+
+        subgraph ApplicationLayer["Application Layer"]
+            D1[Real Estate Analysis]
+            D2[Urban Planning]
+            D3[Environmental Monitoring]
+            D4[Historical Research]
+            D5[Disaster Response]
+        end
+
+        A1 & A2 & A3 & A4 & A5 --> B1 & B2 & B3 & B4
+        B1 & B2 & B3 & B4 --> C1 & C2 & C3 & C4 & C5
+        C1 & C2 & C3 & C4 & C5 --> D1 & D2 & D3 & D4 & D5
+
+        classDef acquisition fill:#3b82f6,color:#fff,stroke:#2563eb
+        classDef memory fill:#10b981,color:#fff,stroke:#059669
+        classDef model fill:#8b5cf6,color:#fff,stroke:#7c3aed
+        classDef application fill:#f59e0b,color:#fff,stroke:#d97706
+
+        class A1,A2,A3,A4,A5 acquisition
+        class B1,B2,B3,B4 memory
+        class C1,C2,C3,C4,C5 model
+        class D1,D2,D3,D4,D5 application
+
+.. mermaid::
+
+    flowchart TD
+        A[Data Sources]
+        B[Preprocessing]
+        C[Memory System]
+        D[Memory Layer]
+        E[Analysis Layer]
+        F[Model Integration Layer]
+        G[Application Layer]
+
+        A --> B
+        B --> C
+        C --> D
+        D --> E
+        E --> F
+        F --> G
+
+        B -.-> D
+        D -.-> C
+        E -.-> D
+        F -.-> D
+
+        style A fill:#1e40af,color:white
+        style B fill:#1d4ed8,color:white
+        style C fill:#b91c1c,color:white
+        style D fill:#047857,color:white
+        style E fill:#7c3aed,color:white
+        style F fill:#6d28d9,color:white
+        style G fill:#9a3412,color:white
+
+.. mermaid::
+
+    flowchart TD
+        A[Raw Data]
+        B[Data Preprocessing]
+        C1[Data Cleaning]
+        C2[Feature Extraction]
+        C3[Temporal Alignment]
+        C4[Spatial Registration]
+        D[Processed Data]
+
+        A --> B
+        B --> C1
+        B --> C2
+        B --> C3
+        B --> C4
+
+        C1 & C2 & C3 & C4 --> D
+
+        style A fill:#1d4ed8,color:white
+        style B fill:#b91c1c,color:white
+        style C1 fill:#b91c1c,color:white
+        style C2 fill:#b91c1c,color:white
+        style C3 fill:#b91c1c,color:white
+        style C4 fill:#b91c1c,color:white
+        style D fill:#b91c1c,color:white 

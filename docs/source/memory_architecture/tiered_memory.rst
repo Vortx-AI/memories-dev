@@ -593,4 +593,226 @@ After learning about tiered memory architecture:
 
 - Configure storage backends for each tier in :doc:`storage`
 - Explore data processing patterns across tiers in :doc:`../integration/data_processing`
-- Learn about memory types that work with this architecture in :doc:`../memory_types/index` 
+- Learn about memory types that work with this architecture in :doc:`../memory_types/index`
+
+Overview
+--------
+
+The memories-dev framework implements a tiered memory architecture that optimizes data storage and access based on frequency of use, importance, and performance requirements.
+
+Memory Hierarchy
+--------------
+
+.. mermaid::
+
+    flowchart TD
+        A[Memory Manager] --> B[Hot Memory]
+        A --> C[Warm Memory]
+        A --> D[Cold Memory]
+        A --> E[Glacier Memory]
+        
+        B --> F[In-Memory Cache]
+        C --> G[SSD Storage]
+        D --> H[HDD Storage]
+        E --> I[Cloud Archive]
+
+        style A fill:#4B5563,color:white
+        style B fill:#EF4444,color:white
+        style C fill:#F59E0B,color:white
+        style D fill:#10B981,color:white
+        style E fill:#3B82F6,color:white
+
+Hot Memory
+---------
+
+Characteristics:
+- Highest performance tier
+- In-memory storage
+- Limited capacity
+- Most frequently accessed data
+- Automatic eviction based on LRU
+
+Implementation:
+
+.. code-block:: python
+
+    from memories.storage import HotMemoryManager
+    
+    # Configure hot memory
+    hot_memory = HotMemoryManager(
+        capacity="32GB",
+        eviction_policy="lru",
+        compression=True
+    )
+    
+    # Store frequently accessed data
+    await hot_memory.store(
+        key="recent_analysis",
+        data=analysis_results,
+        priority="high"
+    )
+
+Warm Memory
+----------
+
+Characteristics:
+- Medium performance tier
+- SSD-based storage
+- Moderate capacity
+- Recently accessed data
+- Balanced cost-performance ratio
+
+Implementation:
+
+.. code-block:: python
+
+    from memories.storage import WarmMemoryManager
+    
+    # Configure warm memory
+    warm_memory = WarmMemoryManager(
+        path="/data/warm",
+        capacity="1TB",
+        cleanup_interval="1d"
+    )
+    
+    # Move data to warm storage
+    await warm_memory.store(
+        key="monthly_summary",
+        data=summary_data,
+        retention="30d"
+    )
+
+Cold Memory
+----------
+
+Characteristics:
+- Lower performance tier
+- HDD-based storage
+- Large capacity
+- Infrequently accessed data
+- Cost-effective long-term storage
+
+Implementation:
+
+.. code-block:: python
+
+    from memories.storage import ColdMemoryManager
+    
+    # Configure cold memory
+    cold_memory = ColdMemoryManager(
+        path="/data/cold",
+        capacity="10TB",
+        compression_level="high"
+    )
+    
+    # Archive older data
+    await cold_memory.store(
+        key="historical_data_2023",
+        data=historical_data,
+        compress=True
+    )
+
+Glacier Memory
+------------
+
+Characteristics:
+- Lowest performance tier
+- Cloud-based archival storage
+- Unlimited capacity
+- Rarely accessed data
+- Lowest storage cost
+
+Implementation:
+
+.. code-block:: python
+
+    from memories.storage import GlacierMemoryManager
+    
+    # Configure glacier memory
+    glacier_memory = GlacierMemoryManager(
+        provider="aws",
+        bucket="earth-memories-archive",
+        region="us-west-2"
+    )
+    
+    # Archive data for long-term storage
+    await glacier_memory.store(
+        key="historical_archive_2020",
+        data=archive_data,
+        retention="7y"
+    )
+
+Memory Movement
+-------------
+
+Data automatically moves between tiers based on access patterns:
+
+.. code-block:: python
+
+    from memories.storage import MemoryManager
+    
+    # Initialize memory manager
+    manager = MemoryManager(
+        hot_memory=hot_memory,
+        warm_memory=warm_memory,
+        cold_memory=cold_memory,
+        glacier_memory=glacier_memory
+    )
+    
+    # Data automatically moves between tiers
+    data = await manager.get("analysis_2023")  # Promotes to hot if frequently accessed
+    
+    # Manually move data between tiers
+    await manager.promote("monthly_data", to_tier="warm")
+    await manager.demote("old_data", to_tier="cold")
+
+Monitoring and Metrics
+--------------------
+
+Track memory tier performance and usage:
+
+.. code-block:: python
+
+    # Get memory metrics
+    metrics = manager.get_metrics()
+    
+    print(f"Hot memory usage: {metrics['hot']['usage_percent']}%")
+    print(f"Warm memory usage: {metrics['warm']['usage_percent']}%")
+    print(f"Cold memory usage: {metrics['cold']['usage_percent']}%")
+    print(f"Glacier memory usage: {metrics['glacier']['usage_percent']}%")
+    
+    # Get access patterns
+    patterns = manager.get_access_patterns(
+        timeframe="7d",
+        granularity="1h"
+    )
+
+Best Practices
+------------
+
+1. **Data Classification**
+   - Classify data based on access patterns
+   - Consider data importance and retention requirements
+   - Define clear promotion/demotion policies
+
+2. **Capacity Planning**
+   - Monitor tier utilization
+   - Set appropriate tier capacities
+   - Plan for data growth
+
+3. **Performance Optimization**
+   - Use appropriate compression levels
+   - Configure eviction policies
+   - Optimize access patterns
+
+4. **Cost Management**
+   - Balance performance and cost
+   - Monitor storage costs
+   - Implement lifecycle policies
+
+See Also
+--------
+
+* :doc:`/memory_architecture/memory_system`
+* :doc:`/memory_architecture/retention`
+* :doc:`/deployment/scaling` 

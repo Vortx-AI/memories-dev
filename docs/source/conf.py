@@ -59,10 +59,15 @@ math_dollar_displayed = True
 mermaid_cmd = 'mmdc'
 mermaid_output_format = 'svg'
 mermaid_params = [
-    '--backgroundColor', 'transparent',
-    '--width', '1024',
-    '--scale', '1.5'
+    '--backgroundColor', 'white',
+    '--width', '1024'
 ]
+
+# Additional Mermaid settings
+mermaid = {
+    'version': '10.6.1',  # Use the latest stable version
+    'output_folder': '_images/mermaid'
+}
 
 # Disable mermaid if command is not available
 import subprocess

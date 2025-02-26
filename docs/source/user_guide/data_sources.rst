@@ -262,18 +262,27 @@ Example Output:
    - Water: San Francisco Bay
    - Parks: Golden Gate Park, other green spaces
    
-   CHANGE DETECTION (vs. 2023-02-15)
---------------------------------
+Change Detection Results
+----------------------
    - Vegetation: +2.3% increase
    - Urban Area: +0.8% increase
-   - Water Bodies: -0.1% decrease
 
-INSIGHTS
---------
+Key Insights
+-----------
    - Healthy vegetation in park areas
    - Moderate urban development in northern sectors
-   - Stable coastline with minimal erosion
-   - Clear atmospheric conditions
+
+Environmental Impact
+------------------
+   - Reduced heat island effect
+   - Improved air quality
+   - Enhanced ecosystem resilience
+
+Recommendations
+-------------
+   - Expand green infrastructure
+   - Optimize urban density
+   - Implement climate adaptation measures
 
 Error Handling
 --------------

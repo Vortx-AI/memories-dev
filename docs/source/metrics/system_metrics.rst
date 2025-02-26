@@ -19,7 +19,7 @@ Target values:
 - Cluster: > 100 queries/second
 
 Query Latency Distribution
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. math::
 
@@ -46,7 +46,7 @@ Throughput Scaling Factor
 Target value: > 0.8 × n (80% efficiency)
 
 Resource Utilization
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 .. math::
 
@@ -64,7 +64,7 @@ Reliability Metrics
 ------------------
 
 System Availability
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 .. math::
 
