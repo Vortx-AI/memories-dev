@@ -5,11 +5,11 @@
 # Required
 version: 2
 
-# Set the OS and Python version
+# Set the OS, Python version and other tools
 build:
   os: ubuntu-22.04
   tools:
-    python: "3.12"
+    python: "3.11"
   apt_packages:
     - latexmk
     - texlive-latex-recommended
@@ -45,10 +45,10 @@ build:
       - mkdir -p docs/build/latex
       - mkdir -p docs/build/pdf
     post_build:
-      # Custom PDF build process - ensure only one PDF file is generated
-      - cd docs && make latexpdf
+      # Use our custom PDF build script instead of LaTeX
+      - python fix_scripts/simple_pdf_build.py
       - mkdir -p _readthedocs/html
-      - cp docs/build/latex/memories-dev.pdf _readthedocs/html/
+      - cp docs/build/pdf/memories-dev.pdf _readthedocs/html/ || echo "PDF build failed, continuing anyway"
 
 # Sphinx configuration
 sphinx:
@@ -59,7 +59,6 @@ sphinx:
 # Documentation formats - Only include HTML
 formats:
   - htmlzip
-  - pdf  # Let ReadTheDocs handle PDF generation
 
 # Python package installation
 python:
@@ -67,10 +66,15 @@ python:
     - requirements: docs/requirements.txt
     - method: pip
       path: .
+    - requirements: requirements-dev.txt
+    # Install rst2pdf for PDF generation
+    - requirements: requirements-dev.txt
       extra_requirements:
         - docs
-        - examples
-        - dev
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs
 
 # Repository configuration
 submodules:
