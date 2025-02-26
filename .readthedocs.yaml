@@ -52,8 +52,38 @@ build:
       # Create necessary directories
       - mkdir -p docs/build/latex
       - mkdir -p docs/build/pdf
-      # Configure ImageMagick policy to allow PDF operations
-      - sudo sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' /etc/ImageMagick-6/policy.xml || true
+      # Configure ImageMagick policy - try multiple possible locations
+      - |
+        # Try to modify existing policy files
+        for policy_file in /etc/ImageMagick*/policy.xml /usr/local/etc/ImageMagick*/policy.xml; do
+          if [ -f "$policy_file" ]; then
+            sed -i.bak 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' "$policy_file" || true
+          fi
+        done
+        
+        # Create a custom policy file as fallback
+        mkdir -p ~/.config/ImageMagick
+        cat > ~/.config/ImageMagick/policy.xml << 'EOL'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE policymap [
+          <!ELEMENT policymap (policy)+>
+          <!ELEMENT policy EMPTY>
+          <!ATTLIST policy domain (delegate|coder|filter|path|resource) #REQUIRED>
+          <!ATTLIST policy name CDATA #REQUIRED>
+          <!ATTLIST policy rights CDATA #IMPLIED>
+          <!ATTLIST policy pattern CDATA #IMPLIED>
+          <!ATTLIST policy value CDATA #IMPLIED>
+        ]>
+        <policymap>
+          <policy domain="coder" rights="read|write" pattern="PDF" />
+          <policy domain="coder" rights="read|write" pattern="LABEL" />
+          <policy domain="path" rights="none" pattern="@*" />
+          <policy domain="cache" name="shared-secret" value="passphrase" stealth="true" />
+        </policymap>
+        EOL
+        
+        # Set MAGICK_CONFIGURE_PATH to use our custom policy
+        export MAGICK_CONFIGURE_PATH=~/.config/ImageMagick
     post_build:
       # Use our custom PDF build script instead of LaTeX
       - python fix_scripts/simple_pdf_build.py
