@@ -262,14 +262,14 @@ Example Output:
    - Water: San Francisco Bay
    - Parks: Golden Gate Park, other green spaces
    
-   CHANGE DETECTION (vs. 2023-02-15):
-----------------------------------
+   CHANGE DETECTION (vs. 2023-02-15)
+--------------------------------
    - Vegetation: +2.3% increase
    - Urban Area: +0.8% increase
    - Water Bodies: -0.1% decrease
-   
-   INSIGHTS:
----------
+
+INSIGHTS
+--------
    - Healthy vegetation in park areas
    - Moderate urban development in northern sectors
    - Stable coastline with minimal erosion

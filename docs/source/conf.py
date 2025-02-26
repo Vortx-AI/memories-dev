@@ -55,17 +55,28 @@ extensions = [
 math_dollar_inline = True
 math_dollar_displayed = True
 
+# Configure mermaid
+mermaid_cmd = 'mmdc'
+mermaid_output_format = 'svg'
+mermaid_params = [
+    '--backgroundColor', 'transparent',
+    '--width', '1024',
+    '--scale', '1.5'
+]
+
 # Disable mermaid if command is not available
 import subprocess
 import shutil
 try:
     # Check if mmdc is available
-    if not shutil.which('mmdc'):
-        # If not available, remove mermaid from extensions
+    if shutil.which('mmdc'):
+        print("Found mermaid-cli at:", shutil.which('mmdc'))
+    else:
+        print("Warning: mermaid-cli not found, disabling mermaid diagrams")
         if 'sphinxcontrib.mermaid' in extensions:
             extensions.remove('sphinxcontrib.mermaid')
-except Exception:
-    # If any error occurs, remove mermaid from extensions
+except Exception as e:
+    print("Error checking for mermaid-cli:", str(e))
     if 'sphinxcontrib.mermaid' in extensions:
         extensions.remove('sphinxcontrib.mermaid')
 
@@ -132,7 +143,9 @@ latex_elements = {
         \usepackage{wrapfig}
         \usepackage{url}
         \usepackage{bookmark}
-        \usepackage{hyperref}
+        \usepackage{svg}
+        \usepackage{transparent}
+        \usepackage{import}
         
         % Configure hyperref
         \hypersetup{
@@ -142,10 +155,19 @@ latex_elements = {
             urlcolor=cyan,
             pdftitle={Memories-Dev Documentation},
             pdfpagemode=FullScreen,
+            bookmarks=true,
+            bookmarksopen=true,
+            bookmarksnumbered=true,
+            breaklinks=true,
+            pdfborder={0 0 0}
         }
         
         % Fix for phantomsection
         \providecommand*{\phantomsection}{}
+        
+        % Configure graphics handling
+        \DeclareGraphicsExtensions{.pdf,.png,.jpg,.jpeg,.svg}
+        \pdfimageresolution=300
         
         % Configure listings for code blocks
         \lstset{
@@ -158,6 +180,15 @@ latex_elements = {
             showstringspaces=false,
             tabsize=4
         }
+        
+        % Fix for SVG graphics
+        \makeatletter
+        \def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+        \def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+        \makeatother
+        
+        % Adjust image scaling
+        \setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
     ''',
     'figure_align': 'H',
     'sphinxsetup': 'verbatimwithframe=false',
@@ -168,7 +199,11 @@ latex_elements = {
         \usepackage[T1]{fontenc}
         \usepackage{textcomp}
     ''',
-    'passoptionstopackages': '',
+    'passoptionstopackages': r'''
+        \PassOptionsToPackage{svgnames}{xcolor}
+        \PassOptionsToPackage{table}{xcolor}
+        \PassOptionsToPackage{draft=false}{graphicx}
+    ''',
 }
 
 # If true, show page references after internal links
@@ -381,7 +416,6 @@ mermaid_init_js = """
         themeCSS: '.node rect { fill: #f4f4f4; stroke: #999; stroke-width: 1px; }',
     });
 """
-mermaid_output_format = "svg"  # Use SVG for better quality
 
 # MyST configuration
 myst_enable_extensions = [
@@ -481,6 +515,33 @@ def setup(app):
     };
     ''')
     
+    # Handle SVG conversion for LaTeX
+    def convert_svg_on_build(app, env, docnames):
+        import os
+        import subprocess
+        from pathlib import Path
+        
+        # Get all SVG files in _static and its subdirectories
+        static_dir = Path(app.srcdir) / '_static'
+        svg_files = list(static_dir.rglob('*.svg'))
+        
+        for svg_file in svg_files:
+            pdf_file = svg_file.with_suffix('.pdf')
+            if not pdf_file.exists() or pdf_file.stat().st_mtime < svg_file.stat().st_mtime:
+                try:
+                    # Try using rsvg-convert if available
+                    subprocess.run(['rsvg-convert', '-f', 'pdf', '-o', str(pdf_file), str(svg_file)], check=True)
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    try:
+                        # Fallback to inkscape
+                        subprocess.run(['inkscape', '-z', '-D', '--file=' + str(svg_file),
+                                     '--export-pdf=' + str(pdf_file)], check=True)
+                    except (subprocess.CalledProcessError, FileNotFoundError):
+                        print(f"Warning: Could not convert {svg_file} to PDF. Please install rsvg-convert or inkscape.")
+    
+    # Connect SVG conversion
+    app.connect('env-before-read-docs', convert_svg_on_build)
+    
     # Connect customization events
     app.connect('builder-inited', on_builder_inited)
     app.connect('build-finished', on_build_finished)
@@ -573,3 +634,11 @@ pdf_use_coverpage = True
 
 # Enable the book experience for all pages by default
 book_experience_enabled = True
+
+# Configure image handling for LaTeX
+latex_additional_files = []
+latex_images = True
+latex_show_urls = 'footnote'
+latex_use_xindy = False
+latex_elements['printindex'] = ''
+latex_engine = 'pdflatex'

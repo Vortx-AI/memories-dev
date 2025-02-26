@@ -148,8 +148,11 @@ Documentation Structure
    :hidden:
    :caption: Getting Started
 
-   introduction/index
    getting_started/index
+   getting_started/installation
+   getting_started/quickstart
+   getting_started/configuration
+   getting_started/examples
 
 .. toctree::
    :maxdepth: 2
@@ -359,4 +362,51 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search` 
+* :ref:`search`
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: User Guide
+
+   user_guide/index
+   user_guide/best_practices
+   user_guide/configuration
+   user_guide/deployment
+   user_guide/examples
+   user_guide/models
+   user_guide/data_sources
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: API Reference
+
+   api_reference/index
+   api_reference/memory
+   api_reference/deployment
+   api_reference/sentinel_api
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Examples & Applications
+
+   examples/advanced_memory_retrieval
+   examples/biodiversity_monitoring
+   applications/index
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Development
+
+   algorithms/index
+   code_catalog/index
+   function_index/index
+   comparisons/index
+   metrics/environmental_metrics
+   metrics/performance
+   architecture
+   contributing
+   changelog 
