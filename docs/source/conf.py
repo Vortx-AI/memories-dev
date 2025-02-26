@@ -313,7 +313,7 @@ def setup(app):
     ''')
     
     # Fix math configuration
-    app.add_js_file(None, body='''
+    app.add_js_file(None, body=r'''
         // Fix MathJax configuration
         window.MathJax = {
           tex: {
