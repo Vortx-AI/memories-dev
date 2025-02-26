@@ -1,129 +1,338 @@
 .. Memories documentation master file
 
-=================================
-Memories: AI with Human-like Memory
-=================================
+=====================================
+memories-dev: Earth-Grounded AI Framework
+=====================================
 
-.. raw:: html
+memories-dev is a Python package that provides a structured framework for building AI systems with deep understanding of Earth's systems through scientifically rigorous memory.
 
-   <div class="book-container">
-      <div class="book">
-         <div class="book-cover">
-            <h1>Memories</h1>
-            <h2>The Art & Science of AI Memory Systems</h2>
-            <div class="author">Memories-Dev Team</div>
-         </div>
-      </div>
-   </div>
-   
-   <script>
-      document.addEventListener('DOMContentLoaded', function() {
-         const book = document.querySelector('.book');
-         book.addEventListener('click', function() {
-            book.classList.toggle('open');
-         });
-      });
-   </script>
+.. contents:: On This Page
+   :local:
+   :depth: 2
 
-.. note::
-   Welcome to the Memories Documentation! Click on the book cover above to "open" the book, or simply scroll down to begin reading.
+What is memories-dev?
+-------------------
 
-**Memories-Dev** is a framework for implementing human-like memory systems for AI applications. This documentation serves as both a reference guide and an explorative journey through the art and science of building AI systems with memory.
+memories-dev enables AI systems to develop genuine comprehension of our planet's past, present, and possible futures through:
 
-.. image:: /_static/images/hero_image.png
-   :alt: Memories-Dev Framework
-   :align: center
-   :width: 80%
+* **Structured Earth Memory**: Organized information that reflects natural systems and their relationships
+* **Multi-modal Data Integration**: Unified satellite imagery, sensor networks, and environmental metrics
+* **Temporal Understanding**: Tracking changes across multiple timescales from days to decades
+* **Spatial Intelligence**: Accurate reasoning about geographic locations and their interconnections
+* **Scientific Integrity**: Rigorous standards including uncertainty quantification and provenance tracking
 
-.. toctree::
-   :maxdepth: 2
-   :caption: 📚 The Journey Begins
-   
-   introduction/index
-   getting_started/index
-   
-.. toctree::
-   :maxdepth: 2
-   :caption: 🧠 Core Concepts
-   
-   concepts/index
-   memory_architecture/index
-   comparisons/index
-   
-.. toctree::
-   :maxdepth: 2
-   :caption: 🛠️ Building Blocks
-   
-   core_api/index
-   memory_types/index
-   storage/index
-   
-.. toctree::
-   :maxdepth: 2
-   :caption: 🚀 Practical Applications
-   
-   applications/index
-   tutorials/index
-   case_studies/index
-   
-.. toctree::
-   :maxdepth: 2
-   :caption: 🔍 Advanced Topics
-   
-   algorithms/index
-   customization/index
-   extensions/index
-   
-.. toctree::
-   :maxdepth: 2
-   :caption: 📖 Reference
-   
-   api_reference/index
-   configuration/index
-   changelog/index
+Quick Installation
+----------------
 
-A Journey Through AI Memory
-=========================
+Install using pip:
 
-This documentation is designed as more than just a technical reference. It's a guided journey through the fascinating intersection of cognitive science, artificial intelligence, and practical engineering.
+.. code-block:: bash
 
-As you move through these chapters, you'll discover:
+   pip install memories-dev
 
-- How human memory systems inspire AI architecture
-- The building blocks of the Memories-Dev framework
-- Practical applications across various domains
-- Advanced techniques for customizing memory systems
+Or from source:
 
-Reading Progress Tracker
----------------------
+.. code-block:: bash
 
-.. raw:: html
-
-   <div id="reading-progress-container">
-      <div id="reading-progress">
-         <div class="progress-bar">
-            <div class="progress" style="width: 0%"></div>
-         </div>
-         <div class="progress-stats">
-            <span class="pages-read">0 sections read</span>
-            <span class="total-pages">of ~30 total</span>
-         </div>
-      </div>
-   </div>
+   git clone https://github.com/your-username/memories-dev.git
+   cd memories-dev
+   pip install -e .
 
 Getting Started
-------------
+-------------
 
-To begin working with Memories-Dev, head to the :doc:`getting_started/index` section. There you'll find installation instructions, basic concepts, and your first memory-enhanced AI application.
+Here's a simple example to get started with the memories-dev framework:
 
-For those new to the concept of memory systems in AI, we recommend starting with the :doc:`introduction/index` chapter, which provides context on why memory is such a crucial frontier in AI development.
+.. code-block:: python
 
-The Book Metaphor
---------------
+   from memories.earth import Observatory
+   
+   # Create an Earth Observatory
+   observatory = Observatory(name="my-observatory")
+   
+   # Configure observation sources
+   observatory.add_source(
+       name="satellite-imagery",
+       source_type="remote-sensing",
+       provider="sentinel-2",
+       update_frequency="5d"
+   )
+   
+   # Initialize memory systems
+   hot_memory = observatory.create_memory_tier(
+       name="real-time",
+       tier_type="hot",
+       retention_period="30d"
+   )
+   
+   warm_memory = observatory.create_memory_tier(
+       name="seasonal",
+       tier_type="warm",
+       retention_period="5y"
+   )
+   
+   # Begin observation collection
+   observatory.start()
+   
+   # Query Earth Memory
+   vegetation_trends = observatory.query(
+       observation_type="ndvi",
+       region="amazon-basin",
+       time_range=("2020-01-01", "present"),
+       aggregation="monthly-mean"
+   )
+   
+   # Visualize results
+   observatory.visualize(
+       data=vegetation_trends,
+       plot_type="time-series",
+       overlay="precipitation",
+       title="Amazon Vegetation Response to Rainfall Patterns"
+   )
 
-Throughout this documentation, we embrace the metaphor of a book. Just as books organize knowledge in a structured yet accessible manner, Memories-Dev organizes AI memories with both structure and fluidity.
+Key Features
+-----------
 
-And much like how a good book stays with you long after you've read it, Memories-Dev enables AI systems to retain and build upon past experiences.
+- **Memory Tiers**: Organize Earth observations by temporal relevance (Hot, Warm, Cold, Glacier)
+- **Earth Observatory**: Unified interface for data collection and analysis
+- **Spatial Understanding**: Geographic and topological reasoning capabilities
+- **Temporal Analysis**: Multi-scale time series analysis and pattern detection
+- **Scientific Validation**: Built-in uncertainty quantification and validation tools
+- **Visualization**: Rich visualization tools for Earth data and analysis results
+- **Model Integration**: Simple interfaces for machine learning and simulation models
+
+Documentation Structure
+--------------------
+
+* **Getting Started**: Installation, configuration, and basic concepts
+* **Core Concepts**: Memory architecture, Earth Observatory, and key components
+* **Memory Types**: Different types of memory and their applications
+* **Implementation**: Practical implementation guides and best practices
+* **API Reference**: Detailed API documentation for all modules
+* **Examples**: Real-world examples and case studies
+* **Contributing**: Guidelines for contributing to the project
+
+.. note::
+
+   memories-dev is designed to be a foundational technology for Earth-grounded AI. This documentation serves both as a practical guide to implementation and as a conceptual exploration of how AI can develop deeper understanding of our planet.
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Navigation
+
+   table_of_contents
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Getting Started
+
+   introduction/index
+   getting_started/index
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Core Concepts
+
+   core_concepts/index
+   core_concepts/workflow
+   core_concepts/spatial_analysis
+   core_concepts/temporal_analysis
+   core_concepts/data_fusion
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Memory Architecture
+
+   memory_architecture/index
+   memory_architecture/storage
+   memory_architecture/tiered_memory
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Memory Types
+
+   memory_types/index
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Earth Memory
+
+   earth_memory/index
+   earth_memory/scientific_foundations
+   earth_memory/analyzers
+   earth_memory/integration
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Memory Codex
+
+   memory_codex/index
+   memory_codex/query
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Implementation
+
+   setup/observatory
+   integration/datasources
+   integration/data_processing
+   integration/models
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Applications
+
+   examples/index
+   examples/environmental_monitoring
+   examples/climate_intelligence
+   examples/resource_management
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Technical Reference
+
+   api/index
+   technical_index
+   metrics/index
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Community
+
+   contributing/index
+   
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Legal
+
+   license
+   privacy
+
+.. raw:: html
+
+   <div class="earth-banner">
+     <div class="earth-quote">
+       <blockquote>
+         "The richness of Earth's observable reality represents the most complex, intricate dataset humanity has ever known. 
+         By structuring AI's memory to mirror Earth's systems, we can create intelligence that truly understands our planet."
+       </blockquote>
+     </div>
+   </div>
+
+Features
+--------
+
+* **Structured Earth Memory**: Organize observations into scientifically rigorous memory structures
+* **Temporal Awareness**: Maintain memory across multiple timescales, from real-time to geological
+* **Cross-Domain Integration**: Connect knowledge across Earth's atmospheric, oceanic, and terrestrial systems
+* **Scientific Consistency**: Ensure AI reasoning respects physical laws and ecological principles
+* **Observation Grounding**: Root all understanding in empirical observations with proper uncertainty quantification
+
+Quick Start
+-----------
+
+.. code-block:: python
+
+   from memories.earth import Observatory
+   
+   # Create an Earth Observatory
+   observatory = Observatory(name="my-observatory")
+   
+   # Configure observation sources
+   observatory.add_source(
+       name="satellite-imagery",
+       source_type="remote-sensing",
+       provider="sentinel-2",
+       update_frequency="5d"
+   )
+   
+   # Initialize memory systems
+   hot_memory = observatory.create_memory_tier(
+       name="real-time",
+       tier_type="hot",
+       retention_period="30d"
+   )
+   
+   warm_memory = observatory.create_memory_tier(
+       name="seasonal",
+       tier_type="warm",
+       retention_period="5y"
+   )
+   
+   # Begin observation collection
+   observatory.start()
+   
+   # Query Earth Memory
+   vegetation_trends = observatory.query(
+       observation_type="ndvi",
+       region="amazon-basin",
+       time_range=("2020-01-01", "present"),
+       aggregation="monthly-mean"
+   )
+   
+   # Visualize results
+   observatory.visualize(
+       data=vegetation_trends,
+       plot_type="time-series",
+       overlay="precipitation",
+       title="Amazon Vegetation Response to Rainfall Patterns"
+   )
+
+.. note::
+
+   The Memory Codex framework is designed to be a foundational technology for Earth-grounded AI. This documentation serves both as a practical guide to implementation and as a conceptual exploration of how AI can develop deeper understanding of our planet.
+
+The Journey to Earth-Grounded AI
+================================
+
+This codex is more than documentation—it's a comprehensive guide to creating AI that truly understands our world. As you progress through these chapters, you'll discover how to bridge the gap between artificial intelligence and Earth's observable reality.
+
+.. raw:: html
+
+   <div class="journey-map">
+      <div class="journey-stage">
+         <div class="stage-icon">🌱</div>
+         <div class="stage-title">Foundation</div>
+         <div class="stage-desc">Understand the core principles</div>
+      </div>
+      <div class="journey-connector"></div>
+      <div class="journey-stage">
+         <div class="stage-icon">🏗️</div>
+         <div class="stage-title">Architecture</div>
+         <div class="stage-desc">Design memory systems</div>
+      </div>
+      <div class="journey-connector"></div>
+      <div class="journey-stage">
+         <div class="stage-icon">🔄</div>
+         <div class="stage-title">Integration</div>
+         <div class="stage-desc">Connect with Earth data</div>
+      </div>
+      <div class="journey-connector"></div>
+      <div class="journey-stage">
+         <div class="stage-icon">✨</div>
+         <div class="stage-title">Application</div>
+         <div class="stage-desc">Create grounded AI</div>
+      </div>
+   </div>
+
+You'll discover:
+
+- How to eliminate AI hallucinations through Earth-based memory systems
+- Techniques for integrating satellite imagery, environmental data, and sensor networks
+- Methods for building temporal understanding in AI
+- Practical implementations across diverse domains
 
 Indices and tables
 ==================

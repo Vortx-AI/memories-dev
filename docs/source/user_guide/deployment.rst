@@ -529,4 +529,28 @@ Best Practices
 4. **High Availability**:
    - Deploy across multiple availability zones
    - Implement proper backup and recovery procedures
-   - Use health checks and auto-healing 
+   - Use health checks and auto-healing
+   - Set up monitoring and alerting
+   - Implement proper failover mechanisms
+   - Configure load balancing for optimal distribution
+
+.. mermaid::
+    :align: center
+    :caption: System Architecture Overview
+
+    graph TD
+        Client[Client Applications] --> API[API Gateway]
+        API --> Server[Memories Server]
+        Server --> Models[Model System]
+        Server --> DataAcq[Data Acquisition]
+        Models --> LocalModels[Local Models]
+        Models --> APIModels[API-based Models]
+        DataAcq --> VectorData[Vector Data Sources]
+        DataAcq --> SatelliteData[Satellite Data]
+        Server --> Storage[Persistent Storage]
+
+        classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;
+        classDef highlight fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+        
+        class Client,API highlight;
+        class Server,Models,DataAcq,Storage default; 

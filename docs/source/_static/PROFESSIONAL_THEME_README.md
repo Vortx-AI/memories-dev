@@ -80,44 +80,86 @@ div.highlight pre {
 ### Copy Button for Code Blocks
 
 ```javascript
-function addCopyButtons() {
-    const codeBlocks = document.querySelectorAll('div.highlight');
-    
-    codeBlocks.forEach(function(codeBlock) {
+document.addEventListener('DOMContentLoaded', () => {
+    const codeBlocks = document.querySelectorAll('div.highlight pre');
+    if (!codeBlocks.length) return;
+
+    codeBlocks.forEach(block => {
+        if (!block || !block.parentNode) return;
+
         const button = document.createElement('button');
-        button.className = 'copybtn';
-        button.title = 'Copy to clipboard';
+        button.className = 'copy-button';
+        button.textContent = 'Copy';
+        button.setAttribute('aria-label', 'Copy code to clipboard');
         
-        button.addEventListener('click', function() {
-            const code = codeBlock.querySelector('pre').textContent;
-            
-            navigator.clipboard.writeText(code).then(function() {
-                // Visual feedback
-                button.classList.add('copied');
-                // Reset after 2 seconds
-                setTimeout(function() {
-                    button.classList.remove('copied');
+        button.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(block.textContent);
+                button.textContent = 'Copied!';
+                button.classList.add('success');
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('success');
                 }, 2000);
-            });
+            } catch (err) {
+                console.warn('Failed to copy:', err);
+                button.textContent = 'Failed';
+                button.classList.add('error');
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('error');
+                }, 2000);
+            }
         });
         
-        codeBlock.appendChild(button);
+        block.parentNode.insertBefore(button, block);
     });
-}
+});
 ```
 
 ### Navigation Enhancements
 
 ```javascript
 function enhanceNavigation() {
-    // Highlight current page in navigation
-    highlightCurrentPage();
+    try {
+        // Highlight current page in navigation
+        highlightCurrentPage();
+        
+        // Add smooth scrolling to anchor links
+        addSmoothScrolling();
+        
+        // Expand navigation sections for current page
+        expandCurrentSection();
+    } catch (err) {
+        console.warn('Navigation enhancement failed:', err);
+    }
+}
+
+function highlightCurrentPage() {
+    const currentPath = window.location.pathname;
+    const navLinks = document.querySelectorAll('nav a');
     
-    // Add smooth scrolling to anchor links
-    addSmoothScrolling();
-    
-    // Expand navigation sections for current page
-    expandCurrentSection();
+    navLinks.forEach(link => {
+        if (link.getAttribute('href') === currentPath) {
+            link.classList.add('active');
+            expandParentSections(link);
+        }
+    });
+}
+
+function addSmoothScrolling() {
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
 }
 ```
 

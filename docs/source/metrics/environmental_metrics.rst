@@ -1,6 +1,6 @@
 ===================
 Environmental Metrics
-=====================
+===================
 
 Overview
 --------
@@ -18,7 +18,7 @@ The Normalized Difference Vegetation Index (NDVI) is implemented in `analysis_ut
 .. code-block:: python
 
     def calculate_ndvi(nir_band: np.ndarray, red_band: np.ndarray) -> np.ndarray:
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+        """
         Calculate Normalized Difference Vegetation Index.
         
         Args:
@@ -27,7 +27,7 @@ The Normalized Difference Vegetation Index (NDVI) is implemented in `analysis_ut
             
         Returns:
             NDVI array
-""""""""""
+        """
         ndvi = np.where(
             (nir_band + red_band) != 0,
             (nir_band - red_band) / (nir_band + red_band),
@@ -100,9 +100,9 @@ Urban pattern analysis from `AdvancedAnalysis`:
         bounds: Bounds,
         layers: List[str] = ['buildings', 'roads']
     ) -> Dict[str, Any]:
-""""""""""""""""""""
+        """
         Analyze urban development patterns.
-"""""""""""""""""""""""""""""""""""
+        """
         try:
             # Initialize vector processor if needed
             if self.vector_processor is None:
@@ -135,9 +135,9 @@ Change analysis implementation:
         start_time: str,
         end_time: str
     ) -> Dict[str, Any]:
-""""""""""""""""""""
+        """
         Analyze changes between two time periods.
-"""""""""""""""""""""""""""""""""""""""""
+        """
         try:
             # Get data for both time periods
             start_data = self.raster_processor.process_tile(

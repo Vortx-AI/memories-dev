@@ -1,10 +1,11 @@
+====================
 Core Workflow Concepts
-===================
+====================
 
 This document illustrates the key workflows and concepts in the Memories-Dev framework.
 
 Memory Processing Workflow
-------------------------
+-------------------------
 
 .. mermaid::
 
@@ -48,7 +49,7 @@ Key Concepts
    * Adaptive responses
 
 Implementation Guidelines
------------------------
+------------------------
 
 .. code-block:: python
 

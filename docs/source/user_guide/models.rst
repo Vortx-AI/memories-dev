@@ -65,7 +65,7 @@ Example Output:
 .. code-block:: python
 
     def factorial(n):
-"""""""""""""""""
+        """
         Calculate the factorial of a non-negative integer n.
         
         Args:
@@ -73,7 +73,7 @@ Example Output:
             
         Returns:
             int: The factorial of n
-"""""""""""""""""""""""
+        """
         if n < 0:
             raise ValueError("Factorial is not defined for negative numbers")
         
@@ -316,8 +316,8 @@ Using multiple models in a pipeline:
    Model: DeepSeek-Coder-Small
    Deployment: Local (GPU)
    
-   ANALYSIS:
----------
+   FINDINGS
+   ---------
    The satellite imagery shows significant urban development in the northeastern 
    quadrant of the region over the past 12 months. Specifically:
    
@@ -326,15 +326,15 @@ Using multiple models in a pipeline:
    3. Reduction in vegetation cover by 3.1%
    4. New commercial development near the highway intersection
    
-   ENVIRONMENTAL IMPACT:
----------------------
+   ENVIRONMENTAL IMPACT
+   -----------------------
    - Moderate reduction in permeable surfaces
    - Potential increase in urban heat island effect
    - Minimal impact on existing water bodies
    - Loss of small woodland area (approximately 1.2 hectares)
    
-   RECOMMENDATIONS:
-----------------
+   RECOMMENDATIONS
+   ----------------
    1. Monitor stormwater runoff in newly developed areas
    2. Consider green infrastructure to mitigate heat island effect
    3. Implement vegetation buffers around new developments

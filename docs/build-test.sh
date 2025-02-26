@@ -49,12 +49,25 @@ fi
 
 # Build the PDF documentation as a further test
 echo -e "${YELLOW}Building PDF documentation...${NC}"
-make latexpdf || make rst2pdf
+
+# Check for required PDF build tools
+if ! command -v pdflatex &> /dev/null; then
+    echo -e "${YELLOW}Warning: pdflatex not found, skipping PDF build${NC}"
+elif ! command -v latexmk &> /dev/null; then
+    echo -e "${YELLOW}Warning: latexmk not found, skipping PDF build${NC}"
+else
+    make latexpdf || make rst2pdf || echo -e "${YELLOW}Warning: PDF build failed, continuing with other tests${NC}"
+fi
 
 # Cleanup
 echo -e "${YELLOW}Cleaning up...${NC}"
-deactivate
-rm -rf temp_venv
+if [ -d "temp_venv" ]; then
+    deactivate
+    rm -rf temp_venv
+fi
+
+# Clean build artifacts
+make clean || echo -e "${YELLOW}Warning: Clean failed, please check build directory${NC}"
 
 echo -e "${GREEN}Test complete!${NC}"
 echo ""

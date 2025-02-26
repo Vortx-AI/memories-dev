@@ -75,7 +75,7 @@ Metrics Collection
 The metrics catalog includes information about how metrics are collected, stored, and analyzed.
 
 Collection Methods
-~~~~~~~~~~~~~~~~~~
+-----------------
 
 Metrics in memories-dev are collected using the following methods:
 
@@ -116,7 +116,7 @@ Metrics in memories-dev are collected using the following methods:
                  })
 
 Storage Backend
-~~~~~~~~~~~~~~~
+--------------
 
 Metrics are stored in a time-series database optimized for fast retrieval and aggregation. Supported backends include:
 
@@ -125,7 +125,7 @@ Metrics are stored in a time-series database optimized for fast retrieval and ag
 - **Local SQLite**: For development and testing environments
 
 Analysis Tools
-~~~~~~~~~~~~~~
+-------------
 
 The framework provides tools for analyzing collected metrics:
 
