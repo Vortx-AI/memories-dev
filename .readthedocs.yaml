@@ -44,6 +44,11 @@ build:
       # Create necessary directories
       - mkdir -p docs/build/latex
       - mkdir -p docs/build/pdf
+    post_build:
+      # Custom PDF build process - ensure only one PDF file is generated
+      - cd docs && make latexpdf
+      - mkdir -p _readthedocs/html
+      - cp docs/build/latex/memories-dev.pdf _readthedocs/html/
 
 # Sphinx configuration
 sphinx:
@@ -51,17 +56,10 @@ sphinx:
   fail_on_warning: false
   builder: html
 
-# Documentation formats
+# Documentation formats - Only include HTML
 formats:
   - htmlzip
-
-# Custom PDF build command that places PDF in the expected location
-# This ensures only ONE PDF is created and placed where ReadTheDocs expects it
-build_pdf: 
-  builder: custom
-  use_system_packages: true
-  commands:
-    - cd docs && make rtd-pdf
+  - pdf  # Let ReadTheDocs handle PDF generation
 
 # Python package installation
 python:
