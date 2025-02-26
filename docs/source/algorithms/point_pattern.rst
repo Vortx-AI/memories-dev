@@ -8,7 +8,7 @@ Overview
 The point pattern analysis module in memories-dev provides tools for analyzing spatial point patterns in Earth observation data. The implementation is based on the actual code in `memories/utils/processors/vector_processor.py`.
 
 Core Implementation
-----------------
+-------------------
 
 The main point pattern analysis functionality is implemented in the `VectorProcessor` class:
 
@@ -24,7 +24,7 @@ The main point pattern analysis functionality is implemented in the `VectorProce
             bbox: Union[Tuple[float, float, float, float], Polygon],
             kernel_size: int = 5
         ) -> np.ndarray:
-            """
+""""""""""""""""
             Calculate feature density.
             
             Args:
@@ -35,10 +35,10 @@ The main point pattern analysis functionality is implemented in the `VectorProce
                 
             Returns:
                 Density array
-            """
+"""""""""""""
 
 Density Analysis
--------------
+----------------
 
 The density calculation uses a Gaussian smoothing approach:
 
@@ -52,7 +52,7 @@ The density calculation uses a Gaussian smoothing approach:
     density = cv2.filter2D(raster.astype(np.float32), -1, kernel)
 
 Spatial Analysis Tools
-------------------
+----------------------
 
 Area-based statistics calculation:
 
@@ -62,7 +62,7 @@ Area-based statistics calculation:
         gdf: gpd.GeoDataFrame,
         value_column: str = None
     ) -> Dict[str, float]:
-        """
+""""""""""""""""""""""
         Calculate area-based statistics for vector features.
         
         Args:
@@ -71,7 +71,7 @@ Area-based statistics calculation:
             
         Returns:
             Dictionary of statistics
-        """
+""""""""""""""""""""""""
         stats = {
             'total_area': gdf.geometry.area.sum(),
             'mean_area': gdf.geometry.area.mean(),
@@ -89,7 +89,7 @@ Area-based statistics calculation:
         return stats
 
 Configuration
------------
+-------------
 
 Analysis parameters are defined in `analysis_config.py`:
 
@@ -104,7 +104,7 @@ Analysis parameters are defined in `analysis_config.py`:
     }
 
 Usage Example
------------
+-------------
 
 Here's how to use the point pattern analysis in your code:
 
@@ -130,7 +130,7 @@ Here's how to use the point pattern analysis in your code:
     )
 
 Integration with Property Analysis
-------------------------------
+----------------------------------
 
 The point pattern analysis is used in property analysis:
 
@@ -141,9 +141,9 @@ The point pattern analysis is used in property analysis:
         bounds: Bounds,
         layers: List[str] = ['buildings', 'roads']
     ) -> Dict[str, Any]:
-        """
+""""""""""""""""""""
         Analyze urban development patterns.
-        """
+"""""""""""""""""""""""""""""""""""
         # Initialize vector processor if needed
         if self.vector_processor is None:
             self.vector_processor = VectorTileProcessor(bounds=bounds, layers=layers)
@@ -163,7 +163,7 @@ The point pattern analysis is used in property analysis:
         }
 
 Performance Considerations
-----------------------
+--------------------------
 
 1. Memory Usage
    - Vector data is processed in tiles
@@ -185,7 +185,7 @@ Performance Considerations
        }
 
 Future Developments
-----------------
+-------------------
 
 Planned enhancements to the point pattern analysis module:
 1. Implementation of advanced spatial statistics

@@ -8,7 +8,7 @@ Welcome to the Code Catalog section of the memories-dev documentation. This comp
    The Code Catalog is designed to help developers understand the structure and organization of the memories-dev codebase. It is particularly useful for those looking to extend or modify the framework.
 
 Package Structure
-----------------
+-----------------
 
 The memories-dev framework is organized into several key packages and modules:
 
@@ -29,7 +29,7 @@ The memories-dev framework is organized into several key packages and modules:
     └── utils/                       # Utility functions and helpers
 
 Core Components
---------------
+---------------
 
 .. list-table::
    :widths: 30 70
@@ -49,10 +49,10 @@ Core Components
      - Manages the memory system, including tiering and retrieval
 
 Core Modules
------------
+------------
 
 memory_store
-^^^^^^^^^^^
+^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -85,7 +85,7 @@ memory_store
     )
 
 earth_analyzers
-^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -113,7 +113,7 @@ earth_analyzers
     )
 
 model_integration
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -138,7 +138,7 @@ model_integration
     )
 
 Directory Catalog
-----------------
+-----------------
 
 .. toctree::
    :maxdepth: 1
@@ -152,7 +152,7 @@ Directory Catalog
    utils
 
 Module Index
------------
+------------
 
 This section provides direct links to the API documentation for key modules:
 
@@ -163,10 +163,10 @@ This section provides direct links to the API documentation for key modules:
 * :py:mod:`memories.models.multi_model`
 * :py:mod:`memories.utils.geo_utils`
 
-For a complete list of all modules, see the :ref:`modindex`.
+For a complete list of all modules, see the 'modindex'.
 
 File Types
----------
+----------
 
 The memories-dev codebase consists of various file types:
 
@@ -194,7 +194,7 @@ The memories-dev codebase consists of various file types:
      - Jupyter notebook examples and tutorials
 
 Development Tools
----------------
+-----------------
 
 The memories-dev project uses several development tools:
 
@@ -206,7 +206,7 @@ The memories-dev project uses several development tools:
 * **pre-commit**: Pre-commit hooks for code quality
 
 Code Statistics
--------------
+---------------
 
 .. list-table::
    :widths: 50 50

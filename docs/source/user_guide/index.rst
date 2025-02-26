@@ -10,12 +10,12 @@ User Guide
    advanced_features
 
 Introduction
------------
+------------
 
 The memories-dev user guide provides detailed information about using the package's features and capabilities. This guide is organized into several sections, each focusing on a specific aspect of the system.
 
 Getting Started
--------------
+---------------
 
 Before diving into the specific components, make sure you have installed memories-dev and its dependencies:
 
@@ -30,7 +30,7 @@ For GPU support:
     pip install memories-dev[gpu]
 
 Core Concepts
------------
+-------------
 
 1. Memory System
    - Memory formation

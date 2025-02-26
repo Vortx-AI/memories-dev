@@ -7,10 +7,10 @@ Overview
 Data fusion in memories-dev combines multiple data sources to create a comprehensive and accurate representation of Earth's memory system.
 
 Core Concepts
------------
+-------------
 
 Multi-Modal Fusion
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 Combining different types of data:
 
@@ -39,7 +39,7 @@ Combining different types of data:
     )
 
 Spatial-Temporal Fusion
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Combining data across space and time:
 
@@ -64,7 +64,7 @@ Combining data across space and time:
     )
 
 Uncertainty Handling
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 Managing uncertainty in fused data:
 
@@ -85,10 +85,10 @@ Managing uncertainty in fused data:
     )
 
 Fusion Methods
-------------
+--------------
 
 Bayesian Fusion
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -111,7 +111,7 @@ Bayesian Fusion
     )
 
 Kalman Filtering
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -135,7 +135,7 @@ Kalman Filtering
     )
 
 Deep Learning Fusion
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -161,7 +161,7 @@ Deep Learning Fusion
     )
 
 Quality Assessment
----------------
+------------------
 
 Evaluating fusion quality:
 
@@ -187,7 +187,7 @@ Evaluating fusion quality:
     )
 
 Best Practices
-------------
+--------------
 
 1. Data Preparation
    - Normalize data scales
@@ -214,7 +214,7 @@ Best Practices
    - Regular calibration
 
 Advanced Topics
-------------
+---------------
 
 1. Adaptive Fusion
    - Dynamic weight adjustment

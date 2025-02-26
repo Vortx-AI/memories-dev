@@ -2,7 +2,7 @@ Models
 ======
 
 Model Loading
-------------
+-------------
 
 .. automodule:: memories.models.load_model
    :members:
@@ -10,7 +10,7 @@ Model Loading
    :show-inheritance:
 
 Base Model
----------
+----------
 
 .. autoclass:: memories.models.base_model.BaseModel
    :members:
@@ -18,7 +18,7 @@ Base Model
    :show-inheritance:
 
 API Connectors
-------------
+--------------
 
 .. automodule:: memories.models.api_connector
    :members:
@@ -46,7 +46,7 @@ API Connectors
    :show-inheritance:
 
 Deployment Types
---------------
+----------------
 
 The system supports two deployment types:
 
@@ -54,7 +54,7 @@ The system supports two deployment types:
 2. **API Deployment**: Models are accessed through provider APIs (OpenAI, Anthropic, Deepseek)
 
 Supported Providers
------------------
+-------------------
 
 - **deepseek-ai**: Models from Deepseek AI
 - **openai**: Models from OpenAI

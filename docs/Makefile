@@ -24,3 +24,16 @@ rtd-pdf:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O) 
+# Special target for ReadTheDocs that works around PDF build issues
+rtd-latexpdf:
+	@echo "Building PDF for ReadTheDocs..."
+	@$(SPHINXBUILD) -M latex "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@cd "$(BUILDDIR)/latex" && \
+	sed -i 's/\\usepackage{sphinx}/\\usepackage[final]{sphinx}/g' memories-dev.tex && \
+	sed -i 's/\\usepackage{graphicx}/\\usepackage{graphicx}\\usepackage{xcolor}/g' memories-dev.tex && \
+	pdflatex -interaction=nonstopmode memories-dev.tex && \
+	pdflatex -interaction=nonstopmode memories-dev.tex && \
+	pdflatex -interaction=nonstopmode memories-dev.tex
+	@echo "PDF built at $(BUILDDIR)/latex/memories-dev.pdf"
+	@mkdir -p _readthedocs/html/
+	@cp "$(BUILDDIR)/latex/memories-dev.pdf" _readthedocs/html/

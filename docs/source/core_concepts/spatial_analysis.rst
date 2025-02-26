@@ -1,5 +1,5 @@
 Spatial Analysis
-===============
+================
 
 Overview
 --------
@@ -7,10 +7,10 @@ Overview
 Spatial analysis in memories-dev provides tools and methods for analyzing geographic data and spatial relationships.
 
 Core Concepts
------------
+-------------
 
 Spatial Data Types
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 Understanding different spatial data types:
 
@@ -29,7 +29,7 @@ Understanding different spatial data types:
     ])
 
 Coordinate Systems
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 Working with different coordinate systems:
 
@@ -51,10 +51,10 @@ Working with different coordinate systems:
     )
 
 Spatial Operations
----------------
+------------------
 
 Geometric Operations
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 Basic geometric operations:
 
@@ -82,7 +82,7 @@ Basic geometric operations:
     )
 
 Spatial Analysis
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 Advanced spatial analysis:
 
@@ -109,7 +109,7 @@ Advanced spatial analysis:
     )
 
 Clustering
-~~~~~~~~
+~~~~~~~~~~
 
 Spatial clustering methods:
 
@@ -134,7 +134,7 @@ Spatial clustering methods:
     )
 
 Pattern Analysis
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 Analyzing spatial patterns:
 
@@ -156,7 +156,7 @@ Analyzing spatial patterns:
     )
 
 Visualization
------------
+-------------
 
 Creating spatial visualizations:
 
@@ -194,7 +194,7 @@ Creating spatial visualizations:
     )
 
 Advanced Topics
-------------
+---------------
 
 1. Spatial Statistics
    - Global statistics
@@ -221,7 +221,7 @@ Advanced Topics
    - Classification
 
 Best Practices
-------------
+--------------
 
 1. Data Quality
    - Validate geometries

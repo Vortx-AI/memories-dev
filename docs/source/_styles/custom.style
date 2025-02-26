@@ -1,0 +1,67 @@
+
+{
+    "pageSetup": {
+        "size": "letter",
+        "width": null,
+        "height": null,
+        "margin-top": "2cm",
+        "margin-bottom": "2cm",
+        "margin-left": "2cm",
+        "margin-right": "2cm",
+        "margin-gutter": "0cm",
+        "spacing-header": "5mm",
+        "spacing-footer": "5mm",
+        "firstTemplate": "oneColumn"
+    },
+    "pageTemplates": {
+        "oneColumn": {
+            "frames": [
+                ["0", "0", "100%", "100%"]
+            ],
+            "showHeader": true,
+            "showFooter": true,
+            "defaultFooter": "###Page###",
+            "defaultHeader": "Memories-Dev Documentation"
+        }
+    },
+    "fontsAlias": {
+        "stdFont": "Helvetica",
+        "stdBold": "Helvetica-Bold",
+        "stdItalic": "Helvetica-Oblique",
+        "stdBoldItalic": "Helvetica-BoldOblique",
+        "stdMono": "Courier",
+        "stdMonoBold": "Courier-Bold",
+        "stdMonoItalic": "Courier-Oblique",
+        "stdMonoBoldItalic": "Courier-BoldOblique"
+    },
+    "styles": {
+        "base": {
+            "fontName": "stdFont",
+            "fontSize": 10,
+            "leading": 12
+        },
+        "heading1": {
+            "fontName": "stdBold",
+            "fontSize": 24,
+            "leading": 28,
+            "spaceAfter": 12
+        },
+        "heading2": {
+            "fontName": "stdBold",
+            "fontSize": 18,
+            "leading": 22,
+            "spaceAfter": 10
+        },
+        "heading3": {
+            "fontName": "stdBold",
+            "fontSize": 14,
+            "leading": 18,
+            "spaceAfter": 8
+        },
+        "code": {
+            "fontName": "stdMono",
+            "fontSize": 8,
+            "leading": 10
+        }
+    }
+}

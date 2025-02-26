@@ -15,12 +15,12 @@ This guide will help you install the ``memories-dev`` framework and set up your 
    * Internet connection for accessing remote data sources
 
 Installation Methods
-===================
+====================
 
 There are several ways to install the ``memories-dev`` framework, depending on your needs and environment.
 
 Using pip (Recommended)
-----------------------
+-----------------------
 
 The simplest way to install the latest stable release is using pip:
 
@@ -45,7 +45,7 @@ For installing with specific optional dependencies:
    pip install memories-dev[dev]
 
 From Source
-----------
+-----------
 
 To install the latest development version from source:
 
@@ -56,7 +56,7 @@ To install the latest development version from source:
    pip install -e .
 
 Using Docker
------------
+------------
 
 We provide Docker images with all dependencies pre-installed:
 
@@ -72,10 +72,10 @@ We provide Docker images with all dependencies pre-installed:
    docker run -v $(pwd):/app -it vortxai/memories-dev:latest
 
 Environment Setup
-================
+=================
 
 Setting Up API Keys
------------------
+-------------------
 
 The ``memories-dev`` framework integrates with various external APIs for data acquisition. You'll need to set up API keys for the services you plan to use:
 
@@ -101,7 +101,7 @@ You can also create a ``.env`` file in your project root:
    LLM_API_KEY=your_llm_api_key
 
 GPU Configuration
----------------
+-----------------
 
 For optimal performance with computer vision and machine learning tasks, we recommend using a GPU:
 
@@ -153,7 +153,7 @@ For optimal performance with computer vision and machine learning tasks, we reco
          set_backend('tensorflow')
 
 Data Storage Configuration
-------------------------
+--------------------------
 
 Configure where and how ``memories-dev`` stores data:
 
@@ -177,7 +177,7 @@ Configure where and how ``memories-dev`` stores data:
    )
 
 Verification
-===========
+============
 
 To verify that your installation is working correctly:
 
@@ -197,10 +197,10 @@ To verify that your installation is working correctly:
            print(f"- {issue}")
 
 Troubleshooting
-==============
+===============
 
 Common Issues
------------
+-------------
 
 .. list-table::
    :header-rows: 1
@@ -220,7 +220,7 @@ Common Issues
      - Enable caching, use GPU acceleration, or consider distributed processing for large datasets.
 
 Getting Help
------------
+------------
 
 If you encounter issues not covered here:
 
@@ -231,11 +231,11 @@ If you encounter issues not covered here:
 5. Email us at `hello@memories.dev <mailto:hello@memories.dev>`_
 
 Next Steps
-=========
+==========
 
 Now that you have ``memories-dev`` installed, you can:
 
 * Follow the :ref:`quickstart` guide to run your first analysis
 * Explore the :ref:`examples` to see real-world applications
-* Learn about the :ref:`core_concepts` of the framework
-* Configure your :ref:`data_sources` for optimal performance 
+* Learn about the 'core_concepts' of the framework
+* Configure your 'data_sources' for optimal performance 

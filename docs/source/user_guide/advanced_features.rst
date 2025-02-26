@@ -1,5 +1,5 @@
 Advanced Features
-================
+=================
 
 Overview
 --------
@@ -7,10 +7,10 @@ Overview
 memories-dev provides several advanced features for power users and complex use cases.
 
 Custom Memory Stores
-------------------
+--------------------
 
 Creating Custom Stores
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -27,10 +27,10 @@ Creating Custom Stores
             pass
 
 Advanced Querying
-----------------
+-----------------
 
 Spatial Queries
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -42,7 +42,7 @@ Spatial Queries
     )
 
 Temporal Queries
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -53,7 +53,7 @@ Temporal Queries
     )
 
 Semantic Queries
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -64,10 +64,10 @@ Semantic Queries
     )
 
 Performance Optimization
-----------------------
+------------------------
 
 Caching Strategies
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -79,7 +79,7 @@ Caching Strategies
     )
 
 Batch Operations
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -89,7 +89,7 @@ Batch Operations
             memory_store.process_memory(data)
 
 Distributed Processing
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -100,10 +100,10 @@ Distributed Processing
     )
 
 Security Features
-----------------
+-----------------
 
 Encryption
-~~~~~~~~~
+~~~~~~~~~~
 
 .. code-block:: python
 
@@ -114,7 +114,7 @@ Encryption
     )
 
 Access Control
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -125,7 +125,7 @@ Access Control
     )
 
 Best Practices
--------------
+--------------
 
 1. Performance Tuning
    - Profile memory operations
@@ -143,7 +143,7 @@ Best Practices
    - Use appropriate caching
 
 GPU Acceleration
---------------
+----------------
 
 memories-dev supports GPU acceleration for model inference and data processing:
 
@@ -179,10 +179,10 @@ The system automatically handles GPU memory management and cleanup:
     model.cleanup()
 
 Deployment Options
------------------
+------------------
 
 Standalone Deployment
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 For single-instance deployments:
 
@@ -204,7 +204,7 @@ For single-instance deployments:
     deployment.deploy()
 
 Consensus Deployment
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 For high-reliability distributed deployments:
 
@@ -232,7 +232,7 @@ For high-reliability distributed deployments:
     deployment.deploy()
 
 Swarmed Deployment
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 For scalable, container-based deployments:
 
@@ -288,7 +288,7 @@ memories-dev supports multiple API providers for model inference:
     )
 
 Concurrent Data Processing
-------------------------
+--------------------------
 
 memories-dev supports concurrent data processing for improved performance:
 

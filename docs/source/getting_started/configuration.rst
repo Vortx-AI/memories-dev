@@ -7,7 +7,7 @@ Configuration
 The ``memories-dev`` framework is highly configurable to adapt to different use cases, data sources, and computing environments. This guide covers the various configuration options available and how to use them effectively.
 
 Global Configuration
-===================
+====================
 
 The framework provides a central configuration system that can be accessed and modified throughout your application:
 
@@ -31,7 +31,7 @@ The framework provides a central configuration system that can be accessed and m
    print(f"Using satellite provider: {satellite_provider}")
 
 Configuration File
-----------------
+------------------
 
 You can also create a configuration file in YAML format:
 
@@ -55,7 +55,7 @@ You can also create a configuration file in YAML format:
    
    storage:
      type: local
-     base_path: ./memories_data
+     base_path: . / memories_data
      cache_size_gb: 5
      compression: true
    
@@ -74,7 +74,7 @@ Load this configuration file in your application:
    load_config_file("memories_config.yaml")
 
 Environment Variables
--------------------
+---------------------
 
 The framework supports environment variables for configuration, which is especially useful for sensitive information like API keys:
 
@@ -89,10 +89,10 @@ The framework supports environment variables for configuration, which is especia
 These environment variables will be automatically loaded when the framework initializes. You can also reference environment variables in your YAML configuration file using the ``${VARIABLE_NAME}`` syntax.
 
 Data Source Configuration
-=======================
+=========================
 
 Satellite Imagery
----------------
+-----------------
 
 Configure satellite imagery providers and their parameters:
 
@@ -121,7 +121,7 @@ Configure satellite imagery providers and their parameters:
    )
 
 GIS Data
--------
+--------
 
 Configure GIS data providers:
 
@@ -147,7 +147,7 @@ Configure GIS data providers:
    )
 
 Environmental Data
-----------------
+------------------
 
 Configure environmental data sources:
 
@@ -166,10 +166,10 @@ Configure environmental data sources:
    )
 
 Processing Configuration
-======================
+========================
 
 GPU Configuration
----------------
+-----------------
 
 Configure GPU usage for processing:
 
@@ -189,7 +189,7 @@ Configure GPU usage for processing:
    )
 
 Parallel Processing
------------------
+-------------------
 
 Configure parallel processing options:
 
@@ -207,7 +207,7 @@ Configure parallel processing options:
    )
 
 Memory Management
----------------
+-----------------
 
 Configure memory usage and caching:
 
@@ -225,10 +225,10 @@ Configure memory usage and caching:
    )
 
 Storage Configuration
-===================
+=====================
 
 Local Storage
------------
+-------------
 
 Configure local storage options:
 
@@ -247,7 +247,7 @@ Configure local storage options:
    )
 
 Cloud Storage
------------
+-------------
 
 Configure cloud storage options:
 
@@ -279,7 +279,7 @@ Configure cloud storage options:
    )
 
 Database Configuration
--------------------
+----------------------
 
 Configure database connections for metadata and results:
 
@@ -311,7 +311,7 @@ Configure database connections for metadata and results:
    )
 
 Logging Configuration
-===================
+=====================
 
 Configure logging options:
 
@@ -331,10 +331,10 @@ Configure logging options:
    )
 
 Advanced Configuration
-====================
+======================
 
 Model Configuration
-----------------
+-------------------
 
 Configure AI models used by the framework:
 
@@ -366,7 +366,7 @@ Configure AI models used by the framework:
    )
 
 Pipeline Configuration
--------------------
+----------------------
 
 Configure processing pipelines:
 
@@ -404,7 +404,7 @@ Configure processing pipelines:
    )
 
 Configuration Profiles
-====================
+======================
 
 You can create and switch between different configuration profiles for different use cases:
 
@@ -440,7 +440,7 @@ You can create and switch between different configuration profiles for different
    use_profile("high_performance")
 
 Configuration Validation
-======================
+========================
 
 Validate your configuration to ensure it's correct:
 
@@ -459,7 +459,7 @@ Validate your configuration to ensure it's correct:
            print(f"- {issue}")
 
 Best Practices
-============
+==============
 
 1. **Environment-Specific Configuration**: Use different configuration files for development, testing, and production environments.
 
@@ -476,8 +476,8 @@ Best Practices
 7. **Validation**: Always validate your configuration before running important processing tasks.
 
 Next Steps
-=========
+==========
 
-* Learn about :ref:`data_sources` to configure specific data providers
-* Explore :ref:`ai_capabilities` to configure AI models
+* Learn about 'data_sources' to configure specific data providers
+* Explore 'ai_capabilities' to configure AI models
 * Check out :ref:`examples` for configuration examples for specific use cases 

@@ -1,17 +1,15 @@
 Deployment
 ==========
 
-.. image:: /_static/images/deployment_workflow.txt
-   :alt: Deployment Workflow
-   :align: center
-
+.. code-block:: text
+   
 Overview
 --------
 
 The memories-dev framework supports multiple deployment patterns to accommodate different scalability, reliability, and performance requirements. This guide covers the three main deployment patterns: Standalone, Consensus, and Swarmed.
 
 Deployment Patterns
------------------
+-------------------
 
 1. **Standalone Deployment**
    - Single-node deployment
@@ -32,7 +30,7 @@ Deployment Patterns
    - Eventual consistency model
 
 Cloud Providers
--------------
+---------------
 
 The framework supports deployment on major cloud providers:
 
@@ -41,7 +39,7 @@ The framework supports deployment on major cloud providers:
 - **Azure**: Microsoft Azure
 
 Standalone Deployment
--------------------
+---------------------
 
 The simplest deployment pattern, ideal for development and testing:
 
@@ -84,7 +82,7 @@ Example Output:
     Status: running
 
 Consensus Deployment
-------------------
+--------------------
 
 For applications requiring strong consistency:
 
@@ -158,7 +156,7 @@ Example Output:
     Applied Index: 42
 
 Swarmed Deployment
-----------------
+------------------
 
 For highly scalable applications:
 
@@ -241,10 +239,10 @@ Example Output:
     - memories-db: 1 replicas, running
 
 Advanced Configuration
---------------------
+----------------------
 
 Custom Hardware Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Specify custom hardware requirements:
 
@@ -294,7 +292,7 @@ Specify custom hardware requirements:
     deployment_result = deployment.deploy()
 
 Network Configuration
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 Configure network settings:
 
@@ -365,7 +363,7 @@ Configure network settings:
     deployment_result = deployment.deploy()
 
 Monitoring and Logging
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 Configure monitoring and logging:
 
@@ -445,10 +443,10 @@ Example Output:
       2024-02-24T00:10:00Z: 4.1 GB
 
 Deployment Management
--------------------
+---------------------
 
 Managing Existing Deployments
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -511,7 +509,7 @@ Example Output:
     Deleted deployment standalone-aws-20240225-123456: deleting
 
 Best Practices
-------------
+--------------
 
 1. **Deployment Selection**:
    - Use Standalone for development and testing

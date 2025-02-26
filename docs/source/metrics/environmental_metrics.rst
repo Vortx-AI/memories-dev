@@ -1,6 +1,6 @@
 ===================
 Environmental Metrics
-===================
+=====================
 
 Overview
 --------
@@ -8,17 +8,17 @@ Overview
 The environmental metrics module in memories-dev provides a comprehensive set of metrics for analyzing environmental conditions. These metrics are implemented across various components of the system.
 
 Vegetation Metrics
----------------
+------------------
 
 NDVI Calculation
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 The Normalized Difference Vegetation Index (NDVI) is implemented in `analysis_utils.py`:
 
 .. code-block:: python
 
     def calculate_ndvi(nir_band: np.ndarray, red_band: np.ndarray) -> np.ndarray:
-        """
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
         Calculate Normalized Difference Vegetation Index.
         
         Args:
@@ -27,7 +27,7 @@ The Normalized Difference Vegetation Index (NDVI) is implemented in `analysis_ut
             
         Returns:
             NDVI array
-        """
+""""""""""
         ndvi = np.where(
             (nir_band + red_band) != 0,
             (nir_band - red_band) / (nir_band + red_band),
@@ -48,7 +48,7 @@ Configuration parameters for vegetation analysis:
     }
 
 Climate Metrics
-------------
+---------------
 
 Climate data processing is implemented in `ClimateDataSource`:
 
@@ -69,7 +69,7 @@ Climate data processing is implemented in `ClimateDataSource`:
             self.variables = variables
 
 Air Quality Metrics
-----------------
+-------------------
 
 Air quality monitoring is implemented in `AirQualityDataSource`:
 
@@ -89,7 +89,7 @@ Air quality monitoring is implemented in `AirQualityDataSource`:
             features = np.zeros(6)  # [pm25, pm10, no2, o3, so2, co]
 
 Urban Development Metrics
----------------------
+-------------------------
 
 Urban pattern analysis from `AdvancedAnalysis`:
 
@@ -100,9 +100,9 @@ Urban pattern analysis from `AdvancedAnalysis`:
         bounds: Bounds,
         layers: List[str] = ['buildings', 'roads']
     ) -> Dict[str, Any]:
-        """
+""""""""""""""""""""
         Analyze urban development patterns.
-        """
+"""""""""""""""""""""""""""""""""""
         try:
             # Initialize vector processor if needed
             if self.vector_processor is None:
@@ -123,7 +123,7 @@ Urban pattern analysis from `AdvancedAnalysis`:
             }
 
 Change Detection
--------------
+----------------
 
 Change analysis implementation:
 
@@ -135,9 +135,9 @@ Change analysis implementation:
         start_time: str,
         end_time: str
     ) -> Dict[str, Any]:
-        """
+""""""""""""""""""""
         Analyze changes between two time periods.
-        """
+"""""""""""""""""""""""""""""""""""""""""
         try:
             # Get data for both time periods
             start_data = self.raster_processor.process_tile(
@@ -164,10 +164,10 @@ Change analysis implementation:
             }
 
 Integration Examples
------------------
+--------------------
 
 Property Analysis Integration
-^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Environmental metrics are used in property analysis:
 
@@ -190,7 +190,7 @@ Environmental metrics are used in property analysis:
         }
 
 Future Developments
-----------------
+-------------------
 
 Planned enhancements to the environmental metrics:
 1. Integration of additional climate data sources

@@ -1,10 +1,10 @@
 GPU Utilities
-============
+=============
 
 The GPU Utilities module provides essential tools for GPU resource management, monitoring, and optimization within the memories.dev framework. These utilities ensure efficient memory processing and model inference on GPU hardware while maintaining optimal performance and stability.
 
 🔑 Key Features
-------------
+--------------
 
 - **Resource Management**:
   - Real-time GPU monitoring
@@ -25,7 +25,7 @@ The GPU Utilities module provides essential tools for GPU resource management, m
   - Resource cleanup
 
 GPU Resource Management
---------------------
+-----------------------
 
 .. automodule:: memories.utils.processors
    :members:
@@ -33,12 +33,12 @@ GPU Resource Management
    :show-inheritance:
 
 gpu_stat
--------
+--------
 
 .. autofunction:: memories.utils.processors.gpu_stat
 
 Return Value Details
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 dict: A comprehensive dictionary containing GPU statistics:
 
@@ -59,7 +59,7 @@ dict: A comprehensive dictionary containing GPU statistics:
   - **memory_bandwidth** (float): Memory bandwidth utilization
 
 Exceptions
-~~~~~~~~~
+~~~~~~~~~~
 
 - **RuntimeError**: 
   - GPU monitoring system failure
@@ -72,10 +72,10 @@ Exceptions
   - Version incompatibilities
 
 📊 Usage Examples
---------------
+----------------
 
 Basic Monitoring
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -103,7 +103,7 @@ Basic Monitoring
             print("❌ No GPU available - operations will run on CPU")
 
 Advanced Monitoring
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -153,7 +153,7 @@ Advanced Monitoring
             print(f"Memory usage after cleanup: {new_usage:.1%}")
 
 ⚡ Performance Optimization
------------------------
+--------------------------
 
 1. **Memory Management**
    - Monitor usage patterns
@@ -174,10 +174,10 @@ Advanced Monitoring
    - Handle device synchronization
 
 🔧 Troubleshooting Guide
---------------------
+-----------------------
 
 Common Issues
-~~~~~~~~~~~
+~~~~~~~~~~~~~
 
 1. **Memory Problems**
    - **Symptoms**:
@@ -213,15 +213,15 @@ Common Issues
      - Monitor temperature
 
 📚 Additional Resources
-------------------
+----------------------
 
-- :ref:`gpu_optimization` - Comprehensive GPU optimization guide
-- :ref:`multi_gpu_guide` - Multi-GPU processing strategies
-- :ref:`memory_management` - Memory management best practices
-- :ref:`troubleshooting` - Detailed troubleshooting guide
+- 'gpu_optimization' - Comprehensive GPU optimization guide
+- 'multi_gpu_guide' - Multi-GPU processing strategies
+- 'memory_management' - Memory management best practices
+- 'troubleshooting' - Detailed troubleshooting guide
 
 GPU Memory Management
-------------------
+---------------------
 
 .. automodule:: memories.utils.processors.gpu_stat
    :members:
@@ -229,12 +229,12 @@ GPU Memory Management
    :show-inheritance:
 
 GPU Acceleration
---------------
+----------------
 
 The memories-dev library provides comprehensive GPU acceleration support for model inference and data processing. The system automatically handles GPU memory management, device selection, and resource cleanup.
 
 Basic GPU Usage
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -255,7 +255,7 @@ Basic GPU Usage
     model.cleanup()
 
 Multi-GPU Support
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 For systems with multiple GPUs, you can specify which device to use:
 
@@ -271,7 +271,7 @@ For systems with multiple GPUs, you can specify which device to use:
     )
 
 GPU Memory Monitoring
-------------------
+---------------------
 
 You can monitor GPU memory usage with the provided utilities:
 
@@ -289,7 +289,7 @@ You can monitor GPU memory usage with the provided utilities:
         print(f"  Free memory: {stats['free']} MB")
 
 Error Handling
-------------
+--------------
 
 The system includes robust error handling for GPU-related issues:
 
@@ -315,7 +315,7 @@ The system includes robust error handling for GPU-related issues:
             raise
 
 Performance Comparison
--------------------
+----------------------
 
 When available, GPU acceleration can significantly improve performance:
 

@@ -5,7 +5,7 @@ Technical Index
 This index provides a comprehensive overview of the technical and scientific aspects of the memories-dev framework.
 
 Core Mathematical Concepts
-------------------------
+--------------------------
 
 .. toctree::
    :maxdepth: 2
@@ -16,70 +16,70 @@ Core Mathematical Concepts
    technical/data_fusion
 
 Algorithms & Methods
--------------------
+--------------------
 
 Spatial Analysis
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 * :doc:`/algorithms/kriging`
 * :doc:`/algorithms/point_pattern`
-* :doc:`/algorithms/spatial_interpolation`
-* :doc:`/algorithms/viewshed_analysis`
+* 'spatial_interpolation'
+* 'viewshed_analysis'
 
 Temporal Analysis
-^^^^^^^^^^^^^^^
-
-* :doc:`/algorithms/change_detection`
-* :doc:`/algorithms/time_series_decomposition`
-* :doc:`/algorithms/trend_analysis`
-* :doc:`/algorithms/forecasting`
-
-Data Fusion
-^^^^^^^^^^
-
-* :doc:`/algorithms/bayesian_fusion`
-* :doc:`/algorithms/feature_fusion`
-* :doc:`/algorithms/decision_fusion`
-* :doc:`/algorithms/uncertainty_quantification`
-
-Formula Database
----------------
-
-Spatial Statistics
 ^^^^^^^^^^^^^^^^^
 
-.. math-index::
-   :maxdepth: 2
-   
-   * Moran's I: :math:`I = \frac{n}{W} \frac{\sum_i\sum_j w_{ij}(x_i-\bar{x})(x_j-\bar{x})}{\sum_i(x_i-\bar{x})^2}`
-   * Geary's C: :math:`C = \frac{(n-1)}{2W} \frac{\sum_i\sum_j w_{ij}(x_i-x_j)^2}{\sum_i(x_i-\bar{x})^2}`
-   * Ripley's K: :math:`K(r) = \lambda^{-1}\mathbb{E}[number\:of\:points\:within\:distance\:r\:of\:a\:random\:point]`
+* 'change_detection'
+* :doc:`/algorithms/time_series_decomposition`
+* 'trend_analysis'
+* 'forecasting'
 
-Temporal Statistics
+Data Fusion
+^^^^^^^^^^^
+
+* 'bayesian_fusion'
+* 'feature_fusion'
+* 'decision_fusion'
+* 'uncertainty_quantification'
+
+Formula Database
+----------------
+
+Spatial Statistics
 ^^^^^^^^^^^^^^^^^^
 
 .. math-index::
    :maxdepth: 2
    
-   * Autocorrelation: :math:`\rho_k = \frac{\sum_{t=1}^{n-k}(x_t-\bar{x})(x_{t+k}-\bar{x})}{\sum_{t=1}^n(x_t-\bar{x})^2}`
-   * CUSUM: :math:`S_t = \max(0, S_{t-1} + (X_t - \mu_0) - k)`
-   * Trend Component: :math:`T_t = \frac{1}{2q+1}\sum_{j=-q}^q x_{t+j}`
+   * Moran's I: $I = \frac{n}{W} \frac{\sum_i\sum_j w_{ij}(x_i-\bar{x})(x_j-\bar{x})}{\sum_i(x_i-\bar{x})^2}$
+   * Geary's C: $C = \frac{(n-1)}{2W} \frac{\sum_i\sum_j w_{ij}(x_i-x_j)^2}{\sum_i(x_i-\bar{x})^2}$
+   * Ripley's K: $K(r) = \lambda^{-1}\mathbb{E}[number\:of\:points\:within\:distance\:r\:of\:a\:random\:point]$
 
-Performance Metrics
-^^^^^^^^^^^^^^^^^
+Temporal Statistics
+^^^^^^^^^^^^^^^^^^^
 
 .. math-index::
    :maxdepth: 2
    
-   * RMSE: :math:`RMSE = \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2}`
-   * MAE: :math:`MAE = \frac{1}{n}\sum_{i=1}^{n}|y_i - \hat{y}_i|`
-   * R²: :math:`R^2 = 1 - \frac{\sum_i(y_i - \hat{y}_i)^2}{\sum_i(y_i - \bar{y})^2}`
+   * Autocorrelation: $\rho_k = \frac{\sum_{t=1}^{n-k}(x_t-\bar{x})(x_{t+k}-\bar{x})}{\sum_{t=1}^n(x_t-\bar{x})^2}$
+   * CUSUM: $S_t = \max(0, S_{t-1} + (X_t - \mu_0) - k)$
+   * Trend Component: $T_t = \frac{1}{2q+1}\sum_{j=-q}^q x_{t+j}$
+
+Performance Metrics
+^^^^^^^^^^^^^^^^^^^
+
+.. math-index::
+   :maxdepth: 2
+   
+   * RMSE: $RMSE = \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2}$
+   * MAE: $MAE = \frac{1}{n}\sum_{i=1}^{n}|y_i - \hat{y}_i|$
+   * R²: $R^2 = 1 - \frac{\sum_i(y_i - \hat{y}_i)^2}{\sum_i(y_i - \bar{y})^2}$
 
 Code Examples
-------------
+-------------
 
 Spatial Analysis
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -102,7 +102,7 @@ Spatial Analysis
     )
 
 Temporal Analysis
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -123,7 +123,7 @@ Temporal Analysis
     )
 
 Data Fusion
-^^^^^^^^^^
+^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -144,73 +144,67 @@ Data Fusion
     )
 
 Validation Methods
-----------------
+------------------
 
 Cross-Validation
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 .. mermaid::
-   graph TB
-       subgraph "Data Splitting"
-           A1[Training Set]
-           A2[Validation Set]
-           A3[Test Set]
-       end
-       
-       subgraph "Model Validation"
-           B1[K-Fold Cross Validation]
-           B2[Hold-Out Validation]
-           B3[Leave-One-Out CV]
-       end
-       
-       subgraph "Performance Assessment"
-           C1[Error Metrics]
-           C2[Statistical Tests]
-           C3[Uncertainty Analysis]
-       end
-       
-       A1 --> B1
-       A2 --> B2
-       A3 --> B3
-       B1 --> C1
-       B2 --> C2
-       B3 --> C3
+
+                       A3[Test Set]
+                   end
+                   
+                   subgraph "Model Validation"
+                       B1[K-Fold Cross Validation]
+                       B2[Hold-Out Validation]
+                       B3[Leave-One-Out CV]
+                   end
+                   
+                   subgraph "Performance Assessment"
+                       C1[Error Metrics]
+                       C2[Statistical Tests]
+                       C3[Uncertainty Analysis]
+                   end
+                   
+                   A1 --> B1
+                   A2 --> B2
+                   A3 --> B3
+                   B1 --> C1
+                   B2 --> C2
+                   B3 --> C3
 
 Uncertainty Quantification
-^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. mermaid::
-   graph LR
-       subgraph "Sources of Uncertainty"
-           A1[Measurement Error]
-           A2[Model Error]
-           A3[Parameter Error]
-       end
-       
-       subgraph "Propagation Methods"
-           B1[Monte Carlo]
-           B2[Bayesian Methods]
-           B3[Ensemble Methods]
-       end
-       
-       subgraph "Uncertainty Metrics"
-           C1[Confidence Intervals]
-           C2[Prediction Intervals]
-           C3[Error Bounds]
-       end
-       
-       A1 --> B1
-       A2 --> B2
-       A3 --> B3
-       B1 --> C1
-       B2 --> C2
-       B3 --> C3
+
+                       A3[Parameter Error]
+                   end
+                   
+                   subgraph "Propagation Methods"
+                       B1[Monte Carlo]
+                       B2[Bayesian Methods]
+                       B3[Ensemble Methods]
+                   end
+                   
+                   subgraph "Uncertainty Metrics"
+                       C1[Confidence Intervals]
+                       C2[Prediction Intervals]
+                       C3[Error Bounds]
+                   end
+                   
+                   A1 --> B1
+                   A2 --> B2
+                   A3 --> B3
+                   B1 --> C1
+                   B2 --> C2
+                   B3 --> C3
 
 Technical Specifications
-----------------------
+------------------------
 
 Hardware Requirements
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 
 .. list-table::
    :header-rows: 1
@@ -230,7 +224,7 @@ Hardware Requirements
      - 1Gbps+ for real-time data
 
 Software Dependencies
-^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 
 .. list-table::
    :header-rows: 1
@@ -250,10 +244,10 @@ Software Dependencies
      - ≥1.3.8
 
 Performance Benchmarks
--------------------
+----------------------
 
 Spatial Analysis
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 .. list-table::
    :header-rows: 1
@@ -281,7 +275,7 @@ Spatial Analysis
      - ±3.5%
 
 Temporal Analysis
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 .. list-table::
    :header-rows: 1
@@ -309,17 +303,17 @@ Temporal Analysis
      - ±3.0%
 
 References
----------
+----------
 
 Scientific Papers
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 1. Smith, J. et al. (2024). "Advanced Spatial Analysis Methods for Earth Observation". *Journal of Remote Sensing*, 45(2), 123-145.
 2. Johnson, A. et al. (2023). "Temporal Pattern Recognition in Satellite Imagery". *IEEE Transactions on Geoscience and Remote Sensing*, 61(3), 1-15.
 3. Williams, R. et al. (2024). "Multi-Modal Data Fusion for Environmental Monitoring". *Environmental Modelling & Software*, 158, 105448.
 
 Technical Standards
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 1. ISO 19115-1:2014 - Geographic information -- Metadata
 2. OGC 06-121r9 - OGC Web Services Common Standard

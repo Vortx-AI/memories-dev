@@ -1,5 +1,5 @@
 Earth Memory Analyzers
-==================
+======================
 
 Overview
 --------
@@ -7,10 +7,10 @@ Overview
 Earth Memory analyzers are specialized components that process and analyze different aspects of Earth observation data.
 
 Core Analyzers
-------------
+--------------
 
 Terrain Analyzer
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 Analyzing terrain features:
 
@@ -36,7 +36,7 @@ Analyzing terrain features:
     )
 
 Climate Analyzer
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 Analyzing climate patterns:
 
@@ -63,7 +63,7 @@ Analyzing climate patterns:
     )
 
 Vegetation Analyzer
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 Analyzing vegetation patterns:
 
@@ -85,7 +85,7 @@ Analyzing vegetation patterns:
     )
 
 Urban Analyzer
-~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 Analyzing urban environments:
 
@@ -111,10 +111,10 @@ Analyzing urban environments:
     )
 
 Specialized Analyzers
-------------------
+---------------------
 
 Biodiversity Analyzer
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 Analyzing biodiversity patterns:
 
@@ -139,7 +139,7 @@ Analyzing biodiversity patterns:
     )
 
 Water Analyzer
-~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 Analyzing water bodies and hydrology:
 
@@ -165,7 +165,7 @@ Analyzing water bodies and hydrology:
     )
 
 Atmospheric Analyzer
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 Analyzing atmospheric conditions:
 
@@ -192,10 +192,10 @@ Analyzing atmospheric conditions:
     )
 
 Integration
----------
+-----------
 
 Combining Multiple Analyzers
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -217,7 +217,7 @@ Combining Multiple Analyzers
     )
 
 Advanced Features
---------------
+-----------------
 
 1. Custom Analyzers
    - Create specialized analyzers
@@ -244,7 +244,7 @@ Advanced Features
    - Visualization
 
 Best Practices
-------------
+--------------
 
 1. Data Sources
    - Use appropriate sources

@@ -1,17 +1,15 @@
 Models
 ======
 
-.. image:: /_static/images/model_system_workflow.txt
-   :alt: Model System Workflow
-   :align: center
-
+.. code-block:: text
+   
 Overview
 --------
 
 The memories-dev framework provides a flexible and powerful model system that supports both local and API-based models. This allows you to choose the most appropriate deployment option based on your requirements for performance, cost, and privacy.
 
 Supported Model Providers
------------------------
+-------------------------
 
 - **OpenAI**: GPT-4, GPT-3.5-Turbo, and other models via API
 - **Anthropic**: Claude models via API
@@ -21,7 +19,7 @@ Supported Model Providers
 - **Local Models**: Support for any Hugging Face compatible model
 
 Deployment Types
---------------
+----------------
 
 1. **Local Deployment**
    - Models run directly on your hardware
@@ -36,10 +34,10 @@ Deployment Types
    - Internet connection required
 
 Basic Usage
-----------
+-----------
 
 Using the LoadModel Class
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``LoadModel`` class provides a unified interface for all model types:
 
@@ -67,7 +65,7 @@ Example Output:
 .. code-block:: python
 
     def factorial(n):
-        """
+"""""""""""""""""
         Calculate the factorial of a non-negative integer n.
         
         Args:
@@ -75,7 +73,7 @@ Example Output:
             
         Returns:
             int: The factorial of n
-        """
+"""""""""""""""""""""""
         if n < 0:
             raise ValueError("Factorial is not defined for negative numbers")
         
@@ -89,7 +87,7 @@ Example Output:
         return result
 
 Using API-Based Models
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -119,10 +117,10 @@ Using API-Based Models
     api_model.cleanup()
 
 Advanced Usage
------------
+--------------
 
 Model Comparison
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 Compare results from different models:
 
@@ -159,7 +157,7 @@ Compare results from different models:
         print(response[:300] + "..." if len(response) > 300 else response)
 
 Streaming Responses
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 For models that support streaming:
 
@@ -188,7 +186,7 @@ For models that support streaming:
     model.cleanup()
 
 Function Calling
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 For models that support function calling:
 
@@ -267,7 +265,7 @@ For models that support function calling:
     model.cleanup()
 
 Multi-Model Inference
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 Using multiple models in a pipeline:
 
@@ -310,12 +308,42 @@ Using multiple models in a pipeline:
     code_model.cleanup()
     explanation_model.cleanup()
 
-.. image:: /_static/images/model_analysis_result.txt
-   :alt: Model Analysis Result
-   :align: center
+.. code-block:: text
+   
+=====================
+   
+   Query: "Analyze urban development in this region over the past year"
+   Model: DeepSeek-Coder-Small
+   Deployment: Local (GPU)
+   
+   ANALYSIS:
+---------
+   The satellite imagery shows significant urban development in the northeastern 
+   quadrant of the region over the past 12 months. Specifically:
+   
+   1. Construction of approximately 37 new residential buildings
+   2. Expansion of road network by 4.2 km
+   3. Reduction in vegetation cover by 3.1%
+   4. New commercial development near the highway intersection
+   
+   ENVIRONMENTAL IMPACT:
+---------------------
+   - Moderate reduction in permeable surfaces
+   - Potential increase in urban heat island effect
+   - Minimal impact on existing water bodies
+   - Loss of small woodland area (approximately 1.2 hectares)
+   
+   RECOMMENDATIONS:
+----------------
+   1. Monitor stormwater runoff in newly developed areas
+   2. Consider green infrastructure to mitigate heat island effect
+   3. Implement vegetation buffers around new developments
+   4. Preserve remaining natural areas to maintain ecological balance
+   
+   CONFIDENCE SCORE: 87%
 
 GPU Acceleration
---------------
+----------------
 
 For models that support GPU acceleration:
 
@@ -361,7 +389,7 @@ For models that support GPU acceleration:
     model.cleanup()
 
 Best Practices
-------------
+--------------
 
 1. **Model Selection**:
    - Choose the right model for your task (code generation, text generation, etc.)

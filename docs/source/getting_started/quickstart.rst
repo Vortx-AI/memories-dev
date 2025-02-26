@@ -16,7 +16,7 @@ This guide will help you get started with the ``memories-dev`` framework quickly
    * Basic familiarity with Python and geospatial concepts
 
 Basic Setup
-==========
+===========
 
 First, let's import the necessary modules and set up our environment:
 
@@ -36,7 +36,7 @@ First, let's import the necessary modules and set up our environment:
    os.environ["SATELLITE_API_KEY"] = "your_satellite_api_key"
 
 Retrieving Historical Imagery
-===========================
+=============================
 
 Now, let's retrieve historical satellite imagery for a specific location. We'll use San Francisco as an example:
 
@@ -70,7 +70,7 @@ Now, let's retrieve historical satellite imagery for a specific location. We'll 
    print(f"Bands available: {images.bands}")
 
 Analyzing Changes Over Time
-=========================
+===========================
 
 With our historical imagery in hand, let's analyze how the area has changed over time:
 
@@ -104,7 +104,7 @@ With our historical imagery in hand, let's analyze how the area has changed over
    print(f"Major expansion periods: {urban_expansion.significant_periods}")
 
 Visualizing the Results
-=====================
+=======================
 
 Finally, let's visualize our results to better understand the changes:
 
@@ -136,7 +136,7 @@ Finally, let's visualize our results to better understand the changes:
    webbrowser.open("san_francisco_changes.html")
 
 Complete Example
-==============
+================
 
 Here's the complete code for the quickstart example:
 
@@ -214,12 +214,12 @@ Here's the complete code for the quickstart example:
        asyncio.run(analyze_location())
 
 Advanced Features
-===============
+=================
 
 The ``memories-dev`` framework offers many more advanced features:
 
 Multi-Location Analysis
----------------------
+-----------------------
 
 Analyze multiple locations simultaneously:
 
@@ -253,7 +253,7 @@ Analyze multiple locations simultaneously:
            # ...
 
 Custom Analysis Pipelines
------------------------
+-------------------------
 
 Create custom analysis pipelines for specific use cases:
 
@@ -279,12 +279,12 @@ Create custom analysis pipelines for specific use cases:
    results = pipeline.process(images)
 
 Next Steps
-=========
+==========
 
 Now that you've completed the quickstart guide, you can:
 
 * Explore more detailed :ref:`examples` for specific use cases
-* Learn about the :ref:`core_concepts` of the framework
-* Dive into the :ref:`api_reference` for comprehensive documentation
-* Configure advanced :ref:`data_sources` for your specific needs
-* Explore :ref:`applications` built on the framework 
+* Learn about the 'core_concepts' of the framework
+* Dive into the 'api_reference' for comprehensive documentation
+* Configure advanced 'data_sources' for your specific needs
+* Explore 'applications' built on the framework 

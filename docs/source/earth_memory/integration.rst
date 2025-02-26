@@ -1,5 +1,5 @@
 Integration
-==========
+===========
 
 Overview
 --------
@@ -7,10 +7,10 @@ Overview
 This guide explains how to integrate different Earth Memory components and external systems with the memories-dev framework.
 
 Component Integration
-------------------
+---------------------
 
 Memory Store Integration
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Integrating with memory stores:
 
@@ -36,7 +36,7 @@ Integrating with memory stores:
     )
 
 Analyzer Integration
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 Integrating multiple analyzers:
 
@@ -62,7 +62,7 @@ Integrating multiple analyzers:
     )
 
 Data Source Integration
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Integrating data sources:
 
@@ -86,10 +86,10 @@ Integrating data sources:
     )
 
 External Integration
------------------
+--------------------
 
 Cloud Provider Integration
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Integrating with cloud providers:
 
@@ -114,7 +114,7 @@ Integrating with cloud providers:
     )
 
 Database Integration
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 Integrating with databases:
 
@@ -138,7 +138,7 @@ Integrating with databases:
     )
 
 API Integration
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 Integrating with external APIs:
 
@@ -162,10 +162,10 @@ Integrating with external APIs:
     )
 
 Advanced Integration
------------------
+--------------------
 
 Workflow Integration
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 Integrating with workflow engines:
 
@@ -190,7 +190,7 @@ Integrating with workflow engines:
     )
 
 Model Integration
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 Integrating with ML models:
 
@@ -212,7 +212,7 @@ Integrating with ML models:
     )
 
 Monitoring Integration
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 Integrating with monitoring systems:
 
@@ -236,7 +236,7 @@ Integrating with monitoring systems:
     )
 
 Best Practices
-------------
+--------------
 
 1. Security
    - Use secure connections
@@ -263,7 +263,7 @@ Best Practices
    - Documentation
 
 Advanced Topics
-------------
+---------------
 
 1. Custom Integration
    - Create custom integrators

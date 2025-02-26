@@ -2,7 +2,7 @@ LoadModel
 =========
 
 Model Loading System
--------------------
+--------------------
 
 .. automodule:: memories.models.load_model
    :members:
@@ -10,7 +10,7 @@ Model Loading System
    :show-inheritance:
 
 LoadModel Class
---------------
+---------------
 
 .. autoclass:: memories.models.load_model.LoadModel
    :members:
@@ -18,10 +18,10 @@ LoadModel Class
    :show-inheritance:
 
 Model Types
-----------
+-----------
 
 Base Model
-~~~~~~~~~
+~~~~~~~~~~
 
 .. autoclass:: memories.models.base_model.BaseModel
    :members:
@@ -29,7 +29,7 @@ Base Model
    :show-inheritance:
 
 API Connectors
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 .. autoclass:: memories.models.api_connector.APIConnector
    :members:
@@ -52,7 +52,7 @@ API Connectors
    :show-inheritance:
 
 Example Usage
-------------
+-------------
 
 .. code-block:: python
 

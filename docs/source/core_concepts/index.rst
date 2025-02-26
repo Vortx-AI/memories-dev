@@ -14,7 +14,7 @@ This section explains the core concepts and foundational principles of the ``mem
 The core concepts of ``memories-dev`` are built around a scientific approach to Earth observation data and memory systems, with a focus on modularity, scalability, and performance.
 
 Key Concepts Overview
--------------------
+---------------------
 
 1. **Architecture**: The overall system architecture that enables the framework to process and analyze Earth observation data across multiple layers.
 

@@ -7,7 +7,7 @@ Memory System
 The Memory System is the core component of the ``memories-dev`` framework, responsible for storing, organizing, and retrieving data in a way that preserves temporal and spatial relationships. This page explains how the memory system works and how to use it effectively.
 
 Overview
-=======
+========
 
 The Memory System in ``memories-dev`` is designed to mimic aspects of human memory, particularly the ability to:
 
@@ -24,66 +24,58 @@ The system consists of four main components:
 4. **Relationship Memory**: Tracks connections between data elements
 
 .. mermaid::
-   :caption: Memory System Components
-   :align: center
 
-   graph TD
-       A[Data Sources] --> B[Memory System]
-       B --> C1[Temporal Memory]
-       B --> C2[Spatial Memory]
-       B --> C3[Context Memory]
-       B --> C4[Relationship Memory]
-       C1 --> D[Query Interface]
-       C2 --> D
-       C3 --> D
-       C4 --> D
-       D --> E[Applications]
-       
-       classDef source fill:#3b82f6,color:#fff,stroke:#2563eb
-       classDef memory fill:#10b981,color:#fff,stroke:#059669
-       classDef component fill:#8b5cf6,color:#fff,stroke:#7c3aed
-       classDef interface fill:#f59e0b,color:#fff,stroke:#d97706
-       classDef app fill:#ef4444,color:#fff,stroke:#dc2626
-       
-       class A source
-       class B,C1,C2,C3,C4 memory
-       class D interface
-       class E app
+                   B --> C1[Temporal Memory]
+                   B --> C2[Spatial Memory]
+                   B --> C3[Context Memory]
+                   B --> C4[Relationship Memory]
+                   C1 --> D[Query Interface]
+                   C2 --> D
+                   C3 --> D
+                   C4 --> D
+                   D --> E[Applications]
+                   
+                   classDef source fill:#3b82f6,color:#fff,stroke:#2563eb
+                   classDef memory fill:#10b981,color:#fff,stroke:#059669
+                   classDef component fill:#8b5cf6,color:#fff,stroke:#7c3aed
+                   classDef interface fill:#f59e0b,color:#fff,stroke:#d97706
+                   classDef app fill:#ef4444,color:#fff,stroke:#dc2626
+                   
+                   class A source
+                   class B,C1,C2,C3,C4 memory
+                   class D interface
+                   class E app
 
 Memory Tiers Architecture
-=======================
+=========================
 
 The ``memories-dev`` framework implements a sophisticated multi-tiered memory architecture inspired by modern computing memory hierarchies and human memory systems. This design optimizes for both performance and cost-efficiency.
 
 .. mermaid::
-   :caption: Memory Tiers Architecture
-   :align: center
 
-   graph TD
-       A[Input Data] --> B[Memory Manager]
-       B --> C1[Hot Memory]
-       B --> C2[Warm Memory]
-       B --> C3[Cold Memory]
-       B --> C4[Glacier Memory]
-       
-       C1 -.-> B
-       C2 -.-> B
-       C3 -.-> B
-       C4 -.-> B
-       
-       classDef input fill:#3b82f6,color:#fff,stroke:#2563eb
-       classDef manager fill:#8b5cf6,color:#fff,stroke:#7c3aed
-       classDef hot fill:#ef4444,color:#fff,stroke:#dc2626
-       classDef warm fill:#f59e0b,color:#fff,stroke:#d97706
-       classDef cold fill:#10b981,color:#fff,stroke:#059669
-       classDef glacier fill:#1e40af,color:#fff,stroke:#1e3a8a
-       
-       class A input
-       class B manager
-       class C1 hot
-       class C2 warm
-       class C3 cold
-       class C4 glacier
+                   B --> C1[Hot Memory]
+                   B --> C2[Warm Memory]
+                   B --> C3[Cold Memory]
+                   B --> C4[Glacier Memory]
+                   
+                   C1 -.-> B
+                   C2 -.-> B
+                   C3 -.-> B
+                   C4 -.-> B
+                   
+                   classDef input fill:#3b82f6,color:#fff,stroke:#2563eb
+                   classDef manager fill:#8b5cf6,color:#fff,stroke:#7c3aed
+                   classDef hot fill:#ef4444,color:#fff,stroke:#dc2626
+                   classDef warm fill:#f59e0b,color:#fff,stroke:#d97706
+                   classDef cold fill:#10b981,color:#fff,stroke:#059669
+                   classDef glacier fill:#1e40af,color:#fff,stroke:#1e3a8a
+                   
+                   class A input
+                   class B manager
+                   class C1 hot
+                   class C2 warm
+                   class C3 cold
+                   class C4 glacier
 
 Each memory tier serves a specific purpose:
 
@@ -115,77 +107,47 @@ Each memory tier serves a specific purpose:
 The memory system automatically manages data migration between tiers based on access patterns, importance, and age of data. This approach ensures optimal performance while minimizing resource usage.
 
 Mathematical Foundations
-=====================
+========================
 
 The memory system's design is based on several mathematical principles:
 
 Vector Embeddings and Similarity
-------------------------------
+--------------------------------
 
 Data retrieval in the memory system relies on vector embeddings and similarity metrics. The primary similarity measure used is cosine similarity:
 
-.. math::
 
-   \text{similarity}(A, B) = \cos(\theta) = \frac{A \cdot B}{||A|| \cdot ||B||} = \frac{\sum_{i=1}^{n} A_i B_i}{\sqrt{\sum_{i=1}^{n} A_i^2} \sqrt{\sum_{i=1}^{n} B_i^2}}
 
-Where:
-- :math:`A` and :math:`B` are vector embeddings
-- :math:`\theta` is the angle between vectors
-- :math:`||A||` and :math:`||B||` are the magnitudes of the vectors
 
-For efficient nearest-neighbor search, the system uses FAISS (Facebook AI Similarity Search) with an L2 distance metric:
 
 .. math::
+   
 
-   L2(A, B) = ||A - B||_2 = \sqrt{\sum_{i=1}^{n} (A_i - B_i)^2}
+similarity(A, B) = \cos(\theta) = \frac{A \cdot B}{||A|| \cdot ||B||} = \frac{\sum_{i=1}^{n} A_i B_i}{\sqrt{\sum_{i=1}^{n} A_i^2} \sqrt{\sum_{i=1}^{n} B_i^2}} Where: - $A$ and $B$ are vector embeddings - $\theta$ is the angle between vectors - $||A||$ and $||B||$ are the magnitudes of the vectors For efficient nearest - neighbor search, the system uses FAISS (Facebook AI Similarity Search) with an L2 distance metric: 
 
-Temporal Decay Function
---------------------
-
-The memory system implements a temporal decay function to model the importance of data over time:
 
 .. math::
+   
 
-   \text{importance}(t) = \alpha \cdot e^{-\lambda (t_{\text{now}} - t)}
-
-Where:
-- :math:`t` is the timestamp of the data
-- :math:`t_{\text{now}}` is the current time
-- :math:`\alpha` is the initial importance
-- :math:`\lambda` is the decay rate parameter
-
-This function helps determine when data should be migrated between memory tiers.
-
-Spatial Indexing
--------------
-
-For efficient spatial queries, the system uses geospatial indexing techniques. The primary approach is based on geohash encoding, which maps 2D coordinates to a 1D string:
+L2(A, B) = ||A - B||_2 = \sqrt{\sum_{i=1}^{n} (A_i - B_i)^2} Temporal Decay Function -------------------- The memory system implements a temporal decay function to model the importance of data over time: 
 
 .. math::
+   
 
-   \text{geohash}(lat, lon, \text{precision}) = \text{base32_encode}(\text{interleave_bits}(lat, lon), \text{precision})
+importance(t) = \alpha \cdot e^{-\lambda (t_{now} - t)} Where: - $t$ is the timestamp of the data - $t_{now}$ is the current time - $\alpha$ is the initial importance - $\lambda$ is the decay rate parameter This function helps determine when data should be migrated between memory tiers. Spatial Indexing ------------- For efficient spatial queries, the system uses geospatial indexing techniques. The primary approach is based on geohash encoding, which maps 2D coordinates to a 1D string: 
+.. math::
+   
 
-This enables efficient range queries and proximity searches in the spatial domain.
+geohash(lat, lon, precision) = \text{base32\_encode}(\text{interleave\_bits}(lat, lon)) This enables efficient range queries and proximity searches in the spatial domain. Implementation Details =================== The memory system is implemented through several key classes: MemoryManager ----------- The ``MemoryManager`` class coordinates all memory operations across the different tiers: .. code-block:: python
+         
+            class MemoryManager:
+                """Memory manager that handles different memory tiers:
+                - Hot Memory: GPU-accelerated memory for immediate processing
+                - Warm Memory: CPU and Redis for fast in-memory access
+                - Cold Memory: DuckDB for efficient on-device storage
+                - Glacier Memory: Parquet files for off-device compressed storage
 
-Implementation Details
-===================
-
-The memory system is implemented through several key classes:
-
-MemoryManager
------------
-
-The ``MemoryManager`` class coordinates all memory operations across the different tiers:
-
-.. code-block:: python
-
-   class MemoryManager:
-       """Memory manager that handles different memory tiers:
-       - Hot Memory: GPU-accelerated memory for immediate processing
-       - Warm Memory: CPU and Redis for fast in-memory access
-       - Cold Memory: DuckDB for efficient on-device storage
-       - Glacier Memory: Parquet files for off-device compressed storage
-       """
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
        
        def __init__(
            self,
@@ -220,7 +182,7 @@ The manager provides unified methods for storing, retrieving, and managing data 
    memory_manager.clear(tier="cold")
 
 Memory Encoding
-------------
+---------------
 
 The ``MemoryEncoder`` class handles the conversion of various data types into vector embeddings:
 
@@ -248,7 +210,7 @@ The ``MemoryEncoder`` class handles the conversion of various data types into ve
                raise ValueError("Unsupported data type")
 
 FAISS Integration
---------------
+-----------------
 
 The system uses FAISS for efficient similarity search:
 
@@ -267,12 +229,12 @@ The system uses FAISS for efficient similarity search:
            self.metadata = {}
 
 Temporal Memory
-=============
+===============
 
 Temporal Memory manages data across time, enabling efficient retrieval of historical states and temporal patterns.
 
 Key Features
-----------
+------------
 
 - **Time Series Storage**: Efficient storage of time-series data with various temporal resolutions
 - **Temporal Indexing**: Fast retrieval of data for specific time points or ranges
@@ -281,7 +243,7 @@ Key Features
 - **Interpolation**: Filling gaps in temporal data through interpolation
 
 Basic Usage
----------
+-----------
 
 .. code-block:: python
 
@@ -320,12 +282,12 @@ Basic Usage
    )
 
 Advanced Features
---------------
+-----------------
 
 Temporal Memory supports several advanced features:
 
 Temporal Aggregation
-^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 Aggregate data across different time periods:
 
@@ -339,7 +301,7 @@ Aggregate data across different time periods:
    )
 
 Temporal Interpolation
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^
 
 Fill gaps in temporal data:
 
@@ -353,7 +315,7 @@ Fill gaps in temporal data:
    )
 
 Change Detection
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 Detect changes between different time points:
 
@@ -369,12 +331,12 @@ Detect changes between different time points:
    )
 
 Spatial Memory
-============
+==============
 
 Spatial Memory organizes data geographically, supporting spatial queries and geographic relationships.
 
 Key Features
-----------
+------------
 
 - **Spatial Indexing**: Efficient indexing of data by location using techniques like quadtrees or geohashes
 - **Spatial Queries**: Support for various spatial queries (point, radius, polygon, etc.)
@@ -383,7 +345,7 @@ Key Features
 - **Coordinate System Management**: Handling of different coordinate systems and projections
 
 Basic Usage
----------
+-----------
 
 .. code-block:: python
 
@@ -418,12 +380,12 @@ Basic Usage
    )
 
 Advanced Features
---------------
+-----------------
 
 Spatial Memory supports several advanced features:
 
 Spatial Analysis
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 Perform spatial analysis operations:
 
@@ -445,7 +407,7 @@ Perform spatial analysis operations:
    )
 
 Spatial Clustering
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 Identify clusters of features:
 
@@ -460,7 +422,7 @@ Identify clusters of features:
    )
 
 Spatial Joins
-^^^^^^^^^^^
+^^^^^^^^^^^^^
 
 Join datasets based on spatial relationships:
 
@@ -475,35 +437,17 @@ Join datasets based on spatial relationships:
    )
 
 Performance Optimization
-=====================
+========================
 
 The memory system includes several optimizations to ensure efficient operation:
 
 Caching Strategies
----------------
+------------------
 
 The system implements intelligent caching to minimize redundant operations:
 
 .. mermaid::
-   :caption: Caching Strategy
-   :align: center
 
-   flowchart TD
-       A[Query Request] --> B{Cache Hit?}
-       B -->|Yes| C[Return Cached Result]
-       B -->|No| D[Execute Query]
-       D --> E[Cache Result]
-       E --> F[Return Result]
-       
-       classDef request fill:#3b82f6,color:#fff,stroke:#2563eb
-       classDef decision fill:#8b5cf6,color:#fff,stroke:#7c3aed
-       classDef action fill:#10b981,color:#fff,stroke:#059669
-       classDef result fill:#f59e0b,color:#fff,stroke:#d97706
-       
-       class A request
-       class B decision
-       class C,F result
-       class D,E action
 
 The caching strategy includes:
 
@@ -512,7 +456,7 @@ The caching strategy includes:
 3. **Selective Caching**: Only cache results that are expensive to compute or frequently accessed
 
 Parallel Processing
-----------------
+-------------------
 
 The memory system leverages parallel processing for improved performance:
 
@@ -530,7 +474,7 @@ The memory system leverages parallel processing for improved performance:
 This approach significantly improves throughput for batch operations.
 
 Monitoring and Metrics
-===================
+======================
 
 The memory system provides comprehensive monitoring capabilities:
 
@@ -551,8 +495,8 @@ The memory system provides comprehensive monitoring capabilities:
 These metrics can be used to monitor system performance and optimize memory usage.
 
 Conclusion
-=========
+==========
 
 The Memory System is a core component of the ``memories-dev`` framework, providing efficient storage, retrieval, and organization of data across temporal and spatial dimensions. By leveraging a multi-tiered architecture and sophisticated indexing techniques, it enables high-performance operations on large-scale geospatial datasets.
 
-For more information on how to use the Memory System in your applications, see the :ref:`api_reference` and :ref:`examples` sections. 
+For more information on how to use the Memory System in your applications, see the 'api_reference' and :ref:`examples` sections. 
