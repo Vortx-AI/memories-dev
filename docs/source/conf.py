@@ -51,6 +51,10 @@ extensions = [
     'rst2pdf.pdfbuilder',      # PDF generation
 ]
 
+# Configure sphinx_math_dollar
+math_dollar_inline = True
+math_dollar_displayed = True
+
 # Disable mermaid if command is not available
 import subprocess
 import shutil
@@ -226,6 +230,26 @@ html_theme_options = {
     'navigation_with_keys': True,
     'globaltoc_collapse': False,
     'globaltoc_maxdepth': 4,
+}
+
+# MathJax 3 configuration
+mathjax3_config = {
+    'tex': {
+        'inlineMath': [['$', '$'], ['\\(', '\\)']],
+        'displayMath': [['$$', '$$'], ['\\[', '\\]']],
+        'processEscapes': True,
+        'processEnvironments': True
+    },
+    'options': {
+        'ignoreHtmlClass': 'tex2jax_ignore|mathjax_ignore|document',
+        'processHtmlClass': 'tex2jax_process'
+    },
+    'loader': {
+        'load': ['[tex]/ams']
+    },
+    'startup': {
+        'typeset': True
+    }
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -455,33 +479,6 @@ def on_build_finished(app, exception):
             copy_if_newer(src, dst)
         
         print("Custom files copied to output directory.")
-
-# MathJax configuration for better formula rendering
-mathjax_path = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'
-mathjax_options = {
-    'async': 'async',
-    'integrity': 'sha384-3fdYQ4JGDbBTF+DTq9P2UNGt/TJ9KaQzv/YCjJU2AvH2amRVTJXbs3a3eDYfuAS',
-    'crossorigin': 'anonymous',
-}
-
-# Define MathJax3 configuration
-mathjax3_config = {
-    'tex': {
-        'inlineMath': [['$', '$'], ['\\(', '\\)']],
-        'displayMath': [['$$', '$$'], ['\\[', '\\]']],
-        'processEscapes': True,
-        'processEnvironments': True,
-    },
-}
-
-# Load MathJax on every page
-html_js_files = [
-    mathjax_path
-]
-
-# Enable dollar sign as math delimiter for consistency
-math_dollar_inline = True
-math_dollar_displayed = True
 
 # Lazy loading for images
 html_scaled_image_link = False
