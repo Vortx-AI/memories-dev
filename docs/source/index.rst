@@ -12,8 +12,8 @@ memories-dev: Earth-Grounded AI Framework
    :target: https://pypi.org/project/memories-dev/
    :alt: Python Versions
 
-.. image:: https://img.shields.io/badge/license-MIT-green.svg
-   :target: https://opensource.org/licenses/MIT
+.. image:: https://img.shields.io/badge/license-Apache%202.0-blue.svg
+   :target: https://opensource.org/licenses/Apache-2.0
    :alt: License
 
 .. image:: https://img.shields.io/badge/docs-latest-brightgreen.svg

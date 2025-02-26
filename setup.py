@@ -149,6 +149,7 @@ setup(
             "sphinx-sitemap>=2.5.1",
             "sphinx-last-updated-by-git>=0.3.6",
             "sphinxcontrib-mermaid>=0.9.2",
+            "sphinx-math-dollar>=1.2.1",
             "myst-parser>=2.0.0",
             "nbsphinx>=0.9.3",
             "packaging>=23.2",
