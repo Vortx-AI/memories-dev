@@ -339,16 +339,19 @@ html_theme_options = {
     'display_version': True,
     'prev_next_buttons_location': 'both',
     'style_external_links': True,
-    'style_nav_header_background': '#1a5276',  # Updated to match primary color
-    'logo_only': True,  # Only show the logo
+    'style_nav_header_background': '#1a5276',
+    'logo_only': True,
     'display_version': True,
     'prev_next_buttons_location': 'both',
     'style_external_links': True,
     'vcs_pageview_mode': 'blob',
-    'body_max_width': 'none',  # Allow full width
+    'body_max_width': 'none',
     'navigation_with_keys': True,
     'globaltoc_collapse': False,
     'globaltoc_maxdepth': 4,
+    'show_toc_level': 3,
+    'toc_title': 'On This Page',
+    'show_nav_level': 2,
 }
 
 # MathJax 3 configuration
@@ -381,6 +384,9 @@ html_static_path = ['_static']
 html_sidebars = {
     '**': [
         'globaltoc.html',
+        'localtoc.html',
+        'relations.html',
+        'sourcelink.html',
         'searchbox.html',
     ]
 }

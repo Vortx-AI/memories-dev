@@ -15,9 +15,13 @@ dependencies:
   - make>=4.3
   - latexmk>=4.77
   - texlive-core>=2022
+  - lxml>=4.9.3
+  - mactex-no-gui
   - pip:
     - -r requirements-docs.txt
     - -r build-requirements.txt
+    - lxml[html_clean]>=4.9.3
+    - lxml_html_clean>=0.4.0
     - sphinx-autodoc-typehints>=1.25.2
     - sphinx-copybutton>=0.5.2
     - sphinx-design>=0.5.0

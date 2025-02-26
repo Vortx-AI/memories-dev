@@ -12,6 +12,8 @@ setup(
         "sphinx>=7.1.0",
         "sphinx-rtd-theme>=1.3.0",
         "sphinx-autodoc-typehints>=1.25.2",
+        "lxml[html_clean]>=4.9.3",
+        "lxml_html_clean>=0.4.0",
     ],
     extras_require={
         "docs": [

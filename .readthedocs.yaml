@@ -35,11 +35,16 @@ build:
     - imagemagick   # For image processing
     - fonts-liberation  # Additional fonts
     - fonts-freefont-ttf  # More fonts
+    - python3-lxml
+    - python3-dev
+    - libxml2-dev
+    - libxslt1-dev
   jobs:
     pre_build:
       # Core setup
       - pip install --upgrade pip setuptools wheel
       - pip install -e .
+      - pip install 'lxml[html_clean]>=4.9.3' lxml_html_clean>=0.4.0
       - pip install -r docs/requirements-docs.txt
       - pip install -r docs/build-requirements.txt
       # Install SVG conversion tools
