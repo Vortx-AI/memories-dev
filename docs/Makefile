@@ -11,7 +11,14 @@ BUILDDIR      = build
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help Makefile
+.PHONY: help Makefile singlelatex singlelatexpdf rtd-pdf
+
+# Special target for ReadTheDocs - ensures only one PDF is generated
+rtd-pdf:
+	@$(SPHINXBUILD) -M latex "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@cd "$(BUILDDIR)/latex" && latexmk -silent -pdf memories-dev.tex
+	@mkdir -p _readthedocs/pdf
+	@cp "$(BUILDDIR)/latex/memories-dev.pdf" _readthedocs/pdf/
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
