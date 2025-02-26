@@ -18,6 +18,24 @@ document.addEventListener('DOMContentLoaded', function() {
     fixMissingReferences();
     improveResponsiveness();
     fixZIndexIssues();
+    
+    // Apply book-like styling to elements
+    applyBookStyling();
+    
+    // Enhance code blocks
+    enhanceCodeBlocks();
+    
+    // Fix mobile display issues
+    fixMobileIssues();
+    
+    // Add smooth scrolling for in-page links
+    addSmoothScrolling();
+    
+    // Fix image display issues
+    fixImageDisplay();
+    
+    // Add table of contents improvements
+    enhanceTableOfContents();
 });
 
 /**

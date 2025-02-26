@@ -34,49 +34,63 @@ document.addEventListener('DOMContentLoaded', function() {
  * Setup lazy loading for images
  */
 function setupLazyImages() {
-    // Add lazy-load class to all images that don't have it
-    const images = document.querySelectorAll('img:not(.lazy-load)');
-    images.forEach(img => {
-        if (!img.classList.contains('lazy-load')) {
-            img.classList.add('lazy-load');
-            // Only set data-src if src is not a data URL
-            if (!img.getAttribute('src').startsWith('data:')) {
-                img.setAttribute('data-src', img.getAttribute('src'));
-                img.setAttribute('src', 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
-            }
-        }
-    });
+    // Register intersection observer for lazy loading
+    const lazyImages = [].slice.call(document.querySelectorAll('img.lazy'));
     
-    // Create IntersectionObserver to load images when they're in view
     if ('IntersectionObserver' in window) {
-        const imageObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
+        let lazyImageObserver = new IntersectionObserver(function(entries, observer) {
+            entries.forEach(function(entry) {
                 if (entry.isIntersecting) {
-                    const img = entry.target;
-                    const dataSrc = img.getAttribute('data-src');
-                    if (dataSrc) {
-                        img.setAttribute('src', dataSrc);
-                        img.classList.add('loaded');
-                        observer.unobserve(img);
+                    let lazyImage = entry.target;
+                    if (lazyImage.dataset.src) {
+                        lazyImage.src = lazyImage.dataset.src;
+                        lazyImage.classList.remove('lazy');
+                        lazyImageObserver.unobserve(lazyImage);
                     }
                 }
             });
-        }, {
-            rootMargin: '0px 0px 200px 0px' // Load images slightly before they come into view
         });
-        
-        document.querySelectorAll('img.lazy-load').forEach(img => {
-            imageObserver.observe(img);
+
+        lazyImages.forEach(function(lazyImage) {
+            lazyImageObserver.observe(lazyImage);
         });
     } else {
-        // Fallback for browsers without IntersectionObserver
-        document.querySelectorAll('img.lazy-load').forEach(img => {
-            const dataSrc = img.getAttribute('data-src');
-            if (dataSrc) {
-                img.setAttribute('src', dataSrc);
-                img.classList.add('loaded');
+        // Fallback for browsers without intersection observer
+        let active = false;
+
+        const lazyLoad = function() {
+            if (active === false) {
+                active = true;
+
+                setTimeout(function() {
+                    lazyImages.forEach(function(lazyImage) {
+                        if ((lazyImage.getBoundingClientRect().top <= window.innerHeight && lazyImage.getBoundingClientRect().bottom >= 0) && getComputedStyle(lazyImage).display !== 'none') {
+                            if (lazyImage.dataset.src) {
+                                lazyImage.src = lazyImage.dataset.src;
+                                lazyImage.classList.remove('lazy');
+                            }
+
+                            lazyImages = lazyImages.filter(function(image) {
+                                return image !== lazyImage;
+                            });
+
+                            if (lazyImages.length === 0) {
+                                document.removeEventListener('scroll', lazyLoad);
+                                window.removeEventListener('resize', lazyLoad);
+                                window.removeEventListener('orientationchange', lazyLoad);
+                            }
+                        }
+                    });
+
+                    active = false;
+                }, 200);
             }
-        });
+        };
+
+        document.addEventListener('scroll', lazyLoad);
+        window.addEventListener('resize', lazyLoad);
+        window.addEventListener('orientationchange', lazyLoad);
+        window.addEventListener('load', lazyLoad);
     }
 }
 
@@ -423,4 +437,28 @@ function fixOnThisPageSection() {
             }
         });
     }
-} 
+}
+
+// Apply lazy loading to all images added to the document dynamically
+const mutationCallback = function(mutationsList) {
+    for (let mutation of mutationsList) {
+        if (mutation.type === 'childList') {
+            mutation.addedNodes.forEach(node => {
+                if (node.nodeType === 1) { // ELEMENT_NODE
+                    const images = node.querySelectorAll('img:not(.lazy)');
+                    images.forEach(img => {
+                        if (!img.classList.contains('lazy') && !img.classList.contains('no-lazy')) {
+                            img.classList.add('lazy');
+                            img.dataset.src = img.src;
+                            img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"%3E%3C/svg%3E';
+                        }
+                    });
+                }
+            });
+        }
+    }
+};
+
+// Start observing the document for dynamic content changes
+const observer = new MutationObserver(mutationCallback);
+observer.observe(document.body, { childList: true, subtree: true }); 

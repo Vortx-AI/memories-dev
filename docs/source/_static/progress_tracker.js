@@ -694,4 +694,129 @@ function addProgressTrackerStyles() {
     `;
     
     document.head.appendChild(style);
-} 
+}
+
+// Progress tracker for documentation reading
+document.addEventListener('DOMContentLoaded', function() {
+    // Create a progress bar element
+    const progressBar = document.createElement('div');
+    progressBar.id = 'reading-progress';
+    progressBar.style.position = 'fixed';
+    progressBar.style.top = '0';
+    progressBar.style.left = '0';
+    progressBar.style.height = '3px';
+    progressBar.style.backgroundColor = '#2980b9';
+    progressBar.style.width = '0%';
+    progressBar.style.zIndex = '1000';
+    progressBar.style.transition = 'width 0.2s ease-out';
+    document.body.appendChild(progressBar);
+
+    // Function to update progress based on scroll position
+    function updateProgress() {
+        // Get content area - use main content container in Sphinx
+        const content = document.querySelector('.document') || document.querySelector('.body') || document.body;
+        
+        // Calculate how far the user has scrolled
+        const scrollPosition = window.scrollY;
+        const scrollHeight = content.scrollHeight - window.innerHeight;
+        
+        // Calculate the percentage scrolled and set the progress bar width
+        if (scrollHeight > 0) {
+            const scrollPercentage = (scrollPosition / scrollHeight) * 100;
+            progressBar.style.width = scrollPercentage + '%';
+            
+            // Store progress in localStorage for this page
+            if (typeof localStorage !== 'undefined') {
+                try {
+                    const currentPage = window.location.pathname;
+                    localStorage.setItem('readingProgress-' + currentPage, scrollPercentage);
+                    
+                    // Create last read indicator
+                    updateLastReadIndicator(currentPage, scrollPercentage);
+                } catch (e) {
+                    // Handle localStorage errors (e.g., private browsing mode)
+                    console.warn('Unable to store reading progress: ', e);
+                }
+            }
+        }
+    }
+    
+    // Update last read indicator in the sidebar
+    function updateLastReadIndicator(page, percentage) {
+        // Get all navigation links
+        const navLinks = document.querySelectorAll('.toctree-l1 a, .toctree-l2 a, .toctree-l3 a');
+        
+        navLinks.forEach(link => {
+            const linkHref = link.getAttribute('href');
+            
+            // If this link points to the current page
+            if (linkHref && page.endsWith(linkHref)) {
+                // Remove old indicators
+                const oldIndicators = link.parentNode.querySelectorAll('.reading-indicator');
+                oldIndicators.forEach(ind => ind.remove());
+                
+                // Add progress indicator
+                if (percentage > 10) {
+                    const indicator = document.createElement('span');
+                    indicator.className = 'reading-indicator';
+                    indicator.style.display = 'inline-block';
+                    indicator.style.width = '8px';
+                    indicator.style.height = '8px';
+                    indicator.style.borderRadius = '50%';
+                    indicator.style.marginLeft = '5px';
+                    
+                    // Color based on progress
+                    if (percentage < 30) {
+                        indicator.style.backgroundColor = '#e74c3c'; // Red
+                    } else if (percentage < 80) {
+                        indicator.style.backgroundColor = '#f39c12'; // Yellow
+                    } else {
+                        indicator.style.backgroundColor = '#2ecc71'; // Green
+                    }
+                    
+                    // Add tooltip
+                    indicator.title = 'Reading progress: ' + Math.round(percentage) + '%';
+                    
+                    link.parentNode.appendChild(indicator);
+                }
+            }
+        });
+    }
+    
+    // Load saved progress when the page loads
+    function loadSavedProgress() {
+        if (typeof localStorage !== 'undefined') {
+            try {
+                const currentPage = window.location.pathname;
+                const savedProgress = localStorage.getItem('readingProgress-' + currentPage);
+                
+                if (savedProgress) {
+                    // If we saved a position, scroll there
+                    const scrollHeight = document.body.scrollHeight - window.innerHeight;
+                    const scrollPosition = (parseFloat(savedProgress) / 100) * scrollHeight;
+                    
+                    // Small delay to ensure content is fully loaded
+                    setTimeout(() => {
+                        window.scrollTo({
+                            top: scrollPosition,
+                            behavior: 'auto'
+                        });
+                        
+                        // Update the progress bar
+                        updateProgress();
+                    }, 300);
+                }
+            } catch (e) {
+                console.warn('Unable to load reading progress: ', e);
+            }
+        }
+    }
+    
+    // Set up events
+    window.addEventListener('scroll', updateProgress);
+    window.addEventListener('resize', updateProgress);
+    
+    // Initialize
+    updateProgress();
+    loadSavedProgress();
+}); 
