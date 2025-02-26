@@ -48,6 +48,12 @@ function removeBookExperience() {
  * Fix navigation and ensure all links work properly
  */
 function fixNavigation() {
+    // Remove "On this page" section completely
+    const onThisPageSection = document.querySelector('.contents.local, .local-toc');
+    if (onThisPageSection) {
+        onThisPageSection.remove();
+    }
+
     // Make sure the navigation panel is visible
     const navSide = document.querySelector('.wy-nav-side');
     if (navSide) {

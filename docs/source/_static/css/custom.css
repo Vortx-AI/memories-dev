@@ -265,10 +265,6 @@ footer p {
 }
 
 /* Hide "On This Page" section completely */
-.contents.local,
-.contents.topic {
-    display: none !important;
-}
 
 /* Adjust main content width */
 .wy-nav-content {

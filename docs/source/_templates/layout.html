@@ -113,15 +113,11 @@
         {%- endif %}
         <span class="current-chapter">{{ title }}</span>
       </div>
-      <div class="reading-time">
-        <span class="reading-time-icon">⏱️</span>
-        <span class="reading-time-value">
-          <!-- This will be populated by JavaScript -->
-        </span>
-      </div>
     </div>
     <div class="book-content">
-      {{ super() }}
+      <div class="rst-content">
+        {{ super() }}
+      </div>
     </div>
     <div class="book-navigation">
       <div class="prev-next-buttons">

@@ -379,34 +379,7 @@ function setupTooltips() {
     });
 }
 
-/**
- * Fix "On This Page" section UI glitches
- */
-function fixOnThisPageSection() {
-    // Remove all instances of "On This Page" sections
-    const contentsLocals = document.querySelectorAll('.contents.local, .contents.topic');
-    contentsLocals.forEach(section => {
-        if (section) {
-            section.remove(); // Fully remove from DOM
-        }
-    });
-    
-    // Ensure main content takes full width
-    const mainContent = document.querySelector('.wy-nav-content');
-    if (mainContent) {
-        mainContent.style.display = 'block';
-        mainContent.style.width = '100%';
-        mainContent.style.maxWidth = '1000px';
-        mainContent.style.margin = '0 auto';
-        mainContent.style.padding = '1.618em 3.236em';
-    }
-    
-    // Adjust content wrapper
-    const contentWrap = document.querySelector('.wy-nav-content-wrap');
-    if (contentWrap) {
-        contentWrap.style.marginLeft = window.innerWidth > 768 ? '300px' : '0';
-    }
-}
+
 
 // Apply lazy loading to all images added to the document dynamically
 const mutationCallback = function(mutationsList) {
