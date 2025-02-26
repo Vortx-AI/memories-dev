@@ -52,12 +52,13 @@ build:
       # Create necessary directories
       - mkdir -p docs/build/latex
       - mkdir -p docs/build/pdf
-      # Configure ImageMagick policy - with error handling
+      # Configure ImageMagick policy - with enhanced error handling
       - |
-        # Create custom policy directory
+        # Create policy directories with proper permissions
         mkdir -p ~/.config/ImageMagick || true
+        chmod 755 ~/.config/ImageMagick || true
         
-        # Create a custom policy file
+        # Create a custom policy file with broader permissions
         cat > ~/.config/ImageMagick/policy.xml << 'EOL'
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE policymap [
@@ -70,31 +71,58 @@ build:
           <!ATTLIST policy value CDATA #IMPLIED>
         ]>
         <policymap>
+          <!-- Enable PDF operations -->
           <policy domain="coder" rights="read|write" pattern="PDF" />
           <policy domain="coder" rights="read|write" pattern="LABEL" />
+          <!-- Enable SVG operations -->
+          <policy domain="coder" rights="read|write" pattern="SVG" />
+          <!-- Enable general image operations -->
+          <policy domain="coder" rights="read|write" pattern="PNG" />
+          <policy domain="coder" rights="read|write" pattern="JPEG" />
+          <policy domain="coder" rights="read|write" pattern="GIF" />
+          <!-- Security settings -->
           <policy domain="path" rights="none" pattern="@*" />
           <policy domain="cache" name="shared-secret" value="passphrase" stealth="true" />
+          <!-- Resource limits -->
+          <policy domain="resource" name="memory" value="2GiB"/>
+          <policy domain="resource" name="map" value="4GiB"/>
+          <policy domain="resource" name="disk" value="8GiB"/>
         </policymap>
         EOL
+        
+        # Set proper permissions for the policy file
+        chmod 644 ~/.config/ImageMagick/policy.xml || true
         
         # Set environment variables for ImageMagick
         export MAGICK_CONFIGURE_PATH=~/.config/ImageMagick
         export MAGICK_HOME=~/.config/ImageMagick
+        export MAGICK_THREAD_LIMIT=1  # Prevent threading issues
         
         # Verify policy file exists and is readable
         if [ -f ~/.config/ImageMagick/policy.xml ]; then
           echo "Custom ImageMagick policy file created successfully"
+          ls -l ~/.config/ImageMagick/policy.xml
           cat ~/.config/ImageMagick/policy.xml
         else
           echo "Warning: Failed to create custom ImageMagick policy file"
+          ls -la ~/.config/ImageMagick || true
         fi
         
-        # Try to modify system policy files as fallback
+        # Verify ImageMagick installation and configuration
+        convert -version || true
+        identify -list policy || true
+        
+        # Try to modify system policy files as fallback (if we have permission)
         for policy_file in /etc/ImageMagick*/policy.xml /usr/local/etc/ImageMagick*/policy.xml; do
           if [ -f "$policy_file" ]; then
             echo "Found system policy file: $policy_file"
-            cp "$policy_file" "$policy_file.bak" || true
-            sed -i.bak 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' "$policy_file" || true
+            if [ -w "$policy_file" ]; then
+              cp "$policy_file" "$policy_file.bak" 2>/dev/null || true
+              sed -i.bak 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' "$policy_file" 2>/dev/null || true
+              echo "Modified system policy file: $policy_file"
+            else
+              echo "Cannot modify system policy file (no write permission): $policy_file"
+            fi
           fi
         done
     post_build:
