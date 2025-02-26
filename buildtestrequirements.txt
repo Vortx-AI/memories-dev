@@ -124,3 +124,5 @@ aioresponses>=0.7.5
 # New dependencies
 openai>=1.12.0
 anthropic>=0.18.1
+
+httpx>=0.26.0
