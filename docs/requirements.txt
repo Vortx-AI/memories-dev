@@ -22,17 +22,6 @@ packaging>=23.2
 pyyaml>=6.0.1
 recommonmark>=0.7.1
 
-# LaTeX and PDF generation
-latexmk>=1.0.0
-texlive-latex-recommended>=2020.0
-texlive-latex-extra>=2020.0
-texlive-fonts-recommended>=2020.0
-texlive-lang-english>=2020.0
-texlive-xetex>=2020.0
-texlive-luatex>=2020.0
-texlive-pictures>=2020.0
-texlive-science>=2020.0
-
 # Core build dependencies
 pip>=23.0.1
 setuptools>=67.6.1

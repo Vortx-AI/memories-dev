@@ -5,11 +5,21 @@
 # Required
 version: 2
 
-# Build configuration
+# Set the OS and Python version
 build:
   os: ubuntu-22.04
   tools:
     python: "3.12"
+  apt_packages:
+    - latexmk
+    - texlive-latex-recommended
+    - texlive-latex-extra
+    - texlive-fonts-recommended
+    - texlive-lang-english
+    - texlive-xetex
+    - texlive-luatex
+    - texlive-pictures
+    - texlive-science
   jobs:
     pre_build:
       # Core setup
