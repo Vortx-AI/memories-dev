@@ -52,17 +52,12 @@ build:
       # Create necessary directories
       - mkdir -p docs/build/latex
       - mkdir -p docs/build/pdf
-      # Configure ImageMagick policy - try multiple possible locations
+      # Configure ImageMagick policy - with error handling
       - |
-        # Try to modify existing policy files
-        for policy_file in /etc/ImageMagick*/policy.xml /usr/local/etc/ImageMagick*/policy.xml; do
-          if [ -f "$policy_file" ]; then
-            sed -i.bak 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' "$policy_file" || true
-          fi
-        done
+        # Create custom policy directory
+        mkdir -p ~/.config/ImageMagick || true
         
-        # Create a custom policy file as fallback
-        mkdir -p ~/.config/ImageMagick
+        # Create a custom policy file
         cat > ~/.config/ImageMagick/policy.xml << 'EOL'
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE policymap [
@@ -82,8 +77,26 @@ build:
         </policymap>
         EOL
         
-        # Set MAGICK_CONFIGURE_PATH to use our custom policy
+        # Set environment variables for ImageMagick
         export MAGICK_CONFIGURE_PATH=~/.config/ImageMagick
+        export MAGICK_HOME=~/.config/ImageMagick
+        
+        # Verify policy file exists and is readable
+        if [ -f ~/.config/ImageMagick/policy.xml ]; then
+          echo "Custom ImageMagick policy file created successfully"
+          cat ~/.config/ImageMagick/policy.xml
+        else
+          echo "Warning: Failed to create custom ImageMagick policy file"
+        fi
+        
+        # Try to modify system policy files as fallback
+        for policy_file in /etc/ImageMagick*/policy.xml /usr/local/etc/ImageMagick*/policy.xml; do
+          if [ -f "$policy_file" ]; then
+            echo "Found system policy file: $policy_file"
+            cp "$policy_file" "$policy_file.bak" || true
+            sed -i.bak 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' "$policy_file" || true
+          fi
+        done
     post_build:
       # Use our custom PDF build script instead of LaTeX
       - python fix_scripts/simple_pdf_build.py
