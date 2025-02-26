@@ -31,19 +31,22 @@ def mock_imports():
 @pytest.fixture
 def sphinx_app():
     docs_dir = Path(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'docs')))
+    source_dir = docs_dir / 'source'
     build_dir = docs_dir / 'build'
-    build_dir.mkdir(parents=True, exist_ok=True)
+    doctree_dir = build_dir / 'doctrees'
     
-    app = SphinxTestApp(
-        srcdir=docs_dir / 'source',
-        confdir=docs_dir / 'source',
-        outdir=build_dir,
-        doctreedir=build_dir / 'doctrees',
+    build_dir.mkdir(parents=True, exist_ok=True)
+    doctree_dir.mkdir(parents=True, exist_ok=True)
+    
+    app = Sphinx(
+        srcdir=str(source_dir),
+        confdir=str(source_dir),
+        outdir=str(build_dir),
+        doctreedir=str(doctree_dir),
         buildername='html',
-        verbosity=0,
+        warningiserror=True
     )
     yield app
-    app.cleanup()
 
 def test_build_docs(sphinx_app):
     """Test that the documentation builds without errors."""

@@ -1,6 +1,6 @@
-=========================
+================================
 AI Integration with memories-dev
-=========================
+================================
 
 .. contents:: On This Page
    :local:
@@ -12,10 +12,10 @@ Overview
 The memories-dev framework provides robust capabilities for integrating AI models with Earth memory systems. This integration enables more informed and scientifically grounded AI reasoning about environmental and climate data.
 
 Key Components
--------------
+--------------
 
 AI Model Bridge
-~~~~~~~~~~~~
+---------------
 
 Connect AI models with Earth memory:
 
@@ -44,7 +44,7 @@ Connect AI models with Earth memory:
    )
 
 Grounding Mechanisms
-~~~~~~~~~~~~~~~~~
+--------------------
 
 Methods to ground AI in Earth observations:
 
@@ -69,7 +69,7 @@ Methods to ground AI in Earth observations:
    model_bridge.apply_grounding(grounding)
 
 Semantic Interfaces
-~~~~~~~~~~~~~~~~
+------------------
 
 Define semantic interfaces between AI and Earth memory:
 
@@ -99,7 +99,7 @@ Integration Patterns
 ------------------
 
 Retrieval-Augmented Generation (RAG)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------------
 
 Enhance AI with relevant Earth memory:
 
@@ -127,7 +127,7 @@ Enhance AI with relevant Earth memory:
    sources = result.sources
 
 Few-Shot Learning
-~~~~~~~~~~~~~~
+----------------
 
 Train models on Earth memory examples:
 
@@ -156,7 +156,7 @@ Train models on Earth memory examples:
    )
 
 Chain-of-Thought Reasoning
-~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
 
 Implement step-by-step reasoning about Earth data:
 
@@ -190,7 +190,7 @@ Practical Applications
 --------------------
 
 Environmental Monitoring
-~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
 .. code-block:: python
 
@@ -218,7 +218,7 @@ Environmental Monitoring
    )
 
 Climate Intelligence
-~~~~~~~~~~~~~~~~~
+------------------
 
 .. code-block:: python
 
@@ -246,7 +246,7 @@ Climate Intelligence
    )
 
 Best Practices
-------------
+-------------
 
 1. **Validation Frameworks**: Implement robust validation of AI outputs against Earth memory
 2. **Uncertainty Communication**: Clearly represent uncertainty in AI predictions
@@ -257,7 +257,7 @@ Best Practices
 7. **Specialized Prompting**: Develop domain-specific prompting strategies for Earth science tasks
 
 Advanced Topics
-------------
+--------------
 
 * **Transfer Learning**: Adapting pre-trained models to Earth observation tasks
 * **Multi-Modal Reasoning**: Combining text, imagery, and numerical data in AI reasoning

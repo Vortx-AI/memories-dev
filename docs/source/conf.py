@@ -55,6 +55,21 @@ extensions = [
 math_dollar_inline = True
 math_dollar_displayed = True
 
+# Configure MyST-Parser
+myst_update_mathjax = False
+myst_enable_extensions = [
+    "dollarmath",
+    "amsmath",
+    "deflist",
+    "fieldlist",
+    "html_admonition",
+    "html_image",
+    "colon_fence",
+    "smartquotes",
+    "replacements",
+    "substitution",
+]
+
 # Configure mermaid
 mermaid_cmd = 'mmdc'
 mermaid_output_format = 'svg'
