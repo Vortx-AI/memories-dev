@@ -1,145 +1,131 @@
-.. memories-dev documentation master file
+.. Memories documentation master file
 
-Welcome to Memories-Dev Documentation
-===================================
+=================================
+Memories: AI with Human-like Memory
+=================================
 
 .. raw:: html
 
-    <div class="book-container">
-        <div class="book">
-            <div class="book-cover">
-                <div class="book-spine">
-                    <h2>Memories-Dev</h2>
-                </div>
-                <div class="book-front">
-                    <div class="book-content">
-                        <div class="leather-texture"></div>
-                        <div class="book-frame">
-                            <div class="corner top-left"></div>
-                            <div class="corner top-right"></div>
-                            <div class="corner bottom-left"></div>
-                            <div class="corner bottom-right"></div>
-                            
-                            <h1>Memories-Dev</h1>
-                            <div class="book-subtitle">
-                                <span class="edition">First Edition</span>
-                                <p class="subtitle">A Modern Framework for Memory Management</p>
-                            </div>
-                            
-                            <div class="book-decoration">
-                                <div class="ornament-left">❦</div>
-                                <div class="line"></div>
-                                <div class="ornament-center">✦</div>
-                                <div class="line"></div>
-                                <div class="ornament-right">❦</div>
-                            </div>
-
-                            <div class="feature-grid">
-                                <div class="feature-item">
-                                    <div class="feature-icon">
-                                        <i class="fas fa-feather-alt"></i>
-                                    </div>
-                                    <h3>Lean Design</h3>
-                                    <p>Elegant and efficient memory management</p>
-                                </div>
-                                <div class="feature-item">
-                                    <div class="feature-icon">
-                                        <i class="fas fa-layer-group"></i>
-                                    </div>
-                                    <h3>Organized</h3>
-                                    <p>Hierarchical memory architecture</p>
-                                </div>
-                                <div class="feature-item">
-                                    <div class="feature-icon">
-                                        <i class="fas fa-bolt"></i>
-                                    </div>
-                                    <h3>Fast</h3>
-                                    <p>Optimized for performance</p>
-                                </div>
-                            </div>
-
-                            <div class="book-footer">
-                                <div class="publisher-mark">
-                                    <div class="publisher-logo">◆</div>
-                                    <p>Vortx AI Press</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="quick-access">
-            <a href="getting_started/index.html" class="chapter-link">
-                <span class="chapter-number">I</span>
-                <span class="chapter-title">Getting Started</span>
-            </a>
-            <a href="core_concepts/index.html" class="chapter-link">
-                <span class="chapter-number">II</span>
-                <span class="chapter-title">Core Concepts</span>
-            </a>
-            <a href="api_reference/index.html" class="chapter-link">
-                <span class="chapter-number">III</span>
-                <span class="chapter-title">API Reference</span>
-            </a>
-        </div>
-    </div>
-
-.. toctree::
-   :maxdepth: 2
-   :hidden:
+   <div class="book-container">
+      <div class="book">
+         <div class="book-cover">
+            <h1>Memories</h1>
+            <h2>The Art & Science of AI Memory Systems</h2>
+            <div class="author">Memories-Dev Team</div>
+         </div>
+      </div>
+   </div>
    
-   getting_started/index
-   core_concepts/index
-   earth_memory/index
-   api_reference/index
-   metrics/performance
-   architecture
-   contributing
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Getting Started
-   
-   getting_started/installation
-   getting_started/quickstart
-   getting_started/tutorial
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Core Documentation
-   
-   core_concepts/architecture
-   core_concepts/earth_memory
-   core_concepts/key_concepts
-   
-.. toctree::
-   :maxdepth: 2
-   :caption: User Guide
-   
-   user_guide/basic_usage
-   user_guide/advanced_features
-   user_guide/configuration
-   user_guide/best_practices
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Development
-   
-   development/contributing
-   development/changelog
-   development/roadmap
+   <script>
+      document.addEventListener('DOMContentLoaded', function() {
+         const book = document.querySelector('.book');
+         book.addEventListener('click', function() {
+            book.classList.toggle('open');
+         });
+      });
+   </script>
 
 .. note::
-   This documentation is actively maintained and updated. For the latest version, 
-   please visit our `GitHub repository <https://github.com/Vortx-AI/memories-dev>`_.
+   Welcome to the Memories Documentation! Click on the book cover above to "open" the book, or simply scroll down to begin reading.
 
-   .. image:: https://img.shields.io/badge/License-Apache%202.0-blue.svg
-      :alt: License: Apache 2.0
-      :target: https://opensource.org/licenses/Apache-2.0
+**Memories-Dev** is a framework for implementing human-like memory systems for AI applications. This documentation serves as both a reference guide and an explorative journey through the art and science of building AI systems with memory.
 
-Indices and Tables
+.. image:: /_static/images/hero_image.png
+   :alt: Memories-Dev Framework
+   :align: center
+   :width: 80%
+
+.. toctree::
+   :maxdepth: 2
+   :caption: 📚 The Journey Begins
+   
+   introduction/index
+   getting_started/index
+   
+.. toctree::
+   :maxdepth: 2
+   :caption: 🧠 Core Concepts
+   
+   concepts/index
+   memory_architecture/index
+   comparisons/index
+   
+.. toctree::
+   :maxdepth: 2
+   :caption: 🛠️ Building Blocks
+   
+   core_api/index
+   memory_types/index
+   storage/index
+   
+.. toctree::
+   :maxdepth: 2
+   :caption: 🚀 Practical Applications
+   
+   applications/index
+   tutorials/index
+   case_studies/index
+   
+.. toctree::
+   :maxdepth: 2
+   :caption: 🔍 Advanced Topics
+   
+   algorithms/index
+   customization/index
+   extensions/index
+   
+.. toctree::
+   :maxdepth: 2
+   :caption: 📖 Reference
+   
+   api_reference/index
+   configuration/index
+   changelog/index
+
+A Journey Through AI Memory
+=========================
+
+This documentation is designed as more than just a technical reference. It's a guided journey through the fascinating intersection of cognitive science, artificial intelligence, and practical engineering.
+
+As you move through these chapters, you'll discover:
+
+- How human memory systems inspire AI architecture
+- The building blocks of the Memories-Dev framework
+- Practical applications across various domains
+- Advanced techniques for customizing memory systems
+
+Reading Progress Tracker
+---------------------
+
+.. raw:: html
+
+   <div id="reading-progress-container">
+      <div id="reading-progress">
+         <div class="progress-bar">
+            <div class="progress" style="width: 0%"></div>
+         </div>
+         <div class="progress-stats">
+            <span class="pages-read">0 sections read</span>
+            <span class="total-pages">of ~30 total</span>
+         </div>
+      </div>
+   </div>
+
+Getting Started
+------------
+
+To begin working with Memories-Dev, head to the :doc:`getting_started/index` section. There you'll find installation instructions, basic concepts, and your first memory-enhanced AI application.
+
+For those new to the concept of memory systems in AI, we recommend starting with the :doc:`introduction/index` chapter, which provides context on why memory is such a crucial frontier in AI development.
+
+The Book Metaphor
+--------------
+
+Throughout this documentation, we embrace the metaphor of a book. Just as books organize knowledge in a structured yet accessible manner, Memories-Dev organizes AI memories with both structure and fluidity.
+
+And much like how a good book stays with you long after you've read it, Memories-Dev enables AI systems to retain and build upon past experiences.
+
+Indices and tables
 ==================
 
 * :ref:`genindex`

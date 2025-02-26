@@ -301,4 +301,230 @@ footer p {
     .wy-nav-content .contents.local {
         display: none;
     }
+}
+
+/* Enhanced Progress Tracker Styles */
+.progress-tracker {
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background-color: rgba(0, 0, 0, 0.05);
+    z-index: 1000;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: #3b82f6;
+    width: 0;
+    transition: width 0.2s ease-out;
+}
+
+.progress-stats {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 8px 12px;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    font-size: 13px;
+    color: #333;
+    z-index: 1000;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.progress-stats:hover {
+    opacity: 1;
+}
+
+/* Dark Theme Support */
+html.dark-theme body {
+    color: #e0e0e0;
+    background-color: #121212;
+}
+
+html.dark-theme .wy-nav-content {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+}
+
+html.dark-theme .wy-nav-side {
+    background-color: #0f172a;
+}
+
+html.dark-theme .wy-side-nav-search {
+    background-color: #0c1221;
+}
+
+html.dark-theme .wy-menu-vertical a {
+    color: #b0b0b0;
+}
+
+html.dark-theme .wy-menu-vertical a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+html.dark-theme code {
+    background-color: #2d2d2d;
+    border-color: #444;
+    color: #e0e0e0;
+}
+
+html.dark-theme pre {
+    background-color: #2d2d2d;
+    border-color: #444;
+    color: #e0e0e0;
+}
+
+html.dark-theme .highlight {
+    background-color: #2d2d2d;
+}
+
+html.dark-theme table.docutils td, 
+html.dark-theme table.docutils th {
+    border-color: #444;
+}
+
+html.dark-theme table.docutils thead th {
+    background-color: #333;
+}
+
+html.dark-theme table.docutils {
+    border-color: #444;
+}
+
+html.dark-theme a {
+    color: #7eb6ff;
+}
+
+html.dark-theme .btn-primary {
+    background-color: #2563eb;
+}
+
+html.dark-theme .wy-nav-content .contents.local {
+    background-color: #272727;
+    border-color: #444;
+}
+
+html.dark-theme .wy-nav-content .contents.local .topic-title {
+    color: #e0e0e0;
+}
+
+html.dark-theme .wy-nav-content .contents.local a {
+    color: #7eb6ff;
+}
+
+html.dark-theme .progress-stats {
+    background-color: rgba(30, 30, 30, 0.9);
+    color: #e0e0e0;
+}
+
+/* Code Label Styles */
+.code-label {
+    display: block;
+    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.05);
+    font-size: 12px;
+    font-weight: bold;
+    color: #666;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+html.dark-theme .code-label {
+    background: rgba(255, 255, 255, 0.05);
+    color: #aaa;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive Table Styles */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+    .table-container {
+        -webkit-overflow-scrolling: touch;
+        border-left: 1px solid #e5e5e5;
+        border-right: 1px solid #e5e5e5;
+        border-radius: 4px;
+    }
+    
+    html.dark-theme .table-container {
+        border-color: #444;
+    }
+}
+
+/* Search Highlighting */
+.search-highlight {
+    background-color: rgba(255, 255, 0, 0.3);
+    padding: 0 3px;
+    border-radius: 3px;
+}
+
+html.dark-theme .search-highlight {
+    background-color: rgba(255, 255, 0, 0.15);
+    color: #ffff80;
+}
+
+/* Anchor Link Styles */
+.headerlink {
+    opacity: 0;
+    margin-left: 0.5em;
+    transition: opacity 0.2s ease;
+    color: #3b82f6 !important;
+    text-decoration: none !important;
+}
+
+.section h1:hover .headerlink, 
+.section h2:hover .headerlink, 
+.section h3:hover .headerlink,
+.section h4:hover .headerlink,
+.section h5:hover .headerlink,
+.section h6:hover .headerlink {
+    opacity: 1;
+}
+
+/* Theme Toggle Button */
+.theme-toggle-container {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1001;
+}
+
+.theme-toggle-button {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    font-size: 20px;
+    transition: all 0.2s ease;
+}
+
+.theme-toggle-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+/* Active Section in Navigation */
+.wy-menu-vertical li a.active-section {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    font-weight: bold;
+}
+
+html.dark-theme .wy-menu-vertical li a.active-section {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #7eb6ff;
 } 

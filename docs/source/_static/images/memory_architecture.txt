@@ -1,0 +1,52 @@
+graph TD
+    subgraph "Memory System Architecture"
+    
+    %% Main Memory Components
+    STM[Short-term Memory] --> WM[Working Memory]
+    WM --> LTM[Long-term Memory]
+    WM --> EM[Episodic Memory]
+    WM --> STM
+    
+    %% Long-term Memory Specializations
+    LTM --> SM[Semantic Memory]
+    LTM --> PM[Procedural Memory]
+    
+    %% External Connections
+    Input[Input Processing] --> STM
+    WM --> Output[Response Generation]
+    
+    %% Memory Operations
+    CO[Consolidation] --> LTM
+    CO --> EM
+    RET[Retrieval] --> WM
+    ENC[Encoding] --> STM
+    DEC[Decay] --> LTM
+    DEC --> EM
+    
+    %% Implementation Components
+    SM --- VS[Vector Store]
+    EM --- GDB[Graph Database]
+    PM --- PROC[Procedure Registry]
+    LTM --- SCH[Scheduler]
+    
+    end
+    
+    %% Style Definitions
+    classDef shortTerm fill:#ffcccc,stroke:#333,stroke-width:2px;
+    classDef workingMem fill:#ccffcc,stroke:#333,stroke-width:2px;
+    classDef longTerm fill:#ccccff,stroke:#333,stroke-width:2px;
+    classDef episodic fill:#ffddaa,stroke:#333,stroke-width:2px;
+    classDef specialized fill:#ffffcc,stroke:#333,stroke-width:2px;
+    classDef operation fill:#dddddd,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5;
+    classDef implementation fill:#e8e8e8,stroke:#333,stroke-width:1px,style:dashed;
+    classDef external fill:#d0d0ff,stroke:#333,stroke-width:1px;
+    
+    %% Apply Styles
+    class STM shortTerm;
+    class WM workingMem;
+    class LTM longTerm;
+    class EM episodic;
+    class SM,PM specialized;
+    class CO,RET,ENC,DEC operation;
+    class VS,GDB,PROC,SCH implementation;
+    class Input,Output external; 

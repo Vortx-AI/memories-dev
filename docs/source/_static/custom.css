@@ -1,8 +1,34 @@
-/* Minimalist Developer Theme for memories-dev documentation */
+/* Memories-Dev Documentation Theme */
 
 /* Core color palette */
 :root {
-    /* Background colors */
+    /* Light theme (default) */
+    --bg-color: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    
+    /* Text colors */
+    --text-color: #1e293b;
+    --text-secondary: #64748b;
+    
+    /* Accent colors */
+    --accent: #3b82f6;
+    --accent-light: rgba(59, 130, 246, 0.1);
+    
+    /* Border colors */
+    --border: #e2e8f0;
+    --border-light: #f1f5f9;
+    
+    /* Code colors */
+    --code-bg: #f8fafc;
+    --code-text: #334155;
+    
+    /* Shadow */
+    --shadow: rgba(0, 0, 0, 0.1);
+}
+
+/* Dark theme variables - applied when .dark-theme class is added */
+html.dark-theme {
     --bg-color: #1a1a1a;
     --bg-secondary: #242424;
     --bg-tertiary: #2d2d2d;
@@ -33,6 +59,7 @@ body {
     color: var(--text-color);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
     line-height: 1.6;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Headings */

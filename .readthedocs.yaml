@@ -9,7 +9,7 @@ version: 2
 build:
   os: ubuntu-22.04
   tools:
-    python: "3.11"
+    python: "3.9"
   apt_packages:
     - latexmk
     - texlive-latex-recommended
@@ -58,12 +58,13 @@ sphinx:
 
 # Documentation formats - Only include HTML
 formats:
-  - htmlzip
+  - pdf
+  - epub
 
 # Python package installation
 python:
   install:
-    - requirements: docs/requirements.txt
+    - requirements: docs/requirements-docs.txt
     - method: pip
       path: .
     # We don't need requirements-dev.txt since we have all PDF generation packages in docs/requirements.txt
@@ -86,3 +87,7 @@ search:
     examples/*: 4
     advanced_topics/*: 3
     contributing/*: 2
+
+# Use a conda environment for additional dependencies
+# conda:
+#   environment: environment.yml

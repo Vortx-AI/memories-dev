@@ -11,7 +11,13 @@ BUILDDIR      = build
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help Makefile singlelatex singlelatexpdf rtd-pdf
+.PHONY: help Makefile singlelatex singlelatexpdf rtd-pdf setup
+
+# Setup the documentation environment
+setup:
+	@echo "Setting up documentation environment..."
+	@pip install -r requirements-docs.txt
+	@echo "Documentation dependencies installed successfully!"
 
 # Special target for ReadTheDocs - ensures only one PDF is generated
 rtd-pdf:

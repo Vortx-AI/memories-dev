@@ -160,10 +160,12 @@ templates_path = ['_templates']
 # These paths are either relative to html_static_path or fully qualified paths (eg. https://...)
 html_css_files = [
     'css/consolidated.css',  # Single consolidated CSS file
+    'book_style.css',        # Book styling
 ]
 
 html_js_files = [
-    'js/consolidated.js',  # Single consolidated JavaScript file
+    'js/consolidated.js',    # Single consolidated JavaScript file
+    'book_experience.js',    # Book experience enhancements
 ]
 
 # The suffix of source filenames
@@ -239,8 +241,21 @@ html_favicon = '_static/images/favicon.ico'
 html_logo = '_static/images/logo.png'
 
 # Mermaid configuration
-mermaid_output_format = 'png'
-mermaid_params = ['--theme', 'default', '--width', '100%']
+mermaid_version = "latest"  # Use the latest version
+mermaid_init_js = """
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        flowchart: {
+            useMaxWidth: false,
+            htmlLabels: true,
+            curve: 'cardinal',
+        },
+        securityLevel: 'loose',
+        themeCSS: '.node rect { fill: #f4f4f4; stroke: #999; stroke-width: 1px; }',
+    });
+"""
+mermaid_output_format = "svg"  # Use SVG for better quality
 
 # MyST settings
 myst_enable_extensions = [
@@ -290,26 +305,25 @@ intersphinx_mapping = {
 # Disable certain extensions for latex build
 def setup(app):
     # Add consolidated CSS and JS files
-    app.add_css_file("css/consolidated.css")
-    app.add_js_file("js/consolidated.js")
+    app.add_css_file('css/custom.css')
+    app.add_css_file('book_style.css')
     
-    
-    
-    # Add our comprehensive fixes JavaScript
-    
-    
-    # Add other JavaScript files
-    
-    
-    
-    
+    # Add JavaScript enhancements
+    app.add_js_file('lazy_loader.js')
+    app.add_js_file('nav_enhancer.js')
+    app.add_js_file('progress_tracker.js')
+    app.add_js_file('theme_toggle.js')
+    app.add_js_file('doc_fixes.js')
+    app.add_js_file('book_experience.js')
     
     # Pass configuration options to JavaScript
     app.add_js_file(None, body=f'''
         // Configuration options for documentation
+        window.DOCUMENTATION_OPTIONS = window.DOCUMENTATION_OPTIONS || {{}};
         window.DOCUMENTATION_OPTIONS.DISABLE_ON_THIS_PAGE = {str(html_context.get('disable_on_this_page', 'false')).lower()};
         window.DOCUMENTATION_OPTIONS.MAX_NAV_DEPTH = 2;
         window.DOCUMENTATION_OPTIONS.ENABLE_MERMAID = true;
+        window.DOCUMENTATION_OPTIONS.ENABLE_BOOK_EXPERIENCE = true;
     ''')
     
     # Fix math configuration
@@ -334,9 +348,15 @@ def setup(app):
         };
     ''')
     
-    # Add custom event handlers
+    # Connect customization events
     app.connect('builder-inited', on_builder_inited)
     app.connect('build-finished', on_build_finished)
+    
+    return {
+        'version': '0.1',
+        'parallel_read_safe': True,
+        'parallel_write_safe': True,
+    }
 
 def on_builder_inited(app):
     """Run when the builder is initialized."""
@@ -378,13 +398,13 @@ def on_build_finished(app, exception):
                 shutil.copy2(src, dst)
         
         # Copy JS files
-        for js_file in ['doc_fixes.js', 'lazy_loader.js', 'progress_tracker.js', 'nav_enhancer.js', 'theme_toggle.js']:
+        for js_file in ['doc_fixes.js', 'lazy_loader.js', 'progress_tracker.js', 'nav_enhancer.js', 'theme_toggle.js', 'book_experience.js']:
             src = os.path.join(source_static, js_file)
             dst = os.path.join(static_dir, js_file)
             copy_if_newer(src, dst)
         
         # Copy CSS files
-        for css_file in ['custom.css', 'mobile.css']:
+        for css_file in ['custom.css', 'mobile.css', 'book_style.css']:
             src = os.path.join(source_static, 'css', css_file)
             dst = os.path.join(css_dir, css_file)
             copy_if_newer(src, dst)

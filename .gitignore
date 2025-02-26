@@ -97,3 +97,6 @@ Untitled.ipynb
 *.ipynb
 
 .tox/
+
+examples/memory_query.py
+
