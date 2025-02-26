@@ -53,8 +53,8 @@ build:
       - mkdir -p docs/build/pdf
       # Configure ImageMagick policy
       - |
-        mkdir -p ~/.config/ImageMagick
-        cat > ~/.config/ImageMagick/policy.xml << 'EOL'
+        sudo mkdir -p /etc/ImageMagick-6
+        sudo tee /etc/ImageMagick-6/policy.xml << 'EOL'
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE policymap [
           <!ELEMENT policymap (policy)+>
