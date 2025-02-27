@@ -63,9 +63,13 @@ class Config:
                     'location_data_path': os.path.join(self.project_root, 'examples/data/location_data')
                 },
                 'memory': {
+                    'red_hot_size': 1000000,  # 1M vectors for GPU FAISS
                     'hot_size': 50,
                     'warm_size': 200,
-                    'cold_size': 1000
+                    'cold_size': 1000,
+                    'vector_dim': 384,  # Default vector dimension
+                    'gpu_id': 0,  # Default GPU device
+                    'faiss_index_type': 'IVFFlat'  # Default FAISS index type
                 },
                 'redis': {
                     'url': 'redis://localhost:6379',
@@ -100,6 +104,26 @@ class Config:
     def hot_memory_size(self) -> int:
         """Get the hot memory size."""
         return self.config['memory']['hot_size']
+        
+    @property
+    def red_hot_memory_size(self) -> int:
+        """Get the red hot memory size."""
+        return self.config['memory']['red_hot_size']
+        
+    @property
+    def vector_dim(self) -> int:
+        """Get the vector dimension for FAISS."""
+        return self.config['memory']['vector_dim']
+        
+    @property
+    def gpu_id(self) -> int:
+        """Get the GPU device ID."""
+        return self.config['memory']['gpu_id']
+        
+    @property
+    def faiss_index_type(self) -> str:
+        """Get the FAISS index type."""
+        return self.config['memory']['faiss_index_type']
         
     @property
     def warm_memory_size(self) -> int:

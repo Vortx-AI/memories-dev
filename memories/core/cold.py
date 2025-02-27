@@ -147,22 +147,145 @@ class Config:
 logger = logging.getLogger(__name__)
 
 class ColdMemory:
-    """Cold memory layer using compressed file-based storage."""
+    """Cold memory storage for infrequently accessed data"""
     
-    def __init__(self, storage_path: Path, max_size: int):
-        """Initialize cold memory.
+    def __init__(self, storage_path: Union[str, Path], max_size: int):
+        self.storage_path = Path(storage_path)
+        self.max_size = max_size
+        self.storage_path.mkdir(parents=True, exist_ok=True)
+        self.logger = logging.getLogger(__name__)
+        
+        # Initialize DuckDB connection
+        self.con = duckdb.connect()
+        
+        # Initialize metadata file
+        self.metadata_file = self.storage_path / "metadata.json"
+        self._load_metadata()
+
+    def _find_parquet_files(self, directory: Path) -> List[Path]:
+        """Recursively find all parquet files in directory and its subdirectories.
         
         Args:
-            storage_path: Path to store data files
-            max_size: Maximum number of items to store
+            directory: Directory to search in
+            
+        Returns:
+            List of paths to parquet files
         """
-        self.storage_path = storage_path
-        self.max_size = max_size
+        parquet_files = []
+        try:
+            # Recursively search for all .parquet files
+            for path in directory.rglob("*.parquet"):
+                parquet_files.append(path)
+            
+            if parquet_files:
+                self.logger.info(f"Found {len(parquet_files)} parquet files in {directory}")
+            else:
+                self.logger.warning(f"No parquet files found in {directory}")
+                
+        except Exception as e:
+            self.logger.error(f"Error searching for parquet files: {e}")
+            
+        return parquet_files
+
+    def query_storage(self, query: str, theme: Optional[str] = None, tag: Optional[str] = None) -> Optional[Any]:
+        """Query Parquet files in cold storage.
         
-        # Create storage directory
-        self.storage_path.mkdir(parents=True, exist_ok=True)
-        logger.info(f"Initialized cold memory at {storage_path}")
-    
+        Args:
+            query: SQL query to execute
+            theme: Optional theme to filter files (e.g., 'buildings')
+            tag: Optional tag to filter files (e.g., 'building')
+            
+        Returns:
+            Query results as pandas DataFrame
+        """
+        try:
+            # Determine search directory based on theme and tag
+            if theme and tag:
+                search_dir = self.storage_path / "overture" / theme / tag
+            elif theme:
+                search_dir = self.storage_path / "overture" / theme
+            else:
+                search_dir = self.storage_path
+            
+            # Find all parquet files recursively
+            parquet_files = self._find_parquet_files(search_dir)
+            
+            if not parquet_files:
+                self.logger.warning(f"No Parquet files found in {search_dir}")
+                return None
+            
+            # Log the files being queried
+            self.logger.info("Querying the following files:")
+            for f in parquet_files:
+                self.logger.info(f"  - {f.relative_to(self.storage_path)}")
+                
+            # Create a view combining all relevant parquet files
+            view_creation = f"""
+            CREATE OR REPLACE VIEW cold_storage AS 
+            SELECT * FROM read_parquet([{','.join(f"'{str(f)}'" for f in parquet_files)}])
+            """
+            
+            self.con.execute(view_creation)
+            
+            # Execute the actual query
+            self.logger.info(f"Executing query: {query}")
+            result = self.con.execute(query).fetchdf()
+            self.logger.info(f"Query returned {len(result)} rows")
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error querying cold storage: {e}")
+            return None
+
+    def list_available_data(self) -> Dict[str, Dict[str, List[str]]]:
+        """List all available data in storage with file counts"""
+        try:
+            data_structure = {}
+            
+            # Recursively find all parquet files
+            all_files = list(self.storage_path.rglob("*.parquet"))
+            
+            for file_path in all_files:
+                # Get relative path components
+                rel_path = file_path.relative_to(self.storage_path)
+                parts = rel_path.parts
+                
+                # Skip if not enough path components
+                if len(parts) < 3:  # expecting at least: overture/theme/tag/file.parquet
+                    continue
+                
+                theme = parts[1]  # overture/theme/...
+                tag = parts[2]    # overture/theme/tag/...
+                
+                # Initialize nested structure
+                if theme not in data_structure:
+                    data_structure[theme] = {"tags": {}}
+                
+                if tag not in data_structure[theme]["tags"]:
+                    data_structure[theme]["tags"][tag] = []
+                
+                # Add file info
+                data_structure[theme]["tags"][tag].append(str(rel_path))
+            
+            # Add file counts
+            for theme in data_structure:
+                total_theme_files = sum(len(files) for files in data_structure[theme]["tags"].values())
+                data_structure[theme]["file_count"] = total_theme_files
+                
+                for tag in data_structure[theme]["tags"]:
+                    files = data_structure[theme]["tags"][tag]
+                    data_structure[theme]["tags"][tag] = {
+                        "file_count": len(files),
+                        "files": files
+                    }
+            
+            return data_structure
+            
+        except Exception as e:
+            self.logger.error(f"Error listing available data: {e}")
+            return {}
+
     def store(self, data: Dict[str, Any]) -> None:
         """Store data in a compressed file.
         

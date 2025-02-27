@@ -41,16 +41,16 @@ def classify_query(query: str, load_model: LoadModel) -> Dict[str, Union[str, Di
     """
     
     # Get classification from the model
-    response = load_model.get_response(classification_prompt).strip()
+    response = load_model.get_response(classification_prompt)
+    response_text = response.get('text', '').strip() if isinstance(response, dict) else str(response).strip()
     
     # Validate and clean response
     valid_classes = {"N", "L0", "L1_2"}
-    response = response.upper()
     
     # Extract classification
     classification = "N"  # default
     for valid_class in valid_classes:
-        if valid_class in response:
+        if valid_class in response_text:
             classification = valid_class
             break
     
@@ -63,11 +63,12 @@ def classify_query(query: str, load_model: LoadModel) -> Dict[str, Union[str, Di
         
         Provide only the answer without any additional context or prefixes."""
         
-        model_response = load_model.get_response(answer_prompt).strip()
+        model_response = load_model.get_response(answer_prompt)
+        response_text = model_response.get('text', '').strip() if isinstance(model_response, dict) else str(model_response).strip()
         
         return {
             "classification": classification,
-            "response": model_response
+            "response": response_text
         }
     
     else:  # L1_2
