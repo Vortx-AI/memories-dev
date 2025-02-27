@@ -1,37 +1,44 @@
-========================
-Biodiversity Monitoring
+Environmental Monitoring
 ========================
 
 Overview
---------
-
-The Biodiversity Monitoring module leverages Earth Memory to track, analyze, and visualize biodiversity patterns across different ecosystems and temporal scales. This documentation demonstrates how to implement comprehensive biodiversity monitoring solutions using Earth Memory's advanced capabilities.
+========
 
 System Architecture
-------------------
-
-.. code-block:: text
-
-    +-------------------------+      +------------------------+      +------------------------+
-    |                         |      |                        |      |                        |
-    | Data Collection         |----->| Earth Memory System    |----->| Biodiversity Analysis  |
-    | Networks                |      | (Processing Pipeline)  |      | & Visualization        |
-    |                         |      |                        |      |                        |
-    +-------------------------+      +------------------------+      +------------------------+
-                                                |
-                                                v
-                                     +------------------------+
-                                     |                        |
-                                     | Conservation Planning  |
-                                     | & Early Warning        |
-                                     |                        |
-                                     +------------------------+
+===================
 
 Core Components
---------------
+===============
 
 Biodiversity Observatory
-^^^^^^^^^^^^^^^^^^^^^
+=======================
+
+Species Diversity Analysis
+=========================
+
+Habitat Connectivity Analysis
+===========================
+
+Ecosystem Health Assessment
+==========================
+
+Case Studies
+===========
+
+Tropical Forest Biodiversity Monitoring
+=====================================
+
+Marine Ecosystem Monitoring
+=========================
+
+Visualization Dashboard
+=====================
+
+Integration with Conservation Planning
+===================================
+
+Future Developments
+=================
 
 Setting up a comprehensive biodiversity monitoring observatory:
 
@@ -133,9 +140,6 @@ Setting up a comprehensive biodiversity monitoring observatory:
         
         return monitoring_system
 
-Species Diversity Analysis
-^^^^^^^^^^^^^^^^^^^^^^^
-
 Analyze species diversity patterns across space and time:
 
 .. code-block:: python
@@ -212,9 +216,6 @@ Analyze species diversity patterns across space and time:
             "hotspots": hotspots
         }
 
-Habitat Connectivity Analysis
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 Assess habitat connectivity and fragmentation:
 
 .. code-block:: python
@@ -285,9 +286,6 @@ Assess habitat connectivity and fragmentation:
             "critical_connections": critical_connections,
             "connectivity_plan": connectivity_plan
         }
-
-Ecosystem Health Assessment
-^^^^^^^^^^^^^^^^^^^^^^^^
 
 Monitor ecosystem health and integrity:
 
@@ -362,12 +360,6 @@ Monitor ecosystem health and integrity:
         )
         
         return health_report
-
-Case Studies
------------
-
-Tropical Forest Biodiversity Monitoring
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Monitoring biodiversity in a tropical forest ecosystem:
 
@@ -466,9 +458,6 @@ Monitoring biodiversity in a tropical forest ecosystem:
     
     amazon_monitoring = monitor_tropical_forest(amazon_region)
 
-Marine Ecosystem Monitoring
-^^^^^^^^^^^^^^^^^^^^^^^^
-
 Monitoring biodiversity in marine ecosystems:
 
 .. code-block:: python
@@ -566,9 +555,6 @@ Monitoring biodiversity in marine ecosystems:
     
     reef_monitoring = monitor_marine_ecosystem(great_barrier_reef, "coral_reef")
 
-Visualization Dashboard
----------------------
-
 The Biodiversity Monitoring module includes an interactive dashboard for visualizing metrics:
 
 .. image:: /_static/metrics/analyzer_accuracy_dashboard.png
@@ -581,9 +567,6 @@ Key dashboard features include:
 - Ecosystem health indicators
 - Threat monitoring displays
 - Conservation priority areas
-
-Integration with Conservation Planning
-------------------------------------
 
 Earth Memory integrates with conservation planning tools:
 
@@ -690,9 +673,6 @@ Earth Memory integrates with conservation planning tools:
             "implementation_strategy": implementation_strategy
         }
 
-Future Developments
-------------------
-
 Planned enhancements to the Biodiversity Monitoring module:
 
 1. **Advanced Detection Methods**
@@ -713,4 +693,4 @@ Planned enhancements to the Biodiversity Monitoring module:
 4. **Decision Support Tools**
    - Automated conservation priority setting
    - Impact assessment for development projects
-   - Ecosystem service valuation and accounting 
+   - Ecosystem service valuation and accounting

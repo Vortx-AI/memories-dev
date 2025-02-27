@@ -1,26 +1,8 @@
 Memory Architecture
 ===================
 
-Overview
---------
-
-The memories-dev framework implements a sophisticated memory architecture designed for efficient storage, retrieval, and management of Earth observation data and derived insights.
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   memory_system
-   tiered_memory
-   persistence
-   optimization
-   retention
-   analysis
-   model_integration
-   application
-
 Core Components
--------------
+==============
 
 1. **Memory System**
    - Overall architecture
@@ -71,7 +53,7 @@ Core Components
    - Usage patterns
 
 Best Practices
-------------
+=============
 
 1. **Memory Management**
    - Efficient resource usage
@@ -111,7 +93,7 @@ See Also
 In the realm of artificial intelligence, the design of memory systems can be as crucial as the reasoning algorithms themselves. This chapter explores the memory architecture behind Memories-Dev, a system designed to provide AI with more human-like memory capabilities.
 
 The Memory Problem in AI
------------------------
+=======================
 
 Modern AI systems face several challenges when it comes to memory:
 
@@ -124,39 +106,70 @@ Modern AI systems face several challenges when it comes to memory:
 These challenges inspired the hierarchical memory architecture of Memories-Dev.
 
 Tiered Memory Organization
--------------------------
+=========================
 
 Memories-Dev implements a multi-tiered memory system inspired by human cognition:
 
-.. image:: /_static/images/memory_architecture.png
-   :alt: Hierarchical Memory Architecture
-   :align: center
+.. mermaid::
+
+   graph TB
+       subgraph "Memory Architecture"
+           A[Input Data] --> B[Short-term Memory]
+           B --> C[Working Memory]
+           C --> D[Long-term Memory]
+           
+           C --> E[Episodic Memory]
+           D --> F[Semantic Memory]
+           D --> G[Procedural Memory]
+           
+           H[Memory Manager] --> B
+           H --> C
+           H --> D
+           H --> E
+           H --> F
+           H --> G
+           
+           I[Consolidation Engine] --> D
+           I --> F
+           C --> I
+       end
+       
+       style B fill:#ffcccc,stroke:#333,stroke-width:2px
+       style C fill:#ccffcc,stroke:#333,stroke-width:2px
+       style D fill:#ccccff,stroke:#333,stroke-width:2px
+       style E fill:#ffffcc,stroke:#333,stroke-width:2px
+       style F fill:#ffccff,stroke:#333,stroke-width:2px
+       style G fill:#ccffff,stroke:#333,stroke-width:2px
+       style H fill:#f5f5f5,stroke:#333,stroke-width:2px
+       style I fill:#f5f5f5,stroke:#333,stroke-width:2px
 
 .. mermaid::
 
-   flowchart TD
-       S[Short-term Memory] --> W[Working Memory]
-       W --> L[Long-term Memory]
-       W --> E[Episodic Memory]
-       W --> S
+   graph TB
+       subgraph "Memory Tiers"
+           A[Hot Memory<br>Real-time Data] --> B[Warm Memory<br>Recent History]
+           B --> C[Cold Memory<br>Historical Data]
+           C --> D[Glacier Memory<br>Archival Data]
+           
+           E[Access Speed] -.- A
+           F[Storage Cost] -.- D
+           
+           G[Memory Manager] --> A
+           G --> B
+           G --> C
+           G --> D
+       end
        
-       L --> SM[Semantic Memory]
-       L --> PM[Procedural Memory]
-       
-       classDef shortTerm fill:#ffcccc,stroke:#333,stroke-width:1px;
-       classDef workingMem fill:#ccffcc,stroke:#333,stroke-width:1px;
-       classDef longTerm fill:#ccccff,stroke:#333,stroke-width:1px;
-       classDef specialized fill:#ffffcc,stroke:#333,stroke-width:1px;
-       
-       class S shortTerm;
-       class W workingMem;
-       class L,E longTerm;
-       class SM,PM specialized;
+       style A fill:#ff6b6b,stroke:#333,stroke-width:2px,color:#fff
+       style B fill:#4ecdc4,stroke:#333,stroke-width:2px,color:#fff
+       style C fill:#45b7d1,stroke:#333,stroke-width:2px,color:#fff
+       style D fill:#2c3e50,stroke:#333,stroke-width:2px,color:#fff
+       style G fill:#f5f5f5,stroke:#333,stroke-width:2px
 
 The components of this architecture include:
 
 Short-term Memory
-~~~~~~~~~~~~~~~~
+================
 
 The most volatile tier holds recent interactions and immediate context. Features include:
 
@@ -166,7 +179,7 @@ The most volatile tier holds recent interactions and immediate context. Features
 - **Implementation**: In-memory queue with priority sorting
 
 Working Memory
-~~~~~~~~~~~~~
+=============
 
 The active processing layer that manages information flow between memory tiers:
 
@@ -192,7 +205,7 @@ The active processing layer that manages information flow between memory tiers:
     working_memory.process_new_information(new_data)
 
 Long-term Memory
-~~~~~~~~~~~~~~
+===============
 
 The persistent storage system for durable information:
 
@@ -202,7 +215,7 @@ The persistent storage system for durable information:
 - **Implementation**: Vector database with hierarchical indexing
 
 Episodic Memory
-~~~~~~~~~~~~~~
+==============
 
 Stores sequences of events and interactions:
 
@@ -212,7 +225,7 @@ Stores sequences of events and interactions:
 - **Implementation**: Graph database with temporal properties
 
 Semantic Memory
-~~~~~~~~~~~~~
+==============
 
 Stores factual knowledge and conceptual relationships:
 
@@ -222,12 +235,12 @@ Stores factual knowledge and conceptual relationships:
 - **Implementation**: Knowledge graph with semantic weighting
 
 Memory Operations
----------------
+================
 
 The Memories-Dev system performs several key operations across its memory tiers:
 
 Encoding
-~~~~~~~~
+========
 
 When new information enters the system:
 
@@ -247,7 +260,7 @@ When new information enters the system:
     )
 
 Retrieval
-~~~~~~~~~
+=========
 
 When the system needs to access stored information:
 
@@ -265,7 +278,7 @@ When the system needs to access stored information:
         print(f"Memory: {memory.content} (Confidence: {memory.relevance_score})")
 
 Consolidation
-~~~~~~~~~~~~
+============
 
 Periodic processes that organize and optimize stored memories:
 
@@ -279,7 +292,7 @@ Periodic processes that organize and optimize stored memories:
     )
 
 Decay
-~~~~~
+-----
 
 The gradual fading of less important or relevant memories:
 
@@ -294,12 +307,12 @@ The gradual fading of less important or relevant memories:
     )
 
 Technical Implementation
-----------------------
+======================
 
 Memories-Dev implements this architecture using several specialized components:
 
 Vector Store
-~~~~~~~~~~~
+===========
 
 For similarity-based retrieval of semantic information:
 
@@ -309,7 +322,7 @@ For similarity-based retrieval of semantic information:
 - **Backend Options**: FAISS, Pinecone, Weaviate, or custom implementations
 
 Graph Database
-~~~~~~~~~~~~~
+=============
 
 For representing relationships between entities and concepts:
 
@@ -319,7 +332,7 @@ For representing relationships between entities and concepts:
 - **Backend Options**: Neo4j, Amazon Neptune, or in-memory graph for smaller applications
 
 Scheduler
-~~~~~~~~~
+=========
 
 For managing memory operations across time:
 
@@ -329,7 +342,7 @@ For managing memory operations across time:
 - **Execution Model**: Asynchronous execution with configurable priorities
 
 Memory Primitives
---------------
+================
 
 The building blocks of the memory system include:
 
@@ -340,7 +353,7 @@ The building blocks of the memory system include:
 - **Memory Operation**: A function that transforms or retrieves memories
 
 Customizing the Architecture
---------------------------
+==========================
 
 Memories-Dev allows extensive customization of its memory architecture:
 
@@ -378,7 +391,7 @@ Memories-Dev allows extensive customization of its memory architecture:
     )
 
 Future Directions
----------------
+================
 
 The memory architecture of Memories-Dev continues to evolve, with several promising directions:
 
@@ -395,16 +408,12 @@ The Memories-Dev architecture represents a sophisticated approach to AI memory, 
 
 In the next chapter, we'll explore how this architecture is applied in practical use cases, demonstrating the power of memory-enhanced AI.
 
-=========================
+================================
 Tiered Earth Memory Architecture
-=========================
-
-.. contents:: Chapter Contents
-   :local:
-   :depth: 2
+================================
 
 The Stratified Nature of Earth Memory
------------------------------------
+===================================
 
 Just as Earth itself preserves evidence of its history in stratified layers, The Memory Codex organizes planetary observations into temporal tiers. This graduated system enables AI to understand Earth across multiple timescales—from real-time environmental changes to geological epochs.
 
@@ -424,7 +433,7 @@ The tiered architecture solves a fundamental problem in Earth-grounded AI: balan
    </div>
 
 The Four Memory Tiers
--------------------
+====================
 
 The Memory Codex organizes Earth observations into four distinct temporal tiers:
 
@@ -445,7 +454,7 @@ The Memory Codex organizes Earth observations into four distinct temporal tiers:
 Each tier serves a distinct purpose in the Earth Memory architecture:
 
 Hot Memory: Real-Time Earth State
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+===============================
 
 Hot Memory captures Earth's immediate state—real-time observations from satellites, sensor networks, and environmental monitoring systems. This tier maintains the highest temporal and spatial resolution but has the shortest retention period.
 
@@ -481,7 +490,7 @@ Hot Memory captures Earth's immediate state—real-time observations from satell
    print(f"Currently tracking {len(active_fires.features)} fire events")
 
 Warm Memory: Seasonal and Annual Patterns
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+======================================
 
 Warm Memory captures seasonal, annual, and multi-year patterns across Earth systems. This tier allows AI to understand cyclical changes, track year-over-year trends, and recognize normal vs. anomalous conditions.
 
@@ -519,7 +528,7 @@ Warm Memory captures seasonal, annual, and multi-year patterns across Earth syst
    print(f"Areas with 50%+ decline: {change_map.get_area_with_decline(0.5)} km²")
 
 Cold Memory: Historical Records
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+============================
 
 Cold Memory preserves decade-scale Earth history, enabling AI to understand long-term trends, climate patterns, and systematic changes. This tier balances resolution with historical depth.
 
@@ -559,7 +568,7 @@ Cold Memory preserves decade-scale Earth history, enabling AI to understand long
    print(f"Statistical significance: p={trend.p_value}")
 
 Glacier Memory: Geological Timescales
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==================================
 
 Glacier Memory preserves information across geological timescales, allowing AI to understand Earth's deepest patterns—continental drift, evolutionary history, and climate epochs.
 
@@ -649,7 +658,7 @@ The transition of data between memory tiers involves several key processes:
 Each tier applies scientific verification, uncertainty quantification, and provenance tracking to maintain Earth Memory's empirical grounding.
 
 Memory Resolution Trade-offs
-===========================
+==========================
 
 The Memory Codex handles resolution trade-offs across spatial, temporal, and semantic dimensions:
 
@@ -686,7 +695,7 @@ The Memory Codex handles resolution trade-offs across spatial, temporal, and sem
 These resolution trade-offs are managed through adaptive algorithms that preserve critical information while reducing storage and processing requirements for older data.
 
 Memory Provenance and Scientific Integrity
-========================================
+=======================================
 
 The Memory Codex maintains strict scientific integrity through comprehensive provenance tracking:
 
@@ -722,7 +731,7 @@ Every observation stored in the Earth Memory system includes:
 This comprehensive provenance system ensures that Earth Memory remains grounded in verifiable physical measurements rather than statistical hallucinations.
 
 Implementation Considerations
-===========================
+==========================
 
 When implementing a tiered Earth Memory architecture, consider these best practices:
 
@@ -747,7 +756,7 @@ When implementing a tiered Earth Memory architecture, consider these best practi
 The most effective Earth Memory implementations provide unified access while optimizing behind-the-scenes storage and computation for each tier's unique characteristics.
 
 Putting It All Together
-======================
+=====================
 
 The following example demonstrates how to create a complete tiered Earth Memory system:
 
