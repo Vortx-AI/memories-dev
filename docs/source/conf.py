@@ -133,12 +133,6 @@ latex_documents = [
      author, 'manual', True)
 ]
 
-# Remove PDF output settings as we're using latex_documents
-del pdf_documents
-del pdf_stylesheets
-del pdf_use_index
-del pdf_toc_depth
-
 # Remove unused options
 html_theme_path = []
 html_short_title = None
