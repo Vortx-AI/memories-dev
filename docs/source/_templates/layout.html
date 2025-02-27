@@ -6,6 +6,7 @@
   <meta name="description" content="Documentation">
   <meta name="theme-color" content="#1a5276">
   <link rel="stylesheet" href="{{ pathto('_static/custom.css', 1) }}" type="text/css" />
+  <script src="{{ pathto('_static/js/fix_navigation.js', 1) }}"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       // Create the toggle button
@@ -61,7 +62,51 @@
       background: var(--subtle-hover, rgba(0, 0, 0, 0.1));
       transform: scale(1.05);
     }
+
+    @media screen and (max-width: 768px) {
+      .wy-nav-content-wrap {
+        margin-left: 0;
+      }
+      .wy-nav-side {
+        left: -300px;
+      }
+      .wy-nav-side.shift {
+        left: 0;
+      }
+    }
   </style>
+{% endblock %}
+
+{% block content %}
+<div class="wy-nav-content-wrap">
+  {% if theme_style_nav_header_background %}
+  <div class="wy-nav-content">
+  {% else %}
+  <div class="wy-nav-content">
+  {% endif %}
+    <div class="rst-content">
+      <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+        <div itemprop="articleBody">
+          {% block document %}
+            {{ super() }}
+          {% endblock %}
+        </div>
+      </div>
+      {% block navigation %}
+      <div class="navigation-section">
+        <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+          {%- if prev %}
+            <a href="{{ prev.link|e }}" class="btn btn-neutral float-left" title="{{ prev.title|striptags|e }}" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+          {%- endif %}
+          {%- if next %}
+            <a href="{{ next.link|e }}" class="btn btn-neutral float-right" title="{{ next.title|striptags|e }}" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+          {%- endif %}
+        </div>
+      </div>
+      {% endblock %}
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block footer %}
@@ -80,35 +125,6 @@
   </div>
   <div class="book-copyright">
     <p>&copy; 2023-2024. All rights reserved.</p>
-  </div>
-</div>
-{% endblock %}
-
-{% block sidebartitle %}
-<a href="{{ pathto(master_doc) }}" class="icon icon-home"> {{ project }}</a>
-{{ super() }}
-{% endblock %}
-
-{% block content %}
-<div class="wy-nav-content-wrap">
-  <div class="wy-nav-content">
-    <div class="rst-content">
-      <div role="main" class="document">
-        {% block document %}
-          {{ super() }}
-        {% endblock %}
-      </div>
-      {% block navigation %}
-        <div class="navigation-section">
-          {%- if prev %}
-            <a href="{{ prev.link|e }}" class="btn btn-neutral float-left" title="{{ prev.title|striptags|e }}" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-          {%- endif %}
-          {%- if next %}
-            <a href="{{ next.link|e }}" class="btn btn-neutral float-right" title="{{ next.title|striptags|e }}" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
-          {%- endif %}
-        </div>
-      {% endblock %}
-    </div>
   </div>
 </div>
 {% endblock %} 

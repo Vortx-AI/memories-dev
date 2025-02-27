@@ -159,14 +159,14 @@ p {
 .wy-nav-side {
     position: fixed;
     top: 0;
-    bottom: 0;
     left: 0;
     width: 300px;
+    height: 100%;
     background: var(--bg-dark);
     z-index: 200;
-    padding-bottom: 2em;
-    overflow-x: hidden;
+    padding: 1rem 0;
     overflow-y: auto;
+    transition: left 0.3s ease;
 }
 
 .wy-menu-vertical header, 
@@ -481,21 +481,51 @@ footer {
 
 /* In-page navigation */
 .contents.local {
-    background-color: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 5px;
-    padding: 15px;
-    margin: 1.5rem 0;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background-color: var(--bg-secondary) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 4px !important;
+    padding: 1.5em !important;
+    margin: 1.5em 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: 0 2px 5px var(--shadow) !important;
 }
 
 .contents.local p.topic-title {
-    font-family: var(--heading-font);
-    color: var(--primary-color);
-    font-size: 1.2rem;
-    margin-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    padding-bottom: 0.3rem;
+    font-weight: 600 !important;
+    color: var(--text-color) !important;
+    margin-top: 0 !important;
+    margin-bottom: 1em !important;
+    font-size: 1.1em !important;
+    border-bottom: 1px solid var(--border-light) !important;
+    padding-bottom: 0.5em !important;
+}
+
+.contents.local ul, .contents.topic ul {
+    list-style-type: none !important;
+    padding-left: 1em !important;
+    margin: 0 !important;
+}
+
+.contents.local li, .contents.topic li {
+    margin: 0.5em 0 !important;
+    line-height: 1.4 !important;
+}
+
+.contents.local a, .contents.topic a {
+    color: var(--link-color) !important;
+    text-decoration: none !important;
+    transition: color 0.2s ease !important;
+}
+
+.contents.local a:hover, .contents.topic a:hover {
+    color: var(--link-hover-color) !important;
+    text-decoration: underline !important;
 }
 
 /* Responsive adjustments */
@@ -555,7 +585,7 @@ footer {
     --border-light: #f1f5f9;
     
     /* Code colors */
-    --code-bg: #f8fafc;
+    --code-bg: #f8f9fa;
     --code-text: #334155;
     
     /* Shadow */
@@ -797,9 +827,10 @@ tr:nth-child(even) {
 }
 
 .wy-nav-content-wrap {
+    margin-left: 300px;
     background: var(--bg-primary);
     min-height: 100vh;
-    margin-left: 300px;
+    transition: margin-left 0.3s ease;
 }
 
 .wy-nav-content {
@@ -1079,13 +1110,13 @@ button.copybtn:hover {
     top: auto !important;
     right: auto !important;
     max-height: none !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     background-color: var(--bg-secondary) !important;
     border: 1px solid var(--border) !important;
     border-radius: 4px !important;
     padding: 1.5em !important;
     margin: 1.5em 0 !important;
-    width: auto !important;
+    width: 100% !important;
     max-width: 100% !important;
     box-shadow: 0 2px 5px var(--shadow) !important;
 }
@@ -1102,32 +1133,24 @@ button.copybtn:hover {
 
 .contents.local ul, .contents.topic ul {
     list-style-type: none !important;
-    padding-left: 0.5em !important;
+    padding-left: 1em !important;
     margin: 0 !important;
 }
 
 .contents.local li, .contents.topic li {
-    margin-bottom: 0.5em !important;
-    position: relative !important;
-    padding-left: 1em !important;
-}
-
-.contents.local li::before, .contents.topic li::before {
-    content: "•" !important;
-    position: absolute !important;
-    left: 0 !important;
-    color: var(--accent) !important;
+    margin: 0.5em 0 !important;
+    line-height: 1.4 !important;
 }
 
 .contents.local a, .contents.topic a {
-    color: var(--text-secondary) !important;
+    color: var(--link-color) !important;
     text-decoration: none !important;
     transition: color 0.2s ease !important;
 }
 
 .contents.local a:hover, .contents.topic a:hover {
-    color: var(--accent) !important;
-    text-decoration: none !important;
+    color: var(--link-hover-color) !important;
+    text-decoration: underline !important;
 }
 
 /* Fix for Table of Contents */
@@ -1181,7 +1204,7 @@ button.copybtn:hover {
 
 /* Fix for inconsistent table colors */
 .rst-content table.docutils {
-    border: 1px solid var(--border);
+    border-color: var(--border);
     background-color: var(--bg-secondary);
 }
 
@@ -1471,7 +1494,7 @@ a:hover {
     text-decoration: underline;
 }
 
-/* Code Blocks */
+/* Code blocks */
 pre {
     padding: 1rem;
     overflow: auto;
