@@ -1,5 +1,5 @@
 """
-Red hot memory implementation using FAISS on GPU.
+Red hot memory implementation using FAISS.
 """
 
 import logging
@@ -14,7 +14,7 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 class RedHotMemory:
-    """Red hot memory layer using FAISS on GPU for ultra-fast vector similarity search."""
+    """Red hot memory layer using FAISS for ultra-fast vector similarity search."""
     
     def __init__(
         self,
@@ -22,8 +22,8 @@ class RedHotMemory:
         max_size: int,
         vector_dim: int = 384,
         gpu_id: int = 0,
-        index_type: str = "IVFFlat",
-        force_cpu: bool = False
+        index_type: str = "Flat",  # Default to simple Flat index
+        force_cpu: bool = True  # Default to CPU for stability
     ):
         """Initialize red hot memory.
         
@@ -32,7 +32,7 @@ class RedHotMemory:
             max_size: Maximum number of vectors to store
             vector_dim: Dimension of vectors to store (default: 384 for BERT-like models)
             gpu_id: GPU device ID to use (default: 0)
-            index_type: FAISS index type ("Flat", "IVFFlat", "IVFPQ")
+            index_type: FAISS index type ("Flat" only for now)
             force_cpu: Force CPU usage even if GPU is available
         """
         self.storage_path = Path(storage_path)
@@ -56,23 +56,15 @@ class RedHotMemory:
         logger.info(f"Initialized red hot memory at {storage_path} using {device}")
     
     def _init_index(self):
-        """Initialize FAISS index on GPU with fallback to CPU."""
+        """Initialize FAISS index."""
         try:
-            # Create CPU index first
-            if self.index_type == "Flat":
-                self.index = faiss.IndexFlatL2(self.vector_dim)
-            elif self.index_type == "IVFFlat":
-                quantizer = faiss.IndexFlatL2(self.vector_dim)
-                nlist = min(4096, max(self.max_size // 30, 1))  # Number of clusters
-                self.index = faiss.IndexIVFFlat(quantizer, self.vector_dim, nlist)
-            elif self.index_type == "IVFPQ":
-                quantizer = faiss.IndexFlatL2(self.vector_dim)
-                nlist = min(4096, max(self.max_size // 30, 1))  # Number of clusters
-                m = 8  # Number of subquantizers
-                bits = 8  # Bits per subquantizer
-                self.index = faiss.IndexIVFPQ(quantizer, self.vector_dim, nlist, m, bits)
-            else:
-                raise ValueError(f"Unsupported index type: {self.index_type}")
+            # For now, only support Flat index type for stability
+            if self.index_type != "Flat":
+                logger.warning("Only Flat index type is currently supported. Using Flat index.")
+                self.index_type = "Flat"
+            
+            # Create CPU index
+            self.index = faiss.IndexFlatL2(self.vector_dim)
             
             # Try to use GPU if not forced to use CPU
             if not self.force_cpu:
@@ -85,18 +77,9 @@ class RedHotMemory:
                         self.using_gpu = True
                         logger.info(f"FAISS index initialized on GPU {self.gpu_id}")
                     else:
-                        logger.warning(f"GPU {self.gpu_id} not available, falling back to CPU")
+                        logger.warning(f"GPU {self.gpu_id} not available, using CPU")
                 except Exception as e:
-                    logger.warning(f"Failed to initialize on GPU, falling back to CPU: {e}")
-            
-            # Train index if needed (for IVF indices)
-            if isinstance(self.index, (faiss.IndexIVFFlat, faiss.IndexIVFPQ, 
-                                    faiss.GpuIndexIVFFlat, faiss.GpuIndexIVFPQ)):
-                if not self.index.is_trained:
-                    # Generate random training data if no data available
-                    train_size = min(100000, max(self.max_size, 256))
-                    train_data = np.random.normal(size=(train_size, self.vector_dim)).astype('float32')
-                    self.index.train(train_data)
+                    logger.warning(f"Failed to initialize on GPU, using CPU: {e}")
             
             if not self.using_gpu:
                 logger.info("FAISS index initialized on CPU")

@@ -149,18 +149,115 @@ logger = logging.getLogger(__name__)
 class ColdMemory:
     """Cold memory storage for infrequently accessed data"""
     
-    def __init__(self, storage_path: Union[str, Path], max_size: int):
+    def __init__(self, storage_path: Union[str, Path], max_size: int, duckdb_config: Optional[Dict[str, Any]] = None):
+        """Initialize cold memory.
+        
+        Args:
+            storage_path: Path to store data
+            max_size: Maximum storage size in bytes
+            duckdb_config: Optional DuckDB configuration
+        """
         self.storage_path = Path(storage_path)
         self.max_size = max_size
         self.storage_path.mkdir(parents=True, exist_ok=True)
         self.logger = logging.getLogger(__name__)
         
+        # Set default DuckDB config if none provided
+        self.duckdb_config = duckdb_config or {
+            'db_file': 'cold.duckdb',
+            'memory_limit': '4GB',
+            'threads': 4,
+            'extensions': [],
+            'config': {
+                'enable_progress_bar': True,
+                'enable_external_access': True,
+                'enable_object_cache': True
+            },
+            'temp_directory': None,
+            'access_mode': 'read_write',
+            'storage': {
+                'compression': 'zstd',  # Used for Parquet files, not DuckDB config
+                'row_group_size': 100000
+            }
+        }
+        
         # Initialize DuckDB connection
-        self.con = duckdb.connect()
+        self.db_path = self.storage_path / self.duckdb_config['db_file']
+        self._initialize_db()
         
         # Initialize metadata file
         self.metadata_file = self.storage_path / "metadata.json"
-        self._load_metadata()
+        self.metadata = self._load_metadata()
+
+    def _initialize_db(self) -> None:
+        """Initialize DuckDB database with configuration."""
+        try:
+            # First try to create/open in read_write mode to ensure database exists
+            self.con = duckdb.connect(str(self.db_path))
+            
+            # Set memory limit
+            if self.duckdb_config['memory_limit']:
+                self.con.execute(f"SET memory_limit='{self.duckdb_config['memory_limit']}'")
+            
+            # Set number of threads
+            if self.duckdb_config['threads']:
+                self.con.execute(f"SET threads={self.duckdb_config['threads']}")
+            
+            # Set temporary directory if specified
+            if self.duckdb_config['temp_directory']:
+                temp_dir = Path(self.duckdb_config['temp_directory'])
+                temp_dir.mkdir(parents=True, exist_ok=True)
+                self.con.execute(f"SET temp_directory='{temp_dir}'")
+            
+            # Load extensions
+            for extension in self.duckdb_config['extensions']:
+                try:
+                    self.con.execute(f"LOAD '{extension}'")
+                    self.logger.info(f"Loaded extension: {extension}")
+                except Exception as e:
+                    self.logger.warning(f"Failed to load extension {extension}: {e}")
+            
+            # Apply additional configurations
+            for key, value in self.duckdb_config['config'].items():
+                try:
+                    # Convert boolean to 'true'/'false' for DuckDB
+                    if isinstance(value, bool):
+                        value = 'true' if value else 'false'
+                    self.con.execute(f"SET {key}='{value}'")
+                except Exception as e:
+                    self.logger.warning(f"Failed to set config {key}={value}: {e}")
+            
+            # Create necessary tables if they don't exist
+            self.con.execute("""
+                CREATE TABLE IF NOT EXISTS cold_data (
+                    key VARCHAR PRIMARY KEY,
+                    data JSON,
+                    metadata JSON,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Now reopen in the specified access mode if it's read-only
+            if self.duckdb_config['access_mode'] == 'read':
+                self.con.close()
+                self.con = duckdb.connect(str(self.db_path), read_only=True)
+            
+            self.logger.info(f"Initialized DuckDB at {self.db_path} with custom configuration")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to initialize DuckDB: {e}")
+            raise
+
+    def _load_metadata(self) -> Dict[str, Any]:
+        """Load metadata from disk."""
+        if self.metadata_file.exists():
+            try:
+                with open(self.metadata_file) as f:
+                    return json.load(f)
+            except Exception as e:
+                self.logger.error(f"Failed to load metadata: {e}")
+        return {}
 
     def _find_parquet_files(self, directory: Path) -> List[Path]:
         """Recursively find all parquet files in directory and its subdirectories.
@@ -187,13 +284,21 @@ class ColdMemory:
             
         return parquet_files
 
-    def query_storage(self, query: str, theme: Optional[str] = None, tag: Optional[str] = None) -> Optional[Any]:
-        """Query Parquet files in cold storage.
+    def query_storage(
+        self, 
+        query: str, 
+        theme: Optional[str] = None, 
+        tag: Optional[str] = None,
+        additional_files: Optional[List[Union[str, Path]]] = None
+    ) -> Optional[Any]:
+        """Query Parquet files in cold storage and additional locations.
         
         Args:
-            query: SQL query to execute
+            query: SQL query to execute. Use 'cold_storage' as the table name to query all parquet files
+                  Example: "SELECT * FROM cold_storage WHERE column > 0"
             theme: Optional theme to filter files (e.g., 'buildings')
             tag: Optional tag to filter files (e.g., 'building')
+            additional_files: Optional list of additional Parquet file paths to include in the query
             
         Returns:
             Query results as pandas DataFrame
@@ -201,31 +306,44 @@ class ColdMemory:
         try:
             # Determine search directory based on theme and tag
             if theme and tag:
-                search_dir = self.storage_path / "overture" / theme / tag
+                search_dir = self.storage_path / theme / tag
             elif theme:
-                search_dir = self.storage_path / "overture" / theme
+                search_dir = self.storage_path / theme
             else:
                 search_dir = self.storage_path
             
             # Find all parquet files recursively
             parquet_files = self._find_parquet_files(search_dir)
             
+            # Add additional files if provided
+            if additional_files:
+                for file_path in additional_files:
+                    file_path = Path(file_path)
+                    if file_path.exists() and file_path.suffix == '.parquet':
+                        parquet_files.append(file_path)
+                    else:
+                        self.logger.warning(f"Skipping invalid file: {file_path}")
+            
             if not parquet_files:
-                self.logger.warning(f"No Parquet files found in {search_dir}")
+                self.logger.warning(f"No Parquet files found to query")
                 return None
             
             # Log the files being queried
             self.logger.info("Querying the following files:")
             for f in parquet_files:
-                self.logger.info(f"  - {f.relative_to(self.storage_path)}")
-                
+                self.logger.info(f"  - {f}")
+            
             # Create a view combining all relevant parquet files
             view_creation = f"""
             CREATE OR REPLACE VIEW cold_storage AS 
-            SELECT * FROM read_parquet([{','.join(f"'{str(f)}'" for f in parquet_files)}])
+            SELECT * FROM read_parquet([{','.join(f"'{str(f.absolute())}'" for f in parquet_files)}])
             """
             
             self.con.execute(view_creation)
+            
+            # If the query doesn't specify a FROM clause, add it
+            if 'from' not in query.lower():
+                query = f"{query} FROM cold_storage"
             
             # Execute the actual query
             self.logger.info(f"Executing query: {query}")
