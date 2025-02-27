@@ -48,25 +48,37 @@ function removeBookExperience() {
  * Fix navigation and ensure all links work properly
  */
 function fixNavigation() {
-    // Remove "On this page" section completely
-    const onThisPageSection = document.querySelector('.contents.local, .local-toc');
-    if (onThisPageSection) {
-        onThisPageSection.remove();
-    }
-
     // Make sure the navigation panel is visible
     const navSide = document.querySelector('.wy-nav-side');
     if (navSide) {
         navSide.style.display = 'block';
-        navSide.style.width = '300px';
         navSide.style.visibility = 'visible';
-        navSide.style.opacity = '1';
     }
     
     // Ensure content wrapping is correct
     const contentWrap = document.querySelector('.wy-nav-content-wrap');
     if (contentWrap) {
-        contentWrap.style.marginLeft = '300px';
+        contentWrap.style.marginLeft = window.innerWidth > 768 ? '300px' : '0';
+    }
+    
+    // Add mobile navigation toggle
+    if (!document.querySelector('.mobile-nav-toggle')) {
+        const toggle = document.createElement('button');
+        toggle.className = 'mobile-nav-toggle';
+        toggle.innerHTML = '☰';
+        toggle.setAttribute('aria-label', 'Toggle navigation menu');
+        
+        document.body.appendChild(toggle);
+        
+        toggle.addEventListener('click', () => {
+            document.body.classList.toggle('nav-open');
+            if (navSide) {
+                navSide.classList.toggle('shift');
+            }
+            if (contentWrap) {
+                contentWrap.classList.toggle('shift');
+            }
+        });
     }
     
     // Fix all navigation links
@@ -95,26 +107,6 @@ function fixNavigation() {
             parent.style.display = 'block';
             parent = parent.parentNode && parent.parentNode.parentNode;
         }
-    });
-    
-    // Add toggle functionality for sections
-    document.querySelectorAll('.wy-menu-vertical li.toctree-l1 > a').forEach(link => {
-        link.addEventListener('click', function(e) {
-            const li = this.parentNode;
-            const ul = li.querySelector('ul');
-            
-            if (ul && ul.children.length > 0 && !e.ctrlKey && !e.metaKey) {
-                e.preventDefault();
-                
-                if (ul.style.display === 'block') {
-                    ul.style.display = 'none';
-                    li.classList.remove('current');
-                } else {
-                    ul.style.display = 'block';
-                    li.classList.add('current');
-                }
-            }
-        });
     });
 }
 
@@ -430,4 +422,38 @@ function addScrollToTopButton() {
         `;
         document.head.appendChild(style);
     }
-} 
+}
+
+// Add responsive styles
+const style = document.createElement('style');
+style.textContent = `
+    .mobile-nav-toggle {
+        display: none;
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        z-index: 300;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 0.5rem;
+        font-size: 1.5rem;
+        cursor: pointer;
+    }
+    
+    @media screen and (max-width: 768px) {
+        .mobile-nav-toggle {
+            display: block;
+        }
+        
+        body.nav-open .wy-nav-content-wrap {
+            transform: translateX(300px);
+        }
+        
+        .wy-nav-content-wrap {
+            transition: transform 0.3s ease;
+        }
+    }
+`;
+document.head.appendChild(style); 

@@ -797,17 +797,16 @@ tr:nth-child(even) {
 }
 
 .wy-nav-content-wrap {
+    background: var(--bg-primary);
+    min-height: 100vh;
     margin-left: 300px;
-    background: var(--bg-light);
-    min-height: 100%;
 }
 
 .wy-nav-content {
-    padding: 1.618em 3.236em;
-    height: 100%;
+    background: var(--bg-primary);
     max-width: 1000px;
-    margin: auto;
-    background: var(--bg-light);
+    margin: 0 auto;
+    padding: 2rem;
 }
 
 footer {
@@ -903,7 +902,7 @@ footer {
     }
     
     .wy-nav-content {
-        padding: 1em;
+        padding: 1rem;
     }
     
     .contents.local, .contents.topic {
@@ -2130,6 +2129,6 @@ html.dark-theme table.docutils th {
     }
     
     .wy-nav-content {
-        padding: 1em;
+        padding: 1rem;
     }
 } 
