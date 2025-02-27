@@ -7,9 +7,20 @@ redis:
   db: 0
 
 memory:
-  hot_size: 1000
-  warm_size: 10000
-  cold_size: 100000
+  base_path: "/Users/jaya/data/memory"
+  hot:
+    path: "hot"
+    max_size: 104857600  # 100MB in bytes
+    redis_url: "redis://localhost:6379"
+  warm:
+    path: "warm"
+    max_size: 1073741824  # 1GB in bytes
+  cold:
+    path: "cold"
+    max_size: 10737418240  # 10GB in bytes
+  glacier:
+    path: "glacier"
+    max_size: 107374182400  # 100GB in bytes
 
 data:
   storage: ./data/storage

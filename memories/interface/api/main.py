@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .core.config import API_V1_PREFIX, PROJECT_TITLE, PROJECT_DESCRIPTION, VERSION
-from .routers import text, image, video
+from .routers import text, image, video, memory
 
 # Create FastAPI app
 app = FastAPI(
@@ -24,6 +24,7 @@ app.add_middleware(
 app.include_router(text.router, prefix=API_V1_PREFIX)
 app.include_router(image.router, prefix=API_V1_PREFIX)
 app.include_router(video.router, prefix=API_V1_PREFIX)
+app.include_router(memory.router, prefix=API_V1_PREFIX)
 
 @app.get("/")
 async def root():
