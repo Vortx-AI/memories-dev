@@ -41,6 +41,9 @@ build:
     - libxslt1-dev
   jobs:
     pre_build:
+      # Create and activate virtualenv
+      - python -m virtualenv .venv
+      - source .venv/bin/activate
       # Core setup
       - pip install --upgrade pip setuptools wheel
       - pip install -r docs/requirements-docs.txt
