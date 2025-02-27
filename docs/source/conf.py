@@ -63,15 +63,16 @@ html_css_files = ['css/custom.css']
 html_js_files = ['js/book.js']
 
 # LaTeX settings for PDF output
+latex_engine = 'pdflatex'
 latex_elements = {
     'papersize': 'letterpaper',
     'pointsize': '11pt',
     'figure_align': 'htbp',
     'preamble': r'''
-        \usepackage{fontspec}
-        \setmainfont{Crimson Pro}
-        \setsansfont{Source Sans Pro}
-        \setmonofont{Source Code Pro}
+        \usepackage[T1]{fontenc}
+        \usepackage{times}  % Use Times font instead
+        \usepackage{helvet}  % For sans serif
+        \usepackage{courier}  % For monospace
         
         \usepackage{geometry}
         \geometry{
@@ -126,16 +127,17 @@ latex_elements = {
     ''',
 }
 
+# Single PDF output configuration
 latex_documents = [
-    (master_doc, 'memory_codex.tex', 'Memory Codex',
-     author, 'manual'),
+    (master_doc, 'memory_codex.tex', 'Memory Codex Documentation',
+     author, 'manual', True)
 ]
 
-# PDF output settings
-pdf_documents = [(master_doc, 'memory_codex', 'Memory Codex', author)]
-pdf_stylesheets = ['sphinx', 'kerning', 'a4']
-pdf_use_index = False
-pdf_toc_depth = 3
+# Remove PDF output settings as we're using latex_documents
+del pdf_documents
+del pdf_stylesheets
+del pdf_use_index
+del pdf_toc_depth
 
 # Remove unused options
 html_theme_path = []
