@@ -32,15 +32,10 @@ m2r2>=0.3.3.post2
 rst2pdf>=0.100
 reportlab>=4.0.7
 svglib>=1.5.1
-latexmk>=4.77
-texlive-latex-base>=2022
-texlive-latex-extra>=2022
-texlive-fonts-recommended>=2022
 
 # Image processing
 pillow>=10.1.0
 cairosvg>=2.7.0
-imagemagick>=7.1.1
 
 # Version control integration
 sphinx-git>=11.0.0
