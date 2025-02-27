@@ -3,12 +3,48 @@ Resource Management
 ===================
 
 Overview
---------
-
-The Resource Management module provides advanced tools for sustainable resource allocation, planning, and impact assessment. This documentation demonstrates real-world implementations of Earth Memory for optimizing natural and built resource management.
+========
 
 System Architecture
-------------------
+==================
+
+Core Components
+==============
+
+Resource Inventory System
+=======================
+
+Resource Allocation System
+========================
+
+Impact Assessment
+===============
+
+Monitoring and Adaptation
+=======================
+
+Case Studies
+===========
+
+Water Resource Management
+=======================
+
+Forest Management
+===============
+
+Urban Resource Management
+=======================
+
+Visualization Dashboard
+=====================
+
+Integration with Decision Support Systems
+======================================
+
+Future Developments
+=================
+
+The Resource Management module provides advanced tools for sustainable resource allocation, planning, and impact assessment. This documentation demonstrates real-world implementations of Earth Memory for optimizing natural and built resource management.
 
 .. code-block:: text
 
@@ -27,11 +63,8 @@ System Architecture
                                    |                     |
                                    +---------------------+
 
-Core Components
---------------
-
 Resource Inventory System
-^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------
 
 The inventory system tracks available resources across spatial and temporal dimensions:
 
@@ -102,7 +135,7 @@ The inventory system tracks available resources across spatial and temporal dime
         return inventory
 
 Resource Allocation System
-^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------
 
 Optimize allocation of resources for multiple competing needs:
 
@@ -167,7 +200,7 @@ Optimize allocation of resources for multiple competing needs:
         return allocation_plan
 
 Impact Assessment
-^^^^^^^^^^^^^^^
+---------------
 
 Evaluate the impacts of resource allocation decisions:
 
@@ -246,7 +279,7 @@ Evaluate the impacts of resource allocation decisions:
         return impact_report
 
 Monitoring and Adaptation
-^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------
 
 Continuous monitoring and adaptive management:
 
@@ -319,10 +352,10 @@ Continuous monitoring and adaptive management:
         return adaptive_system
 
 Case Studies
------------
+===========
 
 Water Resource Management
-^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------
 
 Sustainable water management for a drought-prone region:
 
@@ -414,7 +447,7 @@ Sustainable water management for a drought-prone region:
     water_management_plan = implement_water_management(colorado_basin, planning_horizon=15)
 
 Forest Management
-^^^^^^^^^^^^^^^
+---------------
 
 Sustainable forest management with multiple objectives:
 
@@ -514,7 +547,7 @@ Sustainable forest management with multiple objectives:
     forest_plan = implement_forest_management(pacific_nw_forests)
 
 Urban Resource Management
-^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------
 
 Integrated urban resource management for a growing metropolitan area:
 
@@ -614,23 +647,53 @@ Integrated urban resource management for a growing metropolitan area:
     urban_plan = implement_urban_management(portland_metro, growth_scenario="sustainable")
 
 Visualization Dashboard
----------------------
+=====================
 
 The Resource Management module includes a comprehensive visualization dashboard:
 
-.. image:: /_static/metrics/system_performance_dashboard.png
-   :width: 100%
-   :alt: Resource Management Dashboard
+.. mermaid::
 
-Key dashboard features include:
-- Resource inventory visualization
-- Allocation optimization results
-- Impact assessment metrics
-- Monitoring and early warning indicators
-- Scenario comparison tools
+    graph TB
+        subgraph Performance["System Performance Metrics"]
+            subgraph Resources["Resource Utilization"]
+                R1[CPU Usage: 65%]
+                R2[Memory: 78%]
+                R3[Storage: 45%]
+                R4[Network: 32%]
+            end
+            
+            subgraph Response["Response Times"]
+                T1[Query Latency]
+                T2[Processing Time]
+                T3[Update Frequency]
+                T4[Batch Processing]
+            end
+            
+            subgraph Health["System Health"]
+                H1[Service Status]
+                H2[Error Rates]
+                H3[Recovery Time]
+                H4[Availability]
+            end
+        end
+        
+        style R1 fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px
+        style R2 fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px
+        style R3 fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px
+        style R4 fill:#a78bfa,stroke:#8b5cf6,stroke-width:2px
+        
+        style T1 fill:#f472b6,stroke:#ec4899,stroke-width:2px
+        style T2 fill:#f472b6,stroke:#ec4899,stroke-width:2px
+        style T3 fill:#f472b6,stroke:#ec4899,stroke-width:2px
+        style T4 fill:#f472b6,stroke:#ec4899,stroke-width:2px
+        
+        style H1 fill:#2dd4bf,stroke:#14b8a6,stroke-width:2px
+        style H2 fill:#2dd4bf,stroke:#14b8a6,stroke-width:2px
+        style H3 fill:#2dd4bf,stroke:#14b8a6,stroke-width:2px
+        style H4 fill:#2dd4bf,stroke:#14b8a6,stroke-width:2px
 
 Integration with Decision Support Systems
----------------------------------------
+======================================
 
 Earth Memory integration with decision support systems for resource management:
 

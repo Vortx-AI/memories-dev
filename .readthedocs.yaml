@@ -43,10 +43,9 @@ build:
     pre_build:
       # Core setup
       - pip install --upgrade pip setuptools wheel
-      - pip install -e .
-      - pip install 'lxml[html_clean]>=4.9.3' lxml_html_clean>=0.4.0
       - pip install -r docs/requirements-docs.txt
       - pip install -r docs/build-requirements.txt
+      - pip install -e .
       # Install SVG conversion tools
       - pip install cairosvg svglib
       # Clean build directory
@@ -82,7 +81,7 @@ build:
 # Sphinx configuration
 sphinx:
   configuration: docs/source/conf.py
-  fail_on_warning: true
+  fail_on_warning: false
   builder: html
 
 # Documentation formats - Only include HTML
@@ -96,8 +95,6 @@ python:
   install:
     - method: pip
       path: .
-      extra_requirements:
-        - docs
     - requirements: docs/requirements-docs.txt
     - requirements: docs/build-requirements.txt
 

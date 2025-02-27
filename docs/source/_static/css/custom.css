@@ -1,39 +1,277 @@
 /* Custom CSS for memories-dev documentation */
 
-/* Improve general readability */
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-    font-size: 16px;
-    line-height: 1.6;
-    color: #333;
+/* Book-like Typography and Layout */
+:root {
+    --text-color: #2c3e50;
+    --background-color: #fff9f2;
+    --link-color: #2c5282;
+    --border-color: #d1c4b6;
+    --heading-color: #1a202c;
+    --code-background: #f8f5f0;
+    --sidebar-background: #f4efe9;
+    --sidebar-width: 300px;
 }
 
-/* Fix navigation UI issues */
+/* Base Typography */
+body {
+    font-family: "Crimson Pro", "Palatino Linotype", Palatino, Palladio, "URW Palladio L", "Book Antiqua", Baskerville, "Bookman Old Style", "Bitstream Charter", "Nimbus Roman No9 L", Garamond, "Apple Garamond", "ITC Garamond Narrow", "New Century Schoolbook", "Century Schoolbook", "Century Schoolbook L", Georgia, serif;
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Content Layout */
+.wy-nav-content {
+    max-width: 42em !important;
+    margin: 0 auto !important;
+    padding: 3rem 2rem !important;
+    background-color: var(--background-color);
+}
+
+.wy-nav-content-wrap {
+    margin-left: var(--sidebar-width);
+    background: var(--background-color);
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Crimson Pro", Georgia, serif;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 2.5em 0 0.8em;
+    color: var(--heading-color);
+}
+
+h1 {
+    font-size: 2.5em;
+    text-align: center;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 0.5em;
+    margin-bottom: 1em;
+}
+
+h2 { 
+    font-size: 1.75em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.3em;
+}
+
+h3 { font-size: 1.5em; }
+h4 { font-size: 1.25em; }
+
+p {
+    margin: 0 0 1.5em;
+    text-align: justify;
+    hyphens: auto;
+}
+
+/* Links */
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+}
+
+a:hover {
+    border-bottom-color: var(--link-color);
+}
+
+/* Navigation */
 .wy-nav-side {
-    width: 300px;
+    width: var(--sidebar-width);
+    background-color: var(--sidebar-background);
+    border-right: 1px solid var(--border-color);
+    padding: 2rem 0;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    background-color: #1e293b; /* Consistent with hero banner */
-    z-index: 200; /* Ensure sidebar is above content on mobile */
 }
 
 .wy-side-nav-search {
-    background-color: #0f172a; /* Match hero gradient start */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: transparent;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem;
+    margin-bottom: 2rem;
 }
 
+.wy-menu-vertical {
+    padding: 1rem;
+}
+
+.wy-menu-vertical a {
+    color: var(--text-color);
+    padding: 0.5rem 1rem;
+    font-family: "Crimson Pro", Georgia, serif;
+    font-size: 1em;
+    display: block;
+}
+
+.wy-menu-vertical li.current > a {
+    background-color: transparent;
+    color: var(--link-color);
+    border-left: 2px solid var(--link-color);
+}
+
+/* Reading Progress */
+.reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 3px;
+    background: var(--link-color);
+    z-index: 1000;
+    transition: width 0.2s ease;
+}
+
+/* Code Blocks */
+pre, code {
+    font-family: "Source Code Pro", monospace;
+    font-size: 0.9em;
+    background-color: var(--code-background);
+    border: 1px solid var(--border-color);
+}
+
+pre {
+    padding: 1rem;
+    margin: 1.5em 0;
+    overflow-x: auto;
+}
+
+code {
+    padding: 0.2em 0.4em;
+}
+
+/* Tables */
+table.docutils {
+    width: 100%;
+    margin: 1.5em 0;
+    border-collapse: collapse;
+    border: 1px solid var(--border-color);
+}
+
+table.docutils td, 
+table.docutils th {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+}
+
+table.docutils thead th {
+    background-color: var(--sidebar-background);
+    font-weight: 700;
+    text-align: left;
+}
+
+/* Chapter Navigation */
+.chapter-nav {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    font-family: "Crimson Pro", Georgia, serif;
+    font-style: italic;
+}
+
+.prev-chapter::before {
+    content: "←";
+    margin-right: 0.5em;
+}
+
+.next-chapter::after {
+    content: "→";
+    margin-left: 0.5em;
+}
+
+/* Mobile Styles */
+@media screen and (max-width: 768px) {
+    :root {
+        --sidebar-width: 100%;
+    }
+
+    .wy-nav-side {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+    
+    .wy-nav-side.shift {
+        transform: translateX(0);
+    }
+    
+    .wy-nav-content-wrap {
+        margin-left: 0 !important;
+    }
+    
+    .wy-nav-content {
+        padding: 1rem !important;
+    }
+}
+
+/* Print Styles */
+@media print {
+    :root {
+        --background-color: white;
+        --text-color: black;
+    }
+
+    body {
+        font-size: 12pt;
+        line-height: 1.4;
+    }
+
+    .wy-nav-side, .reading-progress {
+        display: none;
+    }
+
+    .wy-nav-content-wrap {
+        margin: 0 !important;
+    }
+
+    .wy-nav-content {
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    a {
+        color: black;
+    }
+
+    pre, code {
+        border: 1px solid #ccc;
+        page-break-inside: avoid;
+    }
+
+    @page {
+        margin: 2.5cm;
+    }
+}
+
+/* Dark Theme */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-color: #e0e0e0;
+        --background-color: #1a1a1a;
+        --link-color: #63b3ed;
+        --border-color: #404040;
+        --heading-color: #e5e5e5;
+        --code-background: #2d2d2d;
+        --sidebar-background: #262626;
+    }
+}
+
+/* Fix navigation UI issues */
 .wy-nav-top {
     background-color: #0f172a; /* Match hero gradient start */
     color: white;
     z-index: 300; /* Ensure mobile nav is on top */
-}
-
-.wy-nav-content {
-    max-width: 1000px !important;
-    margin: 0 auto !important;
-    padding: 1.618em 3.236em !important;
-    width: 100% !important;
-    background-color: #ffffff;
 }
 
 /* Improved dropdown color consistency */

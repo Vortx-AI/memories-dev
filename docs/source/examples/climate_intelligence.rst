@@ -3,12 +3,12 @@ Climate Intelligence
 ===================
 
 Overview
---------
+========
 
 The Climate Intelligence module provides advanced climate analysis capabilities built on Earth Memory. This documentation explores how memory-based approaches can enhance climate pattern recognition, predictive modeling, and adaptation strategies.
 
 Core Capabilities
----------------
+===============
 
 .. code-block:: text
 
@@ -28,7 +28,7 @@ Core Capabilities
                                +------------------------+
 
 Climate Pattern Recognition
---------------------------
+=========================
 
 Leveraging Earth Memory for identifying climate patterns in temporal and spatial dimensions:
 
@@ -105,7 +105,7 @@ Leveraging Earth Memory for identifying climate patterns in temporal and spatial
     )
 
 Prediction Models
-----------------
+===============
 
 Building sophisticated prediction models with Earth Memory as a foundation:
 
@@ -210,7 +210,7 @@ Building sophisticated prediction models with Earth Memory as a foundation:
         }
 
 Climate Change Impact Analysis
-----------------------------
+===========================
 
 Assessing climate change impacts using Earth Memory:
 
@@ -291,7 +291,7 @@ Assessing climate change impacts using Earth Memory:
     impact_results = analyze_climate_impacts(midwest, timeframes)
 
 Adaptation Strategies
--------------------
+===================
 
 Using Earth Memory to develop and evaluate climate adaptation strategies:
 
@@ -355,13 +355,50 @@ Using Earth Memory to develop and evaluate climate adaptation strategies:
         }
 
 Interactive Dashboard
--------------------
+===================
 
 Climate Intelligence insights are available through an interactive dashboard:
 
-.. image:: /_static/metrics/data_quality_dashboard.png
-   :width: 100%
-   :alt: Climate Intelligence Dashboard
+.. mermaid::
+
+    graph TB
+        subgraph DataQuality["Data Quality Metrics"]
+            subgraph Completeness["Data Completeness"]
+                C1[Temporal Coverage: 98%]
+                C2[Spatial Coverage: 95%]
+                C3[Variable Coverage: 97%]
+                C4[Missing Data: 2.5%]
+            end
+            
+            subgraph Accuracy["Data Accuracy"]
+                A1[Sensor Calibration]
+                A2[Validation Status]
+                A3[Error Margins]
+                A4[Confidence Levels]
+            end
+            
+            subgraph Sources["Data Sources"]
+                S1[Satellite Data]
+                S2[Ground Stations]
+                S3[Ocean Buoys]
+                S4[Weather Stations]
+            end
+        end
+        
+        style C1 fill:#34d399,stroke:#059669,stroke-width:2px
+        style C2 fill:#34d399,stroke:#059669,stroke-width:2px
+        style C3 fill:#34d399,stroke:#059669,stroke-width:2px
+        style C4 fill:#34d399,stroke:#059669,stroke-width:2px
+        
+        style A1 fill:#818cf8,stroke:#6366f1,stroke-width:2px
+        style A2 fill:#818cf8,stroke:#6366f1,stroke-width:2px
+        style A3 fill:#818cf8,stroke:#6366f1,stroke-width:2px
+        style A4 fill:#818cf8,stroke:#6366f1,stroke-width:2px
+        
+        style S1 fill:#fb923c,stroke:#f97316,stroke-width:2px
+        style S2 fill:#fb923c,stroke:#f97316,stroke-width:2px
+        style S3 fill:#fb923c,stroke:#f97316,stroke-width:2px
+        style S4 fill:#fb923c,stroke:#f97316,stroke-width:2px
 
 Key features include:
 - Temperature trend analysis with anomaly detection
@@ -371,7 +408,7 @@ Key features include:
 - Adaptation strategy comparison tools
 
 Integration with ML Systems
--------------------------
+=========================
 
 Earth Memory provides a foundation for advanced ML-based climate analysis:
 
@@ -475,7 +512,7 @@ Earth Memory provides a foundation for advanced ML-based climate analysis:
         return projections
 
 Case Study: Urban Heat Island Mitigation
----------------------------------------
+======================================
 
 A comprehensive case study on urban heat island mitigation using Climate Intelligence:
 
@@ -582,7 +619,7 @@ A comprehensive case study on urban heat island mitigation using Climate Intelli
     phoenix_heat_study = analyze_urban_heat_island(phoenix, summer_2022)
 
 Future Developments
------------------
+=================
 
 Upcoming enhancements to the Climate Intelligence module:
 

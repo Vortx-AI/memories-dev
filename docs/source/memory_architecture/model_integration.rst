@@ -1,3 +1,6 @@
+Model Integration Architecture
+==========================
+
 .. mermaid::
 
     flowchart TD

@@ -24,7 +24,26 @@ Earth Memory is the core concept behind the memories-dev framework, providing AI
        <p>Earth Memory provides AI with direct access to objective Earth observation data, eliminating hallucinations and biases inherent in text-based training.</p>
      </div>
      <div class="banner-image">
-       <img src="../_static/earth_memory_concept.png" alt="Earth Memory Concept">
+       .. mermaid::
+
+          graph TB
+              subgraph "Earth Memory System"
+                  A[Satellite Data] --> D[Memory Core]
+                  B[Sensor Networks] --> D
+                  C[Environmental Data] --> D
+                  D --> E[AI System]
+                  D --> F[Analysis Engine]
+                  F --> G[Temporal Analysis]
+                  F --> H[Spatial Analysis]
+                  F --> I[Pattern Recognition]
+                  G --> J[Insights]
+                  H --> J
+                  I --> J
+                  J --> E
+              end
+              style D fill:#0f172a,stroke:#3b82f6,color:#fff
+              style E fill:#1e293b,stroke:#3b82f6,color:#fff
+              style F fill:#1e293b,stroke:#3b82f6,color:#fff
      </div>
    </div>
 

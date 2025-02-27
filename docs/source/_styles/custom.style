@@ -1,67 +1,99 @@
-
 {
     "pageSetup": {
         "size": "letter",
         "width": null,
         "height": null,
-        "margin-top": "2cm",
-        "margin-bottom": "2cm",
-        "margin-left": "2cm",
-        "margin-right": "2cm",
-        "margin-gutter": "0cm",
-        "spacing-header": "5mm",
-        "spacing-footer": "5mm",
-        "firstTemplate": "oneColumn"
+        "margin-top": "2.5cm",
+        "margin-bottom": "2.5cm",
+        "margin-left": "2.5cm",
+        "margin-right": "2.5cm",
+        "margin-gutter": "0.5cm",
+        "spacing-header": "1cm",
+        "spacing-footer": "1cm",
+        "firstTemplate": "bookPage"
     },
     "pageTemplates": {
-        "oneColumn": {
+        "bookPage": {
             "frames": [
                 ["0", "0", "100%", "100%"]
             ],
             "showHeader": true,
             "showFooter": true,
             "defaultFooter": "###Page###",
-            "defaultHeader": "Memories-Dev Documentation"
+            "defaultHeader": "Memory Codex"
         }
     },
     "fontsAlias": {
-        "stdFont": "Helvetica",
-        "stdBold": "Helvetica-Bold",
-        "stdItalic": "Helvetica-Oblique",
-        "stdBoldItalic": "Helvetica-BoldOblique",
-        "stdMono": "Courier",
-        "stdMonoBold": "Courier-Bold",
-        "stdMonoItalic": "Courier-Oblique",
-        "stdMonoBoldItalic": "Courier-BoldOblique"
+        "stdFont": "Crimson",
+        "stdBold": "Crimson-Bold",
+        "stdItalic": "Crimson-Italic",
+        "stdBoldItalic": "Crimson-BoldItalic",
+        "stdMono": "Source Code Pro",
+        "stdMonoBold": "Source Code Pro Bold",
+        "stdMonoItalic": "Source Code Pro Italic",
+        "stdMonoBoldItalic": "Source Code Pro Bold Italic"
     },
     "styles": {
         "base": {
             "fontName": "stdFont",
-            "fontSize": 10,
-            "leading": 12
+            "fontSize": 11,
+            "leading": 16,
+            "alignment": "justify"
         },
         "heading1": {
             "fontName": "stdBold",
             "fontSize": 24,
-            "leading": 28,
-            "spaceAfter": 12
+            "leading": 32,
+            "spaceAfter": 24,
+            "alignment": "center",
+            "borderBottom": true,
+            "borderWidth": 0.5,
+            "borderColor": "#d1c4b6",
+            "borderPadding": 8
         },
         "heading2": {
             "fontName": "stdBold",
             "fontSize": 18,
-            "leading": 22,
-            "spaceAfter": 10
+            "leading": 24,
+            "spaceAfter": 16,
+            "spaceBefore": 32,
+            "borderBottom": true,
+            "borderWidth": 0.25,
+            "borderColor": "#d1c4b6",
+            "borderPadding": 6
         },
         "heading3": {
             "fontName": "stdBold",
             "fontSize": 14,
-            "leading": 18,
-            "spaceAfter": 8
+            "leading": 20,
+            "spaceAfter": 12,
+            "spaceBefore": 24
         },
         "code": {
             "fontName": "stdMono",
-            "fontSize": 8,
-            "leading": 10
+            "fontSize": 9,
+            "leading": 12,
+            "backColor": "#f8f5f0",
+            "borderWidth": 0.5,
+            "borderColor": "#d1c4b6",
+            "borderPadding": 6
+        },
+        "blockquote": {
+            "fontName": "stdItalic",
+            "fontSize": 11,
+            "leading": 16,
+            "leftIndent": 20,
+            "rightIndent": 20,
+            "spaceBefore": 12,
+            "spaceAfter": 12
+        },
+        "table": {
+            "commands": [
+                ["ALIGN", [0, 0], [-1, -1], "LEFT"],
+                ["FONTNAME", [0, 0], [-1, 0], "stdBold"],
+                ["LINEBELOW", [0, 0], [-1, 0], 0.5, "#d1c4b6"],
+                ["ROWBACKGROUNDS", [0, 1], [-1, -1], ["#ffffff", "#f8f5f0"]]
+            ]
         }
     }
 }

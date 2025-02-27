@@ -1,20 +1,53 @@
-======================
-Memory Codex Overview
-======================
+A New Framework for Earth-Grounded AI
+==================================
 
 .. contents:: Chapter Contents
    :local:
    :depth: 2
 
-A New Framework for Earth-Grounded AI
------------------------------
-
 The Memory Codex represents a transformative approach to artificial intelligence, grounding AI systems in Earth's observable reality through structured, scientifically rigorous memory. Unlike conventional AI systems that operate primarily on linguistic or mathematical abstractions, Memory Codex-enabled systems develop deep understanding of our planet's physical processes, ecological dynamics, and environmental patterns.
 
-.. image:: /_static/images/memory_codex_overview.png
-   :alt: Memory Codex Framework Overview
-   :align: center
-   :width: 90%
+.. mermaid::
+
+   graph TB
+       subgraph "Memory Codex Framework"
+           subgraph "Data Sources"
+               A1[Satellites] --> D
+               A2[Sensors] --> D
+               A3[Scientific Data] --> D
+               A4[Historical Records] --> D
+           end
+           
+           subgraph "Memory System"
+               D[Data Integration] --> E[Memory Core]
+               E --> F1[Hot Memory]
+               E --> F2[Warm Memory]
+               E --> F3[Cold Memory]
+               E --> F4[Glacier Memory]
+           end
+           
+           subgraph "Analysis Layer"
+               F1 & F2 & F3 & F4 --> G[Analysis Engine]
+               G --> H1[Temporal Analysis]
+               G --> H2[Spatial Analysis]
+               G --> H3[Pattern Recognition]
+               G --> H4[Scientific Validation]
+           end
+           
+           subgraph "AI Interface"
+               H1 & H2 & H3 & H4 --> I[Knowledge Integration]
+               I --> J[Earth-Grounded AI]
+           end
+       end
+       
+       style E fill:#0f172a,stroke:#3b82f6,color:#fff
+       style G fill:#1e293b,stroke:#3b82f6,color:#fff
+       style I fill:#2c3e50,stroke:#3b82f6,color:#fff
+       style J fill:#374151,stroke:#3b82f6,color:#fff
+       style F1 fill:#ff6b6b,stroke:#333,color:#fff
+       style F2 fill:#4ecdc4,stroke:#333,color:#fff
+       style F3 fill:#45b7d1,stroke:#333,color:#fff
+       style F4 fill:#2c3e50,stroke:#333,color:#fff
 
 Through this framework, AI transitions from a disembodied information processor to an Earth-aware intelligence with the ability to reason about our planet across spatial and temporal scales, from microseconds to geological epochs, from microscopic processes to global systems.
 
@@ -50,7 +83,7 @@ Memory Codex addresses these limitations by providing AI with:
 - **Scientific consistency enforcement** through physical constraints and domain knowledge
 
 Core Principles
---------------
+=============
 
 The Memory Codex framework is built upon five core principles:
 
@@ -75,14 +108,64 @@ The Memory Codex framework is built upon five core principles:
    The Memory Codex transcends traditional disciplinary boundaries, enabling AI to understand connections between Earth subsystems and develop holistic environmental understanding.
 
 Framework Architecture
---------------------
+===================
 
 The Memory Codex architecture consists of four primary components:
 
-.. image:: /_static/images/memory_architecture.png
-   :alt: Memory Codex Architecture
-   :align: center
-   :width: 85%
+.. mermaid::
+
+    graph TB
+        subgraph DataSources["Data Sources"]
+            S1[Satellites]
+            S2[Ground Sensors]
+            S3[Scientific Records]
+            S4[Historical Data]
+        end
+
+        subgraph MemoryTiers["Memory Tiers"]
+            M1[Hot Memory]
+            M2[Warm Memory]
+            M3[Cold Memory]
+            M4[Glacier Memory]
+        end
+
+        subgraph Processing["Processing Layer"]
+            P1[Data Integration]
+            P2[Memory Formation]
+            P3[Pattern Recognition]
+            P4[Scientific Validation]
+        end
+
+        subgraph Interface["AI Interface"]
+            I1[Knowledge Graph]
+            I2[Query Engine]
+            I3[Reasoning System]
+            I4[Earth-Grounded AI]
+        end
+
+        DataSources --> Processing
+        Processing --> MemoryTiers
+        MemoryTiers --> Interface
+
+        style S1 fill:#4299e1,stroke:#2b6cb0,stroke-width:2px
+        style S2 fill:#4299e1,stroke:#2b6cb0,stroke-width:2px
+        style S3 fill:#4299e1,stroke:#2b6cb0,stroke-width:2px
+        style S4 fill:#4299e1,stroke:#2b6cb0,stroke-width:2px
+        
+        style M1 fill:#48bb78,stroke:#2f855a,stroke-width:2px
+        style M2 fill:#48bb78,stroke:#2f855a,stroke-width:2px
+        style M3 fill:#48bb78,stroke:#2f855a,stroke-width:2px
+        style M4 fill:#48bb78,stroke:#2f855a,stroke-width:2px
+        
+        style P1 fill:#9f7aea,stroke:#6b46c1,stroke-width:2px
+        style P2 fill:#9f7aea,stroke:#6b46c1,stroke-width:2px
+        style P3 fill:#9f7aea,stroke:#6b46c1,stroke-width:2px
+        style P4 fill:#9f7aea,stroke:#6b46c1,stroke-width:2px
+        
+        style I1 fill:#ed8936,stroke:#c05621,stroke-width:2px
+        style I2 fill:#ed8936,stroke:#c05621,stroke-width:2px
+        style I3 fill:#ed8936,stroke:#c05621,stroke-width:2px
+        style I4 fill:#ed8936,stroke:#c05621,stroke-width:2px
 
 1. **Memory Tiers**
 
@@ -127,7 +210,7 @@ The Memory Codex architecture consists of four primary components:
    - Enables counterfactual analysis and scenario exploration
 
 Epistemological Foundation
-------------------------
+=======================
 
 The Memory Codex establishes a rigorous epistemological foundation for Earth-grounded AI, defining how systems come to know and understand our planet:
 
@@ -156,7 +239,7 @@ The Memory Codex establishes a rigorous epistemological foundation for Earth-gro
    Knowledge derives from diverse information sources—numeric measurements, geographic data, textual descriptions, visual imagery—integrated into coherent understanding.
 
 Implementation Approach
----------------------
+====================
 
 The Memory Codex framework can be implemented through several complementary approaches:
 
@@ -199,7 +282,7 @@ The Memory Codex framework can be implemented through several complementary appr
    - Global integrated understanding
 
 Applications and Capabilities
----------------------------
+=========================
 
 Earth-grounded AI systems built on the Memory Codex framework enable new capabilities across domains:
 
@@ -239,7 +322,7 @@ Earth-grounded AI systems built on the Memory Codex framework enable new capabil
    - Monitoring of policy effectiveness through observed outcomes
 
 Ethical Considerations
---------------------
+===================
 
 The Memory Codex framework embraces several ethical principles:
 
@@ -264,7 +347,7 @@ The Memory Codex framework embraces several ethical principles:
    Uncertainty representation enables appropriate application of the precautionary principle in environmental decision contexts.
 
 Getting Started
--------------
+============
 
 To begin working with the Memory Codex framework, you'll need to:
 

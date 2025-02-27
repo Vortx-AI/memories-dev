@@ -1,247 +1,92 @@
-.. memories-dev documentation master file
+.. memories-dev documentation master file, version 2.0.2
 
-Welcome to memories-dev
-=====================
+==================================================
+Memory Codex: Earth-Grounded AI Memory Systems
+==================================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Getting Started
-   :hidden:
-
-   getting_started/quickstart
-   getting_started/installation
-   getting_started/configuration
-   getting_started/examples
-   getting_started/best_practices
-
-.. toctree::
-   :maxdepth: 2
-   :caption: User Guide
-   :hidden:
-
-   user_guide/index
-   user_guide/configuration
-   user_guide/data_sources
-   user_guide/models
-   user_guide/deployment
-   user_guide/best_practices
-   user_guide/examples
-
-.. toctree::
-   :maxdepth: 2
-   :caption: API Reference
-   :hidden:
-
-   api_reference/index
-   api_reference/memory
-   api_reference/deployment
-   api_reference/sentinel_api
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Memory Architecture
-   :hidden:
-
-   memory_architecture/index
-   memory_architecture/temporal_memory
-   memory_architecture/spatial_memory
-   memory_architecture/memory_system
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Algorithms
-   :hidden:
-
-   algorithms/index
-   algorithms/spatial_interpolation
-   algorithms/viewshed_analysis
-   algorithms/change_detection
-   algorithms/trend_analysis
-   algorithms/forecasting
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Applications
-   :hidden:
-
-   applications/index
-   examples/biodiversity_monitoring
-   examples/advanced_memory_retrieval
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Development
-   :hidden:
-
-   contributing
-   changelog
-   code_catalog/index
-   comparisons/index
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Additional Resources
-   :hidden:
-
-   architecture
-   function_index/index
-   matrix_theme_guide
-
-=====================================
-memories-dev: Earth-Grounded AI Framework
-=====================================
-
-.. image:: https://img.shields.io/badge/version-2.0.2-blue.svg
-   :target: https://github.com/Vortx-AI/memories-dev
-   :alt: Version
-
-.. image:: https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue
-   :target: https://pypi.org/project/memories-dev/
-   :alt: Python Versions
+.. image:: _static/images/memory_codex_cover.png
+   :align: center
+   :width: 600px
+   :alt: Memory Codex - Bridging AI and Human Memory
 
 .. image:: https://img.shields.io/badge/license-Apache%202.0-blue.svg
    :target: https://opensource.org/licenses/Apache-2.0
-   :alt: License
+   :alt: License: Apache 2.0
 
-.. image:: https://img.shields.io/badge/docs-latest-brightgreen.svg
-   :target: https://memories-dev.readthedocs.io/
-   :alt: Documentation
+Welcome to Memory Codex, a framework that reimagines how artificial intelligence understands, stores, and retrieves information. This book guides you through the journey of creating AI systems with deep understanding of Earth's systems through scientifically rigorous memory.
 
-.. image:: https://img.shields.io/badge/code%20style-black-black
-   :target: https://github.com/psf/black
-   :alt: Code Style
-
-memories-dev is a Python package that provides a structured framework for building AI systems with deep understanding of Earth's systems through scientifically rigorous memory.
-
+Contents
+========
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
-   :caption: Documentation
+   :numbered:
 
-   ai_integration/index
-   core_api/data_integration
-   installation/advanced
-   matrix_theme_guide
-   memory_architecture/spatial_memory
-   memory_architecture/temporal_memory
+   preface
+   getting_started/index
+   core_concepts/index
+   memory_architecture/index
+   memory_types/index
+   earth_memory/index
+   integration/index
+   applications/index
+   api_reference/index
 
-What is memories-dev?
--------------------
+.. toctree::
+   :maxdepth: 1
+   :caption: Appendices
 
-memories-dev enables AI systems to develop genuine comprehension of our planet's past, present, and possible futures through:
+   appendix/system_dependencies
+   appendix/configuration_reference
+   appendix/glossary
+   license
+   privacy
 
-* **Structured Earth Memory**: Organized information that reflects natural systems and their relationships
-* **Multi-modal Data Integration**: Unified satellite imagery, sensor networks, and environmental metrics
-* **Temporal Understanding**: Tracking changes across multiple timescales from days to decades
-* **Spatial Intelligence**: Accurate reasoning about geographic locations and their interconnections
-* **Scientific Integrity**: Rigorous standards including uncertainty quantification and provenance tracking
+About This Book
+===============
 
-Quick Installation
-----------------
-
-Install using pip:
-
-.. code-block:: bash
-
-   pip install memories-dev
-
-Or from source:
-
-.. code-block:: bash
-
-   git clone https://github.com/your-username/memories-dev.git
-   cd memories-dev
-   pip install -e .
-
-Getting Started
--------------
-
-Here's a simple example to get started with the memories-dev framework:
-
-.. code-block:: python
-
-   from memories.earth import Observatory
-   
-   # Create an Earth Observatory
-   observatory = Observatory(name="my-observatory")
-   
-   # Configure observation sources
-   observatory.add_source(
-       name="satellite-imagery",
-       source_type="remote-sensing",
-       provider="sentinel-2",
-       update_frequency="5d"
-   )
-   
-   # Initialize memory systems
-   hot_memory = observatory.create_memory_tier(
-       name="real-time",
-       tier_type="hot",
-       retention_period="30d"
-   )
-   
-   warm_memory = observatory.create_memory_tier(
-       name="seasonal",
-       tier_type="warm",
-       retention_period="5y"
-   )
-   
-   # Begin observation collection
-   observatory.start()
-   
-   # Query Earth Memory
-   vegetation_trends = observatory.query(
-       observation_type="ndvi",
-       region="amazon-basin",
-       time_range=("2020-01-01", "present"),
-       aggregation="monthly-mean"
-   )
-   
-   # Visualize results
-   observatory.visualize(
-       data=vegetation_trends,
-       plot_type="time-series",
-       overlay="precipitation",
-       title="Amazon Vegetation Response to Rainfall Patterns"
-   )
+This book serves as both a practical guide and a conceptual exploration of Earth-grounded AI. Each chapter builds upon the previous ones, taking you from fundamental concepts to advanced applications.
 
 Key Features
------------
+============
 
-- **Memory Tiers**: Organize Earth observations by temporal relevance (Hot, Warm, Cold, Glacier)
-- **Earth Observatory**: Unified interface for data collection and analysis
-- **Spatial Understanding**: Geographic and topological reasoning capabilities
-- **Temporal Analysis**: Multi-scale time series analysis and pattern detection
-- **Scientific Validation**: Built-in uncertainty quantification and validation tools
-- **Visualization**: Rich visualization tools for Earth data and analysis results
-- **Model Integration**: Simple interfaces for machine learning and simulation models
+* Structured Earth Memory: Organization of observations into scientifically rigorous memory structures
+* Temporal Awareness: Memory management across multiple timescales
+* Cross-Domain Integration: Unified knowledge across Earth's systems
+* Scientific Consistency: AI reasoning grounded in physical laws
+* Observation Grounding: Empirical observations with uncertainty quantification
 
-Documentation Structure
---------------------
+How to Use This Book
+====================
 
-* **Getting Started**: Installation, configuration, and basic concepts
-* **Core Concepts**: Memory architecture, Earth Observatory, and key components
-* **Memory Types**: Different types of memory and their applications
-* **Implementation**: Practical implementation guides and best practices
-* **API Reference**: Detailed API documentation for all modules
-* **Examples**: Real-world examples and case studies
-* **Contributing**: Guidelines for contributing to the project
+The Journey to Earth-Grounded AI
+===============================
 
-.. note::
+Indices and tables
+=================
 
-   memories-dev is designed to be a foundational technology for Earth-grounded AI. This documentation serves both as a practical guide to implementation and as a conceptual exploration of how AI can develop deeper understanding of our planet.
+🏙️ Advanced Analysis
+====================
+
+We recommend reading the chapters in sequence, as each builds upon concepts introduced in previous sections. However, experienced practitioners may choose to focus on specific sections relevant to their needs.
+
+* Start with the :doc:`preface` for an overview
+* Follow :doc:`getting_started/index` for installation and basic setup
+* Deep dive into :doc:`core_concepts/index` for theoretical foundations
+* Explore :doc:`applications/index` for practical implementations
+
+For the latest updates and community discussions, visit our `GitHub repository <https://github.com/Vortx-AI/memories-dev>`_.
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
-   :caption: Navigation
+   :caption: Table of Contents
+   :local:
+   :backlinks: none
 
    table_of_contents
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
    :caption: Core Concepts
 
    core_concepts/index
@@ -253,7 +98,6 @@ Documentation Structure
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
    :caption: Memory Types
 
    memory_types/index
@@ -264,7 +108,6 @@ Documentation Structure
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
    :caption: Earth Memory
 
    earth_memory/index
@@ -275,7 +118,6 @@ Documentation Structure
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
    :caption: Memory Codex
 
    memory_codex/index
@@ -285,7 +127,6 @@ Documentation Structure
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
    :caption: Implementation
 
    setup/observatory
@@ -296,7 +137,6 @@ Documentation Structure
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
    :caption: Applications
 
    applications/index
@@ -308,7 +148,6 @@ Documentation Structure
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
    :caption: Technical Reference
 
    api_reference/index
@@ -321,7 +160,6 @@ Documentation Structure
 
 .. toctree::
    :maxdepth: 2
-   :hidden:
    :caption: Development
 
    algorithms/index
@@ -336,14 +174,12 @@ Documentation Structure
 
 .. toctree::
    :maxdepth: 1
-   :hidden:
    :caption: Community
 
    contributing/index
    
 .. toctree::
    :maxdepth: 1
-   :hidden:
    :caption: Legal
 
    license
@@ -361,7 +197,7 @@ Documentation Structure
    </div>
 
 Features
---------
+========
 
 * **Structured Earth Memory**: Organize observations into scientifically rigorous memory structures
 * **Temporal Awareness**: Maintain memory across multiple timescales, from real-time to geological
@@ -370,7 +206,7 @@ Features
 * **Observation Grounding**: Root all understanding in empirical observations with proper uncertainty quantification
 
 Quick Start
------------
+===========
 
 .. code-block:: python
 
@@ -424,7 +260,7 @@ Quick Start
    The Memory Codex framework is designed to be a foundational technology for Earth-grounded AI. This documentation serves both as a practical guide to implementation and as a conceptual exploration of how AI can develop deeper understanding of our planet.
 
 The Journey to Earth-Grounded AI
-================================
+==============================
 
 This codex is more than documentation—it's a comprehensive guide to creating AI that truly understands our world. As you progress through these chapters, you'll discover how to bridge the gap between artificial intelligence and Earth's observable reality.
 
@@ -464,7 +300,7 @@ You'll discover:
 - Practical implementations across diverse domains
 
 Indices and tables
-==================
+================
 
 * :ref:`genindex`
 * :ref:`modindex`
@@ -489,7 +325,118 @@ Indices and tables
    :caption: API Reference
 
    api_reference/index
-   api_reference/memory
+   api_reference/sentinel_api
+   api_reference/deployment
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Examples & Applications
+
+   examples/biodiversity_monitoring
+   examples/advanced_memory_retrieval
+   applications/index
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Development
+
+   contributing
+   changelog
+   architecture
+   matrix_theme_guide
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Additional Resources
+   :hidden:
+
+   algorithms/index
+   code_catalog/index
+   comparisons/index
+   function_index/index
+   metrics/environmental_metrics
+   metrics/performance
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Memory Architecture
+
+   memory_architecture/spatial_memory
+   memory_architecture/temporal_memory
+   memory_architecture/tiered_memory
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Applications
+
+   applications/index
+   examples/biodiversity_monitoring
+   examples/advanced_memory_retrieval
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Development
+
+   contributing
+   changelog
+   architecture
+   matrix_theme_guide
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Additional Resources
+   :hidden:
+
+   algorithms/index
+   code_catalog/index
+   comparisons/index
+   function_index/index
+   metrics/environmental_metrics
+   metrics/performance
+
+🌍 Environmental Monitoring
+===========================
+
+🏙️ Advanced Analysis
+====================
+
+How to Use This Book
+====================
+
+The Journey to Earth-Grounded AI
+===============================
+
+Indices and tables
+=================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: User Guide
+
+   user_guide/index
+   user_guide/best_practices
+   user_guide/configuration
+   user_guide/deployment
+   user_guide/examples
+   user_guide/models
+   user_guide/data_sources
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: API Reference
+
+   api_reference/index
    api_reference/sentinel_api
    api_reference/deployment
 

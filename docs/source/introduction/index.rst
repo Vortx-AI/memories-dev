@@ -1,13 +1,9 @@
-=====================
+=============================
 The Genesis of Earth Memory
-=====================
-
-.. contents:: Chapter Contents
-   :local:
-   :depth: 2
+=============================
 
 The Quest for Grounded Intelligence
---------------------------
+==================================
 
 In the expanding universe of artificial intelligence, a critical problem persists: AI systems capable of remarkable computational feats yet fundamentally disconnected from Earth's physical reality. These systems—trained on internet text and images—lack direct grounding in our world's true state. This disconnection is the starting point of our journey with The Memory Codex.
 
@@ -24,7 +20,7 @@ The Memory Codex began with a profound question: *What if AI could directly reme
    </div>
 
 The Reality Gap in AI
--------------------
+====================
 
 Consider how fundamentally our own intelligence is shaped by Earth—its geography, climate patterns, seasonal changes, and physical laws. Our understanding of the world has evolved through direct observation and interaction with our planet's realities over millennia.
 
@@ -48,13 +44,63 @@ Current limitations include:
 
 These limitations extend far beyond simple factual errors. They fundamentally restrict AI's ability to reason about our world in ways that humans naturally do.
 
-.. image:: /_static/images/earth_memory_concept.png
-   :alt: Earth Memory Concept
-   :align: center
-   :width: 90%
+.. mermaid::
+
+    graph TB
+        subgraph EarthSystems["Earth Systems"]
+            E1[Atmosphere]
+            E2[Hydrosphere]
+            E3[Biosphere]
+            E4[Geosphere]
+        end
+
+        subgraph ObservationLayer["Observation Layer"]
+            O1[Satellites]
+            O2[Ground Sensors]
+            O3[Scientific Instruments]
+            O4[Historical Records]
+        end
+
+        subgraph MemorySystem["Memory System"]
+            M1[Real-time State]
+            M2[Pattern Recognition]
+            M3[Historical Context]
+            M4[Scientific Knowledge]
+        end
+
+        subgraph AI["Earth-Grounded AI"]
+            A1[Spatial Reasoning]
+            A2[Temporal Understanding]
+            A3[System Dynamics]
+            A4[Predictive Modeling]
+        end
+
+        EarthSystems --> ObservationLayer
+        ObservationLayer --> MemorySystem
+        MemorySystem --> AI
+
+        style E1 fill:#2c5282,stroke:#2a4365,stroke-width:2px,color:white
+        style E2 fill:#2c5282,stroke:#2a4365,stroke-width:2px,color:white
+        style E3 fill:#2c5282,stroke:#2a4365,stroke-width:2px,color:white
+        style E4 fill:#2c5282,stroke:#2a4365,stroke-width:2px,color:white
+
+        style O1 fill:#2f855a,stroke:#276749,stroke-width:2px,color:white
+        style O2 fill:#2f855a,stroke:#276749,stroke-width:2px,color:white
+        style O3 fill:#2f855a,stroke:#276749,stroke-width:2px,color:white
+        style O4 fill:#2f855a,stroke:#276749,stroke-width:2px,color:white
+
+        style M1 fill:#6b46c1,stroke:#553c9a,stroke-width:2px,color:white
+        style M2 fill:#6b46c1,stroke:#553c9a,stroke-width:2px,color:white
+        style M3 fill:#6b46c1,stroke:#553c9a,stroke-width:2px,color:white
+        style M4 fill:#6b46c1,stroke:#553c9a,stroke-width:2px,color:white
+
+        style A1 fill:#c05621,stroke:#9c4221,stroke-width:2px,color:white
+        style A2 fill:#c05621,stroke:#9c4221,stroke-width:2px,color:white
+        style A3 fill:#c05621,stroke:#9c4221,stroke-width:2px,color:white
+        style A4 fill:#c05621,stroke:#9c4221,stroke-width:2px,color:white
 
 A Revolutionary Approach
-------------------
+======================
 
 The Memory Codex takes inspiration from Earth science, remote sensing, and geographic information systems to create a fundamentally new approach to AI memory:
 
@@ -87,7 +133,7 @@ Rather than simulating knowledge about Earth, The Memory Codex creates a practic
 This approach transforms AI interactions from plausible fiction to grounded truth about our planet.
 
 Beyond Text Corpora: A New Data Paradigm
--------------------------
+=====================================
 
 While Large Language Models are built on internet text corpora, The Memory Codex represents a distinct paradigm based on Earth observation:
 
@@ -111,7 +157,7 @@ While Large Language Models are built on internet text corpora, The Memory Codex
 This framework represents a fundamental shift in how we ground AI systems in reality, creating a verifiable connection to our planet's actual state.
 
 Vision and Scientific Principles
--------------------
+=============================
 
 The Memory Codex is guided by four scientific principles:
 
@@ -126,7 +172,7 @@ The Memory Codex is guided by four scientific principles:
 These principles inform both the technical architecture and the scientific methodology woven throughout the framework.
 
 Applications and Transformative Potential
-----------------------------
+=====================================
 
 The implications of Earth-grounded AI extend across domains:
 
@@ -143,7 +189,7 @@ The implications of Earth-grounded AI extend across domains:
 Ultimately, The Memory Codex aims to address one of the most significant limitations in current AI: the disconnection from Earth's physical reality that leads to hallucinations and factual errors.
 
 The Chapters Ahead
-----------------
+================
 
 This codex will guide you through the Earth Memory framework, from scientific foundations to practical implementations:
 

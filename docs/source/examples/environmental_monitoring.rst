@@ -3,12 +3,12 @@ Environmental Monitoring
 ==========================
 
 Overview
---------
+========
 
 The environmental monitoring module provides real-time and historical analysis of environmental conditions. This documentation explores practical implementations and case studies demonstrating how Earth Memory can be used for sophisticated environmental monitoring.
 
 System Architecture
-------------------
+===================
 
 .. code-block:: text
 
@@ -28,7 +28,7 @@ System Architecture
                                  +--------------------+
 
 Core Components
---------------
+==============
 
 1. **Data Collection**
    
@@ -113,10 +113,10 @@ Core Components
        )
 
 Real-world Case Studies
-----------------------
+=====================
 
 Urban Air Quality Monitoring
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==========================
 
 Implementing a comprehensive air quality monitoring system for urban areas:
 
@@ -181,7 +181,7 @@ Implementing a comprehensive air quality monitoring system for urban areas:
         }
 
 Forest Health Assessment
-^^^^^^^^^^^^^^^^^^^^^^^
+======================
 
 Monitoring forest ecosystem health using multi-spectral satellite imagery:
 
@@ -260,16 +260,53 @@ Monitoring forest ecosystem health using multi-spectral satellite imagery:
         return report
 
 Visualization Dashboard
-----------------------
+=====================
 
 The environmental monitoring system includes a comprehensive visualization dashboard:
 
-.. image:: /_static/metrics/analyzer_accuracy_dashboard.png
-   :width: 100%
-   :alt: Environmental Monitoring Dashboard
+.. mermaid::
+
+    graph TB
+        subgraph Metrics["Analyzer Accuracy Metrics"]
+            subgraph Performance["Performance Indicators"]
+                P1[Precision: 95%]
+                P2[Recall: 92%]
+                P3[F1 Score: 93.5%]
+                P4[Accuracy: 94%]
+            end
+            
+            subgraph Trends["Temporal Trends"]
+                T1[Daily Accuracy]
+                T2[Weekly Average]
+                T3[Monthly Trend]
+                T4[Seasonal Pattern]
+            end
+            
+            subgraph Types["Analysis Types"]
+                A1[Vegetation Analysis]
+                A2[Water Quality]
+                A3[Air Quality]
+                A4[Soil Composition]
+            end
+        end
+        
+        style P1 fill:#4ade80,stroke:#22c55e,stroke-width:2px
+        style P2 fill:#4ade80,stroke:#22c55e,stroke-width:2px
+        style P3 fill:#4ade80,stroke:#22c55e,stroke-width:2px
+        style P4 fill:#4ade80,stroke:#22c55e,stroke-width:2px
+        
+        style T1 fill:#60a5fa,stroke:#3b82f6,stroke-width:2px
+        style T2 fill:#60a5fa,stroke:#3b82f6,stroke-width:2px
+        style T3 fill:#60a5fa,stroke:#3b82f6,stroke-width:2px
+        style T4 fill:#60a5fa,stroke:#3b82f6,stroke-width:2px
+        
+        style A1 fill:#f472b6,stroke:#ec4899,stroke-width:2px
+        style A2 fill:#f472b6,stroke:#ec4899,stroke-width:2px
+        style A3 fill:#f472b6,stroke:#ec4899,stroke-width:2px
+        style A4 fill:#f472b6,stroke:#ec4899,stroke-width:2px
 
 Future Developments
-------------------
+=================
 
 Planned enhancements to the environmental monitoring system:
 

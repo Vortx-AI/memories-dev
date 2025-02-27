@@ -14,6 +14,49 @@ This guide will help you install the ``memories-dev`` framework and set up your 
    * CUDA-compatible GPU recommended for computer vision tasks
    * Internet connection for accessing remote data sources
 
+Quick Start
+----------
+
+Install memories-dev using pip:
+
+.. code-block:: bash
+
+   pip install memories-dev
+
+For development installation:
+
+.. code-block:: bash
+
+   git clone https://github.com/Vortx-AI/memories-dev.git
+   cd memories-dev
+   pip install -e ".[docs]"
+
+Optional Dependencies
+------------------
+
+For full functionality, install optional dependencies:
+
+.. code-block:: bash
+
+   pip install "memories-dev[docs]"  # Documentation dependencies
+   pip install "memories-dev[gpu]"   # GPU support
+   pip install "memories-dev[all]"   # All optional dependencies
+
+Building Documentation
+-------------------
+
+To build the documentation:
+
+.. code-block:: bash
+
+   cd docs
+   pip install -r requirements.txt
+   make html     # For HTML documentation
+
+.. note::
+   For system-specific dependencies and advanced installation options, 
+   please refer to :doc:`../appendix/system_dependencies`
+
 Installation Methods
 ====================
 
