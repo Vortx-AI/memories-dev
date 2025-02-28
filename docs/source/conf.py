@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # Project information
 project = 'Memory Codex'
-copyright = '2024, memories-dev'
+copyright = '2025, memories-dev'
 author = 'memories-dev Team'
 version = '2.0.3'
 release = '2.0.3'
@@ -46,6 +46,20 @@ myst_enable_extensions = [
     "substitution",
 ]
 
+# Mermaid configuration
+mermaid_version = "latest"
+mermaid_init_js = """
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        flowchart: {
+            useMaxWidth: true,
+            htmlLabels: true,
+            curve: 'basis'
+        }
+    });
+"""
+
 # HTML Theme settings
 html_theme = 'sphinx_rtd_theme'
 html_theme_options = {
@@ -65,7 +79,9 @@ html_css_files = [
 ]
 html_js_files = [
     'js/book.js',
-    ('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js', {'crossorigin': 'anonymous'})
+    'js/mermaid-init.js',
+    ('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js', {'crossorigin': 'anonymous'}),
+    ('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js', {'crossorigin': 'anonymous'})
 ]
 
 # LaTeX settings for PDF output

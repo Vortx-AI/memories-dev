@@ -1124,4 +1124,64 @@ html.dark-theme .search-highlight {
 html.dark-theme .wy-menu-vertical li a.active-section {
     background-color: rgba(59, 130, 246, 0.2);
     color: #7eb6ff;
+}
+
+/* Mermaid diagram improvements */
+.mermaid {
+  margin: 2rem auto;
+  display: block;
+  text-align: center;
+  max-width: 100%;
+  overflow-x: auto;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Dark mode support for Mermaid diagrams */
+@media (prefers-color-scheme: dark) {
+  .mermaid {
+    background-color: #2d333b;
+    filter: brightness(0.9) contrast(1.1);
+  }
+  
+  .mermaid .label {
+    color: #e6e6e6 !important;
+    font-weight: 500;
+  }
+  
+  .mermaid .node rect, 
+  .mermaid .node circle, 
+  .mermaid .node ellipse, 
+  .mermaid .node polygon, 
+  .mermaid .node path {
+    stroke: #aaa !important;
+  }
+  
+  .mermaid .edgePath .path {
+    stroke: #d0d0d0 !important;
+  }
+}
+
+html.dark-theme .mermaid {
+  background-color: #2d333b;
+  filter: brightness(0.9) contrast(1.1);
+}
+
+html.dark-theme .mermaid .label {
+  color: #e6e6e6 !important;
+  font-weight: 500;
+}
+
+html.dark-theme .mermaid .node rect, 
+html.dark-theme .mermaid .node circle, 
+html.dark-theme .mermaid .node ellipse, 
+html.dark-theme .mermaid .node polygon, 
+html.dark-theme .mermaid .node path {
+  stroke: #aaa !important;
+}
+
+html.dark-theme .mermaid .edgePath .path {
+  stroke: #d0d0d0 !important;
 } 
