@@ -18,7 +18,7 @@ from .config import get_config, configure_storage
 
 logger = logging.getLogger(__name__)
 
-__version__ = "2.0.2"  # Match version in pyproject.toml
+__version__ = "2.0.3"  # Match version in pyproject.toml
 
 __all__ = [
     # Core components

@@ -2,7 +2,7 @@
 
 This directory contains example applications built using the Memories-Dev framework, demonstrating real-world applications of earth memory integration with large language models.
 
-## What's New in Version 2.0.2 (Scheduled for February 25, 2025)
+## What's New in Version 2.0.3 (Scheduled for February 28, 2025)
 
 Since our initial release (v1.0.0 on February 14, 2025), we've added several new examples and improved existing ones:
 
@@ -234,7 +234,7 @@ await agent.setup_monitoring(
 ## Requirements
 
 - Python 3.9+
-- memories-dev framework (version 2.0.2)
+- memories-dev framework (version 2.0.3)
 - Environment variables for API access
 - Additional dependencies specified in each example
 

@@ -106,7 +106,7 @@ def test_example_code_validity():
 
 def test_version_consistency():
     """Test that version numbers are consistent across documentation."""
-    expected_version = "2.0.2"  # Set the expected version
+    expected_version = "2.0.3"  # Set the expected version
     
     # Check version in conf.py
     docs_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'docs'))

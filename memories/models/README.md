@@ -2,7 +2,7 @@
 
 This directory contains the model integration components for the Memories project. The models module is designed to be modular and extensible, allowing for easy integration with various model providers.
 
-## What's New in Version 2.0.2 (Scheduled for February 25, 2025)
+## What's New in Version 2.0.3 (Scheduled for February 28, 2025)
 
 Since our initial release (v1.0.0 on February 14, 2025), we've made significant improvements to the model integration system:
 
