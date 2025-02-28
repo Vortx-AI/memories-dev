@@ -2,14 +2,41 @@
 
 /* Book-like Typography and Layout */
 :root {
-    --text-color: #2c3e50;
-    --background-color: #fff9f2;
-    --link-color: #2c5282;
-    --border-color: #d1c4b6;
-    --heading-color: #1a202c;
-    --code-background: #f8f5f0;
-    --sidebar-background: #f4efe9;
+    /* Enhanced book-like color palette */
+    --text-color: #2d3748;
+    --background-color: #f8f5f0;
+    --link-color: #3182ce;
+    --link-hover-color: #2c5282;
+    --border-color: #e2d9d0;
+    --heading-color: #1a365d;
+    --code-background: #f0ece6;
+    --sidebar-background: #eae3d9;
     --sidebar-width: 300px;
+    
+    /* Admonition colors */
+    --admonition-note-color: #3182ce;
+    --admonition-note-bg: #ebf8ff;
+    --admonition-note-title-bg: #e6f6ff;
+    
+    --admonition-important-color: #c53030;
+    --admonition-important-bg: #fef5f5;
+    --admonition-important-title-bg: #feeaea;
+    
+    --admonition-tip-color: #2f855a;
+    --admonition-tip-bg: #f0fff4;
+    --admonition-tip-title-bg: #e6ffee;
+    
+    --admonition-warning-color: #c05621;
+    --admonition-warning-bg: #fffaf0;
+    --admonition-warning-title-bg: #fff5e6;
+    
+    --admonition-seealso-color: #2c7a7b;
+    --admonition-seealso-bg: #e6fffa;
+    --admonition-seealso-title-bg: #e6fff8;
+    
+    --admonition-hint-color: #6b46c1;
+    --admonition-hint-bg: #faf5ff;
+    --admonition-hint-title-bg: #f5eeff;
 }
 
 /* Base Typography */
@@ -74,10 +101,12 @@ a {
     color: var(--link-color);
     text-decoration: none;
     border-bottom: 1px solid transparent;
+    transition: border-color 0.2s ease-in-out;
 }
 
 a:hover {
-    border-bottom-color: var(--link-color);
+    color: var(--link-hover-color);
+    border-bottom-color: var(--link-hover-color);
 }
 
 /* Navigation */
@@ -98,26 +127,347 @@ a:hover {
     background-color: transparent;
     border-bottom: 1px solid var(--border-color);
     padding: 1rem;
-    margin-bottom: 2rem;
 }
 
-.wy-menu-vertical {
-    padding: 1rem;
-}
-
-.wy-menu-vertical a {
-    color: var(--text-color);
-    padding: 0.5rem 1rem;
+/* Admonition Styling for Book-like Appearance */
+.admonition {
+    margin: 2em 0;
+    padding: 1.5em 1.5em 0.5em 1.5em;
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    border-left-width: 6px;
+    border-left-style: solid;
     font-family: "Crimson Pro", Georgia, serif;
-    font-size: 1em;
-    display: block;
+    line-height: 1.6;
 }
 
-.wy-menu-vertical li.current > a {
-    background-color: transparent;
-    color: var(--link-color);
-    border-left: 2px solid var(--link-color);
+.admonition-title {
+    margin: -1.5em -1.5em 1em -1.5em;
+    padding: 0.75em 1em 0.75em 2.5em;
+    font-weight: 600;
+    font-size: 1.2em;
+    position: relative;
+    display: flex;
+    align-items: center;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
 }
+
+.admonition-title::before {
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    margin-right: 0.6em;
+    font-size: 1.2em;
+    position: absolute;
+    left: 0.8em;
+}
+
+/* Note admonition */
+.admonition.note {
+    background-color: var(--admonition-note-bg);
+    border-left-color: var(--admonition-note-border);
+}
+
+.admonition.note .admonition-title {
+    background-color: var(--admonition-note-title-bg);
+    color: var(--admonition-note-color);
+}
+
+.admonition.note .admonition-title::before {
+    content: "\f05a";  /* Font Awesome info-circle icon */
+}
+
+/* Important admonition */
+.admonition.important {
+    background-color: var(--admonition-important-bg);
+    border-left-color: var(--admonition-important-border);
+}
+
+.admonition.important .admonition-title {
+    background-color: var(--admonition-important-title-bg);
+    color: var(--admonition-important-color);
+}
+
+.admonition.important .admonition-title::before {
+    content: "\f06a";  /* Font Awesome exclamation-circle icon */
+}
+
+/* Tip admonition */
+.admonition.tip {
+    background-color: var(--admonition-tip-bg);
+    border-left-color: var(--admonition-tip-border);
+}
+
+.admonition.tip .admonition-title {
+    background-color: var(--admonition-tip-title-bg);
+    color: var(--admonition-tip-color);
+}
+
+.admonition.tip .admonition-title::before {
+    content: "\f0eb";  /* Font Awesome lightbulb icon */
+}
+
+/* Warning admonition */
+.admonition.warning {
+    background-color: var(--admonition-warning-bg);
+    border-left-color: var(--admonition-warning-border);
+}
+
+.admonition.warning .admonition-title {
+    background-color: var(--admonition-warning-title-bg);
+    color: var(--admonition-warning-color);
+}
+
+.admonition.warning .admonition-title::before {
+    content: "\f071";  /* Font Awesome exclamation-triangle icon */
+}
+
+/* See Also admonition */
+.admonition.seealso {
+    background-color: var(--admonition-seealso-bg);
+    border-left-color: var(--admonition-seealso-border);
+}
+
+.admonition.seealso .admonition-title {
+    background-color: var(--admonition-seealso-title-bg);
+    color: var(--admonition-seealso-color);
+}
+
+.admonition.seealso .admonition-title::before {
+    content: "\f06e";  /* Font Awesome eye icon */
+}
+
+/* Hint admonition */
+.admonition.hint {
+    background-color: var(--admonition-hint-bg);
+    border-left-color: var(--admonition-hint-border);
+}
+
+.admonition.hint .admonition-title {
+    background-color: var(--admonition-hint-title-bg);
+    color: var(--admonition-hint-color);
+}
+
+.admonition.hint .admonition-title::before {
+    content: "\f0a1";  /* Font Awesome bullhorn icon */
+}
+
+/* Admonition content styling */
+.admonition p {
+    margin-bottom: 1em;
+    line-height: 1.6;
+}
+
+.admonition ul, .admonition ol {
+    margin: 0.8em 0 0.8em 1.2em;
+    line-height: 1.6;
+}
+
+.admonition code {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.admonition pre {
+    margin: 1em 0;
+    padding: 1em;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.9em;
+}
+
+/* Dark mode adjustments for admonitions */
+@media (prefers-color-scheme: dark) {
+    .admonition {
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+    
+    .admonition code {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .admonition pre {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+}
+
+/* Code blocks with enhanced styling */
+pre, code {
+    font-family: "Fira Code", "Source Code Pro", Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+    font-size: 0.9em;
+    background-color: var(--code-background);
+    border-radius: 0.25em;
+}
+
+pre {
+    padding: 1em;
+    margin: 1.5em 0;
+    overflow: auto;
+    border: 1px solid var(--border-color);
+    line-height: 1.4;
+}
+
+code {
+    padding: 0.2em 0.4em;
+    white-space: pre-wrap;
+}
+
+/* Code block captions */
+.code-block-caption {
+    font-style: italic;
+    font-size: 0.9em;
+    text-align: center;
+    color: var(--heading-color);
+    margin-bottom: -1em;
+    padding: 0.5em;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Emphasized lines in code blocks */
+.highlight .hll {
+    background-color: rgba(255, 255, 200, 0.4);
+    display: block;
+    margin: 0 -1em;
+    padding: 0 1em;
+    border-left: 3px solid #f6ad55;
+}
+
+/* Table styling */
+table.docutils {
+    border-collapse: collapse;
+    margin: 1.5em 0;
+    width: 100%;
+    border: 1px solid var(--border-color);
+}
+
+table.docutils td, 
+table.docutils th {
+    padding: 0.75em 1em;
+    border: 1px solid var(--border-color);
+    text-align: left;
+}
+
+table.docutils thead th {
+    background-color: var(--sidebar-background);
+    font-weight: 700;
+    border-bottom: 2px solid var(--border-color);
+    color: var(--heading-color);
+}
+
+/* Dark theme adjustments */
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Enhanced book-like dark theme palette */
+        --text-color: #e2e8f0;
+        --background-color: #1a202c;
+        --link-color: #63b3ed;
+        --link-hover-color: #90cdf4;
+        --border-color: #4a5568;
+        --heading-color: #e2e8f0;
+        --code-background: #2d3748;
+        --sidebar-background: #171923;
+        
+        /* Dark theme admonition colors - warmer tones */
+        --admonition-note-color: #1a365d;
+        --admonition-note-bg: #2b6cb0;
+        --admonition-note-title-bg: #90cdf4;
+        
+        --admonition-important-color: #742a2a;
+        --admonition-important-bg: #c53030;
+        --admonition-important-title-bg: #fc8181;
+        
+        --admonition-tip-color: #1c4532;
+        --admonition-tip-bg: #2f855a;
+        --admonition-tip-title-bg: #9ae6b4;
+        
+        --admonition-warning-color: #652b19;
+        --admonition-warning-bg: #c05621;
+        --admonition-warning-title-bg: #fbd38d;
+        
+        --admonition-seealso-color: #1a4451;
+        --admonition-seealso-bg: #2c7a7b;
+        --admonition-seealso-title-bg: #81e6d9;
+        
+        --admonition-hint-color: #322659;
+        --admonition-hint-bg: #6b46c1;
+        --admonition-hint-title-bg: #d6bcfa;
+    }
+    
+    /* Dark theme code highlighting */
+    .highlight .hll {
+        background-color: rgba(255, 255, 200, 0.1);
+        border-left: 3px solid #ed8936;
+    }
+    
+    /* Enhanced dark mode readability */
+    body {
+        color: var(--text-color);
+        background-color: var(--background-color);
+    }
+    
+    /* Improved dark mode code blocks */
+    pre, code {
+        background-color: var(--code-background);
+        border-color: var(--border-color);
+    }
+    
+    /* Dark mode table styling */
+    table.docutils {
+        border-color: var(--border-color);
+    }
+    
+    table.docutils td, 
+    table.docutils th {
+        border-color: var(--border-color);
+    }
+    
+    table.docutils thead th {
+        background-color: #2d3748;
+        color: var(--heading-color);
+        border-bottom-color: var(--border-color);
+    }
+    
+    /* Dark mode admonition enhancements */
+    .admonition {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Improved dark mode navigation */
+    .wy-nav-side {
+        background-color: var(--sidebar-background);
+    }
+    
+    .wy-side-nav-search {
+        background-color: rgba(0, 0, 0, 0.2);
+    }
+    
+    .wy-menu-vertical a {
+        color: #d6d6d6;
+    }
+    
+    .wy-menu-vertical li.current > a {
+        background-color: rgba(255, 255, 255, 0.05);
+        color: var(--link-color);
+    }
+    
+    /* Dark mode headings with subtle underlines */
+    h1, h2, h3, h4, h5, h6 {
+        color: var(--heading-color);
+    }
+    
+    h1 {
+        border-bottom-color: var(--border-color);
+    }
+    
+    h2 {
+        border-bottom-color: var(--border-color);
+    }
+}
+
+/* Keep the rest of the original CSS file below this line */
 
 /* Reading Progress */
 .reading-progress {
@@ -342,17 +692,20 @@ table.docutils thead th {
     color: #d9d9d9;
     padding: 8px 16px 8px 24px;
     transition: background-color 0.2s ease, color 0.2s ease;
+    font-weight: 500;
 }
 
 .wy-menu-vertical a:hover {
     background-color: rgba(255, 255, 255, 0.05);
     color: #ffffff;
+    font-weight: 600;
 }
 
 .wy-menu-vertical li.current > a {
     background-color: rgba(255, 255, 255, 0.08);
     color: #ffffff;
     border-color: #3b82f6; /* Match button color */
+    font-weight: 600;
 }
 
 /* Improve code blocks */
@@ -614,11 +967,14 @@ html.dark-theme .wy-side-nav-search {
 }
 
 html.dark-theme .wy-menu-vertical a {
-    color: #b0b0b0;
+    color: #f0f0f0;
+    font-weight: 500;
 }
 
 html.dark-theme .wy-menu-vertical a:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    font-weight: 600;
+    background-color: #2c3e50;
 }
 
 html.dark-theme code {

@@ -8,8 +8,8 @@ sys.path.insert(0, os.path.abspath('../..'))
 project = 'Memory Codex'
 copyright = '2024, Memory Codex'
 author = 'Memory Codex Team'
-version = '2.0.2'
-release = '2.0.2'
+version = '2.0.3'
+release = '2.0.3'
 
 # The master toctree document
 master_doc = 'index'
@@ -59,8 +59,14 @@ html_theme_options = {
 
 # These folders are copied to the documentation's HTML output
 html_static_path = ['_static']
-html_css_files = ['css/custom.css']
-html_js_files = ['js/book.js']
+html_css_files = [
+    'css/custom.css',
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css',
+]
+html_js_files = [
+    'js/book.js',
+    ('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js', {'crossorigin': 'anonymous'})
+]
 
 # LaTeX settings for PDF output
 latex_engine = 'pdflatex'
