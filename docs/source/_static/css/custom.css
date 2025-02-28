@@ -37,40 +37,47 @@
     --admonition-hint-color: #6b46c1;
     --admonition-hint-bg: #faf5ff;
     --admonition-hint-title-bg: #f5eeff;
+
+    /* Text colors */
+    --text-color: #333333;
+    --text-color-secondary: #666666;
+    --sidebar-text-color: #f0f0f0;
+    --sidebar-link-color: #f0f0f0;
+    --sidebar-link-hover-color: #ffffff;
+    --sidebar-background: #343131;
 }
 
 /* Base Typography */
 body {
-    font-family: "Crimson Pro", "Palatino Linotype", Palatino, Palladio, "URW Palladio L", "Book Antiqua", Baskerville, "Bookman Old Style", "Bitstream Charter", "Nimbus Roman No9 L", Garamond, "Apple Garamond", "ITC Garamond Narrow", "New Century Schoolbook", "Century Schoolbook", "Century Schoolbook L", Georgia, serif;
-    font-size: 18px;
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 16px;
     line-height: 1.6;
     color: var(--text-color);
     background-color: var(--background-color);
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    padding: 0;
 }
 
 /* Content Layout */
 .wy-nav-content {
-    max-width: 42em !important;
-    margin: 0 auto !important;
-    padding: 3rem 2rem !important;
-    background-color: var(--background-color);
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem;
+    background-color: var(--content-background);
 }
 
 .wy-nav-content-wrap {
-    margin-left: var(--sidebar-width);
-    background: var(--background-color);
+    margin-left: 300px;
+    background-color: var(--content-background);
+    min-height: 100vh;
 }
 
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
-    font-family: "Crimson Pro", Georgia, serif;
-    font-weight: 700;
-    line-height: 1.2;
-    margin: 2.5em 0 0.8em;
-    color: var(--heading-color);
+    font-weight: 600;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    color: var(--text-color);
 }
 
 h1 {
@@ -100,21 +107,20 @@ p {
 a {
     color: var(--link-color);
     text-decoration: none;
-    border-bottom: 1px solid transparent;
-    transition: border-color 0.2s ease-in-out;
+    transition: color 0.2s;
 }
 
 a:hover {
     color: var(--link-hover-color);
-    border-bottom-color: var(--link-hover-color);
+    text-decoration: underline;
 }
 
 /* Navigation */
 .wy-nav-side {
-    width: var(--sidebar-width);
+    width: 300px;
     background-color: var(--sidebar-background);
     border-right: 1px solid var(--border-color);
-    padding: 2rem 0;
+    padding: 0;
     position: fixed;
     top: 0;
     bottom: 0;
@@ -124,9 +130,77 @@ a:hover {
 }
 
 .wy-side-nav-search {
-    background-color: transparent;
+    background-color: var(--sidebar-background);
+    padding: 1.5rem 1rem;
+    margin-bottom: 0;
+    text-align: center;
     border-bottom: 1px solid var(--border-color);
-    padding: 1rem;
+}
+
+.wy-side-nav-search input[type="text"] {
+    width: 100%;
+    border-radius: 4px;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--sidebar-text-color);
+}
+
+.wy-side-nav-search > a {
+    color: var(--sidebar-text-color);
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* Menu styling */
+.wy-menu-vertical {
+    padding: 1rem 0;
+}
+
+.wy-menu-vertical a {
+    color: var(--sidebar-link-color);
+    padding: 0.5rem 1.5rem;
+    font-size: 0.95rem;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.wy-menu-vertical a:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--sidebar-link-hover-color);
+}
+
+.wy-menu-vertical li.current > a {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--sidebar-link-hover-color);
+    font-weight: 600;
+    border-left: 3px solid var(--primary-color);
+}
+
+.wy-menu-vertical li.toctree-l2 a,
+.wy-menu-vertical li.toctree-l3 a,
+.wy-menu-vertical li.toctree-l4 a {
+    color: var(--sidebar-link-color);
+    padding-left: 2.5rem;
+    font-size: 0.9rem;
+}
+
+.wy-menu-vertical li.toctree-l3 a {
+    padding-left: 3.5rem;
+}
+
+.wy-menu-vertical li.toctree-l4 a {
+    padding-left: 4.5rem;
+}
+
+.wy-menu-vertical li.toctree-l2.current > a,
+.wy-menu-vertical li.toctree-l3.current > a,
+.wy-menu-vertical li.toctree-l4.current > a {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--sidebar-link-hover-color);
+    font-weight: 600;
+    border-left: 3px solid var(--primary-color);
 }
 
 /* Admonition Styling for Book-like Appearance */
@@ -360,40 +434,43 @@ table.docutils thead th {
 /* Dark theme adjustments */
 @media (prefers-color-scheme: dark) {
     :root {
-        /* Enhanced book-like dark theme palette */
-        --text-color: #e2e8f0;
-        --background-color: #1a202c;
-        --link-color: #63b3ed;
-        --link-hover-color: #90cdf4;
-        --border-color: #4a5568;
-        --heading-color: #e2e8f0;
-        --code-background: #2d3748;
-        --sidebar-background: #171923;
+        /* Base colors */
+        --primary-color: #3498db;
+        --secondary-color: #2ecc71;
+        --accent-color: #e74c3c;
         
-        /* Dark theme admonition colors - warmer tones */
-        --admonition-note-color: #1a365d;
-        --admonition-note-bg: #2b6cb0;
-        --admonition-note-title-bg: #90cdf4;
+        /* Background colors */
+        --background-color: #121212;
+        --content-background: #1e1e1e;
+        --sidebar-background: #1a1a1a;
+        --code-background: #2d2d2d;
         
-        --admonition-important-color: #742a2a;
-        --admonition-important-bg: #c53030;
-        --admonition-important-title-bg: #fc8181;
+        /* Text colors */
+        --text-color: #e0e0e0;
+        --text-color-secondary: #b0b0b0;
+        --link-color: #4db8ff;
+        --link-hover-color: #66c2ff;
+        --sidebar-text-color: #f0f0f0;
+        --sidebar-link-color: #f0f0f0;
+        --sidebar-link-hover-color: #ffffff;
         
-        --admonition-tip-color: #1c4532;
-        --admonition-tip-bg: #2f855a;
-        --admonition-tip-title-bg: #9ae6b4;
+        /* Border colors */
+        --border-color: #444444;
+        --border-color-light: #555555;
         
-        --admonition-warning-color: #652b19;
-        --admonition-warning-bg: #c05621;
-        --admonition-warning-title-bg: #fbd38d;
-        
-        --admonition-seealso-color: #1a4451;
-        --admonition-seealso-bg: #2c7a7b;
-        --admonition-seealso-title-bg: #81e6d9;
-        
-        --admonition-hint-color: #322659;
-        --admonition-hint-bg: #6b46c1;
-        --admonition-hint-title-bg: #d6bcfa;
+        /* Admonition colors */
+        --admonition-note-bg: #1e2a38;
+        --admonition-note-title-bg: #1a3a5a;
+        --admonition-important-bg: #38281e;
+        --admonition-important-title-bg: #5a2a1a;
+        --admonition-tip-bg: #1e3828;
+        --admonition-tip-title-bg: #1a5a3a;
+        --admonition-warning-bg: #38341e;
+        --admonition-warning-title-bg: #5a501a;
+        --admonition-seealso-bg: #2a1e38;
+        --admonition-seealso-title-bg: #3a1a5a;
+        --admonition-hint-bg: #2a1e38;
+        --admonition-hint-title-bg: #3a1a5a;
     }
     
     /* Dark theme code highlighting */
@@ -465,6 +542,47 @@ table.docutils thead th {
     h2 {
         border-bottom-color: var(--border-color);
     }
+}
+
+/* Dark theme class (for toggle button) */
+html.dark-theme {
+    /* Base colors */
+    --primary-color: #3498db;
+    --secondary-color: #2ecc71;
+    --accent-color: #e74c3c;
+    
+    /* Background colors */
+    --background-color: #121212;
+    --content-background: #1e1e1e;
+    --sidebar-background: #1a1a1a;
+    --code-background: #2d2d2d;
+    
+    /* Text colors */
+    --text-color: #e0e0e0;
+    --text-color-secondary: #b0b0b0;
+    --link-color: #4db8ff;
+    --link-hover-color: #66c2ff;
+    --sidebar-text-color: #f0f0f0;
+    --sidebar-link-color: #f0f0f0;
+    --sidebar-link-hover-color: #ffffff;
+    
+    /* Border colors */
+    --border-color: #444444;
+    --border-color-light: #555555;
+    
+    /* Admonition colors */
+    --admonition-note-bg: #1e2a38;
+    --admonition-note-title-bg: #1a3a5a;
+    --admonition-important-bg: #38281e;
+    --admonition-important-title-bg: #5a2a1a;
+    --admonition-tip-bg: #1e3828;
+    --admonition-tip-title-bg: #1a5a3a;
+    --admonition-warning-bg: #38341e;
+    --admonition-warning-title-bg: #5a501a;
+    --admonition-seealso-bg: #2a1e38;
+    --admonition-seealso-title-bg: #3a1a5a;
+    --admonition-hint-bg: #2a1e38;
+    --admonition-hint-title-bg: #3a1a5a;
 }
 
 /* Keep the rest of the original CSS file below this line */
@@ -689,15 +807,15 @@ table.docutils thead th {
 
 /* Improve menu item appearance */
 .wy-menu-vertical a {
-    color: #f0f0f0;
+    color: var(--sidebar-link-color);
     padding: 8px 16px 8px 24px;
     transition: background-color 0.2s ease, color 0.2s ease;
     font-weight: 500;
 }
 
 .wy-menu-vertical a:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--sidebar-link-hover-color);
     font-weight: 600;
 }
 
@@ -949,17 +1067,16 @@ html.dark-theme .wy-nav-content .contents.local a:hover {
 
 /* Dark Theme Support */
 html.dark-theme body {
-    color: #e0e0e0;
+    color: var(--text-color);
     background-color: #121212;
 }
 
 html.dark-theme .wy-nav-content {
     background-color: #1e1e1e;
-    color: #e0e0e0;
 }
 
 html.dark-theme .wy-nav-side {
-    background-color: #0f172a;
+    background-color: var(--sidebar-background);
 }
 
 html.dark-theme .wy-side-nav-search {
@@ -967,26 +1084,24 @@ html.dark-theme .wy-side-nav-search {
 }
 
 html.dark-theme .wy-menu-vertical a {
-    color: #f0f0f0;
-    font-weight: 500;
+    color: var(--sidebar-link-color);
 }
 
 html.dark-theme .wy-menu-vertical a:hover {
-    color: #ffffff;
-    font-weight: 600;
-    background-color: #2c3e50;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--sidebar-link-hover-color);
 }
 
 html.dark-theme code {
     background-color: #2d2d2d;
     border-color: #444;
-    color: #e0e0e0;
+    color: var(--text-color);
 }
 
 html.dark-theme pre {
     background-color: #2d2d2d;
     border-color: #444;
-    color: #e0e0e0;
+    color: var(--text-color);
 }
 
 html.dark-theme .highlight {
@@ -1016,7 +1131,7 @@ html.dark-theme .btn-primary {
 
 html.dark-theme .progress-stats {
     background-color: rgba(30, 30, 30, 0.9);
-    color: #e0e0e0;
+    color: var(--text-color);
 }
 
 /* Code Label Styles */

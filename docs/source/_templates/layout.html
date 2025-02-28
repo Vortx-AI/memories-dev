@@ -8,11 +8,15 @@
   
   <!-- Book JavaScript -->
   <script src="{{ pathto('_static/js/book.js', 1) }}"></script>
+  <script src="{{ pathto('_static/js/mermaid-init.js', 1) }}"></script>
+  
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <!-- Book Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
   
   <style>
     /* Essential styles */
@@ -23,6 +27,29 @@
     }
     .book-reader { 
       visibility: visible !important; 
+    }
+
+    /* Theme toggle button */
+    .theme-toggle-container {
+      margin-top: 10px;
+    }
+    
+    .theme-toggle-button {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--sidebar-text-color);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .theme-toggle-button:hover {
+      background: rgba(255, 255, 255, 0.1);
     }
 
     /* Mobile navigation */
@@ -45,6 +72,36 @@
     document.addEventListener('DOMContentLoaded', function() {
       document.body.classList.add('book-reader');
       document.body.style.visibility = 'visible';
+      
+      // Add theme toggle button
+      const themeToggle = document.createElement('div');
+      themeToggle.className = 'theme-toggle-container';
+      themeToggle.innerHTML = '<button class="theme-toggle-button" aria-label="Toggle dark mode"><i class="fas fa-moon"></i></button>';
+      document.querySelector('.wy-side-nav-search').appendChild(themeToggle);
+      
+      // Theme toggle functionality
+      const toggleButton = themeToggle.querySelector('.theme-toggle-button');
+      toggleButton.addEventListener('click', function() {
+        const isDark = document.documentElement.classList.toggle('dark-theme');
+        toggleButton.querySelector('i').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+        
+        // Save preference
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        
+        // Dispatch event for other scripts
+        document.dispatchEvent(new CustomEvent('themeToggled', { 
+          detail: { 
+            theme: isDark ? 'dark' : 'light' 
+          }
+        }));
+      });
+      
+      // Check for saved preference
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark' || (savedTheme === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark-theme');
+        toggleButton.querySelector('i').className = 'fas fa-sun';
+      }
     });
   </script>
 {% endblock %}

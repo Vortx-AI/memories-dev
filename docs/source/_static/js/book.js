@@ -107,12 +107,53 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Dark Mode
     function setupDarkMode() {
-        const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        const toggleDarkMode = e => {
-            document.documentElement.classList.toggle('dark-theme', e.matches);
-        };
-        darkModeMediaQuery.addListener(toggleDarkMode);
-        toggleDarkMode(darkModeMediaQuery);
+        // Check for saved theme preference
+        const savedTheme = localStorage.getItem('theme');
+        
+        // Apply saved theme if it exists
+        if (savedTheme === 'dark') {
+            document.documentElement.classList.add('dark-theme');
+        } else if (savedTheme === 'light') {
+            document.documentElement.classList.remove('dark-theme');
+        } else {
+            // If no saved preference, check system preference
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark-theme');
+            }
+        }
+        
+        // Listen for theme toggle events
+        document.addEventListener('themeToggled', function(e) {
+            if (e.detail.theme === 'dark') {
+                document.documentElement.classList.add('dark-theme');
+            } else {
+                document.documentElement.classList.remove('dark-theme');
+            }
+            
+            // Update Mermaid diagrams if they exist
+            if (window.mermaid) {
+                document.dispatchEvent(new Event('mermaidThemeUpdate'));
+            }
+        });
+        
+        // Listen for system preference changes
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                // Only apply if no saved preference
+                if (!localStorage.getItem('theme')) {
+                    if (e.matches) {
+                        document.documentElement.classList.add('dark-theme');
+                    } else {
+                        document.documentElement.classList.remove('dark-theme');
+                    }
+                    
+                    // Update Mermaid diagrams if they exist
+                    if (window.mermaid) {
+                        document.dispatchEvent(new Event('mermaidThemeUpdate'));
+                    }
+                }
+            });
+        }
     }
 
     // Print Optimization
