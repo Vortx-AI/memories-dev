@@ -28,7 +28,7 @@ Memory Codex: Earth-Grounded AI Memory Systems
    <div class="version-banner">
      <div class="version-info">
        <span class="version-number">v2.0.3</span>
-       <span class="version-date">Released: March 2025</span>
+       <span class="version-date">Released: February 28, 2025</span>
      </div>
      <div class="version-badges">
        <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License: Apache 2.0">
@@ -81,15 +81,10 @@ Welcome to Memory Codex, a framework that reimagines how artificial intelligence
 
 .. raw:: html
 
-   <div class="featured-users">
-     <h3>Trusted by Industry Leaders</h3>
-     <div class="user-logos">
-       <div class="user-logo">NASA</div>
-       <div class="user-logo">NOAA</div>
-       <div class="user-logo">ESA</div>
-       <div class="user-logo">World Bank</div>
-       <div class="user-logo">UN Environment</div>
-     </div>
+   <div class="contact-info">
+     <h3>Contact Information</h3>
+     <p><strong>Website:</strong> <a href="https://www.memories.dev">www.memories.dev</a></p>
+     <p><strong>Email:</strong> <a href="mailto:hello@memories.dev">hello@memories.dev</a></p>
    </div>
 
 Contents
@@ -452,22 +447,6 @@ Indices and tables
        <div class="installation-option">
          <h4>Using Docker</h4>
          <pre><code>docker pull vortxai/memories-dev:2.0.3</code></pre>
-       </div>
-     </div>
-   </div>
-
-.. raw:: html
-
-   <div class="testimonial-section">
-     <h3>What Users Are Saying</h3>
-     <div class="testimonials">
-       <div class="testimonial">
-         <p>"memories-dev has revolutionized how we approach environmental monitoring. The tiered memory system allows us to efficiently manage petabytes of satellite data while maintaining real-time access to critical information."</p>
-         <div class="testimonial-author">— Dr. Sarah Chen, Climate Research Institute</div>
-       </div>
-       <div class="testimonial">
-         <p>"The scientific grounding in memories-dev has eliminated hallucinations in our AI models. We can now confidently deploy these systems for critical environmental decision-making."</p>
-         <div class="testimonial-author">— Marco Rodriguez, Environmental Protection Agency</div>
        </div>
      </div>
    </div>

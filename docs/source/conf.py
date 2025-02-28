@@ -6,8 +6,8 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # Project information
 project = 'Memory Codex'
-copyright = '2024, Memory Codex'
-author = 'Memory Codex Team'
+copyright = '2024, memories-dev'
+author = 'memories-dev Team'
 version = '2.0.3'
 release = '2.0.3'
 
