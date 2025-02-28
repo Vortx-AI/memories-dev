@@ -32,24 +32,27 @@
     /* Theme toggle button */
     .theme-toggle-container {
       margin-top: 10px;
+      display: flex;
+      justify-content: center;
     }
     
     .theme-toggle-button {
-      background: transparent;
-      border: 1px solid var(--border-color);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
       border-radius: 50%;
       width: 36px;
       height: 36px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--sidebar-text-color);
+      color: #ffffff;
       cursor: pointer;
       transition: all 0.2s ease;
+      font-size: 16px;
     }
     
     .theme-toggle-button:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.2);
     }
 
     /* Mobile navigation */
@@ -65,6 +68,46 @@
         left: 0;
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
       }
+    }
+    
+    /* Custom sidebar section headers */
+    .sidebar-section-header {
+      font-weight: bold;
+      font-size: 1.1em;
+      padding: 10px 15px;
+      margin-top: 10px;
+      background-color: rgba(0, 0, 0, 0.2);
+      color: #ffffff;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .sidebar-section-header:hover {
+      background-color: rgba(0, 0, 0, 0.3);
+    }
+    
+    .sidebar-section-content {
+      display: none;
+    }
+    
+    .sidebar-section-content.expanded {
+      display: block;
+    }
+    
+    /* Sidebar section icon */
+    .section-icon {
+      margin-right: 8px;
+    }
+    
+    /* Expand/collapse icon */
+    .expand-icon {
+      transition: transform 0.3s ease;
+    }
+    
+    .expanded .expand-icon {
+      transform: rotate(180deg);
     }
   </style>
   
@@ -103,7 +146,71 @@
         toggleButton.querySelector('i').className = 'fas fa-sun';
       }
       // Default is light theme, so we don't need to check for system preference
+      
+      // Setup collapsible sidebar sections
+      setTimeout(function() {
+        setupSidebarSections();
+      }, 500);
     });
+    
+    function setupSidebarSections() {
+      // Get all top-level navigation sections
+      const topLevelItems = document.querySelectorAll('.wy-menu-vertical > ul > li');
+      
+      topLevelItems.forEach(function(item) {
+        // Skip items that don't have children
+        if (!item.querySelector('ul')) return;
+        
+        // Get the caption or link text
+        let sectionTitle = item.querySelector('a')?.textContent || 
+                          item.querySelector('.caption-text')?.textContent || 
+                          'Section';
+        
+        // Create section header
+        const sectionHeader = document.createElement('div');
+        sectionHeader.className = 'sidebar-section-header';
+        
+        // Add appropriate icon based on section title
+        let iconClass = 'fa-book';
+        if (sectionTitle.includes('Getting Started')) iconClass = 'fa-rocket';
+        else if (sectionTitle.includes('Core Concepts')) iconClass = 'fa-lightbulb';
+        else if (sectionTitle.includes('Memory')) iconClass = 'fa-database';
+        else if (sectionTitle.includes('API')) iconClass = 'fa-code';
+        else if (sectionTitle.includes('Examples')) iconClass = 'fa-flask';
+        
+        sectionHeader.innerHTML = `
+          <span><i class="fas ${iconClass} section-icon"></i>${sectionTitle}</span>
+          <i class="fas fa-chevron-down expand-icon"></i>
+        `;
+        
+        // Create content container
+        const sectionContent = document.createElement('div');
+        sectionContent.className = 'sidebar-section-content';
+        
+        // Move children into content container
+        const children = item.querySelectorAll(':scope > ul');
+        children.forEach(child => {
+          sectionContent.appendChild(child.cloneNode(true));
+        });
+        
+        // Replace original content with our new structure
+        item.innerHTML = '';
+        item.appendChild(sectionHeader);
+        item.appendChild(sectionContent);
+        
+        // Add click handler
+        sectionHeader.addEventListener('click', function() {
+          sectionContent.classList.toggle('expanded');
+          sectionHeader.classList.toggle('expanded');
+        });
+        
+        // Expand current section if it contains the active page
+        if (sectionContent.querySelector('li.current')) {
+          sectionContent.classList.add('expanded');
+          sectionHeader.classList.add('expanded');
+        }
+      });
+    }
   </script>
 {% endblock %}
 

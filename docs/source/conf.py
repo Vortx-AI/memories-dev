@@ -66,9 +66,10 @@ html_theme_options = {
     'display_version': True,
     'prev_next_buttons_location': 'both',
     'style_nav_header_background': '#2c3e50',
-    'collapse_navigation': False,
+    'collapse_navigation': True,
     'sticky_navigation': True,
-    'navigation_depth': 4,
+    'navigation_depth': 2,
+    'titles_only': True,
 }
 
 # These folders are copied to the documentation's HTML output

@@ -230,7 +230,7 @@ Quick Start
    The Memory Codex framework is designed to be a foundational technology for Earth-grounded AI. This documentation serves both as a practical guide to implementation and as a conceptual exploration of how AI can develop deeper understanding of our planet.
 
 The Journey to Earth-Grounded AI
-==============================
+================================
 
 This codex is more than documentation—it's a comprehensive guide to creating AI that truly understands our world. As you progress through these chapters, you'll discover how to bridge the gap between artificial intelligence and Earth's observable reality.
 
@@ -481,4 +481,98 @@ Indices and tables
          </tr>
        </tbody>
      </table>
+   </div>
+
+Community & Support
+==================
+
+Memory Codex is more than just a framework—it's a growing community of researchers, developers, and Earth scientists working together to create more grounded AI systems.
+
+.. raw:: html
+
+   <div class="community-section">
+      <div class="community-card">
+         <div class="card-icon"><i class="fas fa-users"></i></div>
+         <h3>Join the Community</h3>
+         <p>Connect with other Memory Codex users and contributors in our community forums and chat channels.</p>
+         <a href="https://community.memories.dev" class="btn btn-primary">Join Now</a>
+      </div>
+      
+      <div class="community-card">
+         <div class="card-icon"><i class="fas fa-code-branch"></i></div>
+         <h3>Contribute</h3>
+         <p>Help improve Memory Codex by contributing code, documentation, or examples to our open-source repository.</p>
+         <a href="https://github.com/Vortx-AI/memories-dev" class="btn btn-primary">Contribute</a>
+      </div>
+      
+      <div class="community-card">
+         <div class="card-icon"><i class="fas fa-question-circle"></i></div>
+         <h3>Get Support</h3>
+         <p>Need help with Memory Codex? Our support team and community are here to assist you.</p>
+         <a href="https://support.memories.dev" class="btn btn-primary">Get Help</a>
+      </div>
+   </div>
+
+Roadmap & Future Development
+===========================
+
+Memory Codex is continuously evolving. Here's what you can expect in upcoming releases:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 30 50
+   
+   * - Version
+     - Expected Release
+     - Key Features
+   * - **2.1.0**
+     - Q2 2025
+     - Enhanced temporal reasoning, improved uncertainty quantification, expanded Earth system models
+   * - **2.2.0**
+     - Q3 2025
+     - Advanced cross-domain integration, new visualization tools, expanded API capabilities
+   * - **3.0.0**
+     - Q1 2026
+     - Next-generation memory architecture, real-time Earth system monitoring, comprehensive model integration
+
+We welcome community input on our roadmap. If you have suggestions for future features or improvements, please share them in our `GitHub discussions <https://github.com/Vortx-AI/memories-dev/discussions>`_.
+
+Case Studies
+===========
+
+Memory Codex is already being used in a variety of real-world applications. Here are some examples:
+
+.. raw:: html
+
+   <div class="case-studies">
+      <div class="case-study">
+         <h3>Climate Resilience Planning</h3>
+         <p>A municipal government using Memory Codex to develop climate adaptation strategies based on historical patterns and future projections.</p>
+         <a href="examples/climate_intelligence.html">Read More →</a>
+      </div>
+      
+      <div class="case-study">
+         <h3>Agricultural Optimization</h3>
+         <p>Precision agriculture company leveraging Earth memory to optimize crop yields while minimizing environmental impact.</p>
+         <a href="examples/resource_management.html">Read More →</a>
+      </div>
+      
+      <div class="case-study">
+         <h3>Disaster Response</h3>
+         <p>Emergency management agency using Memory Codex to improve disaster prediction and response coordination.</p>
+         <a href="examples/environmental_monitoring.html">Read More →</a>
+      </div>
+   </div>
+
+Ready to Begin?
+==============
+
+Start your journey with Memory Codex by following our :doc:`getting_started/index` guide. Whether you're an AI researcher, Earth scientist, or developer, Memory Codex provides the tools you need to create more grounded, scientifically rigorous AI systems.
+
+.. raw:: html
+
+   <div class="cta-container">
+      <a href="getting_started/index.html" class="btn btn-primary cta-button">
+         <i class="fas fa-rocket"></i> Get Started
+      </a>
    </div> 
