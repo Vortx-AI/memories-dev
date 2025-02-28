@@ -115,12 +115,8 @@ document.addEventListener('DOMContentLoaded', function() {
             document.documentElement.classList.add('dark-theme');
         } else if (savedTheme === 'light') {
             document.documentElement.classList.remove('dark-theme');
-        } else {
-            // If no saved preference, check system preference
-            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                document.documentElement.classList.add('dark-theme');
-            }
         }
+        // Default is light theme, so we don't check system preference
         
         // Listen for theme toggle events
         document.addEventListener('themeToggled', function(e) {
@@ -135,25 +131,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.dispatchEvent(new Event('mermaidThemeUpdate'));
             }
         });
-        
-        // Listen for system preference changes
-        if (window.matchMedia) {
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-                // Only apply if no saved preference
-                if (!localStorage.getItem('theme')) {
-                    if (e.matches) {
-                        document.documentElement.classList.add('dark-theme');
-                    } else {
-                        document.documentElement.classList.remove('dark-theme');
-                    }
-                    
-                    // Update Mermaid diagrams if they exist
-                    if (window.mermaid) {
-                        document.dispatchEvent(new Event('mermaidThemeUpdate'));
-                    }
-                }
-            });
-        }
     }
 
     // Print Optimization

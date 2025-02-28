@@ -98,10 +98,11 @@
       
       // Check for saved preference
       const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'dark' || (savedTheme === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      if (savedTheme === 'dark') {
         document.documentElement.classList.add('dark-theme');
         toggleButton.querySelector('i').className = 'fas fa-sun';
       }
+      // Default is light theme, so we don't need to check for system preference
     });
   </script>
 {% endblock %}
