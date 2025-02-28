@@ -9,12 +9,7 @@ Memory Codex: Earth-Grounded AI Memory Systems
    <div class="hero-banner">
      <div class="hero-content">
        <h1>memories-dev 2.0.3</h1>
-       <p class="tagline">The Future of Earth-Grounded AI Memory • Est. 2025</p>
-       <div class="badges">
-         <span class="badge badge-primary">Production-Ready</span>
-         <span class="badge badge-success">Enterprise Support</span>
-         <span class="badge badge-info">ISO 27001 Certified</span>
-       </div>
+       <p class="tagline">The Future of Earth-Grounded AI Memory</p>
      </div>
    </div>
 
