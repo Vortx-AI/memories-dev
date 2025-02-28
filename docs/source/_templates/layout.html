@@ -4,7 +4,15 @@
   {{ super() }}
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Memory Codex Documentation - Earth-grounded AI memory systems">
+  <meta name="color-scheme" content="light">
   <link rel="stylesheet" href="{{ pathto('_static/css/custom.css', 1) }}" type="text/css" />
+  
+  <!-- Force light theme as default -->
+  <script>
+    // Set light theme as default immediately
+    document.documentElement.classList.remove('dark-theme');
+    localStorage.setItem('theme', 'light');
+  </script>
   
   <!-- Book JavaScript -->
   <script src="{{ pathto('_static/js/book.js', 1) }}"></script>
@@ -124,12 +132,17 @@
   </style>
   
   <script>
+    // Force light theme as default globally
+    document.documentElement.classList.remove('dark-theme');
+    localStorage.setItem('theme', 'light');
+    
     document.addEventListener('DOMContentLoaded', function() {
+      // Force light theme as default
+      document.documentElement.classList.remove('dark-theme');
+      localStorage.setItem('theme', 'light');
+      
       document.body.classList.add('book-reader');
       document.body.style.visibility = 'visible';
-      
-      // Explicitly remove dark theme class if present (ensure light theme by default)
-      document.documentElement.classList.remove('dark-theme');
       
       // Add theme toggle button with label
       const themeToggle = document.createElement('div');
@@ -165,20 +178,10 @@
         }));
       });
       
-      // Check for saved preference, but default to light theme
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'dark') {
-        document.documentElement.classList.add('dark-theme');
-        toggleButton.querySelector('i').className = 'fas fa-sun';
-      } else {
-        // Ensure light theme is active (default)
-        document.documentElement.classList.remove('dark-theme');
-        toggleButton.querySelector('i').className = 'fas fa-moon';
-        // Set light theme in localStorage if not already set
-        if (!savedTheme) {
-          localStorage.setItem('theme', 'light');
-        }
-      }
+      // Always default to light theme, ignoring saved preference
+      document.documentElement.classList.remove('dark-theme');
+      toggleButton.querySelector('i').className = 'fas fa-moon';
+      localStorage.setItem('theme', 'light');
       
       // Setup collapsible sidebar sections
       setTimeout(function() {

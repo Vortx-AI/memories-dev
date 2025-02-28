@@ -72,6 +72,11 @@ html_theme_options = {
     'titles_only': True,
 }
 
+# Custom context to ensure light theme is default
+html_context = {
+    'default_theme': 'light',
+}
+
 # These folders are copied to the documentation's HTML output
 html_static_path = ['_static']
 html_css_files = [
@@ -84,6 +89,10 @@ html_js_files = [
     ('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js', {'crossorigin': 'anonymous'}),
     ('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js', {'crossorigin': 'anonymous'})
 ]
+
+# Ensure light theme is set by default
+def setup(app):
+    app.add_js_file('js/force-light-theme.js')
 
 # LaTeX settings for PDF output
 latex_engine = 'pdflatex'
