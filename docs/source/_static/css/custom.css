@@ -445,7 +445,7 @@ table.docutils thead th {
     }
     
     .wy-menu-vertical a {
-        color: #d6d6d6;
+        color: #f0f0f0;
     }
     
     .wy-menu-vertical li.current > a {
@@ -689,7 +689,7 @@ table.docutils thead th {
 
 /* Improve menu item appearance */
 .wy-menu-vertical a {
-    color: #d9d9d9;
+    color: #f0f0f0;
     padding: 8px 16px 8px 24px;
     transition: background-color 0.2s ease, color 0.2s ease;
     font-weight: 500;
@@ -702,10 +702,10 @@ table.docutils thead th {
 }
 
 .wy-menu-vertical li.current > a {
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.1);
     color: #ffffff;
-    border-color: #3b82f6; /* Match button color */
     font-weight: 600;
+    border-left: 3px solid var(--primary-color);
 }
 
 /* Improve code blocks */
@@ -1184,4 +1184,16 @@ html.dark-theme .mermaid .node path {
 
 html.dark-theme .mermaid .edgePath .path {
   stroke: #d0d0d0 !important;
+}
+
+.wy-menu-vertical li.toctree-l2 a, 
+.wy-menu-vertical li.toctree-l3 a,
+.wy-menu-vertical li.toctree-l4 a {
+    color: #e6e6e6;
+}
+
+html.dark-theme .wy-menu-vertical li.toctree-l2 a,
+html.dark-theme .wy-menu-vertical li.toctree-l3 a,
+html.dark-theme .wy-menu-vertical li.toctree-l4 a {
+    color: #e6e6e6;
 } 
