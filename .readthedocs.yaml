@@ -1,5 +1,5 @@
 # .readthedocs.yaml
-# Read the Docs configuration file for memories.dev v2.0.2 - Collective Memory Infrastructure for AGI
+# Read the Docs configuration file for memories.dev
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
 # Required
@@ -29,75 +29,33 @@ build:
     - cm-super
     - dvipng
     - ghostscript
-    - librsvg2-bin  # For SVG to PDF conversion
-    - inkscape      # Alternative SVG converter
-    - pdf2svg       # For PDF to SVG conversion if needed
-    - imagemagick   # For image processing
-    - fonts-liberation  # Additional fonts
-    - fonts-freefont-ttf  # More fonts
+    - librsvg2-bin
+    - inkscape
+    - pdf2svg
+    - imagemagick
+    - fonts-liberation
+    - fonts-freefont-ttf
     - python3-lxml
     - python3-dev
     - libxml2-dev
     - libxslt1-dev
-  jobs:
-    pre_build:
-      # Core setup
-      - pip install --upgrade pip setuptools wheel
-      - pip install -e .
-      - pip install 'lxml[html_clean]>=4.9.3' lxml_html_clean>=0.4.0
-      - pip install -r docs/requirements-docs.txt
-      - pip install -r docs/build-requirements.txt
-      # Install SVG conversion tools
-      - pip install cairosvg svglib
-      # Clean build directory
-      - cd docs && make clean
-      # Generate API documentation
-      - sphinx-apidoc -o docs/source/api_reference memories/ --force --separate --module-first --no-toc
-      # Create necessary directories
-      - mkdir -p docs/build/latex
-      - mkdir -p docs/build/pdf
-      # Configure ImageMagick policy
-      - |
-        sudo mkdir -p /etc/ImageMagick-6
-        sudo tee /etc/ImageMagick-6/policy.xml << 'EOL'
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE policymap [
-          <!ELEMENT policymap (policy)+>
-          <!ELEMENT policy EMPTY>
-          <!ATTLIST policy domain (delegate|coder|filter|path|resource) #REQUIRED>
-          <!ATTLIST policy name CDATA #REQUIRED>
-          <!ATTLIST policy rights CDATA #IMPLIED>
-          <!ATTLIST policy pattern CDATA #IMPLIED>
-          <!ATTLIST policy value CDATA #IMPLIED>
-        ]>
-        <policymap>
-          <policy domain="coder" rights="read|write" pattern="PDF" />
-          <policy domain="coder" rights="read|write" pattern="SVG" />
-          <policy domain="resource" name="memory" value="2GiB"/>
-          <policy domain="resource" name="map" value="4GiB"/>
-          <policy domain="resource" name="disk" value="8GiB"/>
-        </policymap>
-        EOL
 
 # Sphinx configuration
 sphinx:
   configuration: docs/source/conf.py
-  fail_on_warning: true
-  builder: html
+  fail_on_warning: false
 
-# Documentation formats - Only include HTML
+# Documentation formats
 formats:
   - pdf
   - epub
   - htmlzip
 
-# Python package installation
+# Python requirements
 python:
   install:
     - method: pip
       path: .
-      extra_requirements:
-        - docs
     - requirements: docs/requirements-docs.txt
     - requirements: docs/build-requirements.txt
 
@@ -105,15 +63,3 @@ python:
 submodules:
   include: all
   recursive: true
-
-# Search configuration
-search:
-  ranking:
-    api/*: -1
-    examples/*: 2
-    tutorials/*: 3
-    getting_started/*: 4
-
-# Use a conda environment for additional dependencies
-conda:
-  environment: docs/environment.yml

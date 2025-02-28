@@ -1,7 +1,35 @@
 Examples
 ========
 
-This section contains examples and tutorials for using the memories-dev framework.
+🌍 Environmental Monitoring
+===========================
+
+🏙️ Urban Development
+====================
+
+🔍 Advanced Analysis
+====================
+
+Basic Examples
+-------------
+
+Memory Formation
+^^^^^^^^^^^^^^
+
+Query and Analysis
+^^^^^^^^^^^^^^^
+
+Advanced Usage
+-------------
+
+Multi-Source Integration
+^^^^^^^^^^^^^^^^^^^^
+
+Custom Analysis
+^^^^^^^^^^^^
+
+Performance Tips
+--------------
 
 .. toctree::
    :maxdepth: 1
@@ -14,18 +42,12 @@ This section contains examples and tutorials for using the memories-dev framewor
    biodiversity_assessment
    disaster_response
 
-🌍 Environmental Monitoring
---------------------------
-
 .. toctree::
    :maxdepth: 1
 
    water_bodies_monitor
    climate_analysis
    vegetation_tracking
-
-🏙️ Urban Development
---------------------
 
 .. toctree::
    :maxdepth: 1
@@ -34,21 +56,12 @@ This section contains examples and tutorials for using the memories-dev framewor
    traffic_patterns
    urban_growth
 
-🔍 Advanced Analysis
--------------------
-
 .. toctree::
    :maxdepth: 1
 
    location_ambience
    temporal_patterns
    spatial_analysis
-
-Basic Examples
---------------
-
-Memory Formation
-^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -68,9 +81,6 @@ Memory Formation
         }
     )
 
-Query and Analysis
-^^^^^^^^^^^^^^^^^^
-
 .. code-block:: python
 
     # Query memories in area
@@ -86,12 +96,6 @@ Query and Analysis
         metrics=["temperature_trend", "urban_development"]
     )
 
-Advanced Usage
---------------
-
-Multi-Source Integration
-^^^^^^^^^^^^^^^^^^^^^^^^
-
 .. code-block:: python
 
     from memories.sources import SatelliteSource, SensorSource
@@ -106,9 +110,6 @@ Multi-Source Integration
         sources=[satellite, sensors],
         integration_method="temporal_fusion"
     )
-
-Custom Analysis
-^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -126,9 +127,6 @@ Custom Analysis
     # Use custom analyzer
     analyzer = UrbanGrowthAnalyzer()
     results = analyzer.analyze(memories)
-
-Performance Tips
-----------------
 
 1. **Memory Management**
    - Use appropriate batch sizes

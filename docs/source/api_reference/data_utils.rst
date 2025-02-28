@@ -166,7 +166,7 @@ Raises
   - Large result sets
 
 📊 Example Usage
----------------
+-------------------
 
 Basic Queries
 ~~~~~~~~~~~~~
@@ -257,7 +257,7 @@ Advanced Operations
     )
 
 ⚡ Performance Optimization
---------------------------
+----------------------------
 
 1. **Data Organization**
    - Partition files by date/time
@@ -278,7 +278,7 @@ Advanced Operations
    - Clean up resources
 
 🔧 Troubleshooting
------------------
+------------------
 
 Common Issues
 ~~~~~~~~~~~~~
@@ -302,7 +302,7 @@ Common Issues
    - Verify results
 
 📚 See Also
-----------
+-----------
 
 - 'memory_store' - Core memory storage interface
 - 'data_processing' - Data processing utilities

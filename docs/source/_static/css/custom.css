@@ -1,39 +1,797 @@
 /* Custom CSS for memories-dev documentation */
 
-/* Improve general readability */
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-    font-size: 16px;
-    line-height: 1.6;
-    color: #333;
+/* Book-like Typography and Layout */
+:root {
+    /* Enhanced book-like color palette */
+    --text-color: #2d3748;
+    --background-color: #f8f5f0;
+    --content-background: #f8f5f0;
+    --link-color: #3182ce;
+    --link-hover-color: #2c5282;
+    --border-color: #e2d9d0;
+    --heading-color: #1a365d;
+    --code-background: #f0ece6;
+    --sidebar-background: #343131;
+    --sidebar-width: 300px;
+    
+    /* Admonition colors */
+    --admonition-note-color: #3182ce;
+    --admonition-note-bg: #ebf8ff;
+    --admonition-note-title-bg: #e6f6ff;
+    
+    --admonition-important-color: #c53030;
+    --admonition-important-bg: #fef5f5;
+    --admonition-important-title-bg: #feeaea;
+    
+    --admonition-tip-color: #2f855a;
+    --admonition-tip-bg: #f0fff4;
+    --admonition-tip-title-bg: #e6ffee;
+    
+    --admonition-warning-color: #c05621;
+    --admonition-warning-bg: #fffaf0;
+    --admonition-warning-title-bg: #fff5e6;
+    
+    --admonition-seealso-color: #2c7a7b;
+    --admonition-seealso-bg: #e6fffa;
+    --admonition-seealso-title-bg: #e6fff8;
+    
+    --admonition-hint-color: #6b46c1;
+    --admonition-hint-bg: #faf5ff;
+    --admonition-hint-title-bg: #f5eeff;
+
+    /* Text colors */
+    --text-color: #333333;
+    --text-color-secondary: #666666;
+    --sidebar-text-color: #f0f0f0;
+    --sidebar-link-color: #f0f0f0;
+    --sidebar-link-hover-color: #ffffff;
+    --sidebar-background: #343131;
 }
 
-/* Fix navigation UI issues */
+/* Base Typography */
+body {
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    margin: 0;
+    padding: 0;
+}
+
+/* Content Layout */
+.wy-nav-content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem;
+    background-color: var(--content-background);
+}
+
+.wy-nav-content-wrap {
+    margin-left: 300px;
+    background-color: var(--content-background);
+    min-height: 100vh;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    color: var(--text-color);
+}
+
+h1 {
+    font-size: 2.5em;
+    text-align: center;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 0.5em;
+    margin-bottom: 1em;
+}
+
+h2 { 
+    font-size: 1.75em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.3em;
+}
+
+h3 { font-size: 1.5em; }
+h4 { font-size: 1.25em; }
+
+p {
+    margin: 0 0 1.5em;
+    text-align: justify;
+    hyphens: auto;
+}
+
+/* Links */
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+a:hover {
+    color: var(--link-hover-color);
+    text-decoration: underline;
+}
+
+/* Navigation */
 .wy-nav-side {
     width: 300px;
+    background-color: var(--sidebar-background);
+    border-right: 1px solid var(--border-color);
+    padding: 0;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    background-color: #1e293b; /* Consistent with hero banner */
-    z-index: 200; /* Ensure sidebar is above content on mobile */
 }
 
 .wy-side-nav-search {
-    background-color: #0f172a; /* Match hero gradient start */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--sidebar-background);
+    padding: 1.5rem 1rem;
+    margin-bottom: 0;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    position: relative;
 }
 
+.wy-side-nav-search input[type="text"] {
+    width: 100%;
+    border-radius: 4px;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--sidebar-text-color);
+}
+
+.wy-side-nav-search > a {
+    color: var(--sidebar-text-color);
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* Menu styling */
+.wy-menu-vertical {
+    padding: 0;
+}
+
+.wy-menu-vertical .caption-text {
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 1.1em;
+    padding: 12px 15px;
+    margin-top: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+    display: block;
+}
+
+/* Sidebar section styling */
+.sidebar-section-header {
+    font-weight: bold;
+    font-size: 1.1em;
+    padding: 12px 15px;
+    margin-top: 5px;
+    background-color: rgba(0, 0, 0, 0.2);
+    color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.sidebar-section-header:hover {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-section-content {
+    display: none;
+    padding-left: 0;
+}
+
+.sidebar-section-content.expanded {
+    display: block;
+}
+
+/* Sidebar section icons */
+.section-icon {
+    margin-right: 10px;
+    width: 16px;
+    text-align: center;
+}
+
+/* Expand/collapse icon */
+.expand-icon {
+    transition: transform 0.3s ease;
+    font-size: 0.8em;
+    opacity: 0.8;
+}
+
+.expanded .expand-icon {
+    transform: rotate(180deg);
+}
+
+/* Improved navigation item styling */
+.wy-menu-vertical li {
+    margin-bottom: 0;
+}
+
+.wy-menu-vertical li a {
+    padding: 10px 15px 10px 25px;
+    display: flex;
+    align-items: center;
+}
+
+.wy-menu-vertical li a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Reduce spacing between items */
+.wy-menu-vertical li.toctree-l1 {
+    margin-bottom: 0;
+}
+
+.wy-menu-vertical li.toctree-l2 a {
+    padding-left: 2.5rem;
+}
+
+.wy-menu-vertical li.toctree-l3 a {
+    padding-left: 3.5rem;
+}
+
+.wy-menu-vertical li.toctree-l4 a {
+    padding-left: 4.5rem;
+}
+
+/* Empty content placeholder */
+.empty-content-placeholder {
+    background-color: #f8f9fa;
+    border: 1px dashed #d1d5db;
+    border-radius: 6px;
+    padding: 2rem;
+    margin: 2rem 0;
+    text-align: center;
+}
+
+.empty-content-placeholder h3 {
+    color: #4b5563;
+    margin-top: 0;
+}
+
+.empty-content-placeholder p {
+    color: #6b7280;
+    margin-bottom: 0;
+}
+
+html.dark-theme .empty-content-placeholder {
+    background-color: #1f2937;
+    border-color: #4b5563;
+}
+
+html.dark-theme .empty-content-placeholder h3 {
+    color: #e5e7eb;
+}
+
+html.dark-theme .empty-content-placeholder p {
+    color: #9ca3af;
+}
+
+/* Admonition Styling for Book-like Appearance */
+.admonition {
+    margin: 2em 0;
+    padding: 1.5em 1.5em 0.5em 1.5em;
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    border-left-width: 6px;
+    border-left-style: solid;
+    font-family: "Crimson Pro", Georgia, serif;
+    line-height: 1.6;
+}
+
+.admonition-title {
+    margin: -1.5em -1.5em 1em -1.5em;
+    padding: 0.75em 1em 0.75em 2.5em;
+    font-weight: 600;
+    font-size: 1.2em;
+    position: relative;
+    display: flex;
+    align-items: center;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+.admonition-title::before {
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    margin-right: 0.6em;
+    font-size: 1.2em;
+    position: absolute;
+    left: 0.8em;
+}
+
+/* Note admonition */
+.admonition.note {
+    background-color: var(--admonition-note-bg);
+    border-left-color: var(--admonition-note-border);
+}
+
+.admonition.note .admonition-title {
+    background-color: var(--admonition-note-title-bg);
+    color: var(--admonition-note-color);
+}
+
+.admonition.note .admonition-title::before {
+    content: "\f05a";  /* Font Awesome info-circle icon */
+}
+
+/* Important admonition */
+.admonition.important {
+    background-color: var(--admonition-important-bg);
+    border-left-color: var(--admonition-important-border);
+}
+
+.admonition.important .admonition-title {
+    background-color: var(--admonition-important-title-bg);
+    color: var(--admonition-important-color);
+}
+
+.admonition.important .admonition-title::before {
+    content: "\f06a";  /* Font Awesome exclamation-circle icon */
+}
+
+/* Tip admonition */
+.admonition.tip {
+    background-color: var(--admonition-tip-bg);
+    border-left-color: var(--admonition-tip-border);
+}
+
+.admonition.tip .admonition-title {
+    background-color: var(--admonition-tip-title-bg);
+    color: var(--admonition-tip-color);
+}
+
+.admonition.tip .admonition-title::before {
+    content: "\f0eb";  /* Font Awesome lightbulb icon */
+}
+
+/* Warning admonition */
+.admonition.warning {
+    background-color: var(--admonition-warning-bg);
+    border-left-color: var(--admonition-warning-border);
+}
+
+.admonition.warning .admonition-title {
+    background-color: var(--admonition-warning-title-bg);
+    color: var(--admonition-warning-color);
+}
+
+.admonition.warning .admonition-title::before {
+    content: "\f071";  /* Font Awesome exclamation-triangle icon */
+}
+
+/* See Also admonition */
+.admonition.seealso {
+    background-color: var(--admonition-seealso-bg);
+    border-left-color: var(--admonition-seealso-border);
+}
+
+.admonition.seealso .admonition-title {
+    background-color: var(--admonition-seealso-title-bg);
+    color: var(--admonition-seealso-color);
+}
+
+.admonition.seealso .admonition-title::before {
+    content: "\f06e";  /* Font Awesome eye icon */
+}
+
+/* Hint admonition */
+.admonition.hint {
+    background-color: var(--admonition-hint-bg);
+    border-left-color: var(--admonition-hint-border);
+}
+
+.admonition.hint .admonition-title {
+    background-color: var(--admonition-hint-title-bg);
+    color: var(--admonition-hint-color);
+}
+
+.admonition.hint .admonition-title::before {
+    content: "\f0a1";  /* Font Awesome bullhorn icon */
+}
+
+/* Admonition content styling */
+.admonition p {
+    margin-bottom: 1em;
+    line-height: 1.6;
+}
+
+.admonition ul, .admonition ol {
+    margin: 0.8em 0 0.8em 1.2em;
+    line-height: 1.6;
+}
+
+.admonition code {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.admonition pre {
+    margin: 1em 0;
+    padding: 1em;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.9em;
+}
+
+/* Disable automatic dark mode based on system preference */
+/*
+@media (prefers-color-scheme: dark) {
+    .admonition {
+        background-color: #2d333b;
+    }
+    .admonition code {
+        background-color: #1c2128;
+    }
+    .admonition pre {
+        background-color: #1c2128;
+    }
+}
+*/
+
+/* Code blocks with enhanced styling */
+pre, code {
+    font-family: "Fira Code", "Source Code Pro", Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+    font-size: 0.9em;
+    background-color: var(--code-background);
+    border-radius: 0.25em;
+}
+
+pre {
+    padding: 1em;
+    margin: 1.5em 0;
+    overflow: auto;
+    border: 1px solid var(--border-color);
+    line-height: 1.4;
+}
+
+code {
+    padding: 0.2em 0.4em;
+    white-space: pre-wrap;
+}
+
+/* Code block captions */
+.code-block-caption {
+    font-style: italic;
+    font-size: 0.9em;
+    text-align: center;
+    color: var(--heading-color);
+    margin-bottom: -1em;
+    padding: 0.5em;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Emphasized lines in code blocks */
+.highlight .hll {
+    background-color: rgba(255, 255, 200, 0.4);
+    display: block;
+    margin: 0 -1em;
+    padding: 0 1em;
+    border-left: 3px solid #f6ad55;
+}
+
+/* Table styling */
+table.docutils {
+    border-collapse: collapse;
+    margin: 1.5em 0;
+    width: 100%;
+    border: 1px solid var(--border-color);
+}
+
+table.docutils td, 
+table.docutils th {
+    padding: 0.75em 1em;
+    border: 1px solid var(--border-color);
+    text-align: left;
+}
+
+table.docutils thead th {
+    background-color: var(--sidebar-background);
+    font-weight: 700;
+    border-bottom: 2px solid var(--border-color);
+    color: var(--heading-color);
+}
+
+/* Disable automatic dark mode based on system preference */
+/*
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background-color: #0d1117;
+        --text-color: #c9d1d9;
+        --link-color: #58a6ff;
+        --link-hover-color: #79c0ff;
+        --heading-color: #e6edf3;
+        --border-color: #30363d;
+        --code-background: #161b22;
+        --code-color: #f0f6fc;
+        --table-border-color: #30363d;
+        --table-header-background: #161b22;
+        --table-background-color: #0d1117;
+        --sidebar-background: #161b22;
+        --sidebar-search-background: #0d1117;
+        --sidebar-link-color: #c9d1d9;
+        --sidebar-link-hover-color: #ffffff;
+        --admonition-background: #1c2128;
+        --admonition-title-background: #2d333b;
+    }
+    
+    .highlight .hll {
+        background-color: #2d333b;
+    }
+    
+    body {
+        background-color: var(--background-color);
+        color: var(--text-color);
+    }
+    
+    pre, code {
+        background-color: var(--code-background);
+        color: var(--code-color);
+    }
+    
+    table.docutils {
+        border-color: var(--table-border-color);
+    }
+    
+    table.docutils td, 
+    table.docutils th {
+        border-color: var(--table-border-color);
+    }
+    
+    table.docutils thead th {
+        background-color: var(--table-header-background);
+        color: var(--heading-color);
+    }
+    
+    .admonition {
+        background-color: var(--admonition-background);
+    }
+    
+    .wy-nav-side {
+        background-color: var(--sidebar-background);
+    }
+    
+    .wy-side-nav-search {
+        background-color: var(--sidebar-search-background);
+    }
+    
+    .wy-menu-vertical a {
+        color: var(--sidebar-link-color);
+    }
+    
+    .wy-menu-vertical li.current > a {
+        background-color: var(--code-background);
+        color: var(--link-color);
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+        color: var(--heading-color);
+    }
+    
+    h1 {
+        border-bottom-color: var(--border-color);
+    }
+    
+    h2 {
+        border-bottom-color: var(--border-color);
+    }
+}
+*/
+
+/* Dark theme class (for toggle button) */
+html.dark-theme {
+    /* Base colors */
+    --primary-color: #3498db;
+    --secondary-color: #2ecc71;
+    --accent-color: #e74c3c;
+    
+    /* Background colors */
+    --background-color: #121212;
+    --content-background: #1e1e1e;
+    --sidebar-background: #1a1a1a;
+    --code-background: #2d2d2d;
+    
+    /* Text colors */
+    --text-color: #e0e0e0;
+    --text-color-secondary: #b0b0b0;
+    --link-color: #4db8ff;
+    --link-hover-color: #66c2ff;
+    --sidebar-text-color: #f0f0f0;
+    --sidebar-link-color: #f0f0f0;
+    --sidebar-link-hover-color: #ffffff;
+    
+    /* Border colors */
+    --border-color: #444444;
+    --border-color-light: #555555;
+    
+    /* Admonition colors */
+    --admonition-note-bg: #1e2a38;
+    --admonition-note-title-bg: #1a3a5a;
+    --admonition-important-bg: #38281e;
+    --admonition-important-title-bg: #5a2a1a;
+    --admonition-tip-bg: #1e3828;
+    --admonition-tip-title-bg: #1a5a3a;
+    --admonition-warning-bg: #38341e;
+    --admonition-warning-title-bg: #5a501a;
+    --admonition-seealso-bg: #2a1e38;
+    --admonition-seealso-title-bg: #3a1a5a;
+    --admonition-hint-bg: #2a1e38;
+    --admonition-hint-title-bg: #3a1a5a;
+}
+
+/* Keep the rest of the original CSS file below this line */
+
+/* Reading Progress */
+.reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 3px;
+    background: var(--link-color);
+    z-index: 1000;
+    transition: width 0.2s ease;
+}
+
+/* Code Blocks */
+pre, code {
+    font-family: "Source Code Pro", monospace;
+    font-size: 0.9em;
+    background-color: var(--code-background);
+    border: 1px solid var(--border-color);
+}
+
+pre {
+    padding: 1rem;
+    margin: 1.5em 0;
+    overflow-x: auto;
+}
+
+code {
+    padding: 0.2em 0.4em;
+}
+
+/* Tables */
+table.docutils {
+    width: 100%;
+    margin: 1.5em 0;
+    border-collapse: collapse;
+    border: 1px solid var(--border-color);
+}
+
+table.docutils td, 
+table.docutils th {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+}
+
+table.docutils thead th {
+    background-color: var(--sidebar-background);
+    font-weight: 700;
+    text-align: left;
+}
+
+/* Chapter Navigation */
+.chapter-nav {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    font-family: "Crimson Pro", Georgia, serif;
+    font-style: italic;
+}
+
+.prev-chapter::before {
+    content: "←";
+    margin-right: 0.5em;
+}
+
+.next-chapter::after {
+    content: "→";
+    margin-left: 0.5em;
+}
+
+/* Mobile Styles */
+@media screen and (max-width: 768px) {
+    :root {
+        --sidebar-width: 100%;
+    }
+
+    .wy-nav-side {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+    
+    .wy-nav-side.shift {
+        transform: translateX(0);
+    }
+    
+    .wy-nav-content-wrap {
+        margin-left: 0 !important;
+    }
+    
+    .wy-nav-content {
+        padding: 1rem !important;
+    }
+}
+
+/* Print Styles */
+@media print {
+    :root {
+        --background-color: white;
+        --text-color: black;
+    }
+
+    body {
+        font-size: 12pt;
+        line-height: 1.4;
+    }
+
+    .wy-nav-side, .reading-progress {
+        display: none;
+    }
+
+    .wy-nav-content-wrap {
+        margin: 0 !important;
+    }
+
+    .wy-nav-content {
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    a {
+        color: black;
+    }
+
+    pre, code {
+        border: 1px solid #ccc;
+        page-break-inside: avoid;
+    }
+
+    @page {
+        margin: 2.5cm;
+    }
+}
+
+/* Dark Theme */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-color: #e0e0e0;
+        --background-color: #1a1a1a;
+        --link-color: #63b3ed;
+        --border-color: #404040;
+        --heading-color: #e5e5e5;
+        --code-background: #2d2d2d;
+        --sidebar-background: #262626;
+    }
+}
+
+/* Fix navigation UI issues */
 .wy-nav-top {
     background-color: #0f172a; /* Match hero gradient start */
     color: white;
     z-index: 300; /* Ensure mobile nav is on top */
-}
-
-.wy-nav-content {
-    max-width: 1000px !important;
-    margin: 0 auto !important;
-    padding: 1.618em 3.236em !important;
-    width: 100% !important;
-    background-color: #ffffff;
 }
 
 /* Improved dropdown color consistency */
@@ -101,20 +859,23 @@ body {
 
 /* Improve menu item appearance */
 .wy-menu-vertical a {
-    color: #d9d9d9;
+    color: var(--sidebar-link-color);
     padding: 8px 16px 8px 24px;
     transition: background-color 0.2s ease, color 0.2s ease;
+    font-weight: 500;
 }
 
 .wy-menu-vertical a:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--sidebar-link-hover-color);
+    font-weight: 600;
 }
 
 .wy-menu-vertical li.current > a {
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.1);
     color: #ffffff;
-    border-color: #3b82f6; /* Match button color */
+    font-weight: 600;
+    border-left: 3px solid var(--primary-color);
 }
 
 /* Improve code blocks */
@@ -358,41 +1119,41 @@ html.dark-theme .wy-nav-content .contents.local a:hover {
 
 /* Dark Theme Support */
 html.dark-theme body {
-    color: #e0e0e0;
+    color: var(--text-color);
     background-color: #121212;
 }
 
 html.dark-theme .wy-nav-content {
     background-color: #1e1e1e;
-    color: #e0e0e0;
 }
 
 html.dark-theme .wy-nav-side {
-    background-color: #0f172a;
+    background-color: #1a1a1a;
 }
 
 html.dark-theme .wy-side-nav-search {
-    background-color: #0c1221;
+    background-color: #1a1a1a;
 }
 
 html.dark-theme .wy-menu-vertical a {
-    color: #b0b0b0;
+    color: #ffffff;
 }
 
 html.dark-theme .wy-menu-vertical a:hover {
     background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
 }
 
 html.dark-theme code {
     background-color: #2d2d2d;
     border-color: #444;
-    color: #e0e0e0;
+    color: var(--text-color);
 }
 
 html.dark-theme pre {
     background-color: #2d2d2d;
     border-color: #444;
-    color: #e0e0e0;
+    color: var(--text-color);
 }
 
 html.dark-theme .highlight {
@@ -422,7 +1183,7 @@ html.dark-theme .btn-primary {
 
 html.dark-theme .progress-stats {
     background-color: rgba(30, 30, 30, 0.9);
-    color: #e0e0e0;
+    color: var(--text-color);
 }
 
 /* Code Label Styles */
@@ -494,30 +1255,49 @@ html.dark-theme .search-highlight {
 
 /* Theme Toggle Button */
 .theme-toggle-container {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 1001;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: center;
 }
 
 .theme-toggle-button {
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.25);
+    border: 2px solid rgba(255, 255, 255, 0.5);
     border-radius: 50%;
     width: 40px;
     height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #ffffff;
     cursor: pointer;
-    color: white;
-    font-size: 20px;
     transition: all 0.2s ease;
+    font-size: 18px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .theme-toggle-button:hover {
-    transform: scale(1.1);
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(1.05);
+}
+
+/* Add a label for the theme toggle button */
+.theme-toggle-container::after {
+    content: "Theme";
+    display: block;
+    color: #ffffff;
+    font-size: 12px;
+    margin-top: 5px;
+    position: absolute;
+    bottom: -20px;
+    text-align: center;
+    width: 40px;
+}
+
+/* Position the toggle button more prominently */
+.wy-side-nav-search {
+    position: relative;
 }
 
 /* Active Section in Navigation */
@@ -530,4 +1310,290 @@ html.dark-theme .search-highlight {
 html.dark-theme .wy-menu-vertical li a.active-section {
     background-color: rgba(59, 130, 246, 0.2);
     color: #7eb6ff;
+}
+
+/* Mermaid diagram improvements */
+.mermaid {
+  margin: 2rem auto;
+  display: block;
+  text-align: center;
+  max-width: 100%;
+  overflow-x: auto;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Disable automatic dark mode based on system preference */
+/*
+@media (prefers-color-scheme: dark) {
+  .mermaid {
+    background-color: #0d1117;
+    color: #c9d1d9;
+  }
+  
+  .mermaid .label {
+    color: #c9d1d9;
+    font-family: 'Source Code Pro', monospace;
+  }
+  
+  .mermaid .node rect, 
+  .mermaid .node circle, 
+  .mermaid .node ellipse, 
+  .mermaid .node polygon, 
+  .mermaid .node path {
+    fill: #2d333b;
+    stroke: #444c56;
+  }
+  
+  .mermaid .edgePath .path {
+    stroke: #8b949e;
+  }
+}
+*/
+
+html.dark-theme .mermaid {
+  background-color: #2d333b;
+  filter: brightness(0.9) contrast(1.1);
+}
+
+html.dark-theme .mermaid .label {
+  color: #e6e6e6 !important;
+  font-weight: 500;
+}
+
+html.dark-theme .mermaid .node rect, 
+html.dark-theme .mermaid .node circle, 
+html.dark-theme .mermaid .node ellipse, 
+html.dark-theme .mermaid .node polygon, 
+html.dark-theme .mermaid .node path {
+  stroke: #aaa !important;
+}
+
+html.dark-theme .mermaid .edgePath .path {
+  stroke: #d0d0d0 !important;
+}
+
+.wy-menu-vertical li.toctree-l2 a, 
+.wy-menu-vertical li.toctree-l3 a,
+.wy-menu-vertical li.toctree-l4 a {
+    color: #ffffff;
+    border-right: solid 1px rgba(255, 255, 255, 0.2);
+}
+
+html.dark-theme .wy-menu-vertical li.toctree-l2 a,
+html.dark-theme .wy-menu-vertical li.toctree-l3 a,
+html.dark-theme .wy-menu-vertical li.toctree-l4 a {
+    color: #ffffff;
+    border-right: solid 1px rgba(255, 255, 255, 0.2);
+}
+
+html.dark-theme .wy-menu-vertical li.toctree-l2 a {
+    background: #1a1a1a;
+}
+
+html.dark-theme .wy-menu-vertical li.toctree-l3 a {
+    background: #141414; /* Darker than level 2 in dark mode */
+}
+
+html.dark-theme .wy-menu-vertical li.toctree-l4 a {
+    background: #0d0d0d; /* Darker than level 3 in dark mode */
+}
+
+/* Journey Map Styling */
+.journey-map {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 3rem 0;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    flex-wrap: wrap;
+}
+
+.journey-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1rem;
+    flex: 1;
+    min-width: 120px;
+}
+
+.stage-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.stage-title {
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+    color: var(--heading-color);
+}
+
+.stage-desc {
+    font-size: 0.9rem;
+    color: var(--text-color-secondary);
+}
+
+.journey-connector {
+    height: 2px;
+    background-color: var(--border-color);
+    flex-grow: 1;
+    margin: 0 0.5rem;
+}
+
+/* Community Section Styling */
+.community-section {
+    display: flex;
+    justify-content: space-between;
+    margin: 2rem 0;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.community-card {
+    flex: 1;
+    min-width: 250px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.community-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-icon {
+    font-size: 2rem;
+    color: var(--link-color);
+    margin-bottom: 1rem;
+}
+
+.community-card h3 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    color: var(--heading-color);
+}
+
+.community-card p {
+    margin-bottom: 1.5rem;
+    color: var(--text-color-secondary);
+}
+
+/* Case Studies Styling */
+.case-studies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.case-study {
+    flex: 1;
+    min-width: 250px;
+    background-color: #f8f9fa;
+    border-left: 4px solid var(--link-color);
+    padding: 1.5rem;
+    border-radius: 0 8px 8px 0;
+}
+
+.case-study h3 {
+    margin-top: 0;
+    color: var(--heading-color);
+}
+
+.case-study p {
+    margin-bottom: 1rem;
+    color: var(--text-color-secondary);
+}
+
+.case-study a {
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.case-study a:hover {
+    text-decoration: underline;
+}
+
+/* CTA Button Styling */
+.cta-container {
+    text-align: center;
+    margin: 3rem 0;
+}
+
+.cta-button {
+    display: inline-block;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    background-color: var(--link-color);
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.cta-button:hover {
+    background-color: var(--link-hover-color);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    text-decoration: none;
+    color: white;
+}
+
+.cta-button i {
+    margin-right: 0.5rem;
+}
+
+/* Dark theme adjustments for new sections */
+html.dark-theme .journey-map {
+    background-color: #1f2937;
+}
+
+html.dark-theme .stage-title {
+    color: #e5e7eb;
+}
+
+html.dark-theme .stage-desc {
+    color: #9ca3af;
+}
+
+html.dark-theme .journey-connector {
+    background-color: #4b5563;
+}
+
+html.dark-theme .community-card {
+    background-color: #1f2937;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+html.dark-theme .community-card h3 {
+    color: #e5e7eb;
+}
+
+html.dark-theme .community-card p {
+    color: #9ca3af;
+}
+
+html.dark-theme .case-study {
+    background-color: #1f2937;
+    border-left-color: #3b82f6;
+}
+
+html.dark-theme .case-study h3 {
+    color: #e5e7eb;
+}
+
+html.dark-theme .case-study p {
+    color: #9ca3af;
 } 

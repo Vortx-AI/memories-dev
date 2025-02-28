@@ -5,7 +5,7 @@ Complete Table of Contents
 This page provides a comprehensive overview of all documentation sections.
 
 Foundations
-----------
+============
 
 * :doc:`introduction/index`
     * The Genesis of Earth Memory
@@ -23,7 +23,7 @@ Foundations
     * Next Steps
 
 Core Concepts
-------------
+============
 
 * :doc:`core_concepts/index`
     * Memory Architecture
@@ -52,7 +52,7 @@ Core Concepts
     * Cross-domain Analysis
 
 Memory Architecture
-------------------
+=================
 
 * :doc:`memory_architecture/index`
     * Overview of Memory Tiers
@@ -72,7 +72,7 @@ Memory Architecture
     * Performance Considerations
 
 Memory Types
------------
+===========
 
 * :doc:`memory_types/index`
     * Introduction to Earth Memory Types
@@ -83,7 +83,7 @@ Memory Types
     * Creating Custom Memory Types
 
 Earth Memory
------------
+===========
 
 * :doc:`earth_memory/index`
     * Earth Memory Overview
@@ -107,7 +107,7 @@ Earth Memory
     * Optimization Techniques
 
 Memory Codex
------------
+===========
 
 * :doc:`memory_codex/index`
     * Memory Codex Overview
@@ -121,7 +121,7 @@ Memory Codex
     * Advanced Query Capabilities
 
 Implementation
--------------
+=============
 
 * :doc:`setup/observatory`
     * Setting Up Your Observatory
@@ -149,7 +149,7 @@ Implementation
     * Deployment Strategies
 
 Application Examples
-------------------
+==================
 
 * :doc:`examples/index`
     * Overview of Case Studies
@@ -172,7 +172,7 @@ Application Examples
     * Impact Assessment
 
 Technical Reference
------------------
+=================
 
 * :doc:`api/index`
     * Complete API Reference
@@ -181,72 +181,4 @@ Technical Reference
     * Data Integration
     * Analysis Tools
 
-* :doc:`technical_index`
-    * Technical Specifications
-    * Mathematical Foundations
-    * Algorithm Details
-    * Performance Benchmarks
-
-* :doc:`metrics/index`
-    * Metrics Catalog
-    * Performance Metrics
-    * Accuracy Metrics
-    * System Monitoring
-
-Contributing
------------
-
-* :doc:`contributing/index`
-    * Getting Started with Contributions
-    * Development Workflow
-    * Coding Standards
-    * Documentation Guidelines
-
-Legal
------
-
-* :doc:`license`
-    * MIT License
-    * Third-Party Components
-
-* :doc:`privacy`
-    * Privacy Policy
-    * Information Collection
-    * Data Security
-    * Your Rights
-
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-   
-   introduction/index
-   getting_started/index
-   core_concepts/index
-   core_concepts/workflow
-   core_concepts/spatial_analysis
-   core_concepts/temporal_analysis
-   core_concepts/data_fusion
-   memory_architecture/index
-   memory_architecture/storage
-   memory_architecture/tiered_memory
-   memory_types/index
-   earth_memory/index
-   earth_memory/scientific_foundations
-   earth_memory/analyzers
-   earth_memory/integration
-   memory_codex/index
-   memory_codex/query
-   setup/observatory
-   integration/datasources
-   integration/data_processing
-   integration/models
-   examples/index
-   examples/environmental_monitoring
-   examples/climate_intelligence
-   examples/resource_management
-   api/index
-   technical_index
-   metrics/index
-   contributing/index
-   license
-   privacy 
+* :doc:`

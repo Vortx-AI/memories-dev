@@ -2,7 +2,6 @@
 Tiered Memory
 ======================
 
-
 Introduction to Tiered Memory
 ----------------------------
 
@@ -13,23 +12,42 @@ Memory Tier Overview
 
 The framework defines four primary memory tiers, each with distinct characteristics and purposes:
 
-.. code-block:: text
+.. mermaid::
 
-    ┌─────────────────────────────────────────────────────────────┐
-    │                    Earth Memory Tiers                        │
-    └─────────────────────────────────────────────────────────────┘
-                               │
-               ┌───────────────┼───────────────┐
-               │               │               │
-    ┌──────────▼───────┐ ┌────▼─────┐ ┌───────▼────────┐
-    │   Hot Memory     │ │   Warm   │ │  Cold Memory   │
-    │ (Real-time state)│ │  Memory  │ │(Historical data)│
-    └──────────────────┘ └────┬─────┘ └───────┬────────┘
-                              │               │
-                         ┌────▼─────────────┐ │
-                         │ Glacier Memory   │◄┘
-                         │ (Deep archive)   │
-                         └──────────────────┘
+    flowchart TD
+        A[Memory Manager] --> B[Hot Memory]
+        A --> C[Warm Memory]
+        A --> D[Cold Memory]
+        A --> E[Glacier Memory]
+        
+        B --> F["In-Memory Cache
+        • Real-time state
+        • Highest performance
+        • Limited capacity"]
+        
+        C --> G["SSD Storage
+        • Recent patterns
+        • Medium performance
+        • Moderate capacity"]
+        
+        D --> H["HDD/Object Storage
+        • Historical data
+        • Lower performance
+        • Large capacity"]
+        
+        E --> I["Archive Storage
+        • Deep history
+        • Lowest performance
+        • Unlimited capacity"]
+
+        style A fill:#4B5563,color:white,stroke-width:2px
+        style B fill:#EF4444,color:white,stroke-width:2px
+        style C fill:#F59E0B,color:white,stroke-width:2px
+        style D fill:#10B981,color:white,stroke-width:2px
+        style E fill:#3B82F6,color:white,stroke-width:2px
+        
+        classDef storage fill:#f9fafb,stroke:#d1d5db,stroke-width:1px
+        class F,G,H,I storage
 
 Hot Memory Tier
 --------------
@@ -244,29 +262,21 @@ Memory Flow Between Tiers
 
 Data naturally flows between memory tiers based on access patterns, age, and importance:
 
-.. code-block:: text
+.. mermaid::
 
-            ┌──────────────┐
-            │  Hot Memory  │
-            └──────┬───────┘
-                   │
-                   │ Age-out, Aggregation
-                   ▼
-            ┌──────────────┐
-            │ Warm Memory  │
-            └──────┬───────┘
-                   │
-                   │ Archive, Compression
-                   ▼
-            ┌──────────────┐
-            │ Cold Memory  │
-            └──────┬───────┘
-                   │
-                   │ Distillation, Preservation
-                   ▼
-            ┌──────────────┐
-            │Glacier Memory│
-            └──────────────┘
+    flowchart TD
+        A[Hot Memory] -->|Age-out, Aggregation| B[Warm Memory]
+        B -->|Archive, Compression| C[Cold Memory]
+        C -->|Distillation, Preservation| D[Glacier Memory]
+        
+        B -.->|Promotion on frequent access| A
+        C -.->|Promotion on renewed relevance| B
+        D -.->|Promotion for comparative analysis| C
+        
+        style A fill:#EF4444,color:white,stroke-width:2px
+        style B fill:#F59E0B,color:white,stroke-width:2px
+        style C fill:#10B981,color:white,stroke-width:2px
+        style D fill:#3B82F6,color:white,stroke-width:2px
 
 Data Movement Policies
 --------------------
@@ -583,233 +593,78 @@ The Memory Codex provides tools for monitoring and optimizing tiered memory perf
        parameters={"cache_size": "20GB", "eviction_policy": "LFU"}
    )
 
-Next Steps
----------
+Mathematical Foundations
+----------------------
 
-After learning about tiered memory architecture:
+The tiered memory system uses several mathematical models to optimize data placement and retrieval:
 
-- Configure storage backends for each tier in :doc:`storage`
-- Explore data processing patterns across tiers in :doc:`../integration/data_processing`
-- Learn about memory types that work with this architecture in :doc:`../memory_types/index`
+**Access Frequency Prediction**
 
-Overview
---------
+The system predicts future access patterns using a time-weighted exponential decay model:
 
-The memories-dev framework implements a tiered memory architecture that optimizes data storage and access based on frequency of use, importance, and performance requirements.
+.. math::
 
-Memory Hierarchy
---------------
+   P(access) = \sum_{i=1}^{n} w_i \cdot e^{-\lambda(t_{now} - t_i)}
 
-.. mermaid::
+Where:
+- :math:`P(access)` is the predicted probability of future access
+- :math:`w_i` is the importance weight of access event i
+- :math:`\lambda` is the decay constant
+- :math:`t_{now}` is the current time
+- :math:`t_i` is the time of access event i
 
-    flowchart TD
-        A[Memory Manager] --> B[Hot Memory]
-        A --> C[Warm Memory]
-        A --> D[Cold Memory]
-        A --> E[Glacier Memory]
-        
-        B --> F[In-Memory Cache]
-        C --> G[SSD Storage]
-        D --> H[HDD Storage]
-        E --> I[Cloud Archive]
+**Optimal Tier Selection**
 
-        style A fill:#4B5563,color:white
-        style B fill:#EF4444,color:white
-        style C fill:#F59E0B,color:white
-        style D fill:#10B981,color:white
-        style E fill:#3B82F6,color:white
+The system selects the optimal tier for data placement using a cost function:
 
-Hot Memory
----------
+.. math::
 
-Characteristics:
-- Highest performance tier
-- In-memory storage
-- Limited capacity
-- Most frequently accessed data
-- Automatic eviction based on LRU
+   C(tier) = \alpha \cdot C_{storage}(tier) + \beta \cdot C_{access}(tier, P_{access}) + \gamma \cdot C_{transition}(current\_tier, tier)
 
-Implementation:
-
-.. code-block:: python
-
-    from memories.storage import HotMemoryManager
-    
-    # Configure hot memory
-    hot_memory = HotMemoryManager(
-        capacity="32GB",
-        eviction_policy="lru",
-        compression=True
-    )
-    
-    # Store frequently accessed data
-    await hot_memory.store(
-        key="recent_analysis",
-        data=analysis_results,
-        priority="high"
-    )
-
-Warm Memory
-----------
-
-Characteristics:
-- Medium performance tier
-- SSD-based storage
-- Moderate capacity
-- Recently accessed data
-- Balanced cost-performance ratio
-
-Implementation:
-
-.. code-block:: python
-
-    from memories.storage import WarmMemoryManager
-    
-    # Configure warm memory
-    warm_memory = WarmMemoryManager(
-        path="/data/warm",
-        capacity="1TB",
-        cleanup_interval="1d"
-    )
-    
-    # Move data to warm storage
-    await warm_memory.store(
-        key="monthly_summary",
-        data=summary_data,
-        retention="30d"
-    )
-
-Cold Memory
-----------
-
-Characteristics:
-- Lower performance tier
-- HDD-based storage
-- Large capacity
-- Infrequently accessed data
-- Cost-effective long-term storage
-
-Implementation:
-
-.. code-block:: python
-
-    from memories.storage import ColdMemoryManager
-    
-    # Configure cold memory
-    cold_memory = ColdMemoryManager(
-        path="/data/cold",
-        capacity="10TB",
-        compression_level="high"
-    )
-    
-    # Archive older data
-    await cold_memory.store(
-        key="historical_data_2023",
-        data=historical_data,
-        compress=True
-    )
-
-Glacier Memory
-------------
-
-Characteristics:
-- Lowest performance tier
-- Cloud-based archival storage
-- Unlimited capacity
-- Rarely accessed data
-- Lowest storage cost
-
-Implementation:
-
-.. code-block:: python
-
-    from memories.storage import GlacierMemoryManager
-    
-    # Configure glacier memory
-    glacier_memory = GlacierMemoryManager(
-        provider="aws",
-        bucket="earth-memories-archive",
-        region="us-west-2"
-    )
-    
-    # Archive data for long-term storage
-    await glacier_memory.store(
-        key="historical_archive_2020",
-        data=archive_data,
-        retention="7y"
-    )
-
-Memory Movement
--------------
-
-Data automatically moves between tiers based on access patterns:
-
-.. code-block:: python
-
-    from memories.storage import MemoryManager
-    
-    # Initialize memory manager
-    manager = MemoryManager(
-        hot_memory=hot_memory,
-        warm_memory=warm_memory,
-        cold_memory=cold_memory,
-        glacier_memory=glacier_memory
-    )
-    
-    # Data automatically moves between tiers
-    data = await manager.get("analysis_2023")  # Promotes to hot if frequently accessed
-    
-    # Manually move data between tiers
-    await manager.promote("monthly_data", to_tier="warm")
-    await manager.demote("old_data", to_tier="cold")
-
-Monitoring and Metrics
---------------------
-
-Track memory tier performance and usage:
-
-.. code-block:: python
-
-    # Get memory metrics
-    metrics = manager.get_metrics()
-    
-    print(f"Hot memory usage: {metrics['hot']['usage_percent']}%")
-    print(f"Warm memory usage: {metrics['warm']['usage_percent']}%")
-    print(f"Cold memory usage: {metrics['cold']['usage_percent']}%")
-    print(f"Glacier memory usage: {metrics['glacier']['usage_percent']}%")
-    
-    # Get access patterns
-    patterns = manager.get_access_patterns(
-        timeframe="7d",
-        granularity="1h"
-    )
+Where:
+- :math:`C(tier)` is the total cost for a given tier
+- :math:`C_{storage}` is the storage cost
+- :math:`C_{access}` is the access cost based on predicted access patterns
+- :math:`C_{transition}` is the cost of moving data between tiers
+- :math:`\alpha`, :math:`\beta`, and :math:`\gamma` are weighting factors
 
 Best Practices
 ------------
 
 1. **Data Classification**
-   - Classify data based on access patterns
-   - Consider data importance and retention requirements
-   - Define clear promotion/demotion policies
+   - Classify data based on access patterns and scientific value
+   - Implement clear metadata standards for automatic classification
+   - Regularly review classification rules as usage patterns evolve
 
 2. **Capacity Planning**
-   - Monitor tier utilization
-   - Set appropriate tier capacities
-   - Plan for data growth
+   - Monitor tier utilization with alerts for approaching capacity limits
+   - Implement predictive scaling based on historical growth patterns
+   - Balance tier capacities based on your specific workload characteristics
 
 3. **Performance Optimization**
-   - Use appropriate compression levels
-   - Configure eviction policies
-   - Optimize access patterns
+   - Use appropriate compression algorithms for each tier (lossless for hot/warm, potentially lossy for cold/glacier)
+   - Implement data partitioning strategies aligned with common query patterns
+   - Consider data locality for distributed processing workloads
 
 4. **Cost Management**
-   - Balance performance and cost
-   - Monitor storage costs
-   - Implement lifecycle policies
+   - Implement automatic cleanup policies for ephemeral data
+   - Use data sampling techniques for extremely large historical datasets
+   - Consider hybrid storage strategies using both on-premises and cloud resources
 
 See Also
 --------
 
-* :doc:`/memory_architecture/memory_system`
-* :doc:`/memory_architecture/retention`
-* :doc:`/deployment/scaling` 
+* :doc:`/memory_architecture/memory_system` - Core memory system architecture
+* :doc:`/memory_architecture/storage` - Storage backend configuration
+* :doc:`/memory_types/index` - Memory type implementations
+* :doc:`/integration/data_processing` - Data processing across memory tiers
+* :doc:`/deployment/scaling` - Scaling tiered memory systems 
+
+Contact Information
+------------------
+
+For more information about the tiered memory architecture or other aspects of the ``memories-dev`` framework, please visit our website or contact us directly:
+
+* **Website:** `www.memories.dev <https://www.memories.dev>`_
+* **Email:** `hello@memories.dev <mailto:hello@memories.dev>`_
+* **GitHub:** `github.com/Vortx-AI/memories-dev <https://github.com/Vortx-AI/memories-dev>`_ 

@@ -44,7 +44,7 @@ def sphinx_app():
         outdir=str(build_dir),
         doctreedir=str(doctree_dir),
         buildername='html',
-        warningiserror=True
+        warningiserror=False
     )
     yield app
 

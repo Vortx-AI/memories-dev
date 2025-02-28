@@ -1,3 +1,6 @@
+Application Layer Architecture
+=========================
+
 .. mermaid::
 
     flowchart TD
