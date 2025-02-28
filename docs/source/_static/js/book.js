@@ -107,16 +107,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Dark Mode
     function setupDarkMode() {
+        // Explicitly set light theme as default
+        document.documentElement.classList.remove('dark-theme');
+        
         // Check for saved theme preference
         const savedTheme = localStorage.getItem('theme');
         
         // Apply saved theme if it exists
         if (savedTheme === 'dark') {
             document.documentElement.classList.add('dark-theme');
-        } else if (savedTheme === 'light') {
+        } else {
+            // Ensure light theme is active (default)
             document.documentElement.classList.remove('dark-theme');
+            // Set light theme in localStorage if not already set
+            if (!savedTheme) {
+                localStorage.setItem('theme', 'light');
+            }
         }
-        // Default is light theme, so we don't check system preference
         
         // Listen for theme toggle events
         document.addEventListener('themeToggled', function(e) {

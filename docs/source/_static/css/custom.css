@@ -136,6 +136,7 @@ a:hover {
     margin-bottom: 0;
     text-align: center;
     border-bottom: 1px solid var(--border-color);
+    position: relative;
 }
 
 .wy-side-nav-search input[type="text"] {
@@ -1281,28 +1282,49 @@ html.dark-theme .search-highlight {
 
 /* Theme Toggle Button */
 .theme-toggle-container {
-    margin-top: 10px;
+    margin-top: 15px;
+    margin-bottom: 15px;
     display: flex;
     justify-content: center;
 }
 
 .theme-toggle-button {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.25);
+    border: 2px solid rgba(255, 255, 255, 0.5);
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #ffffff;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 16px;
+    font-size: 18px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .theme-toggle-button:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(1.05);
+}
+
+/* Add a label for the theme toggle button */
+.theme-toggle-container::after {
+    content: "Theme";
+    display: block;
+    color: #ffffff;
+    font-size: 12px;
+    margin-top: 5px;
+    position: absolute;
+    bottom: -20px;
+    text-align: center;
+    width: 40px;
+}
+
+/* Position the toggle button more prominently */
+.wy-side-nav-search {
+    position: relative;
 }
 
 /* Active Section in Navigation */

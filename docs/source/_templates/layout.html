@@ -29,30 +29,42 @@
       visibility: visible !important; 
     }
 
-    /* Theme toggle button */
+    /* Theme toggle button - Inline styles for immediate effect */
     .theme-toggle-container {
-      margin-top: 10px;
+      margin-top: 15px;
+      margin-bottom: 15px;
       display: flex;
       justify-content: center;
+      position: relative;
     }
     
     .theme-toggle-button {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.25);
+      border: 2px solid rgba(255, 255, 255, 0.5);
       border-radius: 50%;
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #ffffff;
       cursor: pointer;
       transition: all 0.2s ease;
-      font-size: 16px;
+      font-size: 18px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      z-index: 100;
     }
     
     .theme-toggle-button:hover {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.4);
+      transform: scale(1.05);
+    }
+    
+    .theme-toggle-label {
+      color: #ffffff;
+      font-size: 12px;
+      margin-top: 5px;
+      text-align: center;
     }
 
     /* Mobile navigation */
@@ -116,11 +128,25 @@
       document.body.classList.add('book-reader');
       document.body.style.visibility = 'visible';
       
-      // Add theme toggle button
+      // Explicitly remove dark theme class if present (ensure light theme by default)
+      document.documentElement.classList.remove('dark-theme');
+      
+      // Add theme toggle button with label
       const themeToggle = document.createElement('div');
       themeToggle.className = 'theme-toggle-container';
-      themeToggle.innerHTML = '<button class="theme-toggle-button" aria-label="Toggle dark mode"><i class="fas fa-moon"></i></button>';
-      document.querySelector('.wy-side-nav-search').appendChild(themeToggle);
+      themeToggle.innerHTML = '<button class="theme-toggle-button" aria-label="Toggle dark mode"><i class="fas fa-moon"></i></button><div class="theme-toggle-label">Theme</div>';
+      
+      // Insert at the top of the search area for better visibility
+      const searchArea = document.querySelector('.wy-side-nav-search');
+      if (searchArea) {
+        // Insert after the logo but before the search box
+        const logo = searchArea.querySelector('a');
+        if (logo && logo.nextSibling) {
+          searchArea.insertBefore(themeToggle, logo.nextSibling);
+        } else {
+          searchArea.appendChild(themeToggle);
+        }
+      }
       
       // Theme toggle functionality
       const toggleButton = themeToggle.querySelector('.theme-toggle-button');
@@ -139,13 +165,20 @@
         }));
       });
       
-      // Check for saved preference
+      // Check for saved preference, but default to light theme
       const savedTheme = localStorage.getItem('theme');
       if (savedTheme === 'dark') {
         document.documentElement.classList.add('dark-theme');
         toggleButton.querySelector('i').className = 'fas fa-sun';
+      } else {
+        // Ensure light theme is active (default)
+        document.documentElement.classList.remove('dark-theme');
+        toggleButton.querySelector('i').className = 'fas fa-moon';
+        // Set light theme in localStorage if not already set
+        if (!savedTheme) {
+          localStorage.setItem('theme', 'light');
+        }
       }
-      // Default is light theme, so we don't need to check for system preference
       
       // Setup collapsible sidebar sections
       setTimeout(function() {

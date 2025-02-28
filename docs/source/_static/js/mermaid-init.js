@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Mermaid with default settings
     mermaid.initialize({
         startOnLoad: true,
-        theme: 'default',
+        theme: 'default', // Default light theme
         flowchart: {
             useMaxWidth: true,
             htmlLabels: true,
@@ -35,12 +35,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Initial theme setup
+    // Initial theme setup - default to light theme
     updateMermaidTheme();
     
     // Listen for theme toggle events
     document.addEventListener('themeToggled', updateMermaidTheme);
     
-    // Also check for system preference changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateMermaidTheme);
+    // Remove system preference check to ensure default is light
+    // window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateMermaidTheme);
 }); 
