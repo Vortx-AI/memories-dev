@@ -787,4 +787,47 @@ class MemoryManager:
             
         except Exception as e:
             logger.error(f"Failed to import parquet files: {e}")
+            raise
+
+    def cleanup_cold_memory(self, remove_storage: bool = True) -> None:
+        """Clean up cold memory data and optionally remove storage directory.
+        
+        Args:
+            remove_storage: Whether to remove the entire storage directory after cleanup
+        """
+        if not self.cold:
+            self.logger.warning("Cold memory is not enabled")
+            return
+            
+        try:
+            storage_dir = self.storage_path
+            if not storage_dir.exists():
+                self.logger.info("No existing storage directory found")
+                return
+                
+            cold_dir = storage_dir / self.config['memory']['cold']['path']
+            if not cold_dir.exists():
+                self.logger.info("No existing cold storage directory found")
+                return
+                
+            # Clear all tables and their data
+            self.logger.info("Clearing cold memory tables and data...")
+            self.cold.clear_tables(keep_files=False)
+            
+            # Close DuckDB connection if it exists
+            if hasattr(self, 'cold_db'):
+                self.cold_db.close()
+                self.logger.info("Closed cold DuckDB connection")
+            
+            # Optionally remove the entire storage directory
+            if remove_storage and storage_dir.exists():
+                self.logger.info("Removing storage directory...")
+                import shutil
+                shutil.rmtree(storage_dir)
+                self.logger.info("Storage directory removed")
+                
+            self.logger.info("Cold memory cleanup completed successfully")
+            
+        except Exception as e:
+            self.logger.error(f"Error during cold memory cleanup: {e}")
             raise 

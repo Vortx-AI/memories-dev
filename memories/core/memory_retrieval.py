@@ -261,4 +261,129 @@ class MemoryRetrieval:
             
         except Exception as e:
             self.logger.error(f"Error getting stats for table {table_name}: {e}")
-            return {} 
+            return {}
+
+    def get_data_by_bbox(
+        self,
+        min_lon: float,
+        min_lat: float,
+        max_lon: float,
+        max_lat: float,
+        lon_column: str = "longitude",
+        lat_column: str = "latitude",
+        limit: int = 1000
+    ) -> pd.DataFrame:
+        """Get data within a geographic bounding box.
+        
+        Args:
+            min_lon: Minimum longitude (western boundary)
+            min_lat: Minimum latitude (southern boundary)
+            max_lon: Maximum longitude (eastern boundary)
+            max_lat: Maximum latitude (northern boundary)
+            lon_column: Name of the longitude column (default: "longitude")
+            lat_column: Name of the latitude column (default: "latitude")
+            limit: Maximum number of results to return (default: 1000)
+            
+        Returns:
+            pandas DataFrame with records that fall within the bounding box
+        """
+        try:
+            # Get all tables
+            tables = self.cold.list_tables()
+            if not tables:
+                self.logger.warning("No tables available")
+                return pd.DataFrame()
+            
+            # Build query to union all tables with bounding box filter
+            queries = []
+            for table in tables:
+                table_name = table["table_name"]
+                schema = table["schema"]
+                
+                # Check if both lat and lon columns exist in this table
+                if lon_column in schema and lat_column in schema:
+                    bbox_query = f"""
+                        SELECT *, '{table_name}' as source_table 
+                        FROM {table_name}
+                        WHERE {lon_column} BETWEEN {min_lon} AND {max_lon}
+                        AND {lat_column} BETWEEN {min_lat} AND {max_lat}
+                    """
+                    queries.append(bbox_query)
+            
+            if not queries:
+                self.logger.warning(f"No tables found with required columns: {lon_column}, {lat_column}")
+                return pd.DataFrame()
+            
+            # Combine all queries with UNION ALL
+            full_query = f"""
+                SELECT * FROM (
+                    {" UNION ALL ".join(queries)}
+                ) combined_results
+                LIMIT {limit}
+            """
+            
+            return self.cold.query(full_query)
+            
+        except Exception as e:
+            self.logger.error(f"Error getting data for bounding box: {e}")
+            return pd.DataFrame()
+
+    def get_data_by_polygon(
+        self,
+        polygon_wkt: str,
+        geom_column: str = "geometry",
+        limit: int = 1000
+    ) -> pd.DataFrame:
+        """Get data that intersects with a polygon.
+        
+        Args:
+            polygon_wkt: WKT (Well-Known Text) representation of the polygon
+            geom_column: Name of the geometry column (default: "geometry")
+            limit: Maximum number of results to return (default: 1000)
+            
+        Returns:
+            pandas DataFrame with records that intersect the polygon
+        """
+        try:
+            # Get all tables
+            tables = self.cold.list_tables()
+            if not tables:
+                self.logger.warning("No tables available")
+                return pd.DataFrame()
+            
+            # Build query to union all tables with polygon intersection filter
+            queries = []
+            for table in tables:
+                table_name = table["table_name"]
+                schema = table["schema"]
+                
+                # Check if geometry column exists in this table
+                if geom_column in schema:
+                    # Use DuckDB's spatial extension for intersection test
+                    intersection_query = f"""
+                        SELECT *, '{table_name}' as source_table 
+                        FROM {table_name}
+                        WHERE ST_Intersects(
+                            {geom_column}, 
+                            ST_GeomFromText('{polygon_wkt}')
+                        )
+                    """
+                    queries.append(intersection_query)
+            
+            if not queries:
+                self.logger.warning(f"No tables found with geometry column: {geom_column}")
+                return pd.DataFrame()
+            
+            # Combine all queries with UNION ALL
+            full_query = f"""
+                SELECT * FROM (
+                    {" UNION ALL ".join(queries)}
+                ) combined_results
+                LIMIT {limit}
+            """
+            
+            return self.cold.query(full_query)
+            
+        except Exception as e:
+            self.logger.error(f"Error getting data for polygon: {e}")
+            return pd.DataFrame() 

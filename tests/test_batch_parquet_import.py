@@ -27,51 +27,35 @@ def cleanup_cold_memory():
             print("No existing storage directory found.")
             return
             
-        cold_dir = storage_dir / 'cold'
-        if not cold_dir.exists():
-            print("No existing cold storage directory found.")
-            return
-            
-        db_path = cold_dir / 'cold.db'
+        # Create and configure DuckDB connection
+        db_path = storage_dir / 'cold' / 'cold.db'
         if db_path.exists():
             print("Found existing database, connecting to clean up...")
             db_conn = duckdb.connect(str(db_path))
             
-            try:
-                # Initialize memory manager to clean up properly
-                memory_manager = MemoryManager(
-                    storage_path=storage_dir,
-                    vector_encoder=None,
-                    enable_red_hot=False,
-                    enable_hot=False,
-                    enable_cold=True,
-                    enable_warm=False,
-                    enable_glacier=False,
-                    custom_config={
-                        'cold': {
-                            'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
-                            'duckdb': {
-                                'db_conn': db_conn
-                            }
+            # Initialize memory manager
+            memory_manager = MemoryManager(
+                storage_path=storage_dir,
+                vector_encoder=None,
+                enable_red_hot=False,
+                enable_hot=False,
+                enable_cold=True,
+                enable_warm=False,
+                enable_glacier=False,
+                custom_config={
+                    'cold': {
+                        'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
+                        'duckdb': {
+                            'db_conn': db_conn
                         }
                     }
-                )
-                
-                # Clean up all tables and files
-                memory_manager.cold.clear_tables(keep_files=False)
-                memory_manager.cleanup()
-                db_conn.close()
-                
-            except Exception as e:
-                print(f"Error during database cleanup: {e}")
-                if 'db_conn' in locals():
-                    db_conn.close()
-        
-        # Remove the entire storage directory
-        print("Removing storage directory...")
-        shutil.rmtree(storage_dir)
-        print("Cleanup completed successfully!")
-        
+                }
+            )
+            
+            # Use the new cleanup method
+            memory_manager.cleanup_cold_memory(remove_storage=True)
+            print("Cleanup completed successfully!")
+            
     except Exception as e:
         print(f"Error during cleanup: {e}")
         raise
