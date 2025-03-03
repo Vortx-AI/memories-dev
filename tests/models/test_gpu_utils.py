@@ -4,7 +4,7 @@ import pytest
 import torch
 import gc
 from unittest.mock import Mock, patch
-from memories.utils.processors.gpu_stat import check_gpu_memory
+from memories.utils.earth.processors import gpu_stat
 
 @pytest.fixture(autouse=True)
 def cleanup_gpu():
@@ -17,7 +17,7 @@ def cleanup_gpu():
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
 def test_check_gpu_memory():
     """Test GPU memory checking functionality."""
-    memory_stats = check_gpu_memory()
+    memory_stats = gpu_stat.check_gpu_memory()
     if memory_stats:
         assert isinstance(memory_stats, dict)
         assert all(key in memory_stats for key in ['total', 'free', 'used'])

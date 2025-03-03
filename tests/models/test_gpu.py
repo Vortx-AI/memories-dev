@@ -6,7 +6,7 @@ import gc
 from unittest.mock import Mock, patch
 from memories.models.load_model import LoadModel
 from memories.models.base_model import BaseModel
-from memories.utils.processors.gpu_stat import check_gpu_memory
+from memories.utils.earth.processors import gpu_stat
 
 @pytest.fixture(autouse=True)
 def cleanup_gpu():
@@ -19,7 +19,7 @@ def cleanup_gpu():
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
 def test_gpu_memory_tracking():
     """Test GPU memory tracking functionality."""
-    memory_stats = check_gpu_memory()
+    memory_stats = gpu_stat()
     if memory_stats:
         assert 'total' in memory_stats
         assert 'free' in memory_stats

@@ -3,11 +3,11 @@
 import os
 import json
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import logging
 from pathlib import Path
 import requests
-
+from datetime import datetime
 
 from dotenv import load_dotenv
 
@@ -28,6 +28,17 @@ class APIConnector(ABC):
     @abstractmethod
     def generate(self, prompt: str, **kwargs) -> str:
         """Generate text using the API."""
+        pass
+    
+    @abstractmethod
+    def chat_completion(
+        self,
+        messages: List[Dict[str, str]],
+        tools: Optional[List[Dict[str, Any]]] = None,
+        tool_choice: str = "auto",
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Generate a chat completion from messages and optional tools."""
         pass
     
     def _get_api_key(self) -> Optional[str]:
@@ -122,6 +133,103 @@ class OpenAIConnector(APIConnector):
             logger.error(f"OpenAI API error: {str(e)}", exc_info=True)
             raise
 
+    def chat_completion(
+        self,
+        messages: List[Dict[str, str]],
+        tools: Optional[List[Dict[str, Any]]] = None,
+        tool_choice: str = "auto",
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Generate a chat completion using the OpenAI API.
+        
+        Args:
+            messages: List of message dictionaries with 'role' and 'content' keys
+            tools: Optional list of tools/functions the model can use
+            tool_choice: How to handle tool selection ("auto", "none", or specific)
+            **kwargs: Additional parameters for the API call
+            
+        Returns:
+            Dict containing the response message, tool calls, and metadata
+        """
+        if self.client is None:
+            raise RuntimeError("OpenAI client is not initialized")
+            
+        try:
+            logger.info(f"Preparing OpenAI chat completion request")
+            logger.debug(f"Messages: {messages}")
+            logger.debug(f"Tools: {tools}")
+            
+            # Get model configuration
+            config = self.model_config.get("config", {})
+            
+            # Prepare parameters
+            params = {
+                "model": kwargs.pop("model", self.model_config.get("name", "gpt-4-turbo-preview")),
+                "messages": messages,
+                "temperature": kwargs.pop("temperature", config.get("temperature", 0.7)),
+                "max_tokens": kwargs.pop("max_tokens", config.get("max_length", 1000)),
+                "top_p": kwargs.pop("top_p", config.get("top_p", 0.95))
+            }
+            
+            # Add tools if provided
+            if tools:
+                params["tools"] = tools
+                params["tool_choice"] = tool_choice
+                
+            # Add any remaining kwargs
+            params.update(kwargs)
+            
+            logger.info("Sending chat completion request to OpenAI API...")
+            start_time = datetime.now()
+            
+            # Make API call
+            response = self.client.chat.completions.create(**params)
+            
+            end_time = datetime.now()
+            generation_time = (end_time - start_time).total_seconds()
+            logger.info("Response received from OpenAI API")
+            
+            # Process response
+            message = {
+                "role": "assistant",
+                "content": response.choices[0].message.content,
+            }
+            
+            # Extract tool calls if any
+            tool_calls = []
+            if hasattr(response.choices[0].message, "tool_calls") and response.choices[0].message.tool_calls:
+                tool_calls = [
+                    {
+                        "function": {
+                            "name": tool_call.function.name,
+                            "arguments": tool_call.function.arguments
+                        }
+                    }
+                    for tool_call in response.choices[0].message.tool_calls
+                ]
+                message["tool_calls"] = tool_calls
+            
+            # Prepare metadata
+            metadata = {
+                "model": response.model,
+                "total_tokens": response.usage.total_tokens,
+                "prompt_tokens": response.usage.prompt_tokens,
+                "completion_tokens": response.usage.completion_tokens,
+                "generation_time": generation_time,
+                "finish_reason": response.choices[0].finish_reason
+            }
+            
+            return {
+                "message": message,
+                "tool_calls": tool_calls,
+                "metadata": metadata
+            }
+            
+        except Exception as e:
+            logger.error(f"OpenAI chat completion error: {str(e)}", exc_info=True)
+            raise
+
 class DeepseekConnector(APIConnector):
     """Connector for Deepseek API."""
     
@@ -172,8 +280,96 @@ class DeepseekConnector(APIConnector):
             logger.error(f"Deepseek API error: {str(e)}")
             raise
 
+    def chat_completion(
+        self,
+        messages: List[Dict[str, str]],
+        tools: Optional[List[Dict[str, Any]]] = None,
+        tool_choice: str = "auto",
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Generate a chat completion using the Deepseek API.
+        Note: Tool usage may not be supported by all Deepseek models.
+        """
+        if not self.api_key:
+            raise RuntimeError("Deepseek API key not found")
+
+        try:
+            logger.info("Preparing Deepseek chat completion request")
+            config = self.model_config.get("config", {})
+
+            # Prepare headers and data
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+
+            data = {
+                "model": kwargs.pop("model", self.model_config.get("name", "deepseek-chat")),
+                "messages": messages,
+                "temperature": kwargs.pop("temperature", config.get("temperature", 0.7)),
+                "max_tokens": kwargs.pop("max_tokens", config.get("max_length", 1000)),
+                "top_p": kwargs.pop("top_p", config.get("top_p", 0.95))
+            }
+
+            # Add tools if supported by the model
+            if tools:
+                data["tools"] = tools
+                data["tool_choice"] = tool_choice
+
+            # Add remaining kwargs
+            data.update(kwargs)
+
+            logger.info("Sending chat completion request to Deepseek API...")
+            start_time = datetime.now()
+
+            # Make API call
+            response = requests.post(
+                f"{self.api_base}/chat/completions",
+                headers=headers,
+                json=data
+            )
+            response.raise_for_status()
+            result = response.json()
+
+            end_time = datetime.now()
+            generation_time = (end_time - start_time).total_seconds()
+            logger.info("Response received from Deepseek API")
+
+            # Process response
+            message = {
+                "role": "assistant",
+                "content": result["choices"][0]["message"]["content"]
+            }
+
+            # Extract tool calls if present
+            tool_calls = []
+            if "tool_calls" in result["choices"][0]["message"]:
+                tool_calls = result["choices"][0]["message"]["tool_calls"]
+                message["tool_calls"] = tool_calls
+
+            # Prepare metadata
+            metadata = {
+                "model": result["model"],
+                "total_tokens": result["usage"]["total_tokens"],
+                "prompt_tokens": result["usage"]["prompt_tokens"],
+                "completion_tokens": result["usage"]["completion_tokens"],
+                "generation_time": generation_time,
+                "finish_reason": result["choices"][0]["finish_reason"]
+            }
+
+            return {
+                "message": message,
+                "tool_calls": tool_calls,
+                "metadata": metadata
+            }
+
+        except Exception as e:
+            logger.error(f"Deepseek chat completion error: {str(e)}", exc_info=True)
+            raise
+
 class AnthropicConnector(APIConnector):
-    """Connector for Anthropic API (Claude)."""
+    """Connector for Anthropic API."""
     
     def __init__(self, api_key: str = None):
         super().__init__(api_key)
@@ -218,6 +414,106 @@ class AnthropicConnector(APIConnector):
             
         except Exception as e:
             logger.error(f"Anthropic API error: {str(e)}")
+            raise
+
+    def chat_completion(
+        self,
+        messages: List[Dict[str, str]],
+        tools: Optional[List[Dict[str, Any]]] = None,
+        tool_choice: str = "auto",
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Generate a chat completion using the Anthropic API.
+        Note: Tool usage may not be supported by all Anthropic models.
+        """
+        if not self.api_key:
+            raise RuntimeError("Anthropic API key not found")
+
+        try:
+            logger.info("Preparing Anthropic chat completion request")
+            config = self.model_config.get("config", {})
+
+            # Prepare headers and data
+            headers = {
+                "x-api-key": self.api_key,
+                "anthropic-version": "2023-06-01",
+                "Content-Type": "application/json"
+            }
+
+            # Convert messages to Anthropic format
+            system_message = next((msg["content"] for msg in messages if msg["role"] == "system"), None)
+            conversation = [
+                {"role": "assistant" if msg["role"] == "assistant" else "user", "content": msg["content"]}
+                for msg in messages if msg["role"] != "system"
+            ]
+
+            data = {
+                "model": kwargs.pop("model", self.model_config.get("name", "claude-3-opus-20240229")),
+                "messages": conversation,
+                "temperature": kwargs.pop("temperature", config.get("temperature", 0.7)),
+                "max_tokens": kwargs.pop("max_tokens", config.get("max_length", 1000)),
+                "top_p": kwargs.pop("top_p", config.get("top_p", 0.95))
+            }
+
+            # Add system message if present
+            if system_message:
+                data["system"] = system_message
+
+            # Add tools if supported by the model
+            if tools:
+                data["tools"] = tools
+                data["tool_choice"] = tool_choice
+
+            # Add remaining kwargs
+            data.update(kwargs)
+
+            logger.info("Sending chat completion request to Anthropic API...")
+            start_time = datetime.now()
+
+            # Make API call
+            response = requests.post(
+                f"{self.api_base}/messages",
+                headers=headers,
+                json=data
+            )
+            response.raise_for_status()
+            result = response.json()
+
+            end_time = datetime.now()
+            generation_time = (end_time - start_time).total_seconds()
+            logger.info("Response received from Anthropic API")
+
+            # Process response
+            message = {
+                "role": "assistant",
+                "content": result["content"][0]["text"]
+            }
+
+            # Extract tool calls if present
+            tool_calls = []
+            if "tool_calls" in result:
+                tool_calls = result["tool_calls"]
+                message["tool_calls"] = tool_calls
+
+            # Prepare metadata
+            metadata = {
+                "model": result["model"],
+                "total_tokens": result.get("usage", {}).get("total_tokens"),
+                "prompt_tokens": result.get("usage", {}).get("prompt_tokens"),
+                "completion_tokens": result.get("usage", {}).get("completion_tokens"),
+                "generation_time": generation_time,
+                "finish_reason": result.get("stop_reason")
+            }
+
+            return {
+                "message": message,
+                "tool_calls": tool_calls,
+                "metadata": metadata
+            }
+
+        except Exception as e:
+            logger.error(f"Anthropic chat completion error: {str(e)}", exc_info=True)
             raise
 
 def get_connector(provider: str, api_key: Optional[str] = None) -> APIConnector:

@@ -93,4 +93,4 @@ def extract_location_entities(text: str) -> List[Dict[str, Any]]:
         
     except Exception as e:
         logger.error(f"Error extracting location entities: {str(e)}")
-        return []
+        return [] 

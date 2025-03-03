@@ -19,9 +19,9 @@ from dotenv import load_dotenv
 from memories import MemoryStore, Config
 from memories.models import BaseModel
 from memories.utils.text import TextProcessor
-from memories.utils.processors.vector_processor import VectorProcessor
-from memories.utils.query_understanding import QueryUnderstanding
-from memories.utils.response_generation import ResponseGenerator
+from memories.utils.earth import VectorProcessor
+from memories.utils.text.query_understanding import QueryUnderstanding
+from memories.utils.text.response_generation import ResponseGeneration
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -54,7 +54,7 @@ class AISemanticAgent(BaseModel):
         self.text_processor = TextProcessor()
         self.vector_processor = VectorProcessor()
         self.query_understanding = QueryUnderstanding()
-        self.response_generator = ResponseGenerator()
+        self.response_generator = ResponseGeneration()
         
         self.embedding_model = embedding_model
         self.embedding_dimension = embedding_dimension

@@ -26,9 +26,9 @@ from sentinelsat import SentinelAPI
 from memories import MemoryStore, Config
 from memories.models import BaseModel
 from memories.utils.text import TextProcessor
-from memories.utils.processors.vector_processor import VectorProcessor
+from memories.utils.earth import VectorProcessor
 from memories.utils.query_understanding import QueryUnderstanding
-from memories.utils.response_generation import ResponseGenerator
+from memories.utils.response_generation import ResponseGeneration
 from memories.utils.earth_memory import (
     OvertureClient, 
     SentinelClient,
@@ -115,7 +115,7 @@ class PropertyAnalyzer(BaseModel):
         self.text_processor = TextProcessor()
         self.vector_processor = VectorProcessor(model_name=embedding_model)
         self.query_understanding = QueryUnderstanding()
-        self.response_generator = ResponseGenerator()
+        self.response_generator = ResponseGeneration()
         
         # Initialize collections
         self._initialize_collections()

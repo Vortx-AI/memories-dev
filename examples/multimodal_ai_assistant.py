@@ -23,9 +23,9 @@ from dotenv import load_dotenv
 from memories import MemoryStore, Config
 from memories.models import BaseModel
 from memories.utils.text import TextProcessor
-from memories.utils.processors.vector_processor import VectorProcessor
+from memories.utils.earth import VectorProcessor
 from memories.utils.query_understanding import QueryUnderstanding
-from memories.utils.response_generation import ResponseGenerator
+from memories.utils.response_generation import ResponseGeneration
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -60,7 +60,7 @@ class MultimodalAIAssistant(BaseModel):
         self.text_processor = TextProcessor()
         self.vector_processor = VectorProcessor()
         self.query_understanding = QueryUnderstanding()
-        self.response_generator = ResponseGenerator()
+        self.response_generator = ResponseGeneration()
         
         self.text_embedding_model = text_embedding_model
         self.image_embedding_model = image_embedding_model

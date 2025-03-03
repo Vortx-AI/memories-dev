@@ -7,9 +7,9 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel
 import mercantile
 from datetime import datetime
-from ..utils.types import Bounds
-from ..utils.privacy.secure_encoding import SecureImageEncoder, SecureAPILayer
-from ..synthetic.generator import SyntheticDataGenerator
+from memories.utils.types import Bounds
+from memories.utils.privacy.secure_encoding import SecureImageEncoder, SecureAPILayer
+from memories.synthetic.generator import SyntheticDataGenerator
 
 app = FastAPI(title="Earth Memories API")
 

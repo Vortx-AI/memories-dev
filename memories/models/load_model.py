@@ -424,4 +424,137 @@ Please provide a detailed response incorporating the above context."""
         
         return context_usage
 
+    def chat_completion(
+        self,
+        messages: List[Dict[str, str]],
+        tools: Optional[List[Dict[str, Any]]] = None,
+        tool_choice: str = "auto",
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        Generate a chat completion response using either local model or API.
+        
+        Args:
+            messages: List of message dictionaries with 'role' and 'content' keys.
+                     Roles can be 'user', 'assistant', 'system', or 'function'.
+            tools: Optional list of tool/function definitions that the model can use.
+                  Each tool should have a 'type', 'function' with 'name', 'description', 'parameters'.
+            tool_choice: How to handle tool selection. Options:
+                - "auto": Let the model decide if it should call a function
+                - "none": Don't call any functions
+                - Dict with specific function to call
+            **kwargs: Additional parameters including:
+                temperature: Sampling temperature (0.0 to 1.0)
+                max_tokens: Maximum tokens in the response
+                top_p: Nucleus sampling parameter
+                frequency_penalty: Frequency penalty parameter
+                presence_penalty: Presence penalty parameter
+                
+        Returns:
+            Dict[str, Any]: Response dictionary containing:
+                message: The assistant's message
+                tool_calls: List of tool calls if any
+                metadata: Generation metadata
+                error: Error message if generation failed
+        """
+        if not messages or not isinstance(messages, list):
+            return {
+                "error": "Invalid messages - must be non-empty list",
+                "message": None,
+                "tool_calls": None,
+                "metadata": None
+            }
+            
+        try:
+            # Log generation attempt
+            self.logger.info(f"Generating chat completion for {len(messages)} messages")
+            self.logger.debug(f"Messages: {messages}")
+            self.logger.debug(f"Tools available: {len(tools) if tools else 0}")
+            
+            # Validate and set default parameters
+            max_retries = kwargs.pop('max_retries', 3)
+            timeout = kwargs.pop('timeout', 30)
+            
+            # Initialize response
+            response = None
+            error = None
+            metadata = {
+                "attempt": 0,
+                "total_tokens": 0,
+                "generation_time": 0,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+            # Try generation with retries
+            for attempt in range(max_retries):
+                metadata["attempt"] = attempt + 1
+                
+                try:
+                    if self.deployment_type == "local":
+                        self.logger.info("Using base model for chat completion")
+                        response = self.base_model.chat_completion(
+                            messages=messages,
+                            tools=tools,
+                            tool_choice=tool_choice,
+                            timeout=timeout,
+                            **kwargs
+                        )
+                    else:
+                        self.logger.info(f"Using {self.model_provider} API connector")
+                        response = self.api_connector.chat_completion(
+                            messages=messages,
+                            tools=tools,
+                            tool_choice=tool_choice,
+                            timeout=timeout,
+                            **kwargs
+                        )
+                        
+                    if response:
+                        break
+                        
+                except Exception as e:
+                    error = str(e)
+                    self.logger.warning(
+                        f"Attempt {attempt + 1} failed: {error}",
+                        exc_info=True
+                    )
+                    if attempt < max_retries - 1:
+                        continue
+            
+            # Process results
+            if response:
+                # Extract metadata if available
+                if isinstance(response, dict):
+                    metadata.update(response.get('metadata', {}))
+                    
+                self.logger.info("Chat completion generated successfully")
+                
+                return {
+                    "message": response.get('message', {}),
+                    "tool_calls": response.get('tool_calls', []),
+                    "metadata": metadata,
+                    "error": None
+                }
+            else:
+                error_msg = error or "Failed to generate chat completion after retries"
+                self.logger.error(error_msg)
+                return {
+                    "message": None,
+                    "tool_calls": None,
+                    "metadata": metadata,
+                    "error": error_msg
+                }
+                
+        except Exception as e:
+            self.logger.error(
+                f"Unexpected error in chat_completion: {str(e)}",
+                exc_info=True
+            )
+            return {
+                "message": None,
+                "tool_calls": None,
+                "metadata": {"attempt": 1},
+                "error": f"Unexpected error: {str(e)}"
+            }
+
     

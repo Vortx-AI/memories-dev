@@ -6,8 +6,8 @@ from fastapi import FastAPI, HTTPException
 from typing import Dict, List, Optional
 from pydantic import BaseModel
 import mercantile
-from ..utils.types import Bounds
-from .advanced_analysis import AdvancedAnalysis
+from memories.utils.types import Bounds
+from memories.utils.earth.advanced_analysis import AdvancedAnalysis
 
 app = FastAPI(title="Earth Observation Analysis API")
 analyzer = AdvancedAnalysis()

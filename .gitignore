@@ -100,4 +100,7 @@ Untitled.ipynb
 
 examples/memory_query.py
 examples/memory_query copy.py
-
+check_geojson.py
+test_chat_completion.py
+test_overture_query.py
+batch_import_parquet.py

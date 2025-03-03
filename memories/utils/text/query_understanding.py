@@ -7,11 +7,13 @@ import logging
 from dotenv import load_dotenv
 import os
 
-from memories.utils.context_utils import classify_query
-from memories.utils.location_utils import normalize_location, is_valid_coordinates
-from memories.utils.nlp_utils import initialize_nltk, extract_location_entities
+from memories.utils.text.context_utils import classify_query
+from memories.utils.text.nlp_utils import initialize_nltk,extract_location_entities
+from memories.utils.earth.location_utils import normalize_location, is_valid_coordinates
+
 from memories.models.load_model import LoadModel
 from memories.models.model_base import BaseModel
+
 
 # Load environment variables
 load_dotenv()

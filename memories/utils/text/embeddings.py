@@ -1,5 +1,5 @@
 """
-Model loading utilities.
+Text embedding utilities for vector encoding.
 """
 
 import logging
@@ -9,7 +9,7 @@ from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
-def load_vector_encoder(
+def get_encoder(
     model_name: str = 'all-MiniLM-L6-v2',
     cache_dir: Optional[Union[str, Path]] = None
 ) -> Any:

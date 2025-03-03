@@ -675,4 +675,42 @@ class MemoryManager:
 
         except Exception as e:
             self.logger.error(f"Failed to add data to {tier} tier: {e}")
-            return False 
+            return False
+
+    def batch_import_parquet(
+        self,
+        folder_path: Union[str, Path],
+        theme: Optional[str] = None,
+        tag: Optional[str] = None,
+        recursive: bool = True,
+        pattern: str = "*.parquet"
+    ) -> Dict[str, Any]:
+        """
+        Import all Parquet files from a folder into cold memory.
+        
+        Args:
+            folder_path: Path to folder containing Parquet files
+            theme: Optional theme for organizing data (e.g., 'buildings')
+            tag: Optional tag for organizing data (e.g., 'commercial')
+            recursive: Whether to search recursively in subfolders
+            pattern: File pattern to match (default: "*.parquet")
+            
+        Returns:
+            Dict containing:
+                success_count: Number of files successfully imported
+                failed_count: Number of files that failed to import
+                failed_files: List of files that failed to import
+                
+        Raises:
+            RuntimeError: If cold memory is not enabled
+        """
+        if not self.cold:
+            raise RuntimeError("Cold memory is not enabled. Initialize MemoryManager with enable_cold=True")
+            
+        return self.cold.batch_import_parquet(
+            folder_path=folder_path,
+            theme=theme,
+            tag=tag,
+            recursive=recursive,
+            pattern=pattern
+        ) 

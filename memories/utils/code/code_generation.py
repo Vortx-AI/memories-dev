@@ -173,49 +173,6 @@ class CodeGeneration(BaseModel):
         
         return code
 
-class LocationExtractor:
-    def __init__(self):
-        """Initialize the Information Extraction system with NLTK."""
-        offload_folder = os.path.join(
-            tempfile.gettempdir(),
-            'deepseek_offload'
-        )
-        os.makedirs(offload_folder, exist_ok=True)
-        
-        self.llm = get_connector("deepseek", os.getenv("DEEPSEEK_API_KEY"))
-        
-        self.location_prompt = PromptTemplate(
-            input_variables=["user_query"],
-            template="""Extract location information as a text string in the following format:
-location: <place>, location_info: <type>
-
-Types:
-point = coordinates (12.345, 67.890)
-city = city name
-state = state name
-country = country name
-address = full address
-polygon = area coordinates
-unknown = no location found (use empty string)
-
-Query: {user_query}
-Response:"""
-        )
-        
-        self.location_chain = LLMChain(llm=self.llm, prompt=self.location_prompt)
-        self.logger = logging.getLogger(__name__)
-
-    def process_query(self, user_query: str) -> str:
-        """Process the query to extract location and information type."""
-        try:
-            location_response = self.location_chain.invoke({"user_query": user_query})["text"]
-            return location_response
-            
-        except Exception as e:
-            self.logger.error(f"Error processing query: {str(e)}")
-            return "location: , location_info: unknown"
-            
-
 class ModelAnalyst:
     def __init__(self, load_model: Any):
         """

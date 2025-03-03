@@ -24,9 +24,9 @@ import torch
 from diffusers import StableDiffusionPipeline
 from PIL import Image, ImageDraw, ImageFont
 import random
-from ..utils.types import BBox, ImageType, RasterType
-from ..utils.exceptions import SyntheticDataError
-from ..utils.validation import validate_parameters
+
+from memories.utils.exceptions import SyntheticDataError
+from memories.utils.validation import validate_parameters
 
 logger = logging.getLogger(__name__)
 

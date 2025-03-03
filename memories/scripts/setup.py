@@ -14,10 +14,10 @@ try:
     TENSORFLOW_AVAILABLE = True
 except ImportError:
     TENSORFLOW_AVAILABLE = False
-from ..models.base_model import BaseModel
-from ..utils.processors.gpu_stat import check_gpu_memory
-from ..synthetic.generator import initialize_stable_diffusion
-from ..config import Config, set_config, set_default_device, set_backend, configure_storage
+from memories.models.base_model import BaseModel
+from memories.utils.processors.gpu_stat import check_gpu_memory
+from memories.synthetic.generator import initialize_stable_diffusion
+from memories.config import Config, set_config, set_default_device, set_backend, configure_storage
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

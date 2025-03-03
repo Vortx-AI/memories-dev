@@ -1,25 +1,35 @@
 """
-Common type definitions for the memories package.
+Common type definitions used across the memories package.
 """
 
-from typing import Union, Tuple, TypeVar, Any
-import mercantile
+from typing import TypedDict, Union, List, Dict, Any, Tuple
+from dataclasses import dataclass
+import numpy as np
 
-# Type alias for bounds that can be either a tuple of coordinates or a mercantile.LngLatBbox
-Bounds = Union[Tuple[float, float, float, float], mercantile.LngLatBbox]
+@dataclass
+class Bounds:
+    """Geographic bounds."""
+    north: float
+    south: float
+    east: float
+    west: float
+    
+    @property
+    def as_tuple(self) -> Tuple[float, float, float, float]:
+        """Return bounds as (north, south, east, west) tuple."""
+        return (self.north, self.south, self.east, self.west)
+    
+    @property
+    def as_dict(self) -> Dict[str, float]:
+        """Return bounds as dictionary."""
+        return {
+            'north': self.north,
+            'south': self.south,
+            'east': self.east,
+            'west': self.west
+        }
 
-# Type alias for image data (numpy array)
-ImageType = Any  # numpy.ndarray but avoid import
-
-# Type alias for raster data
-RasterType = Any  # Dict with data, transform, and crs but avoid complex imports
-
-# Generic type variable for vector data
-VectorType = TypeVar('VectorType')  # Typically geopandas.GeoDataFrame but avoid import
-
-__all__ = [
-    'Bounds',
-    'ImageType',
-    'RasterType',
-    'VectorType'
-] 
+# Image types
+ImageType = Union[np.ndarray, List[np.ndarray]]
+RasterType = np.ndarray
+VectorType = Dict[str, Any]  # GeoJSON-like structure 

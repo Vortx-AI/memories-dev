@@ -1,1 +1,1 @@
-from memories.utils.processors.comp import calculate_ndvi, transformer_process 
+from memories.utils.earth.processors.comp import calculate_ndvi, transformer_process 

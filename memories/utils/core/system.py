@@ -12,7 +12,7 @@ try:
 except ImportError:
     TENSORFLOW_AVAILABLE = False
 
-from ..config import get_config
+from memories.config import get_config
 
 logger = logging.getLogger(__name__)
 

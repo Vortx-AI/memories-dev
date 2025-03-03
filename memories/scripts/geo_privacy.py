@@ -11,7 +11,7 @@ import json
 import hashlib
 from cryptography.fernet import Fernet
 import base64
-from ..utils.types import Bounds
+from memories.utils.types import Bounds
 
 class GeoPrivacyEncoder:
     """Encoder for protecting geographic data"""

@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 from memories import MemoryStore, Config
 from memories.models import BaseModel
 from memories.utils.text import TextProcessor
-from memories.utils.processors.vector_processor import VectorProcessor
+from memories.utils.earth import VectorProcessor
 from memories.utils.code_generation import CodeGenerator
 from memories.utils.code_execution import CodeExecutor
 

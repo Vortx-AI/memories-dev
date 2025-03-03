@@ -5,11 +5,14 @@ Advanced analysis module for processing and analyzing Earth observation data.
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-from typing import Dict, List, Optional, Union, Any
-from ..utils.earth.raster_processor import RasterTileProcessor
-from ..utils.earth.vector_processor import VectorTileProcessor
-from ..utils.processors.comp import calculate_ndvi, transformer_process
-from ..utils.types import Bounds, ImageType, RasterType, VectorType
+from typing import Dict, List, Optional, Union, Any, Tuple
+from pathlib import Path
+from memories.utils.earth.raster_processor import RasterTileProcessor
+from memories.utils.earth.vector_processor import VectorTileProcessor
+from memories.utils.processors.comp import calculate_ndvi, transformer_process
+from memories.utils.types import Bounds, ImageType, RasterType, VectorType
+from shapely.geometry import Point, Polygon
+
 
 class AdvancedAnalysis:
     """Advanced analysis tools for Earth observation data"""

@@ -26,7 +26,7 @@ from typing import Dict, Any, List, Tuple, Optional
 # Import memories-dev components
 from memories.core.memory_manager import MemoryManager
 from memories.models.load_model import LoadModel
-from memories.utils.processors.gpu_stat import check_gpu_memory
+from memories.utils.earth.processors import gpu_stat
 
 class LLMTrainingOptimizer:
     """
@@ -126,7 +126,7 @@ class LLMTrainingOptimizer:
         model_name = model_map.get(self.model_size, "deepseek-coder-small")
         
         # Check GPU availability
-        gpu_memory = check_gpu_memory()
+        gpu_memory = gpu_stat()
         use_gpu = gpu_memory is not None and gpu_memory['free'] > 2000  # At least 2GB free
         
         # Load the model
@@ -300,7 +300,7 @@ class LLMTrainingOptimizer:
                 
                 # Track memory usage
                 if torch.cuda.is_available():
-                    gpu_memory = check_gpu_memory()
+                    gpu_memory = gpu_stat()
                     if gpu_memory:
                         self.metrics["memory_usage"].append({
                             "epoch": epoch,

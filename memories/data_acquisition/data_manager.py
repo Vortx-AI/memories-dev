@@ -23,7 +23,7 @@ from .sources import (
     OvertureAPI,
     OSMDataAPI
 )
-from ..utils.processors import ImageProcessor, VectorProcessor, DataFusion
+from memories.utils.processors import ImageProcessor, VectorProcessor, DataFusion
 
 logger = logging.getLogger(__name__)
 
