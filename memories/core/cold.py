@@ -423,13 +423,51 @@ class ColdMemory:
             logger.error(f"Failed to retrieve all data from files: {e}")
             return []
     
-    def clear(self) -> None:
-        """Clear all data files."""
+    def clear_tables(self, keep_files: bool = True) -> None:
+        """Clear all tables and metadata from DuckDB without deleting Parquet files.
+        
+        Args:
+            keep_files: If True, keeps the Parquet files on disk but removes tables and metadata.
+                       If False, also deletes the Parquet files (default: True)
+        """
         try:
-            shutil.rmtree(self.storage_path)
-            self.storage_path.mkdir(parents=True, exist_ok=True)
+            # Get list of all tables before clearing metadata
+            tables = self.list_tables()
+            
+            # Drop all tables
+            for table_info in tables:
+                table_name = table_info["table_name"]
+                try:
+                    self.con.execute(f"DROP TABLE IF EXISTS {table_name}")
+                    logger.info(f"Dropped table: {table_name}")
+                except Exception as e:
+                    logger.error(f"Error dropping table {table_name}: {e}")
+            
+            # Clear metadata table
+            self.con.execute("DELETE FROM file_metadata")
+            self.con.commit()
+            logger.info("Cleared file metadata")
+            
+            # Delete files if requested
+            if not keep_files:
+                for table_info in tables:
+                    file_path = self.storage_path / table_info["file_path"]
+                    try:
+                        if file_path.exists():
+                            file_path.unlink()
+                            logger.info(f"Deleted file: {file_path}")
+                    except Exception as e:
+                        logger.error(f"Error deleting file {file_path}: {e}")
+            
+            logger.info("Clear operation completed successfully")
+            
         except Exception as e:
-            logger.error(f"Failed to clear files: {e}")
+            logger.error(f"Error clearing cold memory: {e}")
+            raise
+
+    def clear(self) -> None:
+        """Clear all data including files."""
+        self.clear_tables(keep_files=False)
 
     def batch_import_parquet(
         self,
@@ -563,4 +601,161 @@ class ColdMemory:
         """
         self.con.execute(query, (file_path, json.dumps(metadata)))
         self.con.commit()
+
+    def query(self, sql_query: str) -> pd.DataFrame:
+        """Execute a SQL query across all imported parquet data.
+        
+        Args:
+            sql_query: SQL query to execute. You can reference tables by their names stored in metadata.
+            
+        Returns:
+            pandas DataFrame with query results
+        """
+        try:
+            # Execute the query
+            result = self.con.execute(sql_query).fetchdf()
+            logger.info(f"Query returned {len(result)} rows")
+            return result
+        except Exception as e:
+            logger.error(f"Error executing query: {e}")
+            raise
+
+    def list_tables(self) -> List[Dict[str, Any]]:
+        """List all available tables and their metadata.
+        
+        Returns:
+            List of dictionaries containing table information:
+                - table_name: Name of the table in DuckDB
+                - file_path: Original parquet file path
+                - theme: Theme tag if provided during import
+                - tag: Additional tag if provided during import
+                - num_rows: Number of rows in the table
+                - num_columns: Number of columns
+                - schema: Dictionary of column names and their types
+        """
+        try:
+            # Get all metadata entries
+            result = self.con.execute("""
+                SELECT file_path, metadata 
+                FROM file_metadata 
+                ORDER BY metadata->>'$.import_time' DESC
+            """).fetchall()
+            
+            tables = []
+            for file_path, metadata_json in result:
+                metadata = json.loads(metadata_json)
+                if "table_name" in metadata:  # Only include entries with valid table names
+                    tables.append({
+                        "table_name": metadata["table_name"],
+                        "file_path": metadata["file_path"],
+                        "theme": metadata.get("theme"),
+                        "tag": metadata.get("tag"),
+                        "num_rows": metadata["num_rows"],
+                        "num_columns": metadata["num_columns"],
+                        "schema": metadata["schema"]
+                    })
+            
+            return tables
+        except Exception as e:
+            logger.error(f"Error listing tables: {e}")
+            return []
+
+    def get_table_schema(self, table_name: str) -> Optional[Dict[str, str]]:
+        """Get the schema for a specific table.
+        
+        Args:
+            table_name: Name of the table
+            
+        Returns:
+            Dictionary mapping column names to their types, or None if table not found
+        """
+        try:
+            # Query metadata to find the table
+            result = self.con.execute("""
+                SELECT metadata 
+                FROM file_metadata 
+                WHERE metadata->>'$.table_name' = ?
+            """, [table_name]).fetchone()
+            
+            if result:
+                metadata = json.loads(result[0])
+                return metadata["schema"]
+            return None
+        except Exception as e:
+            logger.error(f"Error getting schema for table {table_name}: {e}")
+            return None
+
+    def search(self, 
+              conditions: Dict[str, Any], 
+              tables: Optional[List[str]] = None,
+              limit: int = 100
+    ) -> pd.DataFrame:
+        """Search across tables using specified conditions.
+        
+        Args:
+            conditions: Dictionary of column-value pairs to search for
+            tables: Optional list of specific table names to search in. If None, searches all tables.
+            limit: Maximum number of results to return (default: 100)
+            
+        Returns:
+            pandas DataFrame with matching records
+        """
+        try:
+            # Get list of tables to search
+            if tables is None:
+                available_tables = self.list_tables()
+                tables = [t["table_name"] for t in available_tables]
+            
+            if not tables:
+                logger.warning("No tables available to search")
+                return pd.DataFrame()
+            
+            # Build WHERE clause from conditions
+            where_clauses = []
+            params = []
+            for col, value in conditions.items():
+                where_clauses.append(f"{col} = ?")
+                params.append(value)
+            
+            where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
+            
+            # Build UNION query across all tables
+            queries = []
+            for table in tables:
+                queries.append(f"SELECT *, '{table}' as source_table FROM {table} WHERE {where_sql}")
+            
+            full_query = f"""
+                SELECT * FROM (
+                    {" UNION ALL ".join(queries)}
+                ) combined_results
+                LIMIT {limit}
+            """
+            
+            # Execute query
+            result = self.con.execute(full_query, params * len(tables)).fetchdf()
+            logger.info(f"Search returned {len(result)} results")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error searching tables: {e}")
+            return pd.DataFrame()
+
+    def get_table_preview(self, table_name: str, limit: int = 5) -> pd.DataFrame:
+        """Get a preview of data in a specific table.
+        
+        Args:
+            table_name: Name of the table to preview
+            limit: Number of rows to preview (default: 5)
+            
+        Returns:
+            pandas DataFrame with preview rows
+        """
+        try:
+            result = self.con.execute(f"""
+                SELECT * FROM {table_name} LIMIT {limit}
+            """).fetchdf()
+            return result
+        except Exception as e:
+            logger.error(f"Error previewing table {table_name}: {e}")
+            return pd.DataFrame()
 
