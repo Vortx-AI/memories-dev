@@ -253,9 +253,18 @@ class MemoryManager:
             cold_config = self.config['memory'].get('cold', {})
             cold_path = self.storage_path / cold_config.get('path', 'cold')
             cold_path.mkdir(parents=True, exist_ok=True)
+            
+            # Get DuckDB configuration
+            duckdb_config = cold_config.get('duckdb', {})
+            if 'custom_config' in self.config and 'cold' in self.config['custom_config']:
+                custom_cold_config = self.config['custom_config']['cold']
+                if 'duckdb_config' in custom_cold_config:
+                    duckdb_config.update(custom_cold_config['duckdb_config'])
+            
             self.cold = ColdMemory(
                 storage_path=cold_path,
-                max_size=cold_config.get('max_size', 10*1024*1024*1024)
+                max_size=cold_config.get('max_size', 10*1024*1024*1024),
+                duckdb_config=duckdb_config
             )
             self.logger.info("Initialized cold memory")
         except Exception as e:

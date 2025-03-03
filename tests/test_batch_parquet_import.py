@@ -34,6 +34,18 @@ def run_import():
         storage_dir = Path('data')
         storage_dir.mkdir(exist_ok=True)
         
+        # Create cold storage directory
+        cold_dir = storage_dir / 'cold'
+        cold_dir.mkdir(exist_ok=True)
+        
+        # Create and configure DuckDB database
+        db_path = cold_dir / 'cold.db'
+        db_conn = duckdb.connect(str(db_path))
+        db_conn.execute("SET memory_limit='8GB'")
+        db_conn.execute("SET threads=4")
+        db_conn.execute("SET allow_unsigned_extensions=true")
+        db_conn.execute("SET enable_external_access=true")
+        
         # Initialize memory manager
         print("Initializing memory manager...")
         memory_manager = MemoryManager(
@@ -48,6 +60,7 @@ def run_import():
                 'cold': {
                     'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
                     'duckdb_config': {
+                        'db_conn': db_conn,  # Pass the pre-configured connection
                         'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
                         'threads': int(os.getenv('DUCKDB_THREADS', 4)),
                         'allow_unsigned_extensions': 'true',
@@ -85,6 +98,8 @@ def run_import():
     
     finally:
         print("\nCleaning up...")
+        if 'db_conn' in locals():
+            db_conn.close()
         if 'memory_manager' in locals():
             memory_manager.cleanup()
         if storage_dir.exists():

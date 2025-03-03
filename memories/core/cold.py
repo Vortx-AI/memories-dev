@@ -152,8 +152,20 @@ class ColdMemory:
     def _initialize_db(self) -> None:
         """Initialize the database schema."""
         try:
-            # Enable external access for parquet files
-            self.con.execute("SET enable_external_access=true")
+            # Apply DuckDB configuration if provided
+            if self.duckdb_config:
+                if 'db_conn' in self.duckdb_config:
+                    self.con = self.duckdb_config['db_conn']
+                else:
+                    # Apply configuration settings
+                    if 'memory_limit' in self.duckdb_config:
+                        self.con.execute(f"SET memory_limit='{self.duckdb_config['memory_limit']}'")
+                    if 'threads' in self.duckdb_config:
+                        self.con.execute(f"SET threads={self.duckdb_config['threads']}")
+                    if self.duckdb_config.get('allow_unsigned_extensions'):
+                        self.con.execute("SET allow_unsigned_extensions=true")
+                    if self.duckdb_config.get('enable_external_access'):
+                        self.con.execute("SET enable_external_access=true")
             
             # Create file_metadata table if it doesn't exist
             self.con.execute("""
@@ -177,7 +189,12 @@ class ColdMemory:
         Args:
             storage_path: Path to cold storage directory
             max_size: Maximum size in bytes
-            duckdb_config: Optional DuckDB configuration
+            duckdb_config: Optional DuckDB configuration including:
+                - db_conn: Pre-configured DuckDB connection
+                - memory_limit: Memory limit for DuckDB
+                - threads: Number of threads for DuckDB
+                - allow_unsigned_extensions: Whether to allow unsigned extensions
+                - enable_external_access: Whether to enable external access
         """
         self.storage_path = Path(storage_path)
         self.max_size = max_size
@@ -187,8 +204,9 @@ class ColdMemory:
         self.storage_path.mkdir(parents=True, exist_ok=True)
         
         # Initialize database
-        db_path = self.storage_path / "cold.db"
-        self.con = duckdb.connect(str(db_path))
+        if not 'db_conn' in self.duckdb_config:
+            db_path = self.storage_path / "cold.db"
+            self.con = duckdb.connect(str(db_path))
         
         # Initialize schema
         self._initialize_db()
