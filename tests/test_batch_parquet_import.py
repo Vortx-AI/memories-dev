@@ -45,15 +45,15 @@ def run_import():
         if db_path.exists():
             db_path.unlink()
             
-        # Create DuckDB connection with all configurations set at initialization time
-        db_conn = duckdb.connect(str(db_path), config={
-            'memory_limit': '8GB',
-            'threads': 4,
-            'enable_external_access': 'true',  # Fixed from external_access to enable_external_access
-            'allow_unsigned_extensions': 'true'
-        })
+        print("Creating DuckDB connection...")
+        # First create connection without config
+        db_conn = duckdb.connect(str(db_path))
         
-        # Initialize memory manager
+        # Then set the configurations
+        print("Configuring DuckDB settings...")
+        db_conn.execute("SET memory_limit='8GB'")
+        db_conn.execute("SET threads=4")
+        
         print("Initializing memory manager...")
         memory_manager = MemoryManager(
             storage_path=storage_dir,  # Base directory for all memory tiers
@@ -74,6 +74,8 @@ def run_import():
         )
         
         print("\nStarting parquet file import...")
+        print(f"Looking for parquet files in: {GEO_MEMORIES_PATH}")
+        
         results = memory_manager.batch_import_parquet(
             folder_path=GEO_MEMORIES_PATH,
             theme="geo",
@@ -122,13 +124,14 @@ def memory_manager(tmp_path):
     if db_path.exists():
         db_path.unlink()
         
-    # Create DuckDB connection with all configurations set at initialization time
-    db_conn = duckdb.connect(str(db_path), config={
-        'memory_limit': '8GB',
-        'threads': 4,
-        'enable_external_access': 'true',  # Fixed from external_access to enable_external_access
-        'allow_unsigned_extensions': 'true'
-    })
+    print("Creating DuckDB connection for tests...")
+    # First create connection without config
+    db_conn = duckdb.connect(str(db_path))
+    
+    # Then set the configurations
+    print("Configuring DuckDB settings for tests...")
+    db_conn.execute("SET memory_limit='8GB'")
+    db_conn.execute("SET threads=4")
     
     # Initialize memory manager
     print("Initializing memory manager...")

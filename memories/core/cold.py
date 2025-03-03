@@ -477,9 +477,13 @@ class ColdMemory:
                 logger.warning(f"No parquet files found in {folder_path}")
                 return results
 
+            logger.info(f"Found {len(parquet_files)} parquet files to process")
+            
             # Process each file
             for file_path in parquet_files:
                 try:
+                    logger.info(f"Processing file: {file_path}")
+                    
                     # Read parquet file metadata
                     table = pq.read_table(file_path)
                     file_size = file_path.stat().st_size
@@ -508,40 +512,24 @@ class ColdMemory:
                         }
                     }
                     
-                    # Create a view with unique column names
+                    # Create a table for this specific file
+                    table_name = f"parquet_data_{results['files_processed']}"
+                    
                     try:
-                        # Create a mapping of original to unique column names
-                        column_mapping = {}
-                        seen_columns = set()
-                        for field in table.schema:
-                            col_name = field.name
-                            unique_name = col_name
-                            counter = 1
-                            while unique_name in seen_columns:
-                                unique_name = f"{col_name}_{counter}"
-                                counter += 1
-                            seen_columns.add(unique_name)
-                            column_mapping[col_name] = unique_name
+                        # Drop table if it exists
+                        self.con.execute(f"DROP TABLE IF EXISTS {table_name}")
                         
-                        # Create SQL for renaming columns
-                        columns_sql = ", ".join([
-                            f'"{orig}" as "{unique}"' 
-                            for orig, unique in column_mapping.items()
-                        ])
-                        
-                        # Create view with unique column names
-                        view_name = f"parquet_view_{results['files_processed']}"
+                        # Create table directly from parquet file
                         self.con.execute(f"""
-                            CREATE OR REPLACE VIEW {view_name} AS
-                            SELECT {columns_sql}
-                            FROM read_parquet('{dest_path}')
+                            CREATE TABLE {table_name} AS 
+                            SELECT * FROM read_parquet('{dest_path}')
                         """)
                         
-                        # Store the column mapping in metadata
-                        metadata["column_mapping"] = column_mapping
+                        # Store table name in metadata
+                        metadata["table_name"] = table_name
                         
                     except Exception as e:
-                        logger.error(f"Error creating view for {file_path}: {e}")
+                        logger.error(f"Error creating table for {file_path}: {e}")
                         results["errors"].append(f"{file_path}: {str(e)}")
                         continue
                     
@@ -552,6 +540,8 @@ class ColdMemory:
                     results["files_processed"] += 1
                     results["records_imported"] += table.num_rows
                     results["total_size"] += file_size
+                    
+                    logger.info(f"Successfully processed file {results['files_processed']}/{len(parquet_files)}")
                     
                 except Exception as e:
                     logger.error(f"Error processing {file_path}: {e}")
