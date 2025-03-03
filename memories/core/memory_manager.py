@@ -685,32 +685,48 @@ class MemoryManager:
         recursive: bool = True,
         pattern: str = "*.parquet"
     ) -> Dict[str, Any]:
-        """
-        Import all Parquet files from a folder into cold memory.
+        """Import multiple parquet files into cold storage.
         
         Args:
-            folder_path: Path to folder containing Parquet files
-            theme: Optional theme for organizing data (e.g., 'buildings')
-            tag: Optional tag for organizing data (e.g., 'commercial')
-            recursive: Whether to search recursively in subfolders
-            pattern: File pattern to match (default: "*.parquet")
+            folder_path: Path to folder containing parquet files
+            theme: Optional theme tag for the data
+            tag: Optional additional tag for the data
+            recursive: Whether to search subdirectories
+            pattern: File pattern to match
             
         Returns:
             Dict containing:
-                success_count: Number of files successfully imported
-                failed_count: Number of files that failed to import
-                failed_files: List of files that failed to import
-                
-        Raises:
-            RuntimeError: If cold memory is not enabled
+                files_processed: Number of files processed
+                records_imported: Total number of records imported
+                total_size: Total size of imported data in bytes
+                errors: List of files that had errors
         """
         if not self.cold:
-            raise RuntimeError("Cold memory is not enabled. Initialize MemoryManager with enable_cold=True")
+            raise RuntimeError("Cold memory is not enabled. Enable it by setting enable_cold=True")
+
+        try:
+            # Delegate to cold memory's implementation
+            results = self.cold.batch_import_parquet(
+                folder_path=folder_path,
+                theme=theme,
+                tag=tag,
+                recursive=recursive,
+                pattern=pattern
+            )
             
-        return self.cold.batch_import_parquet(
-            folder_path=folder_path,
-            theme=theme,
-            tag=tag,
-            recursive=recursive,
-            pattern=pattern
-        ) 
+            # Log the results
+            logger.info(
+                f"Parquet import complete - "
+                f"Processed: {results['files_processed']} files, "
+                f"Imported: {results['records_imported']} records, "
+                f"Size: {results['total_size'] / (1024*1024):.2f} MB"
+            )
+            
+            if results['errors']:
+                logger.warning(f"Errors occurred in {len(results['errors'])} files")
+                
+            return results
+            
+        except Exception as e:
+            logger.error(f"Failed to import parquet files: {e}")
+            raise 

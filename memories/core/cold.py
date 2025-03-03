@@ -495,90 +495,99 @@ class ColdMemory:
         recursive: bool = True,
         pattern: str = "*.parquet"
     ) -> Dict[str, Any]:
-        """
-        Import all Parquet files from a folder into cold memory.
+        """Import multiple parquet files into cold storage.
         
         Args:
-            folder_path: Path to folder containing Parquet files
-            theme: Optional theme for organizing data (e.g., 'buildings')
-            tag: Optional tag for organizing data (e.g., 'commercial')
-            recursive: Whether to search recursively in subfolders
-            pattern: File pattern to match (default: "*.parquet")
+            folder_path: Path to folder containing parquet files
+            theme: Optional theme tag for the data
+            tag: Optional additional tag for the data
+            recursive: Whether to search subdirectories
+            pattern: File pattern to match
             
         Returns:
             Dict containing:
-                success_count: Number of files successfully imported
-                failed_count: Number of files that failed to import
-                failed_files: List of files that failed to import
+                files_processed: Number of files processed
+                records_imported: Total number of records imported
+                total_size: Total size of imported data in bytes
+                errors: List of files that had errors
         """
-        folder_path = Path(folder_path)
-        if not folder_path.exists():
-            raise ValueError(f"Folder does not exist: {folder_path}")
-            
-        # Find all Parquet files
-        if recursive:
-            parquet_files = list(folder_path.rglob(pattern))
-        else:
-            parquet_files = list(folder_path.glob(pattern))
-            
-        if not parquet_files:
-            self.logger.warning(f"No Parquet files found in {folder_path}")
-            return {
-                "success_count": 0,
-                "failed_count": 0,
-                "failed_files": []
+        try:
+            folder_path = Path(folder_path)
+            if not folder_path.exists():
+                raise ValueError(f"Folder not found: {folder_path}")
+
+            results = {
+                "files_processed": 0,
+                "records_imported": 0,
+                "total_size": 0,
+                "errors": []
             }
-        
-        # Track results
-        success_count = 0
-        failed_files = []
-        
-        # Process each file
-        for file_path in parquet_files:
-            try:
-                self.logger.info(f"Importing {file_path}")
-                
-                # Validate the file can be read
+
+            # Find all matching parquet files
+            if recursive:
+                parquet_files = list(folder_path.rglob(pattern))
+            else:
+                parquet_files = list(folder_path.glob(pattern))
+
+            if not parquet_files:
+                logger.warning(f"No parquet files found in {folder_path}")
+                return results
+
+            # Process each file
+            for file_path in parquet_files:
                 try:
-                    self.query_storage(
-                        query="SELECT 1",
-                        additional_files=[str(file_path)]
-                    )
+                    # Read parquet file metadata
+                    table = pq.read_table(file_path)
+                    file_size = file_path.stat().st_size
+                    
+                    # Create destination path preserving directory structure
+                    rel_path = file_path.relative_to(folder_path)
+                    dest_path = self.storage_path / rel_path
+                    dest_path.parent.mkdir(parents=True, exist_ok=True)
+                    
+                    # Copy file to cold storage
+                    import shutil
+                    shutil.copy2(file_path, dest_path)
+                    
+                    # Update database metadata
+                    metadata = {
+                        "file_path": str(rel_path),
+                        "theme": theme,
+                        "tag": tag,
+                        "num_rows": table.num_rows,
+                        "num_columns": len(table.schema),
+                        "file_size": file_size,
+                        "import_time": datetime.now().isoformat()
+                    }
+                    
+                    # Store metadata in database
+                    self._store_metadata(str(rel_path), metadata)
+                    
+                    # Update results
+                    results["files_processed"] += 1
+                    results["records_imported"] += table.num_rows
+                    results["total_size"] += file_size
+                    
                 except Exception as e:
-                    raise ValueError(f"Invalid Parquet file: {e}")
-                
-                # Store file metadata
-                metadata = {
-                    'source_path': str(file_path),
-                    'theme': theme,
-                    'tag': tag,
-                    'file_size': file_path.stat().st_size,
-                    'imported_from': 'batch_import'
-                }
-                
-                # Add to metadata tracking
-                if self.metadata is None:
-                    self.metadata = {}
-                self.metadata[str(file_path)] = metadata
-                
-                # Save updated metadata
-                with open(self.metadata_file, 'w') as f:
-                    json.dump(self.metadata, f, indent=2)
-                
-                success_count += 1
-                
-            except Exception as e:
-                self.logger.error(f"Error importing {file_path}: {e}")
-                failed_files.append(str(file_path))
-        
-        results = {
-            "success_count": success_count,
-            "failed_count": len(failed_files),
-            "failed_files": failed_files
-        }
-        
-        self.logger.info(f"Import complete: {results}")
-        return results
+                    logger.error(f"Error processing {file_path}: {e}")
+                    results["errors"].append(str(file_path))
+                    continue
+
+            logger.info(f"Import complete: {results}")
+            return results
+
+        except Exception as e:
+            logger.error(f"Failed to import parquet files: {e}")
+            raise
+
+    def _store_metadata(self, file_path: str, metadata: Dict[str, Any]) -> None:
+        """Store file metadata in the database."""
+        query = """
+        INSERT INTO file_metadata (file_path, metadata)
+        VALUES (?, ?)
+        """
+        self.con.execute(query, (file_path, json.dumps(metadata)))
+        self.con.commit()
 
 # Test code with more verbose output
 if __name__ == "__main__":
