@@ -98,8 +98,7 @@ Untitled.ipynb
 
 .tox/
 
-examples/memory_query.py
-examples/memory_query copy.py
+
 check_geojson.py
 test_chat_completion.py
 test_overture_query.py
