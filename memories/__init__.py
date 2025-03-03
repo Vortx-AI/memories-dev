@@ -4,7 +4,7 @@ Memories - A package for daily synthesis of Earth Memories
 
 import logging
 
-from memories.core.memory import MemoryStore
+from memories.core.memory_retrieval import MemoryRetrieval
 from memories.core.hot import HotMemory
 from memories.core.warm import WarmMemory
 from memories.core.cold import ColdMemory
@@ -21,18 +21,16 @@ __version__ = "2.0.3"  # Match version in pyproject.toml
 
 __all__ = [
     # Core components
-    "MemoryStore",
+    "MemoryRetrieval",
     "HotMemory",
     "WarmMemory",
     "ColdMemory",
     "GlacierMemory",
     
-    
     # Models
     "LoadModel",
     
     # Utilities
-   
     "query_multiple_parquet",
     
     # System check

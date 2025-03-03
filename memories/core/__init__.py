@@ -10,7 +10,7 @@ from memories.core.red_hot import RedHotMemory
 from memories.core.warm import WarmMemory
 from memories.core.cold import ColdMemory
 from memories.core.glacier import GlacierMemory
-from memories.core.memory import MemoryStore
+from memories.core.memory_retrieval import MemoryRetrieval
 
 __all__ = [
     "Config",
@@ -21,5 +21,5 @@ __all__ = [
     "WarmMemory",
     "ColdMemory",
     "GlacierMemory",
-    "MemoryStore",
+    "MemoryRetrieval",
 ]

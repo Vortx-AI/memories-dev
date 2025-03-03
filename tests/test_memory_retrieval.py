@@ -7,7 +7,6 @@ import duckdb
 from dotenv import load_dotenv
 from memories.core.memory_manager import MemoryManager
 from memories.core.memory_retrieval import MemoryRetrieval
-from memories.utils.text.embeddings import get_encoder
 import shutil
 import pandas as pd
 
