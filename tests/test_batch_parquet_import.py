@@ -35,15 +35,16 @@ def create_duckdb_database(db_path: Path) -> duckdb.DuckDBPyConnection:
     # Create parent directory if it doesn't exist
     db_path.parent.mkdir(parents=True, exist_ok=True)
     
-    # Create config file
-    config_file = create_duckdb_config()
+    # Create config dictionary
+    config = {
+        'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
+        'threads': os.getenv('DUCKDB_THREADS', '4'),
+        'external_access': True,
+        'enable_external_access': True
+    }
     
-    try:
-        # Create connection using config file
-        return duckdb.connect(str(db_path), config=str(config_file))
-    finally:
-        # Clean up config file
-        config_file.unlink()
+    # Create connection with config
+    return duckdb.connect(str(db_path), config=config)
 
 def run_import():
     """Run the parquet import directly without pytest."""
