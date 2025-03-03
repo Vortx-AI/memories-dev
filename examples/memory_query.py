@@ -5,8 +5,10 @@ Memory query implementation for handling different types of queries.
 from typing import Dict, Any, Union, Optional
 import logging
 import os
+import json
 from memories.models.load_model import LoadModel
 from memories.utils.text.context_utils import classify_query
+from memories.utils.earth.location_utils import get_bounding_box_from_address, get_bounding_box_from_coords
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -70,14 +72,214 @@ class MemoryQuery:
                     "status": "success"
                 }
             elif query_type == "L1_2":
-                # For L1_2, currently just get response (will be updated later)
-                response = self.model.get_response(query)
-                return {
-                    "classification": "L1_2",
-                    "response": response,
-                    "status": "success",
-                    "note": "Location-based processing will be enhanced later"
-                }
+                # For L1_2, use chat completion with bounding box function
+                messages = [{"role": "user", "content": query}]
+                
+                # Define the bounding box functions as tools
+                tools = [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "get_bounding_box",
+                            "description": "Get bounding box coordinates for an address using Nominatim OpenStreetMap API",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "address": {
+                                        "type": "string",
+                                        "description": "Address string to geocode"
+                                    }
+                                },
+                                "required": ["address"]
+                            }
+                        }
+                    },
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "get_bounding_box_from_coords",
+                            "description": "Get bounding box coordinates for a location using its latitude and longitude",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "lat": {
+                                        "type": "number",
+                                        "description": "Latitude of the location (-90 to 90)"
+                                    },
+                                    "lon": {
+                                        "type": "number",
+                                        "description": "Longitude of the location (-180 to 180)"
+                                    }
+                                },
+                                "required": ["lat", "lon"]
+                            }
+                        }
+                    },
+                    # Example of additional functions up to 15 total:
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "get_address_from_coords",
+                            "description": "Get address details from coordinates using reverse geocoding",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "lat": {
+                                        "type": "number",
+                                        "description": "Latitude of the location"
+                                    },
+                                    "lon": {
+                                        "type": "number",
+                                        "description": "Longitude of the location"
+                                    }
+                                },
+                                "required": ["lat", "lon"]
+                            }
+                        }
+                    },
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "get_coords_from_address",
+                            "description": "Get coordinates from an address using forward geocoding",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "address": {
+                                        "type": "string",
+                                        "description": "Address to geocode"
+                                    }
+                                },
+                                "required": ["address"]
+                            }
+                        }
+                    }
+                    # ... can add up to 11 more function definitions here
+                ]
+                
+                try:
+                    # Use chat_completion from LoadModel
+                    response = self.model.chat_completion(
+                        messages=messages,
+                        tools=tools,
+                        tool_choice="auto"
+                    )
+                    
+                    if response.get("error"):
+                        return {
+                            "classification": "L1_2",
+                            "response": f"Error in chat completion: {response['error']}",
+                            "status": "error"
+                        }
+                    
+                    assistant_message = response.get("message", {})
+                    tool_calls = response.get("tool_calls", [])
+                    
+                    # Handle tool calls if present
+                    if tool_calls:
+                        results = []
+                        # Process each tool call
+                        for tool_call in tool_calls:
+                            function_name = tool_call.get("function", {}).get("name")
+                            
+                            try:
+                                # Parse the arguments
+                                args = json.loads(tool_call["function"]["arguments"])
+                                
+                                # Call the appropriate function based on the tool name
+                                if function_name == "get_bounding_box":
+                                    address = args["address"]
+                                    bbox_result = get_bounding_box_from_address(address)
+                                elif function_name == "get_bounding_box_from_coords":
+                                    lat = args["lat"]
+                                    lon = args["lon"]
+                                    bbox_result = get_bounding_box_from_coords(lat, lon)
+                                else:
+                                    return {
+                                        "classification": "L1_2",
+                                        "response": f"Unknown function: {function_name}",
+                                        "status": "error"
+                                    }
+                                
+                                # Check if bounding box request was successful
+                                if bbox_result.get("status") == "error":
+                                    error_msg = bbox_result.get("message", "Unknown error getting bounding box")
+                                    return {
+                                        "classification": "L1_2",
+                                        "response": f"Could not find location: {error_msg}",
+                                        "status": "error"
+                                    }
+                                
+                                # Store the result
+                                results.append({
+                                    "function_name": function_name,
+                                    "args": args,
+                                    "result": bbox_result
+                                })
+                                
+                                # Add the function result to messages
+                                messages.append({
+                                    "role": "assistant",
+                                    "content": None,
+                                    "function_call": {
+                                        "name": function_name,
+                                        "arguments": json.dumps(args)
+                                    }
+                                })
+                                messages.append({
+                                    "role": "function",
+                                    "name": function_name,
+                                    "content": json.dumps(bbox_result)
+                                })
+                                
+                            except json.JSONDecodeError as e:
+                                logger.error(f"Error parsing tool arguments: {e}")
+                                return {
+                                    "classification": "L1_2",
+                                    "response": "Error parsing location request",
+                                    "status": "error"
+                                }
+                            except Exception as e:
+                                logger.error(f"Error processing tool call: {e}")
+                                return {
+                                    "classification": "L1_2",
+                                    "response": f"Error processing location: {str(e)}",
+                                    "status": "error"
+                                }
+                        
+                        # Get final response after processing all function calls
+                        final_response = self.model.chat_completion(
+                            messages=messages
+                        )
+                        
+                        if final_response.get("error"):
+                            return {
+                                "classification": "L1_2",
+                                "response": f"Error in final response: {final_response['error']}",
+                                "status": "error"
+                            }
+                        
+                        return {
+                            "classification": "L1_2",
+                            "response": final_response.get("message", {}).get("content", "No response generated"),
+                            "status": "success",
+                            "bounding_boxes": [r["result"] for r in results]
+                        }
+                    
+                    # If no tool calls, return the direct response
+                    return {
+                        "classification": "L1_2",
+                        "response": assistant_message.get("content", "No response generated"),
+                        "status": "success"
+                    }
+                    
+                except Exception as e:
+                    logger.error(f"Error in chat completion: {e}")
+                    return {
+                        "classification": "L1_2",
+                        "response": f"Error processing location query: {str(e)}",
+                        "status": "error"
+                    }
             else:
                 return {
                     "classification": "unknown",
@@ -111,10 +313,7 @@ def main():
         
         print("\nMemory Query System initialized successfully!")
         print("Type 'exit' to quit the program")
-        print("\nExample query types:")
-        print("1. Normal (N): 'How do I write a Python function?'")
-        print("2. Location without data (L0): 'What is the capital of France?'")
-        print("3. Location with data (L1_2): 'Find restaurants near Central Park'")
+       
         
         while True:
             # Get query from user
