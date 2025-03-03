@@ -17,11 +17,73 @@ load_dotenv()
 GEO_MEMORIES_PATH = Path(os.getenv('GEO_MEMORIES_PATH', '/Users/jaya/geo_memories'))
 
 
+def cleanup_cold_memory():
+    """Clean up any existing cold memory data."""
+    print("\n=== Cleaning up existing cold memory ===\n")
+    
+    try:
+        storage_dir = Path('data')
+        if not storage_dir.exists():
+            print("No existing storage directory found.")
+            return
+            
+        cold_dir = storage_dir / 'cold'
+        if not cold_dir.exists():
+            print("No existing cold storage directory found.")
+            return
+            
+        db_path = cold_dir / 'cold.db'
+        if db_path.exists():
+            print("Found existing database, connecting to clean up...")
+            db_conn = duckdb.connect(str(db_path))
+            
+            try:
+                # Initialize memory manager to clean up properly
+                memory_manager = MemoryManager(
+                    storage_path=storage_dir,
+                    vector_encoder=None,
+                    enable_red_hot=False,
+                    enable_hot=False,
+                    enable_cold=True,
+                    enable_warm=False,
+                    enable_glacier=False,
+                    custom_config={
+                        'cold': {
+                            'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
+                            'duckdb': {
+                                'db_conn': db_conn
+                            }
+                        }
+                    }
+                )
+                
+                # Clean up all tables and files
+                memory_manager.cold.clear_tables(keep_files=False)
+                memory_manager.cleanup()
+                db_conn.close()
+                
+            except Exception as e:
+                print(f"Error during database cleanup: {e}")
+                if 'db_conn' in locals():
+                    db_conn.close()
+        
+        # Remove the entire storage directory
+        print("Removing storage directory...")
+        shutil.rmtree(storage_dir)
+        print("Cleanup completed successfully!")
+        
+    except Exception as e:
+        print(f"Error during cleanup: {e}")
+        raise
+
 def run_import():
     """Run the parquet import directly without pytest."""
     if not GEO_MEMORIES_PATH.exists():
         print(f"Error: Directory not found: {GEO_MEMORIES_PATH}")
         return
+
+    # Clean up existing cold memory first
+    cleanup_cold_memory()
 
     print(f"\n=== Importing Geo Memories from {GEO_MEMORIES_PATH} ===\n")
     
@@ -292,6 +354,9 @@ if __name__ == "__main__":
     if "--test" in sys.argv:
         # Run pytest if --test flag is provided
         pytest.main([__file__, "-v", "-k", "test_geo_memories_import"])
+    elif "--cleanup" in sys.argv:
+        # Run only cleanup if --cleanup flag is provided
+        cleanup_cold_memory()
     else:
-        # Run direct import
+        # Run direct import (includes cleanup)
         run_import() 
