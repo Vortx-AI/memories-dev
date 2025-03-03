@@ -7,18 +7,38 @@ from typing import Dict, Any, List, Optional, Union, Tuple
 from pathlib import Path
 import pyarrow.parquet as pq
 import numpy as np
-from sentence_transformers import SentenceTransformer
 import faiss
 import json
 from datetime import datetime
 import argparse
 import os
+import tempfile
+import shutil
 
-from memories.core.memory_manager import MemoryManager
+# Set up temporary directory
+def setup_temp_dir():
+    """Create and set up a temporary directory for the script."""
+    temp_dir = Path.home() / '.memories_temp'
+    temp_dir.mkdir(exist_ok=True)
+    os.environ['TMPDIR'] = str(temp_dir)
+    os.environ['TEMP'] = str(temp_dir)
+    os.environ['TMP'] = str(temp_dir)
+    tempfile.tempdir = str(temp_dir)
+    return temp_dir
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Set up temporary directory before importing sentence_transformers
+temp_dir = setup_temp_dir()
+try:
+    from sentence_transformers import SentenceTransformer
+except Exception as e:
+    logger.error(f"Error importing SentenceTransformer: {e}")
+    raise
+
+from memories.core.memory_manager import MemoryManager
 
 def get_cold_schema_info(memory_manager: MemoryManager) -> List[Dict[str, Any]]:
     """
@@ -280,10 +300,21 @@ def main():
                       help='Similarity threshold for search results (0-1)')
     parser.add_argument('--max-results', type=int, default=5,
                       help='Maximum number of search results to return')
+    parser.add_argument('--temp-dir', type=str,
+                      help='Custom temporary directory path (optional)')
     
     args = parser.parse_args()
     
     try:
+        # Use custom temp directory if provided
+        if args.temp_dir:
+            temp_dir = Path(args.temp_dir)
+            temp_dir.mkdir(exist_ok=True)
+            os.environ['TMPDIR'] = str(temp_dir)
+            os.environ['TEMP'] = str(temp_dir)
+            os.environ['TMP'] = str(temp_dir)
+            tempfile.tempdir = str(temp_dir)
+            
         # Initialize memory manager with both cold and red hot storage
         storage_path = Path(args.storage_path)
         
@@ -342,6 +373,13 @@ def main():
     except Exception as e:
         logger.error(f"Error: {e}")
         raise
+    finally:
+        # Cleanup temporary directory
+        try:
+            if temp_dir.exists():
+                shutil.rmtree(temp_dir)
+        except Exception as e:
+            logger.warning(f"Error cleaning up temporary directory: {e}")
 
 if __name__ == "__main__":
     main() 
