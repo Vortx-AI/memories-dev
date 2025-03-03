@@ -49,8 +49,8 @@ def run_import():
         config = {
             'memory_limit': '8GB',
             'threads': 4,
-            'external_access': True,
-            'unsigned': True
+            'allow_unsigned_extensions': True,
+            'enable_external_access': True
         }
         db_conn = duckdb.connect(str(db_path), config=config)
         
@@ -127,8 +127,8 @@ def memory_manager(tmp_path):
     config = {
         'memory_limit': '8GB',
         'threads': 4,
-        'external_access': True,
-        'unsigned': True
+        'allow_unsigned_extensions': True,
+        'enable_external_access': True
     }
     db_conn = duckdb.connect(str(db_path), config=config)
     
