@@ -16,28 +16,6 @@ load_dotenv()
 # Get geo_memories path from environment variable
 GEO_MEMORIES_PATH = Path(os.getenv('GEO_MEMORIES_PATH', '/Users/jaya/geo_memories'))
 
-def create_duckdb_database(db_path: Path) -> duckdb.DuckDBPyConnection:
-    """Create and configure a DuckDB database.
-    
-    Args:
-        db_path: Path where the database should be created
-        
-    Returns:
-        Configured DuckDB connection
-    """
-    # Create parent directory if it doesn't exist
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    # Configure database settings at connection time
-    config = {
-        'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
-        'threads': int(os.getenv('DUCKDB_THREADS', 4)),
-        'allow_unsigned_extensions': 'true',
-        'enable_external_access': 'true'
-    }
-    
-    # Create connection with config
-    return duckdb.connect(str(db_path), config=config)
 
 def run_import():
     """Run the parquet import directly without pytest."""
@@ -56,10 +34,6 @@ def run_import():
         storage_dir = Path('cold_storage')
         storage_dir.mkdir(exist_ok=True)
         
-        # Create and configure DuckDB database
-        db_path = storage_dir / 'cold.db'
-        db_conn = create_duckdb_database(db_path)
-        
         # Initialize memory manager
         print("Initializing memory manager...")
         memory_manager = MemoryManager(
@@ -74,7 +48,10 @@ def run_import():
                 'cold': {
                     'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
                     'duckdb_config': {
-                        'connection': db_conn
+                        'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
+                        'threads': int(os.getenv('DUCKDB_THREADS', 4)),
+                        'allow_unsigned_extensions': 'true',
+                        'enable_external_access': 'true'
                     }
                 }
             }
@@ -122,10 +99,6 @@ def memory_manager(tmp_path):
     test_cold_dir = tmp_path / "test_cold"
     test_cold_dir.mkdir(exist_ok=True)
     
-    # Create and configure DuckDB database
-    db_path = test_cold_dir / 'cold.db'
-    db_conn = create_duckdb_database(db_path)
-    
     # Configure memory manager with cold storage enabled
     manager = MemoryManager(
         storage_path=test_cold_dir,
@@ -139,7 +112,10 @@ def memory_manager(tmp_path):
             "cold": {
                 "max_size": int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),  # 10GB default
                 "duckdb_config": {
-                    'connection': db_conn
+                    'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
+                    'threads': int(os.getenv('DUCKDB_THREADS', 4)),
+                    'allow_unsigned_extensions': 'true',
+                    'enable_external_access': 'true'
                 }
             }
         }
@@ -148,7 +124,6 @@ def memory_manager(tmp_path):
     yield manager
     
     # Cleanup
-    db_conn.close()
     manager.cleanup()
     if test_cold_dir.exists():
         shutil.rmtree(test_cold_dir)
