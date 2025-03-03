@@ -45,14 +45,13 @@ def run_import():
         if db_path.exists():
             db_path.unlink()
             
-        # Create DuckDB connection with all configurations set during initialization
-        config = {
+        # Create DuckDB connection with all configurations set at initialization time
+        db_conn = duckdb.connect(str(db_path), config={
             'memory_limit': '8GB',
             'threads': 4,
-            'allow_unsigned_extensions': True,
-            'enable_external_access': True
-        }
-        db_conn = duckdb.connect(str(db_path), config=config)
+            'external_access': 'true',  # Changed from enable_external_access
+            'allow_unsigned_extensions': 'true'
+        })
         
         # Initialize memory manager
         print("Initializing memory manager...")
@@ -67,7 +66,7 @@ def run_import():
             custom_config={
                 'cold': {
                     'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
-                    'duckdb_config': {
+                    'duckdb': {
                         'db_conn': db_conn  # Pass the pre-configured connection
                     }
                 }
@@ -123,14 +122,13 @@ def memory_manager(tmp_path):
     if db_path.exists():
         db_path.unlink()
         
-    # Create DuckDB connection with all configurations set during initialization
-    config = {
+    # Create DuckDB connection with all configurations set at initialization time
+    db_conn = duckdb.connect(str(db_path), config={
         'memory_limit': '8GB',
         'threads': 4,
-        'allow_unsigned_extensions': True,
-        'enable_external_access': True
-    }
-    db_conn = duckdb.connect(str(db_path), config=config)
+        'external_access': 'true',  # Changed from enable_external_access
+        'allow_unsigned_extensions': 'true'
+    })
     
     # Initialize memory manager
     print("Initializing memory manager...")
@@ -145,7 +143,7 @@ def memory_manager(tmp_path):
         custom_config={
             "cold": {
                 "max_size": int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),  # 10GB default
-                "duckdb_config": {
+                "duckdb": {
                     'db_conn': db_conn  # Pass the pre-configured connection
                 }
             }

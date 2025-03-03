@@ -501,8 +501,49 @@ class ColdMemory:
                         "num_rows": table.num_rows,
                         "num_columns": len(table.schema),
                         "file_size": file_size,
-                        "import_time": datetime.now().isoformat()
+                        "import_time": datetime.now().isoformat(),
+                        "schema": {
+                            field.name: str(field.type) 
+                            for field in table.schema
+                        }
                     }
+                    
+                    # Create a view with unique column names
+                    try:
+                        # Create a mapping of original to unique column names
+                        column_mapping = {}
+                        seen_columns = set()
+                        for field in table.schema:
+                            col_name = field.name
+                            unique_name = col_name
+                            counter = 1
+                            while unique_name in seen_columns:
+                                unique_name = f"{col_name}_{counter}"
+                                counter += 1
+                            seen_columns.add(unique_name)
+                            column_mapping[col_name] = unique_name
+                        
+                        # Create SQL for renaming columns
+                        columns_sql = ", ".join([
+                            f'"{orig}" as "{unique}"' 
+                            for orig, unique in column_mapping.items()
+                        ])
+                        
+                        # Create view with unique column names
+                        view_name = f"parquet_view_{results['files_processed']}"
+                        self.con.execute(f"""
+                            CREATE OR REPLACE VIEW {view_name} AS
+                            SELECT {columns_sql}
+                            FROM read_parquet('{dest_path}')
+                        """)
+                        
+                        # Store the column mapping in metadata
+                        metadata["column_mapping"] = column_mapping
+                        
+                    except Exception as e:
+                        logger.error(f"Error creating view for {file_path}: {e}")
+                        results["errors"].append(f"{file_path}: {str(e)}")
+                        continue
                     
                     # Store metadata in database
                     self._store_metadata(str(rel_path), metadata)
