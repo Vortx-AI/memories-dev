@@ -14,6 +14,9 @@ import argparse
 import os
 import tempfile
 import shutil
+import duckdb
+import psutil
+import time
 
 # Set up temporary directory
 def setup_temp_dir():
@@ -25,6 +28,70 @@ def setup_temp_dir():
     os.environ['TMP'] = str(temp_dir)
     tempfile.tempdir = str(temp_dir)
     return temp_dir
+
+def check_and_release_duckdb_locks(db_path: Path) -> bool:
+    """
+    Check for and attempt to release DuckDB locks.
+    
+    Args:
+        db_path: Path to the DuckDB database file
+        
+    Returns:
+        bool: True if locks were released or not present, False if locks couldn't be released
+    """
+    try:
+        # Check if database file exists
+        if not db_path.exists():
+            return True
+            
+        # Try to find processes holding the lock
+        lock_file = db_path.with_suffix('.duckdb.lock')
+        if not lock_file.exists():
+            return True
+            
+        # Read lock file to get PID
+        try:
+            with open(lock_file, 'r') as f:
+                pid_str = f.read().strip()
+                if pid_str.isdigit():
+                    pid = int(pid_str)
+                    
+                    # Check if process exists
+                    if psutil.pid_exists(pid):
+                        proc = psutil.Process(pid)
+                        if proc.name().startswith('python'):
+                            logger.warning(f"Found Python process {pid} holding DuckDB lock")
+                            # Try to terminate gracefully
+                            proc.terminate()
+                            try:
+                                proc.wait(timeout=5)
+                            except psutil.TimeoutExpired:
+                                proc.kill()
+                            logger.info(f"Successfully terminated process {pid}")
+                            
+                            # Wait for lock file to be released
+                            for _ in range(5):
+                                if not lock_file.exists():
+                                    return True
+                                time.sleep(1)
+        except Exception as e:
+            logger.warning(f"Error reading lock file: {e}")
+            
+        # If lock file still exists, try to remove it
+        if lock_file.exists():
+            try:
+                lock_file.unlink()
+                logger.info("Removed stale lock file")
+                return True
+            except Exception as e:
+                logger.error(f"Could not remove lock file: {e}")
+                return False
+                
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error checking/releasing DuckDB locks: {e}")
+        return False
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -302,21 +369,29 @@ def main():
                       help='Maximum number of search results to return')
     parser.add_argument('--temp-dir', type=str,
                       help='Custom temporary directory path (optional)')
+    parser.add_argument('--force-unlock', action='store_true',
+                      help='Force release of DuckDB locks before starting')
     
     args = parser.parse_args()
+    temp_dir = None
     
     try:
-        # Use custom temp directory if provided
-        if args.temp_dir:
-            temp_dir = Path(args.temp_dir)
-            temp_dir.mkdir(exist_ok=True)
-            os.environ['TMPDIR'] = str(temp_dir)
-            os.environ['TEMP'] = str(temp_dir)
-            os.environ['TMP'] = str(temp_dir)
-            tempfile.tempdir = str(temp_dir)
+        # Set up temporary directory
+        temp_dir = Path(args.temp_dir) if args.temp_dir else setup_temp_dir()
+        temp_dir.mkdir(exist_ok=True)
+        os.environ['TMPDIR'] = str(temp_dir)
+        os.environ['TEMP'] = str(temp_dir)
+        os.environ['TMP'] = str(temp_dir)
+        tempfile.tempdir = str(temp_dir)
             
         # Initialize memory manager with both cold and red hot storage
         storage_path = Path(args.storage_path)
+        
+        # Check and release DuckDB locks if requested
+        if args.force_unlock:
+            db_path = storage_path / 'cold' / 'cold.duckdb'
+            if not check_and_release_duckdb_locks(db_path):
+                raise RuntimeError("Could not release DuckDB locks. Please check for running processes.")
         
         logger.info(f"Initializing MemoryManager with storage path: {storage_path}")
         memory_manager = MemoryManager(
@@ -373,13 +448,15 @@ def main():
     except Exception as e:
         logger.error(f"Error: {e}")
         raise
+        
     finally:
         # Cleanup temporary directory
-        try:
-            if temp_dir.exists():
-                shutil.rmtree(temp_dir)
-        except Exception as e:
-            logger.warning(f"Error cleaning up temporary directory: {e}")
+        if temp_dir is not None:
+            try:
+                if temp_dir.exists():
+                    shutil.rmtree(temp_dir)
+            except Exception as e:
+                logger.warning(f"Error cleaning up temporary directory: {e}")
 
 if __name__ == "__main__":
     main() 
