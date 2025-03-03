@@ -409,10 +409,7 @@ def test_spatial_queries():
                 'cold': {
                     'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
                     'duckdb': {
-                        'db_conn': db_conn,
-                        'config': {
-                            'enable_external_access': True
-                        }
+                        'db_conn': db_conn
                     }
                 }
             }
@@ -461,11 +458,8 @@ def test_spatial_queries():
         raise
     
     finally:
-        print("\nCleaning up...")
         if 'db_conn' in locals():
             db_conn.close()
-        if 'memory_manager' in locals():
-            memory_manager.cold.cleanup()
 
 def main():
     """List tables in cold memory."""
@@ -539,33 +533,6 @@ if __name__ == "__main__":
     if "--test" in sys.argv:
         # Run pytest if --test flag is provided
         pytest.main([__file__, "-v"])
-    elif "--cleanup" in sys.argv:
-        # Run cleanup if --cleanup flag is provided
-        try:
-            storage_dir = Path('data')
-            if storage_dir.exists():
-                db_conn = duckdb.connect(str(storage_dir / 'cold' / 'cold.db'))
-                memory_manager = MemoryManager(
-                    storage_path=storage_dir,
-                    vector_encoder=None,
-                    enable_red_hot=False,
-                    enable_hot=False,
-                    enable_cold=True,
-                    enable_warm=False,
-                    enable_glacier=False,
-                    custom_config={
-                        'cold': {
-                            'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
-                            'duckdb': {
-                                'db_conn': db_conn
-                            }
-                        }
-                    }
-                )
-                memory_manager.cold.cleanup()
-                print("Cleanup completed successfully!")
-        except Exception as e:
-            print(f"Error during cleanup: {e}")
     elif "--spatial" in sys.argv:
         # Run spatial queries test
         test_spatial_queries()

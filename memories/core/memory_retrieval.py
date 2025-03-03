@@ -274,21 +274,7 @@ class MemoryRetrieval:
         geom_column: str = "geometry",
         limit: int = 1000
     ) -> pd.DataFrame:
-        """Get data within a geographic bounding box.
-        
-        Args:
-            min_lon: Minimum longitude (western boundary)
-            min_lat: Minimum latitude (southern boundary)
-            max_lon: Maximum longitude (eastern boundary)
-            max_lat: Maximum latitude (northern boundary)
-            lon_column: Name of the longitude column (default: "longitude")
-            lat_column: Name of the latitude column (default: "latitude")
-            geom_column: Name of the geometry column (default: "geometry")
-            limit: Maximum number of results to return (default: 1000)
-            
-        Returns:
-            pandas DataFrame with records that fall within the bounding box
-        """
+        """Get data within a geographic bounding box."""
         try:
             # Get all tables
             tables = self.cold.list_tables()
@@ -301,48 +287,53 @@ class MemoryRetrieval:
             self.cold.con.execute("LOAD spatial;")
             
             # Build query to union all tables with bounding box filter
-            queries = []
+            results = pd.DataFrame()
+            
             for table in tables:
                 table_name = table["table_name"]
                 schema = table["schema"]
                 
                 # Try geometry column first if it exists
                 if geom_column in schema:
-                    bbox_query = f"""
+                    query = f"""
                         SELECT *, '{table_name}' as source_table 
                         FROM {table_name}
                         WHERE ST_Intersects(
                             ST_GeomFromWKB({geom_column}),
                             ST_MakeEnvelope({min_lon}, {min_lat}, {max_lon}, {max_lat})
                         )
+                        LIMIT {limit}
                     """
-                    queries.append(bbox_query)
+                    try:
+                        df = self.cold.query(query)
+                        if not df.empty:
+                            results = pd.concat([results, df], ignore_index=True)
+                    except Exception as e:
+                        self.logger.warning(f"Error querying table {table_name} with geometry: {e}")
+                        
                 # Fall back to lat/lon columns if they exist
                 elif lon_column in schema and lat_column in schema:
-                    bbox_query = f"""
+                    query = f"""
                         SELECT *, '{table_name}' as source_table 
                         FROM {table_name}
                         WHERE {lon_column} BETWEEN {min_lon} AND {max_lon}
                         AND {lat_column} BETWEEN {min_lat} AND {max_lat}
+                        LIMIT {limit}
                     """
-                    queries.append(bbox_query)
+                    try:
+                        df = self.cold.query(query)
+                        if not df.empty:
+                            results = pd.concat([results, df], ignore_index=True)
+                    except Exception as e:
+                        self.logger.warning(f"Error querying table {table_name} with lat/lon: {e}")
             
-            if not queries:
+            if results.empty:
                 self.logger.warning(
                     f"No tables found with either geometry column ({geom_column}) "
                     f"or coordinate columns ({lon_column}, {lat_column})"
                 )
-                return pd.DataFrame()
             
-            # Combine all queries with UNION ALL
-            full_query = f"""
-                SELECT * FROM (
-                    {" UNION ALL ".join(queries)}
-                ) combined_results
-                LIMIT {limit}
-            """
-            
-            return self.cold.query(full_query)
+            return results.head(limit) if not results.empty else results
             
         except Exception as e:
             self.logger.error(f"Error getting data for bounding box: {e}")
@@ -354,16 +345,7 @@ class MemoryRetrieval:
         geom_column: str = "geometry",
         limit: int = 1000
     ) -> pd.DataFrame:
-        """Get data that intersects with a polygon.
-        
-        Args:
-            polygon_wkt: WKT (Well-Known Text) representation of the polygon
-            geom_column: Name of the geometry column (default: "geometry")
-            limit: Maximum number of results to return (default: 1000)
-            
-        Returns:
-            pandas DataFrame with records that intersect the polygon
-        """
+        """Get data that intersects with a polygon."""
         try:
             # Get all tables
             tables = self.cold.list_tables()
@@ -375,37 +357,35 @@ class MemoryRetrieval:
             self.cold.con.execute("INSTALL spatial;")
             self.cold.con.execute("LOAD spatial;")
             
-            # Build query to union all tables with polygon intersection filter
-            queries = []
+            # Query each table separately and combine results
+            results = pd.DataFrame()
+            
             for table in tables:
                 table_name = table["table_name"]
                 schema = table["schema"]
                 
                 # Check if geometry column exists in this table
                 if geom_column in schema:
-                    intersection_query = f"""
+                    query = f"""
                         SELECT *, '{table_name}' as source_table 
                         FROM {table_name}
                         WHERE ST_Intersects(
                             ST_GeomFromWKB({geom_column}), 
                             ST_GeomFromText('{polygon_wkt}')
                         )
+                        LIMIT {limit}
                     """
-                    queries.append(intersection_query)
+                    try:
+                        df = self.cold.query(query)
+                        if not df.empty:
+                            results = pd.concat([results, df], ignore_index=True)
+                    except Exception as e:
+                        self.logger.warning(f"Error querying table {table_name}: {e}")
             
-            if not queries:
+            if results.empty:
                 self.logger.warning(f"No tables found with geometry column: {geom_column}")
-                return pd.DataFrame()
             
-            # Combine all queries with UNION ALL
-            full_query = f"""
-                SELECT * FROM (
-                    {" UNION ALL ".join(queries)}
-                ) combined_results
-                LIMIT {limit}
-            """
-            
-            return self.cold.query(full_query)
+            return results.head(limit) if not results.empty else results
             
         except Exception as e:
             self.logger.error(f"Error getting data for polygon: {e}")
