@@ -32,7 +32,7 @@ def run_import():
         storage_dir = Path('cold_storage')
         storage_dir.mkdir(exist_ok=True)
         
-        # Initialize memory manager with pre-configured DuckDB settings
+        # Initialize memory manager
         print("Initializing memory manager...")
         memory_manager = MemoryManager(
             storage_path=storage_dir,
@@ -47,11 +47,7 @@ def run_import():
                     'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
                     'duckdb_config': {
                         'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
-                        'threads': int(os.getenv('DUCKDB_THREADS', 4)),
-                        'config': {
-                            'enable_external_access': True,
-                            'external_access': True
-                        }
+                        'threads': int(os.getenv('DUCKDB_THREADS', 4))
                     }
                 }
             }
@@ -91,16 +87,17 @@ def run_import():
             shutil.rmtree(storage_dir)
 
 @pytest.fixture
-def memory_manager():
+def memory_manager(tmp_path):
     """Initialize memory manager with cold storage enabled."""
     vector_encoder = get_encoder()
     
-    # First create the test directory if it doesn't exist
-    test_cold_dir = Path('test_cold')
+    # Create test directory
+    test_cold_dir = tmp_path / "test_cold"
     test_cold_dir.mkdir(exist_ok=True)
     
+    # Configure memory manager with cold storage enabled
     manager = MemoryManager(
-        storage_path=test_cold_dir,  # Specify storage path
+        storage_path=test_cold_dir,
         vector_encoder=vector_encoder,
         enable_red_hot=False,  # Disable vector storage
         enable_hot=False,      # Disable Redis
@@ -108,15 +105,11 @@ def memory_manager():
         enable_warm=False,     # Disable warm storage
         enable_glacier=False,  # Disable glacier storage
         custom_config={
-            'cold': {
-                'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
-                'duckdb_config': {
-                    'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
-                    'threads': int(os.getenv('DUCKDB_THREADS', 4)),
-                    'config': {
-                        'enable_external_access': True,
-                        'external_access': True
-                    }
+            "cold": {
+                "max_size": int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),  # 10GB default
+                "duckdb_config": {
+                    "memory_limit": os.getenv("DUCKDB_MEMORY_LIMIT", "8GB"),
+                    "threads": int(os.getenv("DUCKDB_THREADS", 4))
                 }
             }
         }
@@ -124,7 +117,7 @@ def memory_manager():
     
     yield manager
     
-    # Cleanup after tests
+    # Cleanup
     manager.cleanup()
     if test_cold_dir.exists():
         shutil.rmtree(test_cold_dir)
