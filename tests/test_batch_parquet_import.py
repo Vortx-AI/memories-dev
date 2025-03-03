@@ -32,11 +32,7 @@ def run_import():
         storage_dir = Path('cold_storage')
         storage_dir.mkdir(exist_ok=True)
         
-        # Pre-configure DuckDB settings
-        duckdb.execute("SET enable_external_access=true")
-        duckdb.execute("SET external_access=true")
-        
-        # Initialize memory manager
+        # Initialize memory manager with pre-configured DuckDB settings
         print("Initializing memory manager...")
         memory_manager = MemoryManager(
             storage_path=storage_dir,
@@ -51,7 +47,11 @@ def run_import():
                     'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
                     'duckdb_config': {
                         'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
-                        'threads': int(os.getenv('DUCKDB_THREADS', 4))
+                        'threads': int(os.getenv('DUCKDB_THREADS', 4)),
+                        'config': {
+                            'enable_external_access': True,
+                            'external_access': True
+                        }
                     }
                 }
             }
@@ -99,10 +99,6 @@ def memory_manager():
     test_cold_dir = Path('test_cold')
     test_cold_dir.mkdir(exist_ok=True)
     
-    # Pre-configure DuckDB settings
-    duckdb.execute("SET enable_external_access=true")
-    duckdb.execute("SET external_access=true")
-    
     manager = MemoryManager(
         storage_path=test_cold_dir,  # Specify storage path
         vector_encoder=vector_encoder,
@@ -116,7 +112,11 @@ def memory_manager():
                 'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
                 'duckdb_config': {
                     'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
-                    'threads': int(os.getenv('DUCKDB_THREADS', 4))
+                    'threads': int(os.getenv('DUCKDB_THREADS', 4)),
+                    'config': {
+                        'enable_external_access': True,
+                        'external_access': True
+                    }
                 }
             }
         }
