@@ -149,24 +149,34 @@ logger = logging.getLogger(__name__)
 class ColdMemory:
     """Cold memory storage for infrequently accessed data"""
     
+    def __init__(self, storage_path: Union[str, Path], max_size: int, duckdb_connection: Optional[Any] = None):
+        """Initialize cold storage.
+        
+        Args:
+            storage_path: Path to cold storage directory
+            max_size: Maximum size in bytes
+            duckdb_connection: Pre-configured DuckDB connection
+        """
+        self.storage_path = Path(storage_path)
+        self.max_size = max_size
+        
+        # Create storage directory
+        self.storage_path.mkdir(parents=True, exist_ok=True)
+        
+        # Use provided DuckDB connection
+        self.con = duckdb_connection
+        if self.con is None:
+            self.logger.warning("No DuckDB connection provided, cold memory will be disabled")
+            return
+        
+        # Initialize schema
+        self._initialize_db()
+        
+        logger.info(f"Initialized cold storage at {self.storage_path}")
+
     def _initialize_db(self) -> None:
         """Initialize the database schema."""
         try:
-            # Apply DuckDB configuration if provided
-            if self.duckdb_config:
-                if 'db_conn' in self.duckdb_config:
-                    self.con = self.duckdb_config['db_conn']
-                else:
-                    # Apply configuration settings
-                    if 'memory_limit' in self.duckdb_config:
-                        self.con.execute(f"SET memory_limit='{self.duckdb_config['memory_limit']}'")
-                    if 'threads' in self.duckdb_config:
-                        self.con.execute(f"SET threads={self.duckdb_config['threads']}")
-                    if self.duckdb_config.get('allow_unsigned_extensions'):
-                        self.con.execute("SET allow_unsigned_extensions=true")
-                    if self.duckdb_config.get('enable_external_access'):
-                        self.con.execute("SET enable_external_access=true")
-            
             # Create file_metadata table if it doesn't exist
             self.con.execute("""
                 CREATE TABLE IF NOT EXISTS file_metadata (
@@ -182,36 +192,6 @@ class ColdMemory:
         except Exception as e:
             logger.error(f"Error initializing database: {e}")
             raise
-
-    def __init__(self, storage_path: Union[str, Path], max_size: int, duckdb_config: Optional[Dict[str, Any]] = None):
-        """Initialize cold storage.
-        
-        Args:
-            storage_path: Path to cold storage directory
-            max_size: Maximum size in bytes
-            duckdb_config: Optional DuckDB configuration including:
-                - db_conn: Pre-configured DuckDB connection
-                - memory_limit: Memory limit for DuckDB
-                - threads: Number of threads for DuckDB
-                - allow_unsigned_extensions: Whether to allow unsigned extensions
-                - enable_external_access: Whether to enable external access
-        """
-        self.storage_path = Path(storage_path)
-        self.max_size = max_size
-        self.duckdb_config = duckdb_config or {}
-        
-        # Create storage directory
-        self.storage_path.mkdir(parents=True, exist_ok=True)
-        
-        # Initialize database
-        if not 'db_conn' in self.duckdb_config:
-            db_path = self.storage_path / "cold.db"
-            self.con = duckdb.connect(str(db_path))
-        
-        # Initialize schema
-        self._initialize_db()
-        
-        logger.info(f"Initialized cold storage at {self.storage_path}")
 
     def _load_metadata(self) -> Dict[str, Any]:
         """Load metadata from disk."""
@@ -553,59 +533,3 @@ class ColdMemory:
         self.con.execute(query, (file_path, json.dumps(metadata)))
         self.con.commit()
 
-# Test code with more verbose output
-if __name__ == "__main__":
-    try:
-        print("Initializing ColdMemory...")
-        cold_memory = ColdMemory(Path(os.getenv('GEO_MEMORIES')), 100)
-        
-        # Test coordinates (Bangalore, India)
-        test_lat, test_lon = 12.9095706, 77.6085865
-        print(f"\nQuerying point: Latitude {test_lat}, Longitude {test_lon}")
-        
-        # Basic query with debug info
-        print("\n1. Executing basic query...")
-        results = cold_memory.retrieve({
-            "latitude": test_lat,
-            "longitude": test_lon,
-            "limit": 5
-        })
-        print(f"Query returned {len(results)} results")
-        
-        if results:
-            print("\nAll columns in results:")
-            print("Available columns:", list(results.keys()))
-            print("\nComplete results:")
-            # Set pandas to show all columns and rows without truncation
-            pd.set_option('display.max_columns', None)  # Show all columns
-            pd.set_option('display.max_rows', None)     # Show all rows
-            pd.set_option('display.width', None)        # Don't wrap
-            pd.set_option('display.max_colwidth', None) # Don't truncate column content
-            print(results)
-        else:
-            print("\nNo results found. Checking data in the Parquet files...")
-            
-            # Show sample of available data with all columns
-            print("\nSample of available data:")
-            sample_query = {
-                "latitude": 12.9095706,
-                "longitude": 77.6085865,
-                "limit": 1
-            }
-            print(f"Executing sample query: {sample_query}")
-            sample_data = cold_memory.retrieve(sample_query)
-            if sample_data:
-                print("\nAvailable columns:", list(sample_data.keys()))
-                print("\nComplete sample row:")
-                pd.set_option('display.max_columns', None)
-                pd.set_option('display.max_rows', None)
-                pd.set_option('display.width', None)
-                pd.set_option('display.max_colwidth', None)
-                print(sample_data)
-
-    except Exception as e:
-        print(f"An error occurred during testing: {str(e)}")
-    finally:
-        if 'cold_memory' in locals():
-            print("\nClosed ColdMemory.")
-    

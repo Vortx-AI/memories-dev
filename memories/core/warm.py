@@ -18,74 +18,38 @@ class WarmMemory:
         self,
         storage_path: Union[str, Path],
         max_size: int,
-        duckdb_config: Optional[Dict[str, Any]] = None
+        duckdb_connection: Optional[Any] = None
     ):
         """Initialize warm memory.
         
         Args:
             storage_path: Path to store data
             max_size: Maximum storage size in bytes
-            duckdb_config: Optional DuckDB configuration
+            duckdb_connection: Pre-configured DuckDB connection
         """
         self.storage_path = Path(storage_path)
         self.max_size = max_size
         self.storage_path.mkdir(parents=True, exist_ok=True)
         self.logger = logging.getLogger(__name__)
         
-        # Set default DuckDB config if none provided
-        self.duckdb_config = duckdb_config or {
-            'memory_limit': '8GB',
-            'threads': 4,
-            'config': {
-                'enable_progress_bar': True,
-                'enable_object_cache': True,
-                'memory_limit': '8GB'
-            },
-            'access_mode': 'read_write'
-        }
+        # Use provided DuckDB connection or create a new one
+        self.con = duckdb_connection
+        if self.con is None:
+            self.logger.warning("No DuckDB connection provided, warm memory will be disabled")
+            return
+            
+        # Create main table for data storage
+        self.con.execute("""
+            CREATE TABLE IF NOT EXISTS warm_data (
+                key VARCHAR PRIMARY KEY,
+                data JSON,
+                metadata JSON,
+                created_at TIMESTAMP,
+                last_accessed TIMESTAMP
+            )
+        """)
         
-        # Initialize in-memory DuckDB
-        self._initialize_db()
-
-    def _initialize_db(self) -> None:
-        """Initialize in-memory DuckDB database."""
-        try:
-            # Create in-memory connection
-            self.con = duckdb.connect(':memory:')
-            
-            # Set memory limit
-            if self.duckdb_config['memory_limit']:
-                self.con.execute(f"SET memory_limit='{self.duckdb_config['memory_limit']}'")
-            
-            # Set number of threads
-            if self.duckdb_config['threads']:
-                self.con.execute(f"SET threads={self.duckdb_config['threads']}")
-            
-            # Apply additional configurations
-            for key, value in self.duckdb_config['config'].items():
-                try:
-                    if isinstance(value, bool):
-                        value = 'true' if value else 'false'
-                    self.con.execute(f"SET {key}='{value}'")
-                except Exception as e:
-                    self.logger.warning(f"Failed to set config {key}={value}: {e}")
-            
-            # Create main table for data storage
-            self.con.execute("""
-                CREATE TABLE IF NOT EXISTS warm_data (
-                    key VARCHAR PRIMARY KEY,
-                    data JSON,
-                    metadata JSON,
-                    created_at TIMESTAMP,
-                    last_accessed TIMESTAMP
-                )
-            """)
-            
-            self.logger.info("Initialized in-memory DuckDB for warm storage")
-            
-        except Exception as e:
-            self.logger.error(f"Failed to initialize DuckDB: {e}")
-            raise
+        self.logger.info("Initialized warm memory storage")
 
     def store(self, data: Dict[str, Any], metadata: Optional[Dict[str, Any]] = None) -> None:
         """Store data in warm memory.
@@ -94,6 +58,10 @@ class WarmMemory:
             data: Data to store
             metadata: Optional metadata
         """
+        if not self.con:
+            self.logger.error("DuckDB connection not available")
+            return
+            
         try:
             key = data.get('id') or str(datetime.now().timestamp())
             self.con.execute("""
