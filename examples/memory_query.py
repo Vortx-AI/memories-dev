@@ -56,7 +56,7 @@ class MemoryQuery:
             self.memory_retrieval = None
             
             # Initialize code execution
-            self.code_executor = CodeExecution()
+            self.code_execution = CodeExecution()
             
             # Load function definitions
             self.function_mapping = {
@@ -67,7 +67,7 @@ class MemoryQuery:
                 "get_data_by_bbox": self.get_data_by_bbox_wrapper,
                 "get_data_by_bbox_and_value": self.get_data_by_bbox_and_value_wrapper,
                 "get_data_by_fuzzy_search": self.get_data_by_fuzzy_search_wrapper,
-                "execute_code": self.code_executor.execute_code
+                "execute_code": self.code_execution.execute_code
             }
             
             # Load functions from JSON file
