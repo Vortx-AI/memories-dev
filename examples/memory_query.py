@@ -65,6 +65,8 @@ class MemoryQuery:
                 "get_address_from_coords": get_address_from_coords,
                 "get_coords_from_address": get_coords_from_address,
                 "get_data_by_bbox": self.get_data_by_bbox_wrapper,
+                "get_data_by_bbox_and_value": self.get_data_by_bbox_and_value_wrapper,
+                "get_data_by_fuzzy_search": self.get_data_by_fuzzy_search_wrapper,
                 "execute_code": self.code_executor.execute_code
             }
             
@@ -114,6 +116,92 @@ class MemoryQuery:
             }
         except Exception as e:
             logger.error(f"Error in get_data_by_bbox: {e}")
+            return {
+                "status": "error",
+                "message": str(e),
+                "data": []
+            }
+
+    def get_data_by_bbox_and_value_wrapper(
+        self, 
+        min_lon: float, 
+        min_lat: float, 
+        max_lon: float, 
+        max_lat: float,
+        search_value: str,
+        case_sensitive: bool = False,
+        lon_column: str = "longitude",
+        lat_column: str = "latitude",
+        geom_column: str = "geometry",
+        limit: int = 1000
+    ) -> Dict[str, Any]:
+        """Wrapper for get_data_by_bbox_and_value to handle initialization and return format."""
+        try:
+            # Initialize memory_retrieval if not already done
+            if self.memory_retrieval is None:
+                from memories.core.cold_memory import ColdMemory
+                cold_memory = ColdMemory(storage_path=Path('data'))
+                self.memory_retrieval = MemoryRetrieval(cold_memory)
+
+            # Call get_data_by_bbox_and_value
+            results = self.memory_retrieval.get_data_by_bbox_and_value(
+                min_lon=min_lon,
+                min_lat=min_lat,
+                max_lon=max_lon,
+                max_lat=max_lat,
+                search_value=search_value,
+                case_sensitive=case_sensitive,
+                lon_column=lon_column,
+                lat_column=lat_column,
+                geom_column=geom_column,
+                limit=limit
+            )
+
+            # Convert results to dictionary format
+            return {
+                "status": "success" if not results.empty else "no_results",
+                "data": results.to_dict('records') if not results.empty else [],
+                "count": len(results) if not results.empty else 0
+            }
+        except Exception as e:
+            logger.error(f"Error in get_data_by_bbox_and_value: {e}")
+            return {
+                "status": "error",
+                "message": str(e),
+                "data": []
+            }
+
+    def get_data_by_fuzzy_search_wrapper(
+        self,
+        search_term: str,
+        similarity_threshold: float = 0.3,
+        case_sensitive: bool = False,
+        limit: int = 10
+    ) -> Dict[str, Any]:
+        """Wrapper for get_data_by_fuzzy_search to handle initialization and return format."""
+        try:
+            # Initialize memory_retrieval if not already done
+            if self.memory_retrieval is None:
+                from memories.core.cold_memory import ColdMemory
+                cold_memory = ColdMemory(storage_path=Path('data'))
+                self.memory_retrieval = MemoryRetrieval(cold_memory)
+
+            # Call get_data_by_fuzzy_search
+            results = self.memory_retrieval.get_data_by_fuzzy_search(
+                search_term=search_term,
+                similarity_threshold=similarity_threshold,
+                case_sensitive=case_sensitive,
+                limit=limit
+            )
+
+            # Convert results to dictionary format
+            return {
+                "status": "success" if not results.empty else "no_results",
+                "data": results.to_dict('records') if not results.empty else [],
+                "count": len(results) if not results.empty else 0
+            }
+        except Exception as e:
+            logger.error(f"Error in get_data_by_fuzzy_search: {e}")
             return {
                 "status": "error",
                 "message": str(e),

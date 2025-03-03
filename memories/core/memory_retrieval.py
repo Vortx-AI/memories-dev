@@ -339,6 +339,223 @@ class MemoryRetrieval:
             self.logger.error(f"Error getting data for bounding box: {e}")
             return pd.DataFrame()
 
+    def get_data_by_bbox_and_value(
+        self,
+        min_lon: float,
+        min_lat: float,
+        max_lon: float,
+        max_lat: float,
+        search_value: str,
+        case_sensitive: bool = False,
+        lon_column: str = "longitude",
+        lat_column: str = "latitude",
+        geom_column: str = "geometry",
+        limit: int = 1000
+    ) -> pd.DataFrame:
+        """Get data within a geographic bounding box that contains a specific value in any column.
+        
+        Args:
+            min_lon: Minimum longitude of the bounding box
+            min_lat: Minimum latitude of the bounding box
+            max_lon: Maximum longitude of the bounding box
+            max_lat: Maximum latitude of the bounding box
+            search_value: Value to search for in any column
+            case_sensitive: Whether to perform case-sensitive search (default: False)
+            lon_column: Name of the longitude column (default: "longitude")
+            lat_column: Name of the latitude column (default: "latitude")
+            geom_column: Name of the geometry column (default: "geometry")
+            limit: Maximum number of results to return (default: 1000)
+            
+        Returns:
+            pandas DataFrame with matching records
+        """
+        try:
+            # Get all tables
+            tables = self.cold.list_tables()
+            if not tables:
+                self.logger.warning("No tables available")
+                return pd.DataFrame()
+            
+            # Install and load spatial extension if needed
+            self.cold.con.execute("INSTALL spatial;")
+            self.cold.con.execute("LOAD spatial;")
+            
+            # Build query to union all tables with bounding box filter and value search
+            queries = []
+            
+            for table in tables:
+                table_name = table["table_name"]
+                schema = table["schema"]
+                
+                # Get all column names for the table
+                columns = list(schema.keys())
+                
+                # Build the LIKE conditions for each column
+                # Use ILIKE for case-insensitive search if specified
+                like_operator = "ILIKE" if not case_sensitive else "LIKE"
+                value_conditions = []
+                for col in columns:
+                    # Cast column to string for searching
+                    value_conditions.append(f"CAST({col} AS VARCHAR) {like_operator} '%{search_value}%'")
+                
+                value_query = " OR ".join(value_conditions)
+                
+                # Try geometry column first if it exists
+                if geom_column in schema:
+                    query = f"""
+                        SELECT *, '{table_name}' as source_table 
+                        FROM {table_name}
+                        WHERE ST_Intersects(
+                            ST_GeomFromWKB({geom_column}),
+                            ST_MakeEnvelope({min_lon}, {min_lat}, {max_lon}, {max_lat})
+                        )
+                        AND ({value_query})
+                    """
+                    queries.append(query)
+                        
+                # Fall back to lat/lon columns if they exist
+                elif lon_column in schema and lat_column in schema:
+                    query = f"""
+                        SELECT *, '{table_name}' as source_table 
+                        FROM {table_name}
+                        WHERE {lon_column} BETWEEN {min_lon} AND {max_lon}
+                        AND {lat_column} BETWEEN {min_lat} AND {max_lat}
+                        AND ({value_query})
+                    """
+                    queries.append(query)
+            
+            if not queries:
+                self.logger.warning(
+                    f"No tables found with either geometry column ({geom_column}) "
+                    f"or coordinate columns ({lon_column}, {lat_column})"
+                )
+                return pd.DataFrame()
+            
+            # Combine all queries with UNION ALL and apply limit
+            full_query = f"""
+                SELECT * FROM (
+                    {" UNION ALL ".join(queries)}
+                ) combined_results
+                LIMIT {limit}
+            """
+            
+            # Execute the combined query
+            try:
+                results = self.cold.query(full_query)
+            except Exception as e:
+                self.logger.error(f"Error executing combined query: {e}")
+                return pd.DataFrame()
+            
+            if results.empty:
+                self.logger.warning(
+                    f"No data found within bounding box containing value '{search_value}'"
+                )
+            
+            return results
+            
+        except Exception as e:
+            self.logger.error(f"Error getting data for bounding box and value: {e}")
+            return pd.DataFrame()
+
+    def get_data_by_fuzzy_search(
+        self,
+        search_term: str,
+        similarity_threshold: float = 0.3,
+        case_sensitive: bool = False,
+        limit: int = 10
+    ) -> pd.DataFrame:
+        """Search for data across all columns using fuzzy string matching.
+        
+        Args:
+            search_term: Term to search for
+            similarity_threshold: Minimum similarity score (0-1) for matches (default: 0.3)
+            case_sensitive: Whether to perform case-sensitive search (default: False)
+            limit: Maximum number of results to return (default: 10)
+            
+        Returns:
+            pandas DataFrame with matching records, sorted by similarity score
+        """
+        try:
+            # Get all tables
+            tables = self.cold.list_tables()
+            if not tables:
+                self.logger.warning("No tables available")
+                return pd.DataFrame()
+            
+            # Build query to search across all tables with similarity scoring
+            queries = []
+            
+            for table in tables:
+                table_name = table["table_name"]
+                schema = table["schema"]
+                columns = list(schema.keys())
+                
+                # Build similarity conditions for each column
+                similarity_conditions = []
+                for col in columns:
+                    # Handle case sensitivity
+                    col_expr = col if case_sensitive else f"LOWER({col})"
+                    search_expr = search_term if case_sensitive else f"LOWER('{search_term}')"
+                    
+                    # Calculate similarity score using Levenshtein distance
+                    similarity_conditions.append(f"""
+                        CASE 
+                            WHEN {col_expr} IS NOT NULL THEN 
+                                GREATEST(
+                                    similarity(CAST({col_expr} AS VARCHAR), {search_expr}),
+                                    similarity({search_expr}, CAST({col_expr} AS VARCHAR))
+                                )
+                        END as similarity_{col}
+                    """)
+                
+                # Combine into a single query for this table
+                query = f"""
+                    SELECT 
+                        *,
+                        '{table_name}' as source_table,
+                        {', '.join(similarity_conditions)},
+                        GREATEST({
+                            ', '.join([f"COALESCE(similarity_{col}, 0)" for col in columns])
+                        }) as max_similarity
+                    FROM {table_name}
+                    WHERE GREATEST({
+                        ', '.join([f"COALESCE(similarity_{col}, 0)" for col in columns])
+                    }) >= {similarity_threshold}
+                """
+                queries.append(query)
+            
+            if not queries:
+                self.logger.warning("No tables to search")
+                return pd.DataFrame()
+            
+            # Combine all queries and sort by similarity
+            full_query = f"""
+                SELECT * FROM (
+                    {" UNION ALL ".join(queries)}
+                ) combined_results
+                ORDER BY max_similarity DESC
+                LIMIT {limit}
+            """
+            
+            # Execute the combined query
+            try:
+                results = self.cold.query(full_query)
+            except Exception as e:
+                self.logger.error(f"Error executing fuzzy search query: {e}")
+                return pd.DataFrame()
+            
+            if results.empty:
+                self.logger.warning(
+                    f"No data found matching search term '{search_term}' with "
+                    f"similarity threshold {similarity_threshold}"
+                )
+            
+            return results
+            
+        except Exception as e:
+            self.logger.error(f"Error in fuzzy search: {e}")
+            return pd.DataFrame()
+
     def get_data_by_polygon(
         self,
         polygon_wkt: str,
