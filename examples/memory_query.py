@@ -15,6 +15,7 @@ from memories.utils.earth.location_utils import (
     get_address_from_coords,
     get_coords_from_address
 )
+from memories.core.memory_retrieval import MemoryRetrieval
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -50,12 +51,16 @@ class MemoryQuery:
             )
             logger.info(f"Successfully initialized LoadModel with {model_name}")
             
+            # Initialize memory retrieval if needed for spatial queries
+            self.memory_retrieval = None
+            
             # Load function definitions
             self.function_mapping = {
                 "get_bounding_box": get_bounding_box_from_address,
                 "get_bounding_box_from_coords": get_bounding_box_from_coords,
                 "get_address_from_coords": get_address_from_coords,
-                "get_coords_from_address": get_coords_from_address
+                "get_coords_from_address": get_coords_from_address,
+                "get_data_by_bbox": self.get_data_by_bbox_wrapper
             }
             
             # Load functions from JSON file
@@ -72,6 +77,43 @@ class MemoryQuery:
         except Exception as e:
             logger.error(f"Failed to initialize LoadModel: {e}")
             raise
+
+    def get_data_by_bbox_wrapper(self, min_lon: float, min_lat: float, max_lon: float, max_lat: float, 
+                                lon_column: str = "longitude", lat_column: str = "latitude", 
+                                geom_column: str = "geometry", limit: int = 1000) -> Dict[str, Any]:
+        """Wrapper for get_data_by_bbox to handle initialization and return format."""
+        try:
+            # Initialize memory_retrieval if not already done
+            if self.memory_retrieval is None:
+                from memories.core.cold_memory import ColdMemory
+                cold_memory = ColdMemory(storage_path=Path('data'))
+                self.memory_retrieval = MemoryRetrieval(cold_memory)
+
+            # Call get_data_by_bbox
+            results = self.memory_retrieval.get_data_by_bbox(
+                min_lon=min_lon,
+                min_lat=min_lat,
+                max_lon=max_lon,
+                max_lat=max_lat,
+                lon_column=lon_column,
+                lat_column=lat_column,
+                geom_column=geom_column,
+                limit=limit
+            )
+
+            # Convert results to dictionary format
+            return {
+                "status": "success" if not results.empty else "no_results",
+                "data": results.to_dict('records') if not results.empty else [],
+                "count": len(results) if not results.empty else 0
+            }
+        except Exception as e:
+            logger.error(f"Error in get_data_by_bbox: {e}")
+            return {
+                "status": "error",
+                "message": str(e),
+                "data": []
+            }
 
     def process_query(self, query: str) -> Dict[str, Any]:
         """
@@ -143,7 +185,7 @@ class MemoryQuery:
                                     }
                                 
                                 # Check if request was successful
-                                if function_result.get("status") == "error":
+                                if isinstance(function_result, dict) and function_result.get("status") == "error":
                                     error_msg = function_result.get("message", f"Unknown error in {function_name}")
                                     return {
                                         "classification": "L1_2",
