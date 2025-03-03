@@ -421,15 +421,6 @@ def test_spatial_queries():
         # Initialize memory retrieval
         memory_retrieval = MemoryRetrieval(memory_manager.cold)
         
-        # List available tables and their schemas
-        print("\nListing available tables and their schemas:")
-        tables = memory_retrieval.list_available_data()
-        for table in tables:
-            print(f"\nTable: {table['table_name']}")
-            print("Schema:")
-            for col_name, col_type in table['schema'].items():
-                print(f"  {col_name}: {col_type}")
-        
         # Test bounding box query
         print("\nTesting bounding box query...")
         bbox_results = memory_retrieval.get_data_by_bbox(
