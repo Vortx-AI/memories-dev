@@ -7,6 +7,7 @@ import duckdb
 from dotenv import load_dotenv
 from memories.core.memory_manager import MemoryManager
 from memories.utils.text.embeddings import get_encoder
+import shutil
 
 # Load environment variables from .env file
 load_dotenv()
@@ -27,31 +28,31 @@ def run_import():
         print("Initializing vector encoder...")
         vector_encoder = get_encoder()
         
+        # Create storage directory
+        storage_dir = Path('cold_storage')
+        storage_dir.mkdir(exist_ok=True)
+        
         # Initialize memory manager
         print("Initializing memory manager...")
         memory_manager = MemoryManager(
+            storage_path=storage_dir,
             vector_encoder=vector_encoder,
             enable_hot=False,     # Disable Redis dependency
             enable_cold=True,     # Enable cold storage for parquet files
             enable_warm=False,    # Disable warm storage
-            enable_glacier=False  # Disable glacier storage
-        )
-        
-        # Configure cold storage
-        print("Configuring cold storage...")
-        memory_manager.configure_tiers(
-            cold_config={
-                'path': 'cold',
-                'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
-                'duckdb_config': {
-                    'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
-                    'threads': int(os.getenv('DUCKDB_THREADS', 4)),
-                    'enable_external_access': True
+            enable_glacier=False,  # Disable glacier storage
+            custom_config={
+                'cold': {
+                    'duckdb_config': {
+                        'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
+                        'threads': int(os.getenv('DUCKDB_THREADS', 4)),
+                        'enable_external_access': True,
+                        'external_access': True
+                    }
                 }
             }
         )
         
-        # Import parquet files
         print("\nStarting parquet file import...")
         results = memory_manager.batch_import_parquet(
             folder_path=GEO_MEMORIES_PATH,
@@ -82,39 +83,43 @@ def run_import():
         print("\nCleaning up...")
         if 'memory_manager' in locals():
             memory_manager.cleanup()
+        if storage_dir.exists():
+            shutil.rmtree(storage_dir)
 
 @pytest.fixture
 def memory_manager():
     """Initialize memory manager with cold storage enabled."""
     vector_encoder = get_encoder()
+    
+    # First create the test directory if it doesn't exist
+    test_cold_dir = Path('test_cold')
+    test_cold_dir.mkdir(exist_ok=True)
+    
     manager = MemoryManager(
+        storage_path=test_cold_dir,  # Specify storage path
         vector_encoder=vector_encoder,
         enable_hot=False,     # Disable Redis dependency
         enable_cold=True,     # Enable cold storage for parquet files
         enable_warm=False,    # Disable warm storage
-        enable_glacier=False  # Disable glacier storage
-    )
-    
-    # Configure cold storage
-    manager.configure_tiers(
-        cold_config={
-            'path': 'test_cold',
-            'max_size': 10737418240,  # 10GB
-            'duckdb_config': {
-                'memory_limit': '8GB',
-                'threads': 4,
-                'enable_external_access': True
+        enable_glacier=False,  # Disable glacier storage
+        custom_config={
+            'cold': {
+                'duckdb_config': {
+                    'memory_limit': '8GB',
+                    'threads': 4,
+                    'enable_external_access': True,  # Enable external access for parquet files
+                    'external_access': True
+                }
             }
         }
     )
     
     yield manager
     
-    # Cleanup
+    # Cleanup after tests
     manager.cleanup()
-    if Path('test_cold').exists():
-        import shutil
-        shutil.rmtree('test_cold')
+    if test_cold_dir.exists():
+        shutil.rmtree(test_cold_dir)
 
 @pytest.mark.skipif(not GEO_MEMORIES_PATH.exists(), 
                     reason="Geo memories directory not found")
