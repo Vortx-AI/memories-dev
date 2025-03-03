@@ -313,7 +313,7 @@ class MemoryRetrieval:
                         FROM {table_name}
                         WHERE ST_Intersects(
                             ST_GeomFromWKB({geom_column}),
-                            ST_MakeEnvelope({min_lon}, {min_lat}, {max_lon}, {max_lat}, 4326)
+                            ST_MakeEnvelope({min_lon}, {min_lat}, {max_lon}, {max_lat})
                         )
                     """
                     queries.append(bbox_query)
@@ -388,7 +388,7 @@ class MemoryRetrieval:
                         FROM {table_name}
                         WHERE ST_Intersects(
                             ST_GeomFromWKB({geom_column}), 
-                            ST_GeomFromText('{polygon_wkt}', 4326)
+                            ST_GeomFromText('{polygon_wkt}')
                         )
                     """
                     queries.append(intersection_query)

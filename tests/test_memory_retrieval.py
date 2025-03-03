@@ -388,6 +388,8 @@ def test_spatial_queries():
             
         print("Connecting to existing DuckDB database...")
         db_conn = duckdb.connect(str(db_path))
+        db_conn.execute("SET memory_limit='8GB'")
+        db_conn.execute("SET threads=4")
         
         # Install and load spatial extension
         print("Installing and loading DuckDB spatial extension...")
@@ -449,13 +451,7 @@ def test_spatial_queries():
         
         # Test polygon query if geometry data is available
         print("\nTesting polygon query...")
-        india_polygon = """POLYGON((
-            72.0 8.0, 
-            88.0 8.0, 
-            88.0 37.0, 
-            72.0 37.0, 
-            72.0 8.0
-        ))"""
+        india_polygon = """POLYGON((72.0 8.0, 88.0 8.0, 88.0 37.0, 72.0 37.0, 72.0 8.0))"""
         
         polygon_results = memory_retrieval.get_data_by_polygon(
             polygon_wkt=india_polygon,
@@ -477,6 +473,8 @@ def test_spatial_queries():
         print("\nCleaning up...")
         if 'db_conn' in locals():
             db_conn.close()
+        if 'memory_manager' in locals():
+            memory_manager.cold.cleanup()
 
 def main():
     """List tables in cold memory."""
@@ -573,7 +571,7 @@ if __name__ == "__main__":
                         }
                     }
                 )
-                memory_manager.cleanup_cold_memory(remove_storage=True)
+                memory_manager.cold.cleanup()
                 print("Cleanup completed successfully!")
         except Exception as e:
             print(f"Error during cleanup: {e}")
