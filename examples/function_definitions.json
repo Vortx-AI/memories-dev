@@ -75,6 +75,55 @@
                     "required": ["address"]
                 }
             }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_data_by_bbox",
+                "description": "Get data within a geographic bounding box",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "min_lon": {
+                            "type": "number",
+                            "description": "Minimum longitude of the bounding box"
+                        },
+                        "min_lat": {
+                            "type": "number",
+                            "description": "Minimum latitude of the bounding box"
+                        },
+                        "max_lon": {
+                            "type": "number",
+                            "description": "Maximum longitude of the bounding box"
+                        },
+                        "max_lat": {
+                            "type": "number",
+                            "description": "Maximum latitude of the bounding box"
+                        },
+                        "lon_column": {
+                            "type": "string",
+                            "description": "Name of the longitude column in the data",
+                            "default": "longitude"
+                        },
+                        "lat_column": {
+                            "type": "string",
+                            "description": "Name of the latitude column in the data",
+                            "default": "latitude"
+                        },
+                        "geom_column": {
+                            "type": "string",
+                            "description": "Name of the geometry column in the data",
+                            "default": "geometry"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": "Maximum number of results to return",
+                            "default": 1000
+                        }
+                    },
+                    "required": ["min_lon", "min_lat", "max_lon", "max_lat"]
+                }
+            }
         }
     ]
 } 
