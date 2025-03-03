@@ -40,11 +40,13 @@ def run_import():
         
         # Create and configure DuckDB database
         db_path = cold_dir / 'cold.db'
-        db_conn = duckdb.connect(str(db_path))
-        db_conn.execute("SET memory_limit='8GB'")
-        db_conn.execute("SET threads=4")
-        db_conn.execute("SET allow_unsigned_extensions=true")
-        db_conn.execute("SET enable_external_access=true")
+        config = {
+            'memory_limit': '8GB',
+            'threads': 4,
+            'allow_unsigned_extensions': True,
+            'enable_external_access': True
+        }
+        db_conn = duckdb.connect(str(db_path), config=config)
         
         # Initialize memory manager
         print("Initializing memory manager...")
