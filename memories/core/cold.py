@@ -610,36 +610,28 @@ class ColdMemory:
         return str(Path(file_path).absolute())
 
     def _store_metadata(self, file_path: str, metadata: Dict[str, Any]) -> None:
-        """Store file metadata in the database.
+        """Store metadata for a file in the database.
         
         Args:
             file_path: Path to the file
             metadata: Metadata to store
         """
-        # Normalize file path to absolute path
-        abs_path = self._normalize_file_path(file_path)
-        
-        # First check if the record exists
-        exists = self.con.execute("""
-            SELECT COUNT(*) FROM file_metadata WHERE file_path = ?
-        """, [abs_path]).fetchone()[0]
-        
-        if exists:
-            # Update existing record
-            self.con.execute("""
-                UPDATE file_metadata 
-                SET metadata = ?,
-                    created_at = datetime('now')
-                WHERE file_path = ?
-            """, [json.dumps(metadata), abs_path])
-        else:
-            # Insert new record
+        try:
+            # Normalize file path
+            abs_path = self._normalize_file_path(file_path)
+            
+            # Store metadata in database
             self.con.execute("""
                 INSERT INTO file_metadata (file_path, metadata, created_at)
-                VALUES (?, ?, datetime('now'))
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT (file_path) DO UPDATE SET
+                    metadata = EXCLUDED.metadata,
+                    created_at = CURRENT_TIMESTAMP
             """, [abs_path, json.dumps(metadata)])
-        
-        self.con.commit()
+            
+        except Exception as e:
+            logger.error(f"Failed to store metadata for {file_path}: {e}")
+            raise
 
     def query(self, sql_query: str) -> pd.DataFrame:
         """Execute a SQL query across all imported parquet data.

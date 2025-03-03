@@ -126,7 +126,10 @@ def run_import():
                 'cold': {
                     'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
                     'duckdb': {
-                        'db_conn': db_conn  # Pass the pre-configured connection
+                        'db_conn': db_conn,  # Pass the pre-configured connection
+                        'config': {
+                            'enable_external_access': True  # This setting is already applied at connection time
+                        }
                     }
                 }
             }
@@ -203,7 +206,10 @@ def memory_manager(tmp_path):
             "cold": {
                 "max_size": int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),  # 10GB default
                 "duckdb": {
-                    'db_conn': db_conn  # Pass the pre-configured connection
+                    'db_conn': db_conn,  # Pass the pre-configured connection
+                    'config': {
+                        'enable_external_access': True  # This setting is already applied at connection time
+                    }
                 }
             }
         }
