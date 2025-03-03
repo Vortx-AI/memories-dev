@@ -149,105 +149,51 @@ logger = logging.getLogger(__name__)
 class ColdMemory:
     """Cold memory storage for infrequently accessed data"""
     
+    def _initialize_db(self) -> None:
+        """Initialize the database schema."""
+        try:
+            # Enable external access for parquet files
+            self.con.execute("SET enable_external_access=true")
+            
+            # Create file_metadata table if it doesn't exist
+            self.con.execute("""
+                CREATE TABLE IF NOT EXISTS file_metadata (
+                    file_path VARCHAR PRIMARY KEY,
+                    metadata JSON,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            self.con.commit()
+            logger.info("Database schema initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"Error initializing database: {e}")
+            raise
+
     def __init__(self, storage_path: Union[str, Path], max_size: int, duckdb_config: Optional[Dict[str, Any]] = None):
-        """Initialize cold memory.
+        """Initialize cold storage.
         
         Args:
-            storage_path: Path to store data
-            max_size: Maximum storage size in bytes
+            storage_path: Path to cold storage directory
+            max_size: Maximum size in bytes
             duckdb_config: Optional DuckDB configuration
         """
         self.storage_path = Path(storage_path)
         self.max_size = max_size
+        self.duckdb_config = duckdb_config or {}
+        
+        # Create storage directory
         self.storage_path.mkdir(parents=True, exist_ok=True)
-        self.logger = logging.getLogger(__name__)
         
-        # Set default DuckDB config if none provided
-        self.duckdb_config = duckdb_config or {
-            'db_file': 'cold.duckdb',
-            'memory_limit': '4GB',
-            'threads': 4,
-            'extensions': [],
-            'config': {
-                'enable_progress_bar': True,
-                'enable_external_access': True,
-                'enable_object_cache': True
-            },
-            'temp_directory': None,
-            'access_mode': 'read_write',
-            'storage': {
-                'compression': 'zstd',  # Used for Parquet files, not DuckDB config
-                'row_group_size': 100000
-            }
-        }
+        # Initialize database
+        db_path = self.storage_path / "cold.db"
+        self.con = duckdb.connect(str(db_path))
         
-        # Initialize DuckDB connection
-        self.db_path = self.storage_path / self.duckdb_config['db_file']
+        # Initialize schema
         self._initialize_db()
         
-        # Initialize metadata file
-        self.metadata_file = self.storage_path / "metadata.json"
-        self.metadata = self._load_metadata()
-
-    def _initialize_db(self) -> None:
-        """Initialize DuckDB database with configuration."""
-        try:
-            # First try to create/open in read_write mode to ensure database exists
-            self.con = duckdb.connect(str(self.db_path))
-            
-            # Set memory limit
-            if self.duckdb_config['memory_limit']:
-                self.con.execute(f"SET memory_limit='{self.duckdb_config['memory_limit']}'")
-            
-            # Set number of threads
-            if self.duckdb_config['threads']:
-                self.con.execute(f"SET threads={self.duckdb_config['threads']}")
-            
-            # Set temporary directory if specified
-            if self.duckdb_config['temp_directory']:
-                temp_dir = Path(self.duckdb_config['temp_directory'])
-                temp_dir.mkdir(parents=True, exist_ok=True)
-                self.con.execute(f"SET temp_directory='{temp_dir}'")
-            
-            # Load extensions
-            for extension in self.duckdb_config['extensions']:
-                try:
-                    self.con.execute(f"LOAD '{extension}'")
-                    self.logger.info(f"Loaded extension: {extension}")
-                except Exception as e:
-                    self.logger.warning(f"Failed to load extension {extension}: {e}")
-            
-            # Apply additional configurations
-            for key, value in self.duckdb_config['config'].items():
-                try:
-                    # Convert boolean to 'true'/'false' for DuckDB
-                    if isinstance(value, bool):
-                        value = 'true' if value else 'false'
-                    self.con.execute(f"SET {key}='{value}'")
-                except Exception as e:
-                    self.logger.warning(f"Failed to set config {key}={value}: {e}")
-            
-            # Create necessary tables if they don't exist
-            self.con.execute("""
-                CREATE TABLE IF NOT EXISTS cold_data (
-                    key VARCHAR PRIMARY KEY,
-                    data JSON,
-                    metadata JSON,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            # Now reopen in the specified access mode if it's read-only
-            if self.duckdb_config['access_mode'] == 'read':
-                self.con.close()
-                self.con = duckdb.connect(str(self.db_path), read_only=True)
-            
-            self.logger.info(f"Initialized DuckDB at {self.db_path} with custom configuration")
-            
-        except Exception as e:
-            self.logger.error(f"Failed to initialize DuckDB: {e}")
-            raise
+        logger.info(f"Initialized cold storage at {self.storage_path}")
 
     def _load_metadata(self) -> Dict[str, Any]:
         """Load metadata from disk."""
