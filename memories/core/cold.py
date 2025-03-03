@@ -526,23 +526,12 @@ class ColdMemory:
                     table = pq.read_table(file_path)
                     file_size = file_path.stat().st_size
                     
-                    # Create destination path preserving directory structure
-                    rel_path = file_path.relative_to(folder_path)
-                    dest_path = (self.storage_path / rel_path).absolute()
-                    dest_path.parent.mkdir(parents=True, exist_ok=True)
-                    
-                    # Copy file to cold storage
-                    import shutil
-                    shutil.copy2(file_path, dest_path)
-                    
-                    # Store absolute paths consistently
-                    abs_dest_path = str(dest_path)
-                    abs_source_path = str(file_path)
+                    # Store absolute path
+                    abs_source_path = str(file_path.absolute())
                     
                     # Update database metadata
                     metadata = {
-                        "file_path": abs_dest_path,
-                        "original_path": abs_source_path,
+                        "file_path": abs_source_path,
                         "theme": theme,
                         "tag": tag,
                         "num_rows": table.num_rows,
@@ -565,7 +554,7 @@ class ColdMemory:
                         # Create table directly from parquet file using absolute path
                         self.con.execute(f"""
                             CREATE TABLE {table_name} AS 
-                            SELECT * FROM read_parquet('{abs_dest_path}')
+                            SELECT * FROM read_parquet('{abs_source_path}')
                         """)
                         
                         # Store table name in metadata
@@ -577,7 +566,7 @@ class ColdMemory:
                         continue
                     
                     # Store metadata using absolute path
-                    self._store_metadata(abs_dest_path, metadata)
+                    self._store_metadata(abs_source_path, metadata)
                     
                     # Update results
                     results["files_processed"] += 1
