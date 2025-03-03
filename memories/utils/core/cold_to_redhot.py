@@ -11,9 +11,13 @@ from sentence_transformers import SentenceTransformer
 import faiss
 import json
 from datetime import datetime
+import argparse
+import os
 
 from memories.core.memory_manager import MemoryManager
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def get_cold_schema_info(memory_manager: MemoryManager) -> List[Dict[str, Any]]:
@@ -255,4 +259,89 @@ def search_redhot_schema(
         
     except Exception as e:
         logger.error(f"Error searching red hot schema: {e}")
-        raise 
+        raise
+
+def main():
+    """Main function to run cold to red hot transfer operations."""
+    parser = argparse.ArgumentParser(description='Transfer schema from cold storage to red hot memory')
+    parser.add_argument('--storage-path', type=str, default='data',
+                      help='Base storage path for memory tiers (default: data)')
+    parser.add_argument('--embedding-model', type=str, default='all-MiniLM-L6-v2',
+                      help='Name of the sentence transformer model to use')
+    parser.add_argument('--batch-size', type=int, default=32,
+                      help='Batch size for processing embeddings')
+    parser.add_argument('--force-cpu', action='store_true',
+                      help='Force CPU usage for FAISS')
+    parser.add_argument('--search', type=str,
+                      help='Search query to find similar columns after transfer')
+    parser.add_argument('--type-filter', type=str,
+                      help='Filter search results by column type')
+    parser.add_argument('--threshold', type=float, default=0.5,
+                      help='Similarity threshold for search results (0-1)')
+    parser.add_argument('--max-results', type=int, default=5,
+                      help='Maximum number of search results to return')
+    
+    args = parser.parse_args()
+    
+    try:
+        # Initialize memory manager with both cold and red hot storage
+        storage_path = Path(args.storage_path)
+        
+        logger.info(f"Initializing MemoryManager with storage path: {storage_path}")
+        memory_manager = MemoryManager(
+            storage_path=storage_path,
+            vector_encoder=None,  # Not needed for schema transfer
+            enable_red_hot=True,
+            enable_hot=False,
+            enable_cold=True,
+            enable_warm=False,
+            enable_glacier=False
+        )
+        
+        # Transfer schema to red hot memory
+        logger.info("Starting schema transfer to red hot memory...")
+        results = transfer_to_redhot(
+            memory_manager=memory_manager,
+            embedding_model=args.embedding_model,
+            batch_size=args.batch_size,
+            force_cpu=args.force_cpu
+        )
+        
+        # Print transfer results
+        logger.info("Transfer Results:")
+        logger.info(f"- Processed tables: {results['processed_tables']}")
+        logger.info(f"- Processed columns: {results['processed_columns']}")
+        if results['errors']:
+            logger.warning("Errors encountered:")
+            for error in results['errors']:
+                logger.warning(f"- {error}")
+                
+        # Perform search if requested
+        if args.search:
+            logger.info(f"\nSearching for columns similar to: {args.search}")
+            search_results = search_redhot_schema(
+                memory_manager=memory_manager,
+                query=args.search,
+                embedding_model=args.embedding_model,
+                k=args.max_results,
+                threshold=args.threshold,
+                type_filter=args.type_filter
+            )
+            
+            if search_results:
+                logger.info("\nSearch Results:")
+                for i, result in enumerate(search_results, 1):
+                    logger.info(f"\n{i}. {result['table_name']}.{result['column_name']}")
+                    logger.info(f"   Similarity: {result['similarity']:.3f}")
+                    logger.info(f"   Type: {result['metadata']['column_type']}")
+                    if result['metadata']['statistics']:
+                        logger.info(f"   Distinct Values: {result['metadata']['statistics']['distinct_count']}")
+            else:
+                logger.info("No matching columns found")
+                
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        raise
+
+if __name__ == "__main__":
+    main() 
