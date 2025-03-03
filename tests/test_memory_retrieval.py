@@ -208,16 +208,25 @@ def test_bbox_query(memory_retrieval, tmp_path):
     test_df.to_parquet(test_file)
     
     # Create another test DataFrame with geometry column
-    geom_df = pd.DataFrame({
-        'id': range(5),
-        'geometry': [
-            'POINT(-73.95 40.75)',
-            'POINT(-73.90 40.80)',
-            'POINT(-73.85 40.85)',
-            'POINT(-74.10 41.00)',
-            'POINT(-74.20 41.10)'
-        ]
-    })
+    # First create the geometry using DuckDB spatial functions
+    memory_retrieval.cold.con.execute("INSTALL spatial;")
+    memory_retrieval.cold.con.execute("LOAD spatial;")
+    
+    # Create points and convert to WKB
+    points_query = """
+        SELECT 
+            row_id as id,
+            ST_AsBinary(ST_Point(lon, lat)) as geometry
+        FROM (
+            VALUES
+                (0, -73.95, 40.75),
+                (1, -73.90, 40.80),
+                (2, -73.85, 40.85),
+                (3, -74.10, 41.00),
+                (4, -74.20, 41.10)
+        ) AS t(row_id, lon, lat)
+    """
+    geom_df = memory_retrieval.cold.con.execute(points_query).fetchdf()
     
     geom_file = tmp_path / "geom_test.parquet"
     geom_df.to_parquet(geom_file)
@@ -230,10 +239,6 @@ def test_bbox_query(memory_retrieval, tmp_path):
         recursive=True,
         pattern="*.parquet"
     )
-    
-    # Install spatial extension
-    memory_retrieval.cold.con.execute("INSTALL spatial;")
-    memory_retrieval.cold.con.execute("LOAD spatial;")
     
     # Test bounding box query with lat/lon columns
     results = memory_retrieval.get_data_by_bbox(
@@ -267,17 +272,25 @@ def test_bbox_query(memory_retrieval, tmp_path):
 def test_polygon_query(memory_retrieval, tmp_path):
     """Test querying data within a polygon."""
     
-    # Create a test DataFrame with geometry column
-    test_df = pd.DataFrame({
-        'id': range(5),
-        'geometry': [
-            'POINT(-73.95 40.75)',
-            'POINT(-73.90 40.80)',
-            'POINT(-73.85 40.85)',
-            'POINT(-74.10 41.00)',
-            'POINT(-74.20 41.10)'
-        ]
-    })
+    # Create a test DataFrame with geometry column using DuckDB spatial functions
+    memory_retrieval.cold.con.execute("INSTALL spatial;")
+    memory_retrieval.cold.con.execute("LOAD spatial;")
+    
+    # Create points and convert to WKB
+    points_query = """
+        SELECT 
+            row_id as id,
+            ST_AsBinary(ST_Point(lon, lat)) as geometry
+        FROM (
+            VALUES
+                (0, -73.95, 40.75),
+                (1, -73.90, 40.80),
+                (2, -73.85, 40.85),
+                (3, -74.10, 41.00),
+                (4, -74.20, 41.10)
+        ) AS t(row_id, lon, lat)
+    """
+    test_df = memory_retrieval.cold.con.execute(points_query).fetchdf()
     
     test_file = tmp_path / "geom_test.parquet"
     test_df.to_parquet(test_file)

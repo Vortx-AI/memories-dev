@@ -296,6 +296,10 @@ class MemoryRetrieval:
                 self.logger.warning("No tables available")
                 return pd.DataFrame()
             
+            # Install and load spatial extension if needed
+            self.cold.con.execute("INSTALL spatial;")
+            self.cold.con.execute("LOAD spatial;")
+            
             # Build query to union all tables with bounding box filter
             queries = []
             for table in tables:
@@ -304,16 +308,12 @@ class MemoryRetrieval:
                 
                 # Try geometry column first if it exists
                 if geom_column in schema:
-                    # Install and load spatial extension if needed
-                    self.cold.con.execute("INSTALL spatial;")
-                    self.cold.con.execute("LOAD spatial;")
-                    
                     bbox_query = f"""
                         SELECT *, '{table_name}' as source_table 
                         FROM {table_name}
                         WHERE ST_Intersects(
-                            {geom_column},
-                            ST_MakeEnvelope({min_lon}, {min_lat}, {max_lon}, {max_lat})
+                            ST_GeomFromWKB({geom_column}),
+                            ST_MakeEnvelope({min_lon}, {min_lat}, {max_lon}, {max_lat}, 4326)
                         )
                     """
                     queries.append(bbox_query)
@@ -387,8 +387,8 @@ class MemoryRetrieval:
                         SELECT *, '{table_name}' as source_table 
                         FROM {table_name}
                         WHERE ST_Intersects(
-                            {geom_column}, 
-                            ST_GeomFromText('{polygon_wkt}')
+                            ST_GeomFromWKB({geom_column}), 
+                            ST_GeomFromText('{polygon_wkt}', 4326)
                         )
                     """
                     queries.append(intersection_query)
