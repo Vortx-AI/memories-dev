@@ -15,6 +15,12 @@ load_dotenv()
 # Get geo_memories path from environment variable
 GEO_MEMORIES_PATH = Path(os.getenv('GEO_MEMORIES_PATH', '/Users/jaya/geo_memories'))
 
+# Configure DuckDB at module level
+duckdb.default_connection.execute("SET enable_external_access=true")
+duckdb.default_connection.execute("SET external_access=true")
+duckdb.default_connection.execute(f"SET memory_limit='{os.getenv('DUCKDB_MEMORY_LIMIT', '8GB')}'")
+duckdb.default_connection.execute(f"SET threads={int(os.getenv('DUCKDB_THREADS', 4))}")
+
 def run_import():
     """Run the parquet import directly without pytest."""
     if not GEO_MEMORIES_PATH.exists():
@@ -47,7 +53,9 @@ def run_import():
                     'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
                     'duckdb_config': {
                         'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
-                        'threads': int(os.getenv('DUCKDB_THREADS', 4))
+                        'threads': int(os.getenv('DUCKDB_THREADS', 4)),
+                        'enable_external_access': True,
+                        'external_access': True
                     }
                 }
             }
@@ -109,7 +117,9 @@ def memory_manager(tmp_path):
                 "max_size": int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),  # 10GB default
                 "duckdb_config": {
                     "memory_limit": os.getenv("DUCKDB_MEMORY_LIMIT", "8GB"),
-                    "threads": int(os.getenv("DUCKDB_THREADS", 4))
+                    "threads": int(os.getenv("DUCKDB_THREADS", 4)),
+                    "enable_external_access": True,
+                    "external_access": True
                 }
             }
         }
