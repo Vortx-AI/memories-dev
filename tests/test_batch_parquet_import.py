@@ -4,8 +4,18 @@ import os
 import pytest
 from pathlib import Path
 import duckdb
+from dotenv import load_dotenv
 from memories.core.memory_manager import MemoryManager
 from memories.utils.text.embeddings import get_encoder
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Get geo_memories path from environment variable
+GEO_MEMORIES_PATH = Path(os.getenv('GEO_MEMORIES_PATH', '/Users/jaya/geo_memories'))
+
+if not GEO_MEMORIES_PATH:
+    raise ValueError("GEO_MEMORIES_PATH not set in environment variables")
 
 @pytest.fixture
 def memory_manager():
@@ -39,6 +49,42 @@ def memory_manager():
     if Path('test_cold').exists():
         import shutil
         shutil.rmtree('test_cold')
+
+@pytest.mark.skipif(not GEO_MEMORIES_PATH.exists(), 
+                    reason="Geo memories directory not found")
+def test_geo_memories_import(memory_manager):
+    """Test importing actual geo memories data."""
+    print(f"\n=== Importing Geo Memories from {GEO_MEMORIES_PATH} ===\n")
+    
+    try:
+        # Import parquet files
+        results = memory_manager.batch_import_parquet(
+            folder_path=GEO_MEMORIES_PATH,
+            theme="geo",
+            tag="location",
+            recursive=True,
+            pattern="*.parquet"
+        )
+        
+        # Print detailed results
+        print("\nImport Results:")
+        print(f"Files processed: {results['files_processed']}")
+        print(f"Records imported: {results['records_imported']}")
+        print(f"Total size: {results['total_size'] / (1024*1024):.2f} MB")
+        
+        if results['errors']:
+            print("\nErrors encountered:")
+            for error in results['errors']:
+                print(f"- {error}")
+        
+        # Verify results
+        assert results['files_processed'] > 0, "Should process at least one file"
+        
+        print("\nGeo memories import completed successfully!")
+        
+    except Exception as e:
+        print(f"\nError during geo memories import: {str(e)}")
+        raise
 
 def test_batch_parquet_import(memory_manager, tmp_path):
     """Test batch import of parquet files to cold memory."""
@@ -135,4 +181,5 @@ def test_batch_import_empty_directory(memory_manager, tmp_path):
     assert len(results['errors']) == 0, "Should not have errors for empty directory"
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-v"]) 
+    # Run only the geo memories import test
+    pytest.main([__file__, "-v", "-k", "test_geo_memories_import"]) 
