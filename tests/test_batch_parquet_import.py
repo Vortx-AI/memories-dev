@@ -32,6 +32,10 @@ def run_import():
         storage_dir = Path('cold_storage')
         storage_dir.mkdir(exist_ok=True)
         
+        # Pre-configure DuckDB settings
+        duckdb.execute("SET enable_external_access=true")
+        duckdb.execute("SET external_access=true")
+        
         # Initialize memory manager
         print("Initializing memory manager...")
         memory_manager = MemoryManager(
@@ -52,13 +56,6 @@ def run_import():
                 }
             }
         )
-
-        # Now configure DuckDB settings after initialization
-        if hasattr(memory_manager, '_cold_memory') and memory_manager._cold_memory:
-            conn = memory_manager._cold_memory._conn
-            if conn:
-                conn.execute("SET enable_external_access=true")
-                conn.execute("SET external_access=true")
         
         print("\nStarting parquet file import...")
         results = memory_manager.batch_import_parquet(
@@ -102,6 +99,10 @@ def memory_manager():
     test_cold_dir = Path('test_cold')
     test_cold_dir.mkdir(exist_ok=True)
     
+    # Pre-configure DuckDB settings
+    duckdb.execute("SET enable_external_access=true")
+    duckdb.execute("SET external_access=true")
+    
     manager = MemoryManager(
         storage_path=test_cold_dir,  # Specify storage path
         vector_encoder=vector_encoder,
@@ -120,13 +121,6 @@ def memory_manager():
             }
         }
     )
-    
-    # Configure DuckDB settings after initialization
-    if hasattr(manager, '_cold_memory') and manager._cold_memory:
-        conn = manager._cold_memory._conn
-        if conn:
-            conn.execute("SET enable_external_access=true")
-            conn.execute("SET external_access=true")
     
     yield manager
     
