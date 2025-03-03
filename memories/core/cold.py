@@ -619,14 +619,26 @@ class ColdMemory:
         # Normalize file path to absolute path
         abs_path = self._normalize_file_path(file_path)
         
-        query = """
-        INSERT INTO file_metadata (file_path, metadata)
-        VALUES (?, ?)
-        ON CONFLICT (file_path) DO UPDATE SET
-            metadata = EXCLUDED.metadata,
-            created_at = CURRENT_TIMESTAMP
-        """
-        self.con.execute(query, (abs_path, json.dumps(metadata)))
+        # First check if the record exists
+        exists = self.con.execute("""
+            SELECT COUNT(*) FROM file_metadata WHERE file_path = ?
+        """, [abs_path]).fetchone()[0]
+        
+        if exists:
+            # Update existing record
+            self.con.execute("""
+                UPDATE file_metadata 
+                SET metadata = ?,
+                    created_at = datetime('now')
+                WHERE file_path = ?
+            """, [json.dumps(metadata), abs_path])
+        else:
+            # Insert new record
+            self.con.execute("""
+                INSERT INTO file_metadata (file_path, metadata, created_at)
+                VALUES (?, ?, datetime('now'))
+            """, [abs_path, json.dumps(metadata)])
+        
         self.con.commit()
 
     def query(self, sql_query: str) -> pd.DataFrame:

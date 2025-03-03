@@ -46,13 +46,11 @@ def run_import():
             db_path.unlink()
             
         print("Creating DuckDB connection...")
-        # First create connection without config
+        # Create connection with external access enabled
         db_conn = duckdb.connect(str(db_path))
-        
-        # Then set the configurations
-        print("Configuring DuckDB settings...")
         db_conn.execute("SET memory_limit='8GB'")
         db_conn.execute("SET threads=4")
+        db_conn.execute("SET enable_external_access=true")
         
         print("Initializing memory manager...")
         memory_manager = MemoryManager(
@@ -125,13 +123,11 @@ def memory_manager(tmp_path):
         db_path.unlink()
         
     print("Creating DuckDB connection for tests...")
-    # First create connection without config
+    # Create connection with external access enabled
     db_conn = duckdb.connect(str(db_path))
-    
-    # Then set the configurations
-    print("Configuring DuckDB settings for tests...")
     db_conn.execute("SET memory_limit='8GB'")
     db_conn.execute("SET threads=4")
+    db_conn.execute("SET enable_external_access=true")
     
     # Initialize memory manager
     print("Initializing memory manager...")
