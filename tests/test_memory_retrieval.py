@@ -21,34 +21,31 @@ def list_cold_tables():
     print(f"\n=== Listing Tables in Cold Memory ===\n")
     
     try:
-        # Create storage directory
+        # Use existing storage directory
         storage_dir = Path('data')
-        storage_dir.mkdir(exist_ok=True)
-        
-        # Create cold storage directory
-        cold_dir = storage_dir / 'cold'
-        cold_dir.mkdir(exist_ok=True)
-        
-        # Create and configure DuckDB database
-        db_path = cold_dir / 'cold.db'
-        
-        # Remove any existing database file to avoid connection conflicts
-        if db_path.exists():
-            db_path.unlink()
+        if not storage_dir.exists():
+            print("No existing storage directory found. Please run the import first.")
+            return
             
-        print("Creating DuckDB connection...")
-        # First create connection without config
+        cold_dir = storage_dir / 'cold'
+        if not cold_dir.exists():
+            print("No existing cold storage directory found. Please run the import first.")
+            return
+            
+        # Use existing database file
+        db_path = cold_dir / 'cold.db'
+        if not db_path.exists():
+            print("No existing database file found. Please run the import first.")
+            return
+            
+        print("Connecting to existing DuckDB database...")
         db_conn = duckdb.connect(str(db_path))
         
-        # Then set the configurations
-        print("Configuring DuckDB settings...")
-        db_conn.execute("SET memory_limit='8GB'")
-        db_conn.execute("SET threads=4")
-        
-        print("Initializing memory manager...")
+        print("Initializing memory retrieval...")
+        # Initialize memory manager with existing connection
         memory_manager = MemoryManager(
             storage_path=storage_dir,
-            vector_encoder=None,  # Not needed for this test
+            vector_encoder=None,  # Not needed for listing
             enable_red_hot=False,
             enable_hot=False,
             enable_cold=True,
@@ -58,27 +55,15 @@ def list_cold_tables():
                 'cold': {
                     'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
                     'duckdb': {
-                        'db_conn': db_conn
+                        'db_conn': db_conn,
+                        'enable_external_access': True  # Enable external access for parquet files
                     }
                 }
             }
         )
         
         # Initialize memory retrieval
-        print("Initializing memory retrieval...")
         memory_retrieval = MemoryRetrieval(memory_manager.cold)
-        
-        # Import some test data if GEO_MEMORIES_PATH exists
-        if GEO_MEMORIES_PATH.exists():
-            print(f"\nImporting test data from {GEO_MEMORIES_PATH}...")
-            results = memory_manager.cold.batch_import_parquet(
-                folder_path=GEO_MEMORIES_PATH,
-                theme="geo",
-                tag="location",
-                recursive=True,
-                pattern="*.parquet"
-            )
-            print(f"Imported {results['files_processed']} files")
         
         # List all tables
         print("\nListing available tables:")
@@ -117,8 +102,6 @@ def list_cold_tables():
             db_conn.close()
         if 'memory_manager' in locals():
             memory_manager.cleanup()
-        if storage_dir.exists():
-            shutil.rmtree(storage_dir)
 
 @pytest.fixture
 def memory_retrieval(tmp_path):

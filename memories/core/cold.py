@@ -494,7 +494,7 @@ class ColdMemory:
                 errors: List of files that had errors
         """
         try:
-            folder_path = Path(folder_path)
+            folder_path = Path(folder_path).absolute()
             if not folder_path.exists():
                 raise ValueError(f"Folder not found: {folder_path}")
 
@@ -528,16 +528,21 @@ class ColdMemory:
                     
                     # Create destination path preserving directory structure
                     rel_path = file_path.relative_to(folder_path)
-                    dest_path = self.storage_path / rel_path
+                    dest_path = (self.storage_path / rel_path).absolute()
                     dest_path.parent.mkdir(parents=True, exist_ok=True)
                     
                     # Copy file to cold storage
                     import shutil
                     shutil.copy2(file_path, dest_path)
                     
+                    # Store absolute paths consistently
+                    abs_dest_path = str(dest_path)
+                    abs_source_path = str(file_path)
+                    
                     # Update database metadata
                     metadata = {
-                        "file_path": str(rel_path),
+                        "file_path": abs_dest_path,
+                        "original_path": abs_source_path,
                         "theme": theme,
                         "tag": tag,
                         "num_rows": table.num_rows,
@@ -557,10 +562,10 @@ class ColdMemory:
                         # Drop table if it exists
                         self.con.execute(f"DROP TABLE IF EXISTS {table_name}")
                         
-                        # Create table directly from parquet file
+                        # Create table directly from parquet file using absolute path
                         self.con.execute(f"""
                             CREATE TABLE {table_name} AS 
-                            SELECT * FROM read_parquet('{dest_path}')
+                            SELECT * FROM read_parquet('{abs_dest_path}')
                         """)
                         
                         # Store table name in metadata
@@ -571,8 +576,8 @@ class ColdMemory:
                         results["errors"].append(f"{file_path}: {str(e)}")
                         continue
                     
-                    # Store metadata in database
-                    self._store_metadata(str(rel_path), metadata)
+                    # Store metadata using absolute path
+                    self._store_metadata(abs_dest_path, metadata)
                     
                     # Update results
                     results["files_processed"] += 1
@@ -593,13 +598,35 @@ class ColdMemory:
             logger.error(f"Failed to import parquet files: {e}")
             raise
 
+    def _normalize_file_path(self, file_path: Union[str, Path]) -> str:
+        """Normalize file path to absolute path for consistent storage.
+        
+        Args:
+            file_path: File path to normalize
+            
+        Returns:
+            Absolute path as string
+        """
+        return str(Path(file_path).absolute())
+
     def _store_metadata(self, file_path: str, metadata: Dict[str, Any]) -> None:
-        """Store file metadata in the database."""
+        """Store file metadata in the database.
+        
+        Args:
+            file_path: Path to the file
+            metadata: Metadata to store
+        """
+        # Normalize file path to absolute path
+        abs_path = self._normalize_file_path(file_path)
+        
         query = """
         INSERT INTO file_metadata (file_path, metadata)
         VALUES (?, ?)
+        ON CONFLICT (file_path) DO UPDATE SET
+            metadata = EXCLUDED.metadata,
+            created_at = CURRENT_TIMESTAMP
         """
-        self.con.execute(query, (file_path, json.dumps(metadata)))
+        self.con.execute(query, (abs_path, json.dumps(metadata)))
         self.con.commit()
 
     def query(self, sql_query: str) -> pd.DataFrame:
