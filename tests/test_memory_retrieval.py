@@ -207,7 +207,22 @@ def test_bbox_query(memory_retrieval, tmp_path):
     test_file = tmp_path / "geo_test.parquet"
     test_df.to_parquet(test_file)
     
-    # Import the test file
+    # Create another test DataFrame with geometry column
+    geom_df = pd.DataFrame({
+        'id': range(5),
+        'geometry': [
+            'POINT(-73.95 40.75)',
+            'POINT(-73.90 40.80)',
+            'POINT(-73.85 40.85)',
+            'POINT(-74.10 41.00)',
+            'POINT(-74.20 41.10)'
+        ]
+    })
+    
+    geom_file = tmp_path / "geom_test.parquet"
+    geom_df.to_parquet(geom_file)
+    
+    # Import both test files
     memory_retrieval.cold.batch_import_parquet(
         folder_path=tmp_path,
         theme="test",
@@ -216,7 +231,11 @@ def test_bbox_query(memory_retrieval, tmp_path):
         pattern="*.parquet"
     )
     
-    # Test bounding box query
+    # Install spatial extension
+    memory_retrieval.cold.con.execute("INSTALL spatial;")
+    memory_retrieval.cold.con.execute("LOAD spatial;")
+    
+    # Test bounding box query with lat/lon columns
     results = memory_retrieval.get_data_by_bbox(
         min_lon=-74.0,
         min_lat=40.7,
@@ -224,13 +243,26 @@ def test_bbox_query(memory_retrieval, tmp_path):
         max_lat=40.9
     )
     
-    # Verify results
+    # Verify lat/lon results
     assert not results.empty, "Should return matching records"
     assert len(results) == 5, "Should return exactly 5 records within the bounding box"
     assert all(results['latitude'] >= 40.7), "All latitudes should be >= min_lat"
     assert all(results['latitude'] <= 40.9), "All latitudes should be <= max_lat"
     assert all(results['longitude'] >= -74.0), "All longitudes should be >= min_lon"
     assert all(results['longitude'] <= -73.8), "All longitudes should be <= max_lon"
+    
+    # Test bounding box query with geometry column
+    geom_results = memory_retrieval.get_data_by_bbox(
+        min_lon=-74.0,
+        min_lat=40.7,
+        max_lon=-73.8,
+        max_lat=40.9,
+        geom_column='geometry'
+    )
+    
+    # Verify geometry results
+    assert not geom_results.empty, "Should return matching records for geometry"
+    assert 'source_table' in geom_results.columns, "Should include source table information"
 
 def test_polygon_query(memory_retrieval, tmp_path):
     """Test querying data within a polygon."""
@@ -344,6 +376,11 @@ def test_spatial_queries():
         print("Connecting to existing DuckDB database...")
         db_conn = duckdb.connect(str(db_path))
         
+        # Install and load spatial extension
+        print("Installing and loading DuckDB spatial extension...")
+        db_conn.execute("INSTALL spatial;")
+        db_conn.execute("LOAD spatial;")
+        
         print("Initializing memory manager...")
         memory_manager = MemoryManager(
             storage_path=storage_dir,
@@ -369,13 +406,25 @@ def test_spatial_queries():
         # Initialize memory retrieval
         memory_retrieval = MemoryRetrieval(memory_manager.cold)
         
+        # List available tables and their schemas
+        print("\nListing available tables and their schemas:")
+        tables = memory_retrieval.list_available_data()
+        for table in tables:
+            print(f"\nTable: {table['table_name']}")
+            print("Schema:")
+            for col_name, col_type in table['schema'].items():
+                print(f"  {col_name}: {col_type}")
+        
         # Test bounding box query
         print("\nTesting bounding box query...")
         bbox_results = memory_retrieval.get_data_by_bbox(
             min_lon=72.0,  # Rough bounding box for India
             min_lat=8.0,
             max_lon=88.0,
-            max_lat=37.0
+            max_lat=37.0,
+            lon_column='longitude',
+            lat_column='latitude',
+            geom_column='geometry'  # Will try both geometry and lat/lon columns
         )
         
         if not bbox_results.empty:
@@ -395,7 +444,10 @@ def test_spatial_queries():
             72.0 8.0
         ))"""
         
-        polygon_results = memory_retrieval.get_data_by_polygon(polygon_wkt=india_polygon)
+        polygon_results = memory_retrieval.get_data_by_polygon(
+            polygon_wkt=india_polygon,
+            geom_column='geometry'
+        )
         
         if not polygon_results.empty:
             print(f"\nFound {len(polygon_results)} records intersecting with polygon")

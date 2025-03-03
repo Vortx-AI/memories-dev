@@ -271,6 +271,7 @@ class MemoryRetrieval:
         max_lat: float,
         lon_column: str = "longitude",
         lat_column: str = "latitude",
+        geom_column: str = "geometry",
         limit: int = 1000
     ) -> pd.DataFrame:
         """Get data within a geographic bounding box.
@@ -282,6 +283,7 @@ class MemoryRetrieval:
             max_lat: Maximum latitude (northern boundary)
             lon_column: Name of the longitude column (default: "longitude")
             lat_column: Name of the latitude column (default: "latitude")
+            geom_column: Name of the geometry column (default: "geometry")
             limit: Maximum number of results to return (default: 1000)
             
         Returns:
@@ -300,8 +302,23 @@ class MemoryRetrieval:
                 table_name = table["table_name"]
                 schema = table["schema"]
                 
-                # Check if both lat and lon columns exist in this table
-                if lon_column in schema and lat_column in schema:
+                # Try geometry column first if it exists
+                if geom_column in schema:
+                    # Install and load spatial extension if needed
+                    self.cold.con.execute("INSTALL spatial;")
+                    self.cold.con.execute("LOAD spatial;")
+                    
+                    bbox_query = f"""
+                        SELECT *, '{table_name}' as source_table 
+                        FROM {table_name}
+                        WHERE ST_Intersects(
+                            {geom_column},
+                            ST_MakeEnvelope({min_lon}, {min_lat}, {max_lon}, {max_lat})
+                        )
+                    """
+                    queries.append(bbox_query)
+                # Fall back to lat/lon columns if they exist
+                elif lon_column in schema and lat_column in schema:
                     bbox_query = f"""
                         SELECT *, '{table_name}' as source_table 
                         FROM {table_name}
@@ -311,7 +328,10 @@ class MemoryRetrieval:
                     queries.append(bbox_query)
             
             if not queries:
-                self.logger.warning(f"No tables found with required columns: {lon_column}, {lat_column}")
+                self.logger.warning(
+                    f"No tables found with either geometry column ({geom_column}) "
+                    f"or coordinate columns ({lon_column}, {lat_column})"
+                )
                 return pd.DataFrame()
             
             # Combine all queries with UNION ALL
@@ -351,6 +371,10 @@ class MemoryRetrieval:
                 self.logger.warning("No tables available")
                 return pd.DataFrame()
             
+            # Install and load spatial extension
+            self.cold.con.execute("INSTALL spatial;")
+            self.cold.con.execute("LOAD spatial;")
+            
             # Build query to union all tables with polygon intersection filter
             queries = []
             for table in tables:
@@ -359,7 +383,6 @@ class MemoryRetrieval:
                 
                 # Check if geometry column exists in this table
                 if geom_column in schema:
-                    # Use DuckDB's spatial extension for intersection test
                     intersection_query = f"""
                         SELECT *, '{table_name}' as source_table 
                         FROM {table_name}
