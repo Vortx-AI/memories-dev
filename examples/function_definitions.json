@@ -124,6 +124,28 @@
                     "required": ["min_lon", "min_lat", "max_lon", "max_lat"]
                 }
             }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "execute_code",
+                "description": "Execute custom Python code. The code can use pandas (pd) and numpy (np). You can create and execute custom functions to analyze data.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "Python code to execute. Can include function definitions and data analysis."
+                        },
+                        "data": {
+                            "type": "object",
+                            "description": "Optional dictionary containing data to be used by the code",
+                            "additionalProperties": true
+                        }
+                    },
+                    "required": ["code"]
+                }
+            }
         }
     ]
 } 

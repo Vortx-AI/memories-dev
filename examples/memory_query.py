@@ -16,6 +16,7 @@ from memories.utils.earth.location_utils import (
     get_coords_from_address
 )
 from memories.core.memory_retrieval import MemoryRetrieval
+from memories.utils.code.code_execution import CodeExecution
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -54,13 +55,17 @@ class MemoryQuery:
             # Initialize memory retrieval if needed for spatial queries
             self.memory_retrieval = None
             
+            # Initialize code execution
+            self.code_executor = CodeExecution()
+            
             # Load function definitions
             self.function_mapping = {
                 "get_bounding_box": get_bounding_box_from_address,
                 "get_bounding_box_from_coords": get_bounding_box_from_coords,
                 "get_address_from_coords": get_address_from_coords,
                 "get_coords_from_address": get_coords_from_address,
-                "get_data_by_bbox": self.get_data_by_bbox_wrapper
+                "get_data_by_bbox": self.get_data_by_bbox_wrapper,
+                "execute_code": self.code_executor.execute_code
             }
             
             # Load functions from JSON file
