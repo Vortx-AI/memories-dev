@@ -4,13 +4,13 @@
             "type": "function",
             "function": {
                 "name": "get_bounding_box",
-                "description": "Get bounding box coordinates for an address using Nominatim OpenStreetMap API",
+                "description": "Convert a text address into a geographic bounding box. Returns coordinates that define the area's boundaries, useful for subsequent spatial queries.",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "address": {
                             "type": "string",
-                            "description": "Address string to geocode"
+                            "description": "Text address to convert to geographic coordinates"
                         }
                     },
                     "required": ["address"]
@@ -21,7 +21,7 @@
             "type": "function",
             "function": {
                 "name": "get_bounding_box_from_coords",
-                "description": "Get bounding box coordinates for a location using its latitude and longitude",
+                "description": "Convert a point location (latitude/longitude) into a geographic bounding box. Returns coordinates that define the area's boundaries, useful for subsequent spatial queries.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -42,7 +42,7 @@
             "type": "function",
             "function": {
                 "name": "get_address_from_coords",
-                "description": "Get address details from coordinates using reverse geocoding",
+                "description": "Get address details from coordinates using reverse geocoding that is from the co ordinates",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -80,44 +80,44 @@
             "type": "function",
             "function": {
                 "name": "get_data_by_bbox",
-                "description": "Get data within a geographic bounding box",
+                "description": "Find all geographic features within a specified area. Returns data about parks, buildings, roads, and other features that intersect with the given bounding box coordinates.",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "min_lon": {
                             "type": "number",
-                            "description": "Minimum longitude of the bounding box"
+                            "description": "Western boundary longitude"
                         },
                         "min_lat": {
                             "type": "number",
-                            "description": "Minimum latitude of the bounding box"
+                            "description": "Southern boundary latitude"
                         },
                         "max_lon": {
                             "type": "number",
-                            "description": "Maximum longitude of the bounding box"
+                            "description": "Eastern boundary longitude"
                         },
                         "max_lat": {
                             "type": "number",
-                            "description": "Maximum latitude of the bounding box"
+                            "description": "Northern boundary latitude"
                         },
                         "lon_column": {
                             "type": "string",
-                            "description": "Name of the longitude column in the data",
+                            "description": "Name of the longitude column in the data tables",
                             "default": "longitude"
                         },
                         "lat_column": {
                             "type": "string",
-                            "description": "Name of the latitude column in the data",
+                            "description": "Name of the latitude column in the data tables",
                             "default": "latitude"
                         },
                         "geom_column": {
                             "type": "string",
-                            "description": "Name of the geometry column in the data",
+                            "description": "Name of the geometry column for spatial data",
                             "default": "geometry"
                         },
                         "limit": {
                             "type": "integer",
-                            "description": "Maximum number of results to return",
+                            "description": "Maximum number of features to return",
                             "default": 1000
                         }
                     },
@@ -129,34 +129,54 @@
             "type": "function",
             "function": {
                 "name": "get_data_by_bbox_and_value",
-                "description": "Get data within a geographic bounding box that contains a specific value in any column",
+                "description": "Find specific types of geographic features within an area. Useful for queries like 'find parks near X' or 'find restaurants in Y area'. Combines spatial search with feature type filtering.",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "min_lon": {
                             "type": "number",
-                            "description": "Minimum longitude of the bounding box"
+                            "description": "Western boundary longitude"
                         },
                         "min_lat": {
                             "type": "number",
-                            "description": "Minimum latitude of the bounding box"
+                            "description": "Southern boundary latitude"
                         },
                         "max_lon": {
                             "type": "number",
-                            "description": "Maximum longitude of the bounding box"
+                            "description": "Eastern boundary longitude"
                         },
                         "max_lat": {
                             "type": "number",
-                            "description": "Maximum latitude of the bounding box"
+                            "description": "Northern boundary latitude"
                         },
                         "search_value": {
                             "type": "string",
-                            "description": "Value to search for in any column"
+                            "description": "Type of feature to find (e.g., 'park', 'building', 'road', 'restaurant')"
                         },
                         "case_sensitive": {
                             "type": "boolean",
                             "description": "Whether to perform case-sensitive search",
                             "default": false
+                        },
+                        "lon_column": {
+                            "type": "string",
+                            "description": "Name of the longitude column in the data tables",
+                            "default": "longitude"
+                        },
+                        "lat_column": {
+                            "type": "string",
+                            "description": "Name of the latitude column in the data tables",
+                            "default": "latitude"
+                        },
+                        "geom_column": {
+                            "type": "string",
+                            "description": "Name of the geometry column for spatial data",
+                            "default": "geometry"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": "Maximum number of features to return",
+                            "default": 1000
                         }
                     },
                     "required": ["min_lon", "min_lat", "max_lon", "max_lat", "search_value"]

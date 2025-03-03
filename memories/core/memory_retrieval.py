@@ -274,7 +274,21 @@ class MemoryRetrieval:
         geom_column: str = "geometry",
         limit: int = 1000
     ) -> pd.DataFrame:
-        """Get data within a geographic bounding box."""
+        """Get data within a geographic bounding box.
+        
+        Args:
+            min_lon: Minimum longitude of the bounding box
+            min_lat: Minimum latitude of the bounding box
+            max_lon: Maximum longitude of the bounding box
+            max_lat: Maximum latitude of the bounding box
+            lon_column: Name of the longitude column (default: "longitude")
+            lat_column: Name of the latitude column (default: "latitude")
+            geom_column: Name of the geometry column (default: "geometry")
+            limit: Maximum number of results to return (default: 1000)
+            
+        Returns:
+            pandas DataFrame with matching records
+        """
         try:
             # Get all tables
             tables = self.cold.list_tables()
@@ -606,4 +620,51 @@ class MemoryRetrieval:
             
         except Exception as e:
             self.logger.error(f"Error getting data for polygon: {e}")
-            return pd.DataFrame() 
+            return pd.DataFrame()
+
+    @staticmethod
+    def get_data_by_bbox_static(
+        min_lon: float,
+        min_lat: float,
+        max_lon: float,
+        max_lat: float,
+        lon_column: str = "longitude",
+        lat_column: str = "latitude",
+        geom_column: str = "geometry",
+        limit: int = 1000,
+        data_path: str = 'data'
+    ) -> pd.DataFrame:
+        """Get data within a geographic bounding box (static method).
+        
+        Args:
+            min_lon: Minimum longitude of the bounding box
+            min_lat: Minimum latitude of the bounding box
+            max_lon: Maximum longitude of the bounding box
+            max_lat: Maximum latitude of the bounding box
+            lon_column: Name of the longitude column (default: "longitude")
+            lat_column: Name of the latitude column (default: "latitude")
+            geom_column: Name of the geometry column (default: "geometry")
+            limit: Maximum number of results to return (default: 1000)
+            data_path: Path to the data directory (default: 'data')
+            
+        Returns:
+            pandas DataFrame with matching records
+        """
+        from memories.core.cold import ColdMemory
+        from pathlib import Path
+        
+        # Create temporary retrieval instance
+        cold_memory = ColdMemory(storage_path=Path(data_path))
+        retrieval = MemoryRetrieval(cold_memory)
+        
+        # Use the instance method
+        return retrieval.get_data_by_bbox(
+            min_lon=min_lon,
+            min_lat=min_lat,
+            max_lon=max_lon,
+            max_lat=max_lat,
+            lon_column=lon_column,
+            lat_column=lat_column,
+            geom_column=geom_column,
+            limit=limit
+        ) 
