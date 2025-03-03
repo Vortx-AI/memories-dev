@@ -182,7 +182,7 @@ class ColdMemory:
                 CREATE TABLE IF NOT EXISTS file_metadata (
                     file_path VARCHAR PRIMARY KEY,
                     metadata JSON,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP
                 )
             """)
             
@@ -620,14 +620,17 @@ class ColdMemory:
             # Normalize file path
             abs_path = self._normalize_file_path(file_path)
             
+            # Get current timestamp using DuckDB's now() function
+            current_time = self.con.execute("SELECT now()").fetchone()[0]
+            
             # Store metadata in database
             self.con.execute("""
                 INSERT INTO file_metadata (file_path, metadata, created_at)
-                VALUES (?, ?, CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?)
                 ON CONFLICT (file_path) DO UPDATE SET
                     metadata = EXCLUDED.metadata,
-                    created_at = CURRENT_TIMESTAMP
-            """, [abs_path, json.dumps(metadata)])
+                    created_at = EXCLUDED.created_at
+            """, [abs_path, json.dumps(metadata), current_time])
             
         except Exception as e:
             logger.error(f"Failed to store metadata for {file_path}: {e}")
