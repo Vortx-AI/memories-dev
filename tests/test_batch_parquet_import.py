@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from memories.core.memory_manager import MemoryManager
 from memories.utils.text.embeddings import get_encoder
 import shutil
+import tempfile
 
 # Load environment variables from .env file
 load_dotenv()
@@ -15,24 +16,34 @@ load_dotenv()
 # Get geo_memories path from environment variable
 GEO_MEMORIES_PATH = Path(os.getenv('GEO_MEMORIES_PATH', '/Users/jaya/geo_memories'))
 
+def create_duckdb_config() -> Path:
+    """Create a DuckDB config file."""
+    config_content = f"""
+    memory_limit={os.getenv('DUCKDB_MEMORY_LIMIT', '8GB')}
+    threads={os.getenv('DUCKDB_THREADS', '4')}
+    enable_external_access=true
+    external_access=true
+    """
+    
+    # Create temporary config file
+    config_file = Path(tempfile.gettempdir()) / 'duckdb_config.tmp'
+    config_file.write_text(config_content.strip())
+    return config_file
+
 def create_duckdb_database(db_path: Path) -> duckdb.DuckDBPyConnection:
     """Create and configure a DuckDB database."""
     # Create parent directory if it doesn't exist
     db_path.parent.mkdir(parents=True, exist_ok=True)
     
-    # Create connection with initial config
-    config = {
-        'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
-        'threads': os.getenv('DUCKDB_THREADS', '4'),
-        'external_access': 'true',
-        'enable_external_access': 'true'
-    }
+    # Create config file
+    config_file = create_duckdb_config()
     
-    # Build connection string with config
-    conn_str = [f"{k}={v}" for k, v in config.items()]
-    db_url = f"{db_path}?{';'.join(conn_str)}"
-    
-    return duckdb.connect(db_url)
+    try:
+        # Create connection using config file
+        return duckdb.connect(str(db_path), config=str(config_file))
+    finally:
+        # Clean up config file
+        config_file.unlink()
 
 def run_import():
     """Run the parquet import directly without pytest."""
