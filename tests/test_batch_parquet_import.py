@@ -45,14 +45,14 @@ def run_import():
         if db_path.exists():
             db_path.unlink()
             
-        # Create DuckDB connection with initial configuration
-        db_conn = duckdb.connect(str(db_path))
-        
-        # Configure DuckDB settings
-        db_conn.execute("PRAGMA memory_limit='8GB'")
-        db_conn.execute("PRAGMA threads=4")
-        db_conn.execute("PRAGMA enable_external_access=true")
-        db_conn.execute("PRAGMA unsigned_extensions=all")
+        # Create DuckDB connection with all configurations set during initialization
+        config = {
+            'memory_limit': '8GB',
+            'threads': 4,
+            'external_access': True,
+            'unsigned': True
+        }
+        db_conn = duckdb.connect(str(db_path), config=config)
         
         # Initialize memory manager
         print("Initializing memory manager...")
@@ -123,16 +123,17 @@ def memory_manager(tmp_path):
     if db_path.exists():
         db_path.unlink()
         
-    # Create DuckDB connection with initial configuration
-    db_conn = duckdb.connect(str(db_path))
+    # Create DuckDB connection with all configurations set during initialization
+    config = {
+        'memory_limit': '8GB',
+        'threads': 4,
+        'external_access': True,
+        'unsigned': True
+    }
+    db_conn = duckdb.connect(str(db_path), config=config)
     
-    # Configure DuckDB settings
-    db_conn.execute("PRAGMA memory_limit='8GB'")
-    db_conn.execute("PRAGMA threads=4")
-    db_conn.execute("PRAGMA enable_external_access=true")
-    db_conn.execute("PRAGMA unsigned_extensions=all")
-    
-    # Configure memory manager with cold storage enabled
+    # Initialize memory manager
+    print("Initializing memory manager...")
     manager = MemoryManager(
         storage_path=test_cold_dir,
         vector_encoder=vector_encoder,
