@@ -17,8 +17,32 @@ import shutil
 import duckdb
 import psutil
 import time
+import pkg_resources
+import torch
 
-# Set up temporary directory
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def check_dependencies():
+    """Check and validate dependency versions."""
+    required = {
+        'torch': '>=2.0.0,<2.2.0',
+        'transformers': '>=4.30.0,<4.38.0',
+        'sentence-transformers': '>=2.2.0'
+    }
+    
+    for package, version_range in required.items():
+        try:
+            pkg_resources.require(f"{package}{version_range}")
+        except pkg_resources.VersionConflict as e:
+            logger.error(f"Version conflict for {package}: {e}")
+            logger.error(f"Please install {package} {version_range}")
+            raise
+        except pkg_resources.DistributionNotFound:
+            logger.error(f"{package} not found. Please install {package} {version_range}")
+            raise
+
 def setup_temp_dir():
     """Create and set up a temporary directory for the script."""
     temp_dir = Path.home() / '.memories_temp'
@@ -29,73 +53,15 @@ def setup_temp_dir():
     tempfile.tempdir = str(temp_dir)
     return temp_dir
 
-def check_and_release_duckdb_locks(db_path: Path) -> bool:
-    """
-    Check for and attempt to release DuckDB locks.
-    
-    Args:
-        db_path: Path to the DuckDB database file
-        
-    Returns:
-        bool: True if locks were released or not present, False if locks couldn't be released
-    """
-    try:
-        # Check if database file exists
-        if not db_path.exists():
-            return True
-            
-        # Try to find processes holding the lock
-        lock_file = db_path.with_suffix('.duckdb.lock')
-        if not lock_file.exists():
-            return True
-            
-        # Read lock file to get PID
-        try:
-            with open(lock_file, 'r') as f:
-                pid_str = f.read().strip()
-                if pid_str.isdigit():
-                    pid = int(pid_str)
-                    
-                    # Check if process exists
-                    if psutil.pid_exists(pid):
-                        proc = psutil.Process(pid)
-                        if proc.name().startswith('python'):
-                            logger.warning(f"Found Python process {pid} holding DuckDB lock")
-                            # Try to terminate gracefully
-                            proc.terminate()
-                            try:
-                                proc.wait(timeout=5)
-                            except psutil.TimeoutExpired:
-                                proc.kill()
-                            logger.info(f"Successfully terminated process {pid}")
-                            
-                            # Wait for lock file to be released
-                            for _ in range(5):
-                                if not lock_file.exists():
-                                    return True
-                                time.sleep(1)
-        except Exception as e:
-            logger.warning(f"Error reading lock file: {e}")
-            
-        # If lock file still exists, try to remove it
-        if lock_file.exists():
-            try:
-                lock_file.unlink()
-                logger.info("Removed stale lock file")
-                return True
-            except Exception as e:
-                logger.error(f"Could not remove lock file: {e}")
-                return False
-                
-        return True
-        
-    except Exception as e:
-        logger.error(f"Error checking/releasing DuckDB locks: {e}")
-        return False
+# Check dependencies before importing sentence_transformers
+check_dependencies()
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Disable torch._dynamo to avoid circular import issues
+if hasattr(torch, '_dynamo'):
+    if hasattr(torch._dynamo, 'config'):
+        torch._dynamo.config.suppress_errors = True
+    if hasattr(torch._dynamo, 'reset'):
+        torch._dynamo.reset()
 
 # Set up temporary directory before importing sentence_transformers
 temp_dir = setup_temp_dir()
@@ -371,11 +337,16 @@ def main():
                       help='Custom temporary directory path (optional)')
     parser.add_argument('--force-unlock', action='store_true',
                       help='Force release of DuckDB locks before starting')
+    parser.add_argument('--skip-version-check', action='store_true',
+                      help='Skip dependency version checks')
     
     args = parser.parse_args()
     temp_dir = None
     
     try:
+        if not args.skip_version_check:
+            check_dependencies()
+            
         # Set up temporary directory
         temp_dir = Path(args.temp_dir) if args.temp_dir else setup_temp_dir()
         temp_dir.mkdir(exist_ok=True)
@@ -383,7 +354,7 @@ def main():
         os.environ['TEMP'] = str(temp_dir)
         os.environ['TMP'] = str(temp_dir)
         tempfile.tempdir = str(temp_dir)
-            
+        
         # Initialize memory manager with both cold and red hot storage
         storage_path = Path(args.storage_path)
         
