@@ -1,0 +1,80 @@
+{
+    "location_functions": [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_bounding_box",
+                "description": "Get bounding box coordinates for an address using Nominatim OpenStreetMap API",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "address": {
+                            "type": "string",
+                            "description": "Address string to geocode"
+                        }
+                    },
+                    "required": ["address"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_bounding_box_from_coords",
+                "description": "Get bounding box coordinates for a location using its latitude and longitude",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "lat": {
+                            "type": "number",
+                            "description": "Latitude of the location (-90 to 90)"
+                        },
+                        "lon": {
+                            "type": "number",
+                            "description": "Longitude of the location (-180 to 180)"
+                        }
+                    },
+                    "required": ["lat", "lon"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_address_from_coords",
+                "description": "Get address details from coordinates using reverse geocoding",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "lat": {
+                            "type": "number",
+                            "description": "Latitude of the location"
+                        },
+                        "lon": {
+                            "type": "number",
+                            "description": "Longitude of the location"
+                        }
+                    },
+                    "required": ["lat", "lon"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "get_coords_from_address",
+                "description": "Get coordinates from an address using forward geocoding",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "address": {
+                            "type": "string",
+                            "description": "Address to geocode"
+                        }
+                    },
+                    "required": ["address"]
+                }
+            }
+        }
+    ]
+} 

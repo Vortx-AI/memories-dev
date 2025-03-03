@@ -1,0 +1,38 @@
+{
+    "doc_001": {
+        "type": "documents",
+        "acquisition_time": "2024-03-20T10:30:00",
+        "source_path": "/data/documents/report.pdf",
+        "metadata": {
+            "file_type": "pdf",
+            "title": "Annual Report 2023",
+            "pages": 45,
+            "author": "Finance Department",
+            "last_modified": "2024-03-19T15:45:00"
+        }
+    },
+    "img_001": {
+        "type": "images",
+        "acquisition_time": "2024-03-20T11:15:00",
+        "source_path": "/data/images/product_photo.jpg",
+        "metadata": {
+            "file_type": "jpg",
+            "resolution": "3840x2160",
+            "size_mb": 5.2,
+            "color_space": "RGB",
+            "camera_model": "Canon EOS R5"
+        }
+    },
+    "aud_001": {
+        "type": "audio",
+        "acquisition_time": "2024-03-20T09:45:00",
+        "source_path": "/data/audio/meeting_recording.mp3",
+        "metadata": {
+            "file_type": "mp3",
+            "duration_seconds": 1800,
+            "sample_rate": 44100,
+            "bitrate": "320kbps",
+            "channels": 2
+        }
+    }
+} 

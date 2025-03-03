@@ -60,7 +60,7 @@ logs/
 # Project specific
 gunicorn_config.py
 synthetic_satellite.nginx
-*.json
+
 !package.json
 !memories/*/config/*.json
 !memories/*/data/*.json
