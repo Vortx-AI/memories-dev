@@ -37,21 +37,28 @@ def run_import():
         memory_manager = MemoryManager(
             storage_path=storage_dir,
             vector_encoder=vector_encoder,
-            enable_hot=False,     # Disable Redis dependency
-            enable_cold=True,     # Enable cold storage for parquet files
-            enable_warm=False,    # Disable warm storage
+            enable_red_hot=False,  # Disable vector storage
+            enable_hot=False,      # Disable Redis
+            enable_cold=True,      # Enable cold storage for parquet files
+            enable_warm=False,     # Disable warm storage
             enable_glacier=False,  # Disable glacier storage
             custom_config={
                 'cold': {
+                    'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
                     'duckdb_config': {
                         'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
-                        'threads': int(os.getenv('DUCKDB_THREADS', 4)),
-                        'enable_external_access': True,
-                        'external_access': True
+                        'threads': int(os.getenv('DUCKDB_THREADS', 4))
                     }
                 }
             }
         )
+
+        # Now configure DuckDB settings after initialization
+        if hasattr(memory_manager, '_cold_memory') and memory_manager._cold_memory:
+            conn = memory_manager._cold_memory._conn
+            if conn:
+                conn.execute("SET enable_external_access=true")
+                conn.execute("SET external_access=true")
         
         print("\nStarting parquet file import...")
         results = memory_manager.batch_import_parquet(
@@ -98,21 +105,28 @@ def memory_manager():
     manager = MemoryManager(
         storage_path=test_cold_dir,  # Specify storage path
         vector_encoder=vector_encoder,
-        enable_hot=False,     # Disable Redis dependency
-        enable_cold=True,     # Enable cold storage for parquet files
-        enable_warm=False,    # Disable warm storage
+        enable_red_hot=False,  # Disable vector storage
+        enable_hot=False,      # Disable Redis
+        enable_cold=True,      # Enable cold storage for parquet files
+        enable_warm=False,     # Disable warm storage
         enable_glacier=False,  # Disable glacier storage
         custom_config={
             'cold': {
+                'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
                 'duckdb_config': {
-                    'memory_limit': '8GB',
-                    'threads': 4,
-                    'enable_external_access': True,  # Enable external access for parquet files
-                    'external_access': True
+                    'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
+                    'threads': int(os.getenv('DUCKDB_THREADS', 4))
                 }
             }
         }
     )
+    
+    # Configure DuckDB settings after initialization
+    if hasattr(manager, '_cold_memory') and manager._cold_memory:
+        conn = manager._cold_memory._conn
+        if conn:
+            conn.execute("SET enable_external_access=true")
+            conn.execute("SET external_access=true")
     
     yield manager
     
