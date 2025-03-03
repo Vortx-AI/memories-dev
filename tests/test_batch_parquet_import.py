@@ -28,33 +28,19 @@ def run_import():
     try:
         # Initialize vector encoder
         print("Initializing vector encoder...")
-        vector_encoder = get_encoder()
+        
         
         # Create storage directory
-        storage_dir = Path('cold_storage')
-        storage_dir.mkdir(exist_ok=True)
+        #storage_dir = Path('cold_storage')
+        #storage_dir.mkdir(exist_ok=True)
         
         # Initialize memory manager
         print("Initializing memory manager...")
         memory_manager = MemoryManager(
-            storage_path=storage_dir,
-            vector_encoder=vector_encoder,
-            enable_red_hot=False,  # Disable vector storage
-            enable_hot=False,      # Disable Redis
+           
             enable_cold=True,      # Enable cold storage for parquet files
-            enable_warm=False,     # Disable warm storage
-            enable_glacier=False,  # Disable glacier storage
-            custom_config={
-                'cold': {
-                    'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
-                    'duckdb_config': {
-                        'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
-                        'threads': int(os.getenv('DUCKDB_THREADS', 4)),
-                        'allow_unsigned_extensions': 'true',
-                        'enable_external_access': 'true'
-                    }
-                }
-            }
+            
+            
         )
         
         print("\nStarting parquet file import...")
