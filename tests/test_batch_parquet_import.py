@@ -16,10 +16,12 @@ load_dotenv()
 GEO_MEMORIES_PATH = Path(os.getenv('GEO_MEMORIES_PATH', '/Users/jaya/geo_memories'))
 
 # Configure DuckDB at module level
-duckdb.default_connection.execute("SET enable_external_access=true")
-duckdb.default_connection.execute("SET external_access=true")
-duckdb.default_connection.execute(f"SET memory_limit='{os.getenv('DUCKDB_MEMORY_LIMIT', '8GB')}'")
-duckdb.default_connection.execute(f"SET threads={int(os.getenv('DUCKDB_THREADS', 4))}")
+conn = duckdb.connect(':memory:')  # Create an in-memory connection for global settings
+conn.execute("SET enable_external_access=true")
+conn.execute("SET external_access=true")
+conn.execute(f"SET memory_limit='{os.getenv('DUCKDB_MEMORY_LIMIT', '8GB')}'")
+conn.execute(f"SET threads={int(os.getenv('DUCKDB_THREADS', 4))}")
+conn.close()  # Close the connection after setting global configs
 
 def run_import():
     """Run the parquet import directly without pytest."""
