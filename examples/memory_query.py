@@ -2,8 +2,9 @@
 Memory query implementation for handling different types of queries.
 """
 
-from typing import Dict, Any, Union
+from typing import Dict, Any, Union, Optional
 import logging
+import os
 from memories.models.load_model import LoadModel
 from memories.utils.text.context_utils import classify_query
 
@@ -14,11 +15,30 @@ logger = logging.getLogger(__name__)
 class MemoryQuery:
     """Memory query handler for processing different types of queries."""
     
-    def __init__(self):
-        """Initialize the memory query handler with LoadModel."""
+    def __init__(
+        self,
+        model_provider: str = "openai",
+        deployment_type: str = "api",
+        model_name: str = "gpt-4",
+        api_key: Optional[str] = None
+    ):
+        """
+        Initialize the memory query handler with LoadModel.
+        
+        Args:
+            model_provider (str): The model provider (e.g., "openai")
+            deployment_type (str): Type of deployment (e.g., "api")
+            model_name (str): Name of the model to use
+            api_key (Optional[str]): API key for the model provider
+        """
         try:
-            self.model = LoadModel()
-            logger.info("Successfully initialized LoadModel")
+            self.model = LoadModel(
+                model_provider=model_provider,
+                deployment_type=deployment_type,
+                model_name=model_name,
+                api_key=api_key
+            )
+            logger.info(f"Successfully initialized LoadModel with {model_name}")
         except Exception as e:
             logger.error(f"Failed to initialize LoadModel: {e}")
             raise
@@ -76,25 +96,45 @@ class MemoryQuery:
 def main():
     """Main function to demonstrate memory query usage."""
     try:
-        # Initialize memory query
-        memory_query = MemoryQuery()
+        # Get API key from environment variable or user input
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            api_key = input("Please enter your OpenAI API key: ")
         
-        # Example queries
-        example_queries = [
-            "What is the capital of France?",  # L0
-            "How do I write a Python function?",  # N
-            "Find restaurants near Central Park"  # L1_2
-        ]
+        # Initialize memory query with specific model parameters
+        memory_query = MemoryQuery(
+            model_provider="openai",
+            deployment_type="api",
+            model_name="gpt-4",
+            api_key=api_key
+        )
         
-        # Process each query
-        for query in example_queries:
-            print(f"\nProcessing query: {query}")
-            result = memory_query.process_query(query)
-            print(f"Classification: {result['classification']}")
-            print(f"Response: {result['response']}")
-            print(f"Status: {result['status']}")
-            if "note" in result:
-                print(f"Note: {result['note']}")
+        print("\nMemory Query System initialized successfully!")
+        print("Type 'exit' to quit the program")
+        print("\nExample query types:")
+        print("1. Normal (N): 'How do I write a Python function?'")
+        print("2. Location without data (L0): 'What is the capital of France?'")
+        print("3. Location with data (L1_2): 'Find restaurants near Central Park'")
+        
+        while True:
+            # Get query from user
+            query = input("\nEnter your query: ").strip()
+            
+            # Check if user wants to exit
+            if query.lower() == 'exit':
+                print("Exiting Memory Query System...")
+                break
+            
+            # Process the query
+            if query:
+                result = memory_query.process_query(query)
+                print(f"\nClassification: {result['classification']}")
+                print(f"Response: {result['response']}")
+                print(f"Status: {result['status']}")
+                if "note" in result:
+                    print(f"Note: {result['note']}")
+            else:
+                print("Please enter a valid query.")
 
     except Exception as e:
         logger.error(f"Error in main: {e}")
