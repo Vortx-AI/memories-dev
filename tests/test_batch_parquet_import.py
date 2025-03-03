@@ -40,13 +40,19 @@ def run_import():
         
         # Create and configure DuckDB database
         db_path = cold_dir / 'cold.db'
-        config = {
-            'memory_limit': '8GB',
-            'threads': 4,
-            'allow_unsigned_extensions': True,
-            'enable_external_access': True
-        }
-        db_conn = duckdb.connect(str(db_path), config=config)
+        
+        # Remove any existing database file to avoid connection conflicts
+        if db_path.exists():
+            db_path.unlink()
+            
+        # Create DuckDB connection with initial configuration
+        db_conn = duckdb.connect(str(db_path))
+        
+        # Configure DuckDB settings
+        db_conn.execute("PRAGMA memory_limit='8GB'")
+        db_conn.execute("PRAGMA threads=4")
+        db_conn.execute("PRAGMA enable_external_access=true")
+        db_conn.execute("PRAGMA unsigned_extensions=all")
         
         # Initialize memory manager
         print("Initializing memory manager...")
@@ -62,10 +68,7 @@ def run_import():
                 'cold': {
                     'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
                     'duckdb_config': {
-                        'db_conn': db_conn,  # Pass the pre-configured connection
-                        'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
-                        'threads': int(os.getenv('DUCKDB_THREADS', 4)),
-                        
+                        'db_conn': db_conn  # Pass the pre-configured connection
                     }
                 }
             }
@@ -115,6 +118,20 @@ def memory_manager(tmp_path):
     test_cold_dir = tmp_path / "test_cold"
     test_cold_dir.mkdir(exist_ok=True)
     
+    # Create and configure DuckDB database
+    db_path = test_cold_dir / 'cold.db'
+    if db_path.exists():
+        db_path.unlink()
+        
+    # Create DuckDB connection with initial configuration
+    db_conn = duckdb.connect(str(db_path))
+    
+    # Configure DuckDB settings
+    db_conn.execute("PRAGMA memory_limit='8GB'")
+    db_conn.execute("PRAGMA threads=4")
+    db_conn.execute("PRAGMA enable_external_access=true")
+    db_conn.execute("PRAGMA unsigned_extensions=all")
+    
     # Configure memory manager with cold storage enabled
     manager = MemoryManager(
         storage_path=test_cold_dir,
@@ -128,10 +145,7 @@ def memory_manager(tmp_path):
             "cold": {
                 "max_size": int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),  # 10GB default
                 "duckdb_config": {
-                    'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
-                    'threads': int(os.getenv('DUCKDB_THREADS', 4)),
-                    'allow_unsigned_extensions': 'true',
-                    'enable_external_access': 'true'
+                    'db_conn': db_conn  # Pass the pre-configured connection
                 }
             }
         }
@@ -140,6 +154,7 @@ def memory_manager(tmp_path):
     yield manager
     
     # Cleanup
+    db_conn.close()
     manager.cleanup()
     if test_cold_dir.exists():
         shutil.rmtree(test_cold_dir)
