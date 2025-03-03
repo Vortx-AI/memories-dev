@@ -6,9 +6,15 @@ from typing import Dict, Any, Union, Optional
 import logging
 import os
 import json
+from pathlib import Path
 from memories.models.load_model import LoadModel
 from memories.utils.text.context_utils import classify_query
-from memories.utils.earth.location_utils import get_bounding_box_from_address, get_bounding_box_from_coords
+from memories.utils.earth.location_utils import (
+    get_bounding_box_from_address,
+    get_bounding_box_from_coords,
+    get_address_from_coords,
+    get_coords_from_address
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -22,7 +28,8 @@ class MemoryQuery:
         model_provider: str = "openai",
         deployment_type: str = "api",
         model_name: str = "gpt-4",
-        api_key: Optional[str] = None
+        api_key: Optional[str] = None,
+        functions_file: str = "function_definitions.json"
     ):
         """
         Initialize the memory query handler with LoadModel.
@@ -32,6 +39,7 @@ class MemoryQuery:
             deployment_type (str): Type of deployment (e.g., "api")
             model_name (str): Name of the model to use
             api_key (Optional[str]): API key for the model provider
+            functions_file (str): Path to the JSON file containing function definitions
         """
         try:
             self.model = LoadModel(
@@ -41,6 +49,26 @@ class MemoryQuery:
                 api_key=api_key
             )
             logger.info(f"Successfully initialized LoadModel with {model_name}")
+            
+            # Load function definitions
+            self.function_mapping = {
+                "get_bounding_box": get_bounding_box_from_address,
+                "get_bounding_box_from_coords": get_bounding_box_from_coords,
+                "get_address_from_coords": get_address_from_coords,
+                "get_coords_from_address": get_coords_from_address
+            }
+            
+            # Load functions from JSON file
+            functions_path = Path(__file__).parent / functions_file
+            try:
+                with open(functions_path, 'r') as f:
+                    function_data = json.load(f)
+                self.tools = function_data.get("location_functions", [])
+                logger.info(f"Successfully loaded {len(self.tools)} functions from {functions_file}")
+            except Exception as e:
+                logger.error(f"Error loading functions from {functions_file}: {e}")
+                self.tools = []
+                
         except Exception as e:
             logger.error(f"Failed to initialize LoadModel: {e}")
             raise
@@ -72,96 +100,14 @@ class MemoryQuery:
                     "status": "success"
                 }
             elif query_type == "L1_2":
-                # For L1_2, use chat completion with bounding box function
+                # For L1_2, use chat completion with loaded functions
                 messages = [{"role": "user", "content": query}]
                 
-                # Define the bounding box functions as tools
-                tools = [
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "get_bounding_box",
-                            "description": "Get bounding box coordinates for an address using Nominatim OpenStreetMap API",
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "address": {
-                                        "type": "string",
-                                        "description": "Address string to geocode"
-                                    }
-                                },
-                                "required": ["address"]
-                            }
-                        }
-                    },
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "get_bounding_box_from_coords",
-                            "description": "Get bounding box coordinates for a location using its latitude and longitude",
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "lat": {
-                                        "type": "number",
-                                        "description": "Latitude of the location (-90 to 90)"
-                                    },
-                                    "lon": {
-                                        "type": "number",
-                                        "description": "Longitude of the location (-180 to 180)"
-                                    }
-                                },
-                                "required": ["lat", "lon"]
-                            }
-                        }
-                    },
-                    # Example of additional functions up to 15 total:
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "get_address_from_coords",
-                            "description": "Get address details from coordinates using reverse geocoding",
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "lat": {
-                                        "type": "number",
-                                        "description": "Latitude of the location"
-                                    },
-                                    "lon": {
-                                        "type": "number",
-                                        "description": "Longitude of the location"
-                                    }
-                                },
-                                "required": ["lat", "lon"]
-                            }
-                        }
-                    },
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "get_coords_from_address",
-                            "description": "Get coordinates from an address using forward geocoding",
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "address": {
-                                        "type": "string",
-                                        "description": "Address to geocode"
-                                    }
-                                },
-                                "required": ["address"]
-                            }
-                        }
-                    }
-                    # ... can add up to 11 more function definitions here
-                ]
-                
                 try:
-                    # Use chat_completion from LoadModel
+                    # Use chat_completion from LoadModel with loaded tools
                     response = self.model.chat_completion(
                         messages=messages,
-                        tools=tools,
+                        tools=self.tools,
                         tool_choice="auto"
                     )
                     
@@ -186,14 +132,9 @@ class MemoryQuery:
                                 # Parse the arguments
                                 args = json.loads(tool_call["function"]["arguments"])
                                 
-                                # Call the appropriate function based on the tool name
-                                if function_name == "get_bounding_box":
-                                    address = args["address"]
-                                    bbox_result = get_bounding_box_from_address(address)
-                                elif function_name == "get_bounding_box_from_coords":
-                                    lat = args["lat"]
-                                    lon = args["lon"]
-                                    bbox_result = get_bounding_box_from_coords(lat, lon)
+                                # Get the corresponding function from the mapping
+                                if function_name in self.function_mapping:
+                                    function_result = self.function_mapping[function_name](**args)
                                 else:
                                     return {
                                         "classification": "L1_2",
@@ -201,12 +142,12 @@ class MemoryQuery:
                                         "status": "error"
                                     }
                                 
-                                # Check if bounding box request was successful
-                                if bbox_result.get("status") == "error":
-                                    error_msg = bbox_result.get("message", "Unknown error getting bounding box")
+                                # Check if request was successful
+                                if function_result.get("status") == "error":
+                                    error_msg = function_result.get("message", f"Unknown error in {function_name}")
                                     return {
                                         "classification": "L1_2",
-                                        "response": f"Could not find location: {error_msg}",
+                                        "response": f"Error in {function_name}: {error_msg}",
                                         "status": "error"
                                     }
                                 
@@ -214,7 +155,7 @@ class MemoryQuery:
                                 results.append({
                                     "function_name": function_name,
                                     "args": args,
-                                    "result": bbox_result
+                                    "result": function_result
                                 })
                                 
                                 # Add the function result to messages
@@ -229,7 +170,7 @@ class MemoryQuery:
                                 messages.append({
                                     "role": "function",
                                     "name": function_name,
-                                    "content": json.dumps(bbox_result)
+                                    "content": json.dumps(function_result)
                                 })
                                 
                             except json.JSONDecodeError as e:
@@ -263,7 +204,7 @@ class MemoryQuery:
                             "classification": "L1_2",
                             "response": final_response.get("message", {}).get("content", "No response generated"),
                             "status": "success",
-                            "bounding_boxes": [r["result"] for r in results]
+                            "results": results
                         }
                     
                     # If no tool calls, return the direct response
