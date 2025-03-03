@@ -40,7 +40,7 @@ def store_schema_embeddings(
             "errors": []
         }
         
-        # Get cold storage path
+        # Get cold storage path and connection
         cold_path = memory_manager.get_memory_path("cold")
         if not cold_path:
             raise ValueError("Cold memory path not found")
@@ -60,62 +60,118 @@ def store_schema_embeddings(
         
         for file_path in parquet_files:
             try:
-                # Read only schema (fast operation)
-                schema = pq.read_schema(file_path)
-                
-                # Get relative path for metadata
+                # Get relative path for storage
                 rel_path = file_path.relative_to(cold_path)
-                abs_path = str(file_path.absolute())
+                
+                # Read parquet schema
+                parquet_file = pq.ParquetFile(file_path)
+                schema = parquet_file.schema
+                
+                # Get DuckDB table information
+                table_name = f"parquet_data_{results['processed_files']}"
+                
+                # Query DuckDB for table metadata if available
+                duckdb_metadata = {}
+                if memory_manager.cold and memory_manager.cold.con:
+                    try:
+                        # Get table info
+                        table_info = memory_manager.cold.con.execute(f"""
+                            SELECT * FROM duckdb_tables() 
+                            WHERE table_name = '{table_name}'
+                        """).fetchone()
+                        
+                        if table_info:
+                            duckdb_metadata["table_info"] = {
+                                "table_name": table_info[0],
+                                "schema_name": table_info[1],
+                                "internal_name": table_info[2],
+                                "temporary": table_info[3]
+                            }
+                            
+                        # Get column info
+                        column_info = memory_manager.cold.con.execute(f"""
+                            SELECT * FROM duckdb_columns() 
+                            WHERE table_name = '{table_name}'
+                        """).fetchall()
+                        
+                        if column_info:
+                            duckdb_metadata["columns"] = [{
+                                "name": col[2],
+                                "type": col[3],
+                                "null": col[4],
+                                "default": col[5],
+                                "primary_key": col[6]
+                            } for col in column_info]
+                            
+                        # Get table statistics if available
+                        try:
+                            stats = memory_manager.cold.con.execute(f"""
+                                ANALYZE {table_name};
+                                SELECT * FROM duckdb_statistics() 
+                                WHERE table_name = '{table_name}'
+                            """).fetchall()
+                            
+                            if stats:
+                                duckdb_metadata["statistics"] = [{
+                                    "column_name": stat[2],
+                                    "has_null": stat[3],
+                                    "distinct_count": stat[4],
+                                    "min_value": stat[5],
+                                    "max_value": stat[6]
+                                } for stat in stats]
+                        except Exception as e:
+                            logger.warning(f"Could not get statistics for {table_name}: {e}")
+                            
+                    except Exception as e:
+                        logger.warning(f"Could not get DuckDB metadata for {table_name}: {e}")
                 
                 # Process each column
-                for field in schema:
+                for i, field in enumerate(schema):
                     column_name = field.name
+                    column_type = str(field.type)
+                    
+                    # Add to batch
                     column_batch.append(column_name)
-                    
-                    # Prepare metadata
-                    metadata = {
+                    metadata_batch.append({
                         "file_path": str(rel_path),
-                        "absolute_path": abs_path,
-                        "column_type": str(field.type),
-                        "nullable": field.nullable,
-                        "field_metadata": field.metadata if field.metadata else {},
-                        "schema_path": [str(p) for p in field.path],
-                    }
-                    metadata_batch.append(metadata)
+                        "absolute_path": str(file_path),
+                        "table_name": table_name,
+                        "column_index": i,
+                        "column_type": column_type,
+                        "column_metadata": field.metadata if field.metadata else {},
+                        "duckdb_metadata": duckdb_metadata,
+                        "file_stats": {
+                            "num_row_groups": parquet_file.num_row_groups,
+                            "num_rows": parquet_file.metadata.num_rows,
+                            "created_by": parquet_file.metadata.created_by,
+                            "format_version": parquet_file.metadata.format_version,
+                            "size_bytes": file_path.stat().st_size
+                        }
+                    })
                     
-                    # Process batch if size reached
+                    # Process batch if full
                     if len(column_batch) >= batch_size:
-                        _process_embedding_batch(
-                            memory_manager,
-                            encoder,
-                            column_batch,
-                            metadata_batch
-                        )
+                        _process_embedding_batch(memory_manager, encoder, column_batch, metadata_batch)
+                        results["stored_columns"] += len(column_batch)
                         column_batch = []
                         metadata_batch = []
-                        
+                
                 results["processed_files"] += 1
-                results["stored_columns"] += len(schema)
                 
             except Exception as e:
-                logger.error(f"Error processing {file_path}: {e}")
+                logger.error(f"Error processing file {file_path}: {e}")
                 results["errors"].append(str(file_path))
                 continue
-                
-        # Process remaining batch
+        
+        # Process any remaining columns
         if column_batch:
-            _process_embedding_batch(
-                memory_manager,
-                encoder,
-                column_batch,
-                metadata_batch
-            )
-            
-        logger.info(f"Schema embeddings stored: {results}")
+            _process_embedding_batch(memory_manager, encoder, column_batch, metadata_batch)
+            results["stored_columns"] += len(column_batch)
+        
         return results
         
     except Exception as e:
-        logger.error(f"Failed to store schema embeddings: {e}")
+        logger.error(f"Error storing schema embeddings: {e}")
         raise
 
 def _process_embedding_batch(
@@ -132,7 +188,7 @@ def _process_embedding_batch(
         # Store each embedding with its metadata
         for i, (column_name, metadata) in enumerate(zip(column_batch, metadata_batch)):
             # Generate unique key
-            key = f"schema_{metadata['file_path']}_{column_name}"
+            key = f"schema_{metadata['table_name']}_{column_name}"
             
             # Store in red hot memory
             memory_manager.add_to_tier(
@@ -141,9 +197,14 @@ def _process_embedding_batch(
                 key=key,
                 metadata={
                     "column_name": column_name,
+                    "table_name": metadata["table_name"],
                     "parquet_file": metadata["absolute_path"],
                     "relative_path": metadata["file_path"],
-                    "schema_info": metadata
+                    "column_index": metadata["column_index"],
+                    "column_type": metadata["column_type"],
+                    "column_metadata": metadata["column_metadata"],
+                    "duckdb_metadata": metadata["duckdb_metadata"],
+                    "file_stats": metadata["file_stats"]
                 }
             )
             
