@@ -194,6 +194,73 @@ def test_empty_tables(memory_retrieval):
     tables = memory_retrieval.list_available_data()
     assert len(tables) == 0, "Should have no tables"
 
+def main():
+    """List tables in cold memory."""
+    print("\n=== Listing Tables in Cold Memory ===\n")
+    
+    storage_dir = Path('data')
+    if not storage_dir.exists():
+        print("No existing storage directory found. Please run the import first.")
+        return
+        
+    try:
+        # Create and configure DuckDB connection
+        db_path = storage_dir / 'cold' / 'cold.db'
+        if not db_path.exists():
+            print("No existing database found. Please run the import first.")
+            return
+            
+        # Create connection with external access enabled
+        db_conn = duckdb.connect(str(db_path), config={'enable_external_access': True})
+        db_conn.execute("SET memory_limit='8GB'")
+        db_conn.execute("SET threads=4")
+        
+        # Initialize memory manager
+        memory_manager = MemoryManager(
+            storage_path=storage_dir,
+            vector_encoder=None,  # Not needed for listing
+            enable_red_hot=False,
+            enable_hot=False,
+            enable_cold=True,
+            enable_warm=False,
+            enable_glacier=False,
+            custom_config={
+                'cold': {
+                    'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
+                    'duckdb': {
+                        'db_conn': db_conn,
+                        'config': {
+                            'enable_external_access': True
+                        }
+                    }
+                }
+            }
+        )
+        
+        # List available tables
+        tables = memory_manager.cold.list_tables()
+        
+        if not tables:
+            print("No tables found in cold memory.")
+            return
+            
+        print(f"Found {len(tables)} tables:\n")
+        for table in tables:
+            print(f"Table: {table['table_name']}")
+            print(f"File: {table['file_path']}")
+            print(f"Theme: {table['theme']}")
+            print(f"Tag: {table['tag']}")
+            print(f"Rows: {table['num_rows']}")
+            print(f"Columns: {table['num_columns']}")
+            print("\nSchema:")
+            for col_name, col_type in table['schema'].items():
+                print(f"  {col_name}: {col_type}")
+            print("\n" + "-"*50 + "\n")
+            
+    except Exception as e:
+        print(f"\nError listing tables: {str(e)}")
+        raise
+
 if __name__ == "__main__":
     import sys
     if "--test" in sys.argv:
@@ -201,4 +268,4 @@ if __name__ == "__main__":
         pytest.main([__file__, "-v"])
     else:
         # Run direct table listing
-        list_cold_tables() 
+        main() 

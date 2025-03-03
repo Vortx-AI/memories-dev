@@ -82,9 +82,6 @@ def run_import():
         print(f"Error: Directory not found: {GEO_MEMORIES_PATH}")
         return
 
-    # Clean up existing cold memory first
-    cleanup_cold_memory()
-
     print(f"\n=== Importing Geo Memories from {GEO_MEMORIES_PATH} ===\n")
     
     try:
@@ -103,10 +100,6 @@ def run_import():
         # Create and configure DuckDB database
         db_path = cold_dir / 'cold.db'
         
-        # Remove any existing database file to avoid connection conflicts
-        if db_path.exists():
-            db_path.unlink()
-            
         print("Creating DuckDB connection...")
         # Create connection with external access enabled
         db_conn = duckdb.connect(str(db_path), config={'enable_external_access': True})
@@ -162,15 +155,6 @@ def run_import():
     except Exception as e:
         print(f"\nError during import: {str(e)}")
         raise
-    
-    finally:
-        print("\nCleaning up...")
-        if 'db_conn' in locals():
-            db_conn.close()
-        if 'memory_manager' in locals():
-            memory_manager.cleanup()
-        if storage_dir.exists():
-            shutil.rmtree(storage_dir)
 
 @pytest.fixture
 def memory_manager(tmp_path):
@@ -362,5 +346,5 @@ if __name__ == "__main__":
         # Run only cleanup if --cleanup flag is provided
         cleanup_cold_memory()
     else:
-        # Run direct import (includes cleanup)
+        # Run direct import without cleanup
         run_import() 
