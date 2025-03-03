@@ -14,8 +14,74 @@ load_dotenv()
 # Get geo_memories path from environment variable
 GEO_MEMORIES_PATH = Path(os.getenv('GEO_MEMORIES_PATH', '/Users/jaya/geo_memories'))
 
-if not GEO_MEMORIES_PATH:
-    raise ValueError("GEO_MEMORIES_PATH not set in environment variables")
+def run_import():
+    """Run the parquet import directly without pytest."""
+    if not GEO_MEMORIES_PATH.exists():
+        print(f"Error: Directory not found: {GEO_MEMORIES_PATH}")
+        return
+
+    print(f"\n=== Importing Geo Memories from {GEO_MEMORIES_PATH} ===\n")
+    
+    try:
+        # Initialize vector encoder
+        print("Initializing vector encoder...")
+        vector_encoder = get_encoder()
+        
+        # Initialize memory manager
+        print("Initializing memory manager...")
+        memory_manager = MemoryManager(
+            vector_encoder=vector_encoder,
+            enable_hot=False,     # Disable Redis dependency
+            enable_cold=True,     # Enable cold storage for parquet files
+            enable_warm=False,    # Disable warm storage
+            enable_glacier=False  # Disable glacier storage
+        )
+        
+        # Configure cold storage
+        print("Configuring cold storage...")
+        memory_manager.configure_tiers(
+            cold_config={
+                'path': 'cold',
+                'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
+                'duckdb_config': {
+                    'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
+                    'threads': int(os.getenv('DUCKDB_THREADS', 4)),
+                    'enable_external_access': True
+                }
+            }
+        )
+        
+        # Import parquet files
+        print("\nStarting parquet file import...")
+        results = memory_manager.batch_import_parquet(
+            folder_path=GEO_MEMORIES_PATH,
+            theme="geo",
+            tag="location",
+            recursive=True,
+            pattern="*.parquet"
+        )
+        
+        # Print detailed results
+        print("\nImport Results:")
+        print(f"Files processed: {results['files_processed']}")
+        print(f"Records imported: {results['records_imported']}")
+        print(f"Total size: {results['total_size'] / (1024*1024):.2f} MB")
+        
+        if results['errors']:
+            print("\nErrors encountered:")
+            for error in results['errors']:
+                print(f"- {error}")
+        
+        print("\nImport completed successfully!")
+        
+    except Exception as e:
+        print(f"\nError during import: {str(e)}")
+        raise
+    
+    finally:
+        print("\nCleaning up...")
+        if 'memory_manager' in locals():
+            memory_manager.cleanup()
 
 @pytest.fixture
 def memory_manager():
@@ -181,5 +247,10 @@ def test_batch_import_empty_directory(memory_manager, tmp_path):
     assert len(results['errors']) == 0, "Should not have errors for empty directory"
 
 if __name__ == "__main__":
-    # Run only the geo memories import test
-    pytest.main([__file__, "-v", "-k", "test_geo_memories_import"]) 
+    import sys
+    if "--test" in sys.argv:
+        # Run pytest if --test flag is provided
+        pytest.main([__file__, "-v", "-k", "test_geo_memories_import"])
+    else:
+        # Run direct import
+        run_import() 
