@@ -2,8 +2,8 @@
 Earth Memory
 =============
 
-.. image:: https://img.shields.io/badge/version-2.0.3-blue.svg
-   :alt: Version 2.0.3
+.. image:: https://img.shields.io/badge/version-2.0.4-blue.svg
+   :alt: Version 2.0.4
    :align: right
 
 .. contents:: Table of Contents

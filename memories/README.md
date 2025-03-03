@@ -11,13 +11,13 @@
 
 </div>
 
-> Collective AGI memory - v2.0.3 (Scheduled for February 28, 2025)
+> Collective AGI memory - v2.0.4 (Scheduled for March 3, 2025)
 
 ## 📋 Release Timeline
 - **v1.0.0** - Released on February 14, 2025: Initial stable release with core functionality
-- **v2.0.3** - Scheduled for February 28, 2025: Current development version with enhanced features
+- **v2.0.4** - Scheduled for March 3, 2025: Current development version with enhanced features
 
-## 🌟 What's New in Version 2.0.3
+## 🌟 What's New in Version 2.0.4
 
 ### New Features
 - **Enhanced Data Sources**: Complete integration with Overture Maps and OpenStreetMap
@@ -160,7 +160,7 @@ pip install -e ".[docs]"
 
 ## 📊 Monitoring & Observability
 
-### Available in v2.0.3
+### Available in v2.0.4
 - Comprehensive logging system with structured output
 - Memory operation metrics with Prometheus integration
 - Performance tracking for core operations

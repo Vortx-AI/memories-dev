@@ -2,7 +2,7 @@
 
 This module handles data acquisition, processing, and storage for the Memories system.
 
-## What's New in Version 2.0.3 (Scheduled for February 28, 2025)
+## What's New in Version 2.0.4 (Scheduled for March 3, 2025)
 
 Since our initial release (v1.0.0 on February 14, 2025), we've made significant improvements to the data acquisition module:
 

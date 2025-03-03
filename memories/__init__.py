@@ -17,7 +17,7 @@ from memories.utils.core.system import system_check, SystemStatus
 
 logger = logging.getLogger(__name__)
 
-__version__ = "2.0.3"  # Match version in pyproject.toml
+__version__ = "2.0.4"  # Match version in pyproject.toml
 
 __all__ = [
     # Core components

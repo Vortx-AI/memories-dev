@@ -2,7 +2,7 @@
 
 This directory contains the core memory management system for the Memories project.
 
-## What's New in Version 2.0.3 (Scheduled for February 28, 2025)
+## What's New in Version 2.0.4 (Scheduled for March 3, 2025)
 
 Since our initial release (v1.0.0 on February 14, 2025), we've made significant improvements to the memory management system:
 
@@ -29,7 +29,7 @@ The memory management system is built on a 4-tier architecture designed for effi
   - Highest speed, limited capacity
   - Optimized for tensor operations
   - Automatic garbage collection
-- **New in 2.0.3**:
+- **New in 2.0.4**:
   - Multi-GPU support
   - Tensor optimization
   - Priority-based allocation
@@ -40,7 +40,7 @@ The memory management system is built on a 4-tier architecture designed for effi
   - High speed, moderate capacity
   - RAM-based storage
   - Efficient for structured data
-- **New in 2.0.3**:
+- **New in 2.0.4**:
   - Memory pooling
   - Shared memory support
   - Improved serialization
@@ -51,7 +51,7 @@ The memory management system is built on a 4-tier architecture designed for effi
   - Moderate speed, high capacity
   - Disk-based storage
   - Automatic indexing
-- **New in 2.0.3**:
+- **New in 2.0.4**:
   - Intelligent compression
   - Partial loading
   - Optimized file formats
@@ -62,7 +62,7 @@ The memory management system is built on a 4-tier architecture designed for effi
   - Slow access, unlimited capacity
   - Cloud or network storage
   - Cost-optimized
-- **New in 2.0.3**:
+- **New in 2.0.4**:
   - Multi-provider support
   - Encrypted storage
   - Batch operations
@@ -77,7 +77,7 @@ Data flows through the system as follows:
 4. Frequently accessed data in cold tiers is promoted to warmer tiers
 5. Data can be explicitly placed in specific tiers when needed
 
-### Advanced Flow Control (New in 2.0.3)
+### Advanced Flow Control (New in 2.0.4)
 
 - **Predictive Caching**: Pre-loads data based on predicted access patterns
 - **Access-Based Migration**: Automatically moves data based on access frequency
@@ -116,7 +116,7 @@ exists = memory_manager.exists("location_data")
 memory_manager.delete("location_data")
 ```
 
-### Advanced Usage (New in 2.0.3)
+### Advanced Usage (New in 2.0.4)
 
 ```python
 from memories.core import MemoryManager
@@ -196,10 +196,10 @@ hot_memory.store("model_weights", model_weights_tensor)
 # Retrieve tensor data
 weights = hot_memory.retrieve("model_weights")
 
-# New in 2.0.3: Tensor optimization
+# New in 2.0.4: Tensor optimization
 hot_memory.optimize_layout("model_weights")
 
-# New in 2.0.3: Create snapshot
+# New in 2.0.4: Create snapshot
 hot_memory.create_snapshot("weights_snapshot")
 ```
 
@@ -217,10 +217,10 @@ warm_memory.store("vector_data", vector_data)
 # Retrieve data
 data = warm_memory.retrieve("vector_data")
 
-# New in 2.0.3: Memory pooling
+# New in 2.0.4: Memory pooling
 warm_memory.allocate_pool("frequent_access", size_mb=500)
 
-# New in 2.0.3: Get metrics
+# New in 2.0.4: Get metrics
 metrics = warm_memory.get_metrics()
 ```
 
@@ -241,7 +241,7 @@ cold_memory.store("historical_data", historical_data)
 # Retrieve data
 data = cold_memory.retrieve("historical_data")
 
-# New in 2.0.3: Partial retrieval
+# New in 2.0.4: Partial retrieval
 header = cold_memory.retrieve(
     "historical_data", 
     partial=True,
@@ -249,7 +249,7 @@ header = cold_memory.retrieve(
     end=1000
 )
 
-# New in 2.0.3: Compress data
+# New in 2.0.4: Compress data
 cold_memory.compress("historical_data")
 ```
 
@@ -272,7 +272,7 @@ glacier_memory.store("archive_2024", archive_data)
 # Retrieve data (may be slow)
 data = glacier_memory.retrieve("archive_2024")
 
-# New in 2.0.3: Batch operations
+# New in 2.0.4: Batch operations
 glacier_memory.batch_store([
     {"key": "archive_1", "value": archive_1},
     {"key": "archive_2", "value": archive_2},

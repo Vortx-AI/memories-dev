@@ -8,7 +8,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Version](https://img.shields.io/badge/version-2.0.3-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.3)
+[![Version](https://img.shields.io/badge/version-2.0.4-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.4)
 [![Discord](https://img.shields.io/discord/1339432819784683522?color=7289da&label=Discord&logo=discord&logoColor=white)](https://discord.gg/tGCVySkX4d)
 [![PyPI](https://img.shields.io/pypi/v/memories-dev)](https://pypi.org/project/memories-dev/)
 
@@ -834,10 +834,10 @@ pip install -e ".[docs]"
 ### Docker Deployment
 ```bash
 # Pull the official Docker image
-docker pull vortx/memories-dev:2.0.3
+docker pull vortx/memories-dev:2.0.4
 
 # Run with GPU support
-docker run --gpus all -p 8000:8000 -v ./data:/app/data vortx/memories-dev:2.0.3
+docker run --gpus all -p 8000:8000 -v ./data:/app/data vortx/memories-dev:2.0.4
 ```
 
 ## 📝 Usage Examples
