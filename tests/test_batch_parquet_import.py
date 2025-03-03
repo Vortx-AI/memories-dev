@@ -63,8 +63,7 @@ def run_import():
                         'db_conn': db_conn,  # Pass the pre-configured connection
                         'memory_limit': os.getenv('DUCKDB_MEMORY_LIMIT', '8GB'),
                         'threads': int(os.getenv('DUCKDB_THREADS', 4)),
-                        'allow_unsigned_extensions': 'true',
-                        'enable_external_access': 'true'
+                        
                     }
                 }
             }
