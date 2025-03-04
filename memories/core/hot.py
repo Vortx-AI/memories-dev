@@ -11,20 +11,16 @@ logger = logging.getLogger(__name__)
 class HotMemory:
     """Hot memory layer using Redis for fast in-memory storage."""
     
-    def __init__(
-        self,
-        redis_url: str = "redis://localhost:6379",
-        redis_db: int = 0,
-        max_size: int = 100 * 1024 * 1024  # 100MB default
-    ):
+    def __init__(self, redis_url: str = 'redis://localhost:6379', redis_db: int = 0):
         """Initialize hot memory.
         
         Args:
-            redis_url: Redis connection URL
-            redis_db: Redis database number
-            max_size: Maximum size in bytes
+            redis_url: Redis connection URL (optional, default: redis://localhost:6379)
+            redis_db: Redis database number (optional, default: 0)
         """
-        self.max_size = max_size
+        self.redis_url = redis_url
+        self.redis_db = redis_db
+        self.max_size = 100 * 1024 * 1024  # 100MB default
         self.using_redis = True
         
         try:

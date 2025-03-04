@@ -14,29 +14,15 @@ logger = logging.getLogger(__name__)
 class WarmMemory:
     """Warm memory layer using DuckDB for fast in-memory operations."""
     
-    def __init__(
-        self,
-        storage_path: Union[str, Path],
-        max_size: int,
-        duckdb_connection: Optional[Any] = None
-    ):
+    def __init__(self, duckdb_connection):
         """Initialize warm memory.
         
         Args:
-            storage_path: Path to store data
-            max_size: Maximum storage size in bytes
-            duckdb_connection: Pre-configured DuckDB connection
+            duckdb_connection: DuckDB connection from memory manager
         """
-        self.storage_path = Path(storage_path)
-        self.max_size = max_size
-        self.storage_path.mkdir(parents=True, exist_ok=True)
-        self.logger = logging.getLogger(__name__)
-        
-        # Use provided DuckDB connection or create a new one
         self.con = duckdb_connection
         if self.con is None:
-            self.logger.warning("No DuckDB connection provided, warm memory will be disabled")
-            return
+            raise ValueError("DuckDB connection is required")
             
         # Create main table for data storage
         self.con.execute("""

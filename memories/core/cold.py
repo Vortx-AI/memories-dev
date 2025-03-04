@@ -153,15 +153,14 @@ class ColdMemory:
     """Cold memory storage for infrequently accessed data using DuckDB."""
     
     def __init__(self, duckdb_connection):
-        """Initialize cold storage.
+        """Initialize cold memory.
         
         Args:
             duckdb_connection: DuckDB connection from memory manager
         """
         self.con = duckdb_connection
         if self.con is None:
-            logger.error("No DuckDB connection available, cold memory will be disabled")
-            return
+            raise ValueError("DuckDB connection is required")
             
         self._initialize_schema()
         
