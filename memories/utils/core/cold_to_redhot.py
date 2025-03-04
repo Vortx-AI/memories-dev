@@ -7,26 +7,34 @@ from typing import Dict, List, Tuple, Optional
 from memories.core.red_hot_memory import RedHotMemory
 import pyarrow.parquet as pq
 import glob
+from sentence_transformers import SentenceTransformer
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
 class ColdToRedHot:
-    def __init__(self, data_dir: str = None, config_path: str = None):
-        """Initialize cold to red-hot transfer manager."""
-        # Get project root directory
+    def __init__(self, config_path: str = None):
+        """Initialize cold to red-hot transfer."""
+        # Set up data directory
+        self.data_dir = os.path.expanduser("~/geo_memories")
+        
+        # Set up red-hot storage path
         project_root = Path(__file__).parent.parent.parent.parent
+        self.storage_path = os.path.join(project_root, "data", "red_hot")
         
-        # Set data directory
-        self.data_dir = data_dir 
-        self.red_hot = RedHotMemory(config_path)
+        # Initialize components
+        self.red_hot = RedHotMemory(
+            storage_path=self.storage_path,
+            max_size=1_000_000
+        )
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')
         
-        # Use in-memory database
-        self.con = duckdb.connect(database=':memory:')
-        self.con.install_extension("spatial")
-        self.con.load_extension("spatial")
-        
-        # Initialize cold metadata table
+        # Initialize cold metadata
         self._initialize_cold_metadata()
+        
+        logger.info(f"Initialized ColdToRedHot with:")
+        logger.info(f"  Data directory: {self.data_dir}")
+        logger.info(f"  FAISS storage: {self.storage_path}")
 
     def get_file_schema(self, file_path: str) -> List[Tuple[str, str]]:
         """Get schema information from a parquet file."""
@@ -124,46 +132,26 @@ class ColdToRedHot:
             return {}
 
     def _initialize_cold_metadata(self):
-        """Initialize cold_metadata table from parquet files."""
+        """Initialize cold metadata by scanning parquet files."""
         try:
-            # Create cold_metadata table
-            self.con.execute("""
-                CREATE TABLE IF NOT EXISTS cold_metadata (
-                    file_path VARCHAR,
-                    created_at TIMESTAMP,
-                    source_type VARCHAR
-                )
-            """)
-
-            # Find all parquet files
-            parquet_files = []
-            for pattern in ["**/*.parquet", "**/*.zstd.parquet"]:
-                parquet_files.extend(
+            if not os.path.exists(self.data_dir):
+                os.makedirs(self.data_dir)
+                logger.info(f"Created data directory: {self.data_dir}")
+            
+            patterns = [
+                "**/base/**/*.parquet",
+                "**/divisions/**/*.parquet",
+                "**/transportation/**/*.parquet"
+            ]
+            
+            self.parquet_files = []
+            for pattern in patterns:
+                self.parquet_files.extend(
                     glob.glob(os.path.join(self.data_dir, pattern), recursive=True)
                 )
-
-            # Insert file information
-            for file_path in parquet_files:
-                file_stat = os.stat(file_path)
-                source_type = 'unknown'
-                if 'base' in file_path:
-                    source_type = 'base'
-                elif 'divisions' in file_path:
-                    source_type = 'divisions'
-                elif 'transportation' in file_path:
-                    source_type = 'transportation'
-
-                self.con.execute("""
-                    INSERT INTO cold_metadata (file_path, created_at, source_type)
-                    VALUES (?, ?, ?)
-                """, [
-                    file_path,
-                    pd.Timestamp.fromtimestamp(file_stat.st_mtime),
-                    source_type
-                ])
-
-            logger.info(f"Initialized cold_metadata with {len(parquet_files)} files")
-
+            
+            logger.info(f"Found {len(self.parquet_files)} parquet files")
+            
         except Exception as e:
             logger.error(f"Error initializing cold_metadata: {e}")
             raise
@@ -186,6 +174,7 @@ class ColdToRedHot:
         """Transfer schema information for all files in cold_metadata to red-hot memory."""
         # Print FAISS storage location
         print(f"\nFAISS storage location: {self.red_hot.storage_path}")
+        print(f"Data directory: {self.data_dir}")
         
         files = self.get_parquet_files()
         total_files = len(files)
@@ -261,6 +250,12 @@ def main():
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
     
+    # Add project root to Python path
+    project_root = str(Path(__file__).parent.parent.parent.parent)
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+        print(f"Added {project_root} to Python path")
+    
     transfer = ColdToRedHot()
     stats = transfer.transfer_all_schemas()
     
@@ -275,4 +270,5 @@ def main():
             print(f"  {source_type}: {count} files")
 
 if __name__ == "__main__":
+    import sys
     main() 
