@@ -197,9 +197,20 @@ class WebRTCClient:
     async def connect(self) -> None:
         """Connect to the WebRTC server."""
         try:
-            self.signaling = TcpSocketSignaling(self.host, self.port)
-            self.pc = RTCPeerConnection()
+            # Create a custom signaling class that doesn't try to bind
+            class ClientSignaling(TcpSocketSignaling):
+                async def connect(self):
+                    self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    await asyncio.get_event_loop().sock_connect(self._sock, (self.host, self.port))
+                    self._recv_queue = asyncio.Queue()
+                    self._send_queue = asyncio.Queue()
+                    self._runner = asyncio.ensure_future(self._run())
+                    
+            # Initialize signaling with the remote server
+            self.signaling = ClientSignaling(self.host, self.port)
+            await self.signaling.connect()
             
+            self.pc = RTCPeerConnection()
             self.data_channel = self.pc.createDataChannel("data")
             
             @self.data_channel.on("message")
