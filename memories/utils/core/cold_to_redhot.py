@@ -52,12 +52,21 @@ class ColdToRedHot:
             # Read parquet file schema using pandas directly
             df = pd.read_parquet(file_path)
             
+            # Find geometry column by checking data types
+            geometry_column = None
+            for col, dtype in df.dtypes.items():
+                if 'geometry' in str(dtype).lower():
+                    geometry_column = col
+                    logger.info(f"Found geometry column in {file_path}: {col} with type {dtype}")
+                    break
+            
             # Get schema information
             schema_info = {
                 'file_path': file_path,
                 'columns': list(df.columns),
                 'dtypes': {col: str(dtype) for col, dtype in df.dtypes.items()},
-                'type': 'schema'
+                'type': 'schema',
+                'geometry_column': geometry_column  # Add the geometry column to schema info
             }
             
             # Create text representation for embedding
