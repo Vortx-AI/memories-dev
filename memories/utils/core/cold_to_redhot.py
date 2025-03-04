@@ -45,18 +45,22 @@ class ColdToRedHot:
             stats = {}
             
             # Get statistics from parquet metadata
-            for row_group in parquet_file.metadata.row_groups:
-                for column in row_group.columns:
+            metadata = parquet_file.metadata
+            for i in range(metadata.num_row_groups):
+                row_group = metadata.row_group(i)
+                for j in range(row_group.num_columns):
+                    column = row_group.column(j)
                     col_name = column.path_in_schema
                     if col_name not in stats:
                         stats[col_name] = {}
                     
-                    if column.statistics:
+                    column_stats = column.statistics
+                    if column_stats:
                         stats[col_name].update({
-                            'null_count': column.statistics.null_count,
-                            'distinct_count': column.statistics.distinct_count,
-                            'min_value': str(column.statistics.min) if column.statistics.min is not None else None,
-                            'max_value': str(column.statistics.max) if column.statistics.max is not None else None
+                            'null_count': column_stats.null_count,
+                            'distinct_count': column_stats.distinct_count,
+                            'min_value': str(column_stats.min) if column_stats.min is not None else None,
+                            'max_value': str(column_stats.max) if column_stats.max is not None else None
                         })
             
             return stats
@@ -74,6 +78,10 @@ class ColdToRedHot:
             
             # Get metadata from cold_metadata
             cold_metadata = self.get_file_metadata_from_cold(file_path)
+            
+            # Convert timestamp to string to avoid conversion issues
+            if cold_metadata.get('created_at'):
+                cold_metadata['created_at'] = str(cold_metadata['created_at'])
             
             # Get additional information
             parquet_file = pq.ParquetFile(file_path)
