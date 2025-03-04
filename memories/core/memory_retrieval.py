@@ -78,6 +78,18 @@ class MemoryRetrieval:
                 return col[0]
         return None
 
+    def get_parquet_schema(self, file_path: str) -> List[Tuple]:
+        """Get schema for a specific parquet file."""
+        try:
+            self.con.execute(f"""
+                CREATE OR REPLACE VIEW temp_view AS 
+                SELECT * FROM read_parquet('{file_path}')
+            """)
+            return self.con.execute("DESCRIBE temp_view").fetchall()
+        except Exception as e:
+            self.logger.error(f"Error getting schema for {file_path}: {e}")
+            return []
+
     def query_by_bbox(self, min_lon: float, min_lat: float, max_lon: float, max_lat: float) -> pd.DataFrame:
         """
         Query places within a bounding box.
@@ -104,65 +116,71 @@ class MemoryRetrieval:
                 self.logger.warning("No parquet files registered in the database")
                 return pd.DataFrame()
 
-            # Create a view combining all parquet files
-            file_paths = [f[0] for f in files]
-            files_list = ", ".join(f"'{path}'" for path in file_paths)
+            # Process each parquet file separately
+            results = []
+            for file_path in [f[0] for f in files]:
+                try:
+                    # Get schema for this file
+                    schema = self.get_parquet_schema(file_path)
+                    geom_column = self.find_geometry_column(schema)
+                    
+                    if not geom_column:
+                        self.logger.warning(f"No geometry column found in {file_path}, skipping...")
+                        continue
+                        
+                    self.logger.info(f"Processing {file_path} with geometry column: {geom_column}")
+                    
+                    # Get available columns for this file
+                    available_columns = [col[0] for col in schema]
+                    
+                    # Build select clause based on available columns
+                    select_columns = []
+                    
+                    # Add available standard columns
+                    standard_columns = ['osm_id', 'name', 'highway', 'waterway', 'other_tags']
+                    for col in standard_columns:
+                        if col in available_columns:
+                            select_columns.append(col)
+                    
+                    # Add geometry-derived columns
+                    select_columns.extend([
+                        f"ST_X(ST_Centroid({geom_column})) as lon",
+                        f"ST_Y(ST_Centroid({geom_column})) as lat"
+                    ])
+                    
+                    # Build and execute query for this file
+                    select_clause = ", ".join(select_columns)
+                    query = f"""
+                        SELECT {select_clause}
+                        FROM read_parquet('{file_path}')
+                        WHERE ST_Intersects(
+                            {geom_column},
+                            ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
+                                          CAST({min_lat} AS DOUBLE), 
+                                          CAST({max_lon} AS DOUBLE), 
+                                          CAST({max_lat} AS DOUBLE))
+                        )
+                        AND (name IS NOT NULL OR osm_id IS NOT NULL)
+                    """
+                    
+                    self.logger.debug(f"Executing query for {file_path}: {query}")
+                    result = self.con.execute(query).df()
+                    
+                    if not result.empty:
+                        # Add source file information
+                        result['source_file'] = os.path.basename(file_path)
+                        results.append(result)
+                        
+                except Exception as e:
+                    self.logger.error(f"Error processing {file_path}: {e}")
+                    continue
             
-            # Create temporary view to inspect schema
-            self.con.execute(f"""
-                CREATE OR REPLACE VIEW temp_view AS 
-                SELECT * FROM read_parquet('{file_paths[0]}')
-            """)
-            
-            # Get schema and find geometry column
-            schema = self.con.execute("DESCRIBE temp_view").fetchall()
-            geom_column = self.find_geometry_column(schema)
-            
-            if not geom_column:
-                self.logger.error("No geometry column found in the parquet files")
+            if not results:
                 return pd.DataFrame()
                 
-            self.logger.info(f"Using geometry column: {geom_column}")
-            
-            # Create view with all files
-            create_view = f"""
-                CREATE OR REPLACE VIEW files AS 
-                SELECT * 
-                FROM read_parquet([{files_list}])
-            """
-            self.con.execute(create_view)
-            
-            # Get available columns for selection
-            available_columns = [col[0] for col in schema]
-            select_columns = ['osm_id', 'name', 'highway', 'waterway', 'other_tags']
-            select_columns = [col for col in select_columns if col in available_columns]
-            
-            # Add geometry-derived columns
-            select_columns.extend([
-                f"ST_X(ST_Centroid({geom_column})) as lon",
-                f"ST_Y(ST_Centroid({geom_column})) as lat"
-            ])
-            
-            # Build the query
-            select_clause = ", ".join(select_columns)
-            query = f"""
-                SELECT {select_clause}
-                FROM files
-                WHERE ST_Intersects(
-                    {geom_column},
-                    ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
-                                  CAST({min_lat} AS DOUBLE), 
-                                  CAST({max_lon} AS DOUBLE), 
-                                  CAST({max_lat} AS DOUBLE))
-                )
-                AND name IS NOT NULL
-                ORDER BY name
-            """
-            
-            self.logger.debug(f"Executing query: {query}")
-            result = self.con.execute(query).df()
-            
-            return result
+            # Combine results, handling different schemas
+            combined = pd.concat(results, ignore_index=True, sort=False)
+            return combined.sort_values('name') if 'name' in combined.columns else combined
             
         except Exception as e:
             self.logger.error(f"Error executing spatial query: {e}")
@@ -1004,65 +1022,71 @@ class MemoryRetrieval:
                 logger.warning("No parquet files registered in the database")
                 return pd.DataFrame()
 
-            # Create a view combining all parquet files
-            file_paths = [f[0] for f in files]
-            files_list = ", ".join(f"'{path}'" for path in file_paths)
+            # Process each parquet file separately
+            results = []
+            for file_path in [f[0] for f in files]:
+                try:
+                    # Get schema for this file
+                    schema = self.get_parquet_schema(file_path)
+                    geom_column = self.find_geometry_column(schema)
+                    
+                    if not geom_column:
+                        self.logger.warning(f"No geometry column found in {file_path}, skipping...")
+                        continue
+                        
+                    self.logger.info(f"Processing {file_path} with geometry column: {geom_column}")
+                    
+                    # Get available columns for this file
+                    available_columns = [col[0] for col in schema]
+                    
+                    # Build select clause based on available columns
+                    select_columns = []
+                    
+                    # Add available standard columns
+                    standard_columns = ['osm_id', 'name', 'highway', 'waterway', 'other_tags']
+                    for col in standard_columns:
+                        if col in available_columns:
+                            select_columns.append(col)
+                    
+                    # Add geometry-derived columns
+                    select_columns.extend([
+                        f"ST_X(ST_Centroid({geom_column})) as lon",
+                        f"ST_Y(ST_Centroid({geom_column})) as lat"
+                    ])
+                    
+                    # Build and execute query for this file
+                    select_clause = ", ".join(select_columns)
+                    query = f"""
+                        SELECT {select_clause}
+                        FROM read_parquet('{file_path}')
+                        WHERE ST_Intersects(
+                            {geom_column},
+                            ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
+                                          CAST({min_lat} AS DOUBLE), 
+                                          CAST({max_lon} AS DOUBLE), 
+                                          CAST({max_lat} AS DOUBLE))
+                        )
+                        AND (name IS NOT NULL OR osm_id IS NOT NULL)
+                    """
+                    
+                    self.logger.debug(f"Executing query for {file_path}: {query}")
+                    result = self.con.execute(query).df()
+                    
+                    if not result.empty:
+                        # Add source file information
+                        result['source_file'] = os.path.basename(file_path)
+                        results.append(result)
+                        
+                except Exception as e:
+                    self.logger.error(f"Error processing {file_path}: {e}")
+                    continue
             
-            # Create temporary view to inspect schema
-            self.con.execute(f"""
-                CREATE OR REPLACE VIEW temp_view AS 
-                SELECT * FROM read_parquet('{file_paths[0]}')
-            """)
-            
-            # Get schema and find geometry column
-            schema = self.con.execute("DESCRIBE temp_view").fetchall()
-            geom_column = self.find_geometry_column(schema)
-            
-            if not geom_column:
-                self.logger.error("No geometry column found in the parquet files")
+            if not results:
                 return pd.DataFrame()
                 
-            self.logger.info(f"Using geometry column: {geom_column}")
-            
-            # Create view with all files
-            create_view = f"""
-                CREATE OR REPLACE VIEW files AS 
-                SELECT * 
-                FROM read_parquet([{files_list}])
-            """
-            self.con.execute(create_view)
-            
-            # Get available columns for selection
-            available_columns = [col[0] for col in schema]
-            select_columns = ['osm_id', 'name', 'highway', 'waterway', 'other_tags']
-            select_columns = [col for col in select_columns if col in available_columns]
-            
-            # Add geometry-derived columns
-            select_columns.extend([
-                f"ST_X(ST_Centroid({geom_column})) as lon",
-                f"ST_Y(ST_Centroid({geom_column})) as lat"
-            ])
-            
-            # Build the query
-            select_clause = ", ".join(select_columns)
-            query = f"""
-                SELECT {select_clause}
-                FROM files
-                WHERE ST_Intersects(
-                    {geom_column},
-                    ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
-                                  CAST({min_lat} AS DOUBLE), 
-                                  CAST({max_lon} AS DOUBLE), 
-                                  CAST({max_lat} AS DOUBLE))
-                )
-                AND name IS NOT NULL
-                ORDER BY name
-            """
-            
-            self.logger.debug(f"Executing query: {query}")
-            result = self.con.execute(query).df()
-            
-            return result
+            # Combine results, handling different schemas
+            combined = pd.concat(results, ignore_index=True, sort=False)
+            return combined.sort_values('name') if 'name' in combined.columns else combined
             
         except Exception as e:
             self.logger.error(f"Error executing spatial query: {e}")
