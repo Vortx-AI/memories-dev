@@ -27,35 +27,15 @@ class MemoryRetrieval:
     
     def __init__(self):
         """Initialize memory retrieval with DuckDB connection."""
-        # Get project root directory
-        project_root = Path(__file__).parent.parent.parent
+        # Get the connection from MemoryManager
+        memory_manager = MemoryManager()
+        con = memory_manager.get_connection()
         
-        # Set up data directories
-        self.data_dir = os.path.join(project_root, "data")
+        # Initialize ColdMemory with the connection
+        from memories.core.cold import ColdMemory
+        self.cold = ColdMemory(con)
         
-        # Get memory manager instance and its connection
-        self.memory_manager = MemoryManager()
-        self.con = self.memory_manager.con
-        
-        # Install and load spatial extension
-        try:
-            self.con.execute("INSTALL spatial;")
-            self.con.execute("LOAD spatial;")
-            logger.info("Spatial extension installed and loaded successfully")
-        except Exception as e:
-            logger.error(f"Error setting up spatial extension: {e}")
-        
-        # Initialize red-hot memory
-        self.red_hot = RedHotMemory()
-        
-        # Initialize sentence transformer model
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
-        
-        # Initialize ColdMemory
-        self.cold = ColdMemory()
-        
-        logger.info(f"Initialized MemoryRetrieval")
-        logger.info(f"Data directory: {self.data_dir}")
+        logger.info("Initialized MemoryRetrieval with ColdMemory")
 
     def get_table_schema(self) -> List[str]:
         """Get the schema of the parquet files."""
