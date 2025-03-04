@@ -6,6 +6,7 @@ import logging
 from typing import Dict, Any, Optional, List, Union
 import pandas as pd
 from pathlib import Path
+from memories.core.cold import Config
 from memories.core.memory_manager import MemoryManager
 
 logger = logging.getLogger(__name__)
@@ -14,9 +15,54 @@ class MemoryRetrieval:
     """Memory retrieval class for querying cold memory storage."""
     
     def __init__(self):
-        """Initialize memory retrieval using the existing MemoryManager instance."""
-        self.cold = MemoryManager().cold_memory  # Get the existing ColdMemory instance
+        """Initialize memory retrieval using configuration."""
+        self.config = Config()  # Get configuration including paths
+        self.con = MemoryManager().con  # Get the existing DuckDB connection
         self.logger = logging.getLogger(__name__)
+
+    def get_storage_path(self) -> str:
+        """Get the configured storage path."""
+        return self.config.config['storage']['path']
+
+    def get_storage_stats(self) -> Dict[str, Any]:
+        """Get statistics about the storage.
+        
+        Returns:
+            Dictionary containing:
+                - total_files: Number of registered files
+                - total_size: Total size in bytes
+                - file_types: Count of different file types
+        """
+        try:
+            query = """
+                SELECT 
+                    COUNT(*) as total_files,
+                    SUM(size) as total_size,
+                    data_type,
+                    COUNT(*) as type_count
+                FROM cold_metadata
+                GROUP BY data_type
+            """
+            
+            results = self.con.execute(query).df()
+            
+            stats = {
+                'total_files': results['total_files'].sum(),
+                'total_size_mb': round(results['total_size'].sum() / (1024 * 1024), 2),
+                'file_types': dict(zip(results['data_type'], results['type_count'])),
+                'storage_path': self.get_storage_path()  # Added storage path to stats
+            }
+            
+            return stats
+            
+        except Exception as e:
+            self.logger.error(f"Error getting storage stats: {e}")
+            return {
+                'total_files': 0,
+                'total_size_mb': 0,
+                'file_types': {},
+                'storage_path': self.get_storage_path()
+            }
 
     def list_available_data(self) -> List[Dict[str, Any]]:
         """List all available data tables and their metadata.
@@ -664,42 +710,4 @@ class MemoryRetrieval:
             lat_column=lat_column,
             geom_column=geom_column,
             limit=limit
-        )
-
-    def get_storage_stats(self) -> Dict[str, Any]:
-        """Get statistics about the cold storage.
-        
-        Returns:
-            Dictionary containing:
-                - total_files: Number of registered files
-                - total_size: Total size in bytes
-                - file_types: Count of different file types
-        """
-        try:
-            query = """
-                SELECT 
-                    COUNT(*) as total_files,
-                    SUM(size) as total_size,
-                    data_type,
-                    COUNT(*) as type_count
-                FROM cold_metadata
-                GROUP BY data_type
-            """
-            
-            results = self.cold.query(query)
-            
-            stats = {
-                'total_files': results['total_files'].sum(),
-                'total_size_mb': round(results['total_size'].sum() / (1024 * 1024), 2),
-                'file_types': dict(zip(results['data_type'], results['type_count']))
-            }
-            
-            return stats
-            
-        except Exception as e:
-            self.logger.error(f"Error getting storage stats: {e}")
-            return {
-                'total_files': 0,
-                'total_size_mb': 0,
-                'file_types': {}
-            } 
+        ) 
