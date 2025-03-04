@@ -13,6 +13,8 @@ import json
 import glob
 import time
 from memories.core.red_hot import RedHotMemory
+from sentence_transformers import SentenceTransformer
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +34,15 @@ class MemoryRetrieval:
         project_root = Path(__file__).parent.parent.parent
         self.storage_path = os.path.join(project_root, "data", "red_hot")
         
+        # Initialize red-hot memory (FAISS storage)
+        self.red_hot = RedHotMemory(
+            storage_path=self.storage_path,
+            max_size=1_000_000
+        )
+        
+        # Initialize the sentence transformer model - using same model as cold_to_redhot.py
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')  # Ensure this matches cold_to_redhot.py
+
         # Create spatial index table if it doesn't exist
         self.con.execute("""
             CREATE TABLE IF NOT EXISTS spatial_index (
@@ -341,19 +352,90 @@ class MemoryRetrieval:
             logger.error(f"Error executing query: {e}")
             raise
 
-    def get_storage_stats(self) -> Dict:
-        """Get statistics about the vector data in red-hot storage."""
-        try:
-            # Initialize red-hot memory with required parameters
-            red_hot = RedHotMemory(
-                storage_path=self.storage_path,
-                max_size=1_000_000  # Default max size or from config
-            )
+    def get_similar_vectors(self, query_vector: np.ndarray, k: int = 5) -> List[Tuple[int, float]]:
+        """
+        Find most similar vectors in FAISS index.
+        
+        Args:
+            query_vector: The vector to search for (must match index dimension)
+            k: Number of similar results to return (default: 5)
             
+        Returns:
+            List of tuples containing (vector_id, similarity_score)
+        """
+        try:
+            # Check if index exists and has vectors
+            if not self.red_hot.index or self.red_hot.index.ntotal == 0:
+                logger.warning("No vectors found in FAISS index")
+                return []
+            
+            # Ensure vector has correct shape
+            query_vector = query_vector.reshape(1, -1).astype('float32')
+            
+            # Search in FAISS index
+            distances, indices = self.red_hot.index.search(query_vector, k)
+            
+            # Convert distances to similarities and pair with indices
+            results = []
+            for idx, (distance, vector_idx) in enumerate(zip(distances[0], indices[0])):
+                if vector_idx != -1:  # Valid index
+                    similarity = 1 - (distance / 2)  # Convert L2 distance to similarity score
+                    results.append((int(vector_idx), float(similarity)))
+            
+            logger.info(f"Found {len(results)} similar vectors")
+            return results
+
+        except Exception as e:
+            logger.error(f"Error finding similar vectors: {e}")
+            return []
+
+    def get_similar_words(self, query_word: str, k: int = 5) -> List[Tuple[str, float]]:
+        """
+        Find most similar words in FAISS index.
+        
+        Args:
+            query_word: The word to search for
+            k: Number of similar results to return (default: 5)
+            
+        Returns:
+            List of tuples containing (word, similarity_score)
+        """
+        try:
+            # Check if index exists and has vectors
+            if not self.red_hot.index or self.red_hot.index.ntotal == 0:
+                logger.warning("No vectors found in FAISS index")
+                return []
+            
+            # Convert word to vector using sentence transformer
+            query_vector = self.model.encode([query_word])[0]
+            query_vector = query_vector.reshape(1, -1).astype('float32')
+            
+            # Search in FAISS index
+            distances, indices = self.red_hot.index.search(query_vector, k)
+            
+            # Get words from metadata and pair with similarities
+            results = []
+            for idx, (distance, vector_idx) in enumerate(zip(distances[0], indices[0])):
+                if vector_idx != -1:  # Valid index
+                    metadata = self.red_hot.get_metadata(int(vector_idx))
+                    word = metadata.get('word', f'Unknown_{vector_idx}')
+                    similarity = 1 - (distance / 2)  # Convert L2 distance to similarity score
+                    results.append((word, float(similarity)))
+            
+            logger.info(f"Found {len(results)} similar words for '{query_word}'")
+            return results
+
+        except Exception as e:
+            logger.error(f"Error finding similar words: {e}")
+            return []
+
+    def get_storage_stats(self) -> Dict:
+        """Get statistics about the FAISS index."""
+        try:
             # Get index statistics if available
             index_stats = {}
-            if hasattr(red_hot, 'index') and red_hot.index:
-                index = red_hot.index
+            if self.red_hot.index:
+                index = self.red_hot.index
                 index_stats = {
                     'type': type(index).__name__,
                     'dimension': index.d,
@@ -362,21 +444,21 @@ class MemoryRetrieval:
                 }
             
             stats = {
-                'red_hot_storage': {
-                    'max_size': red_hot.max_size,
-                    'storage_path': red_hot.storage_path,
+                'faiss_index': {
+                    'max_size': self.red_hot.max_size,
+                    'storage_path': self.red_hot.storage_path,
                     'index_stats': index_stats,
-                    'is_initialized': hasattr(red_hot, 'index') and red_hot.index is not None
+                    'is_initialized': self.red_hot.index is not None
                 }
             }
 
-            logger.info(f"Red-hot storage statistics: {stats}")
+            logger.info(f"FAISS index statistics: {stats}")
             return stats
 
         except Exception as e:
-            logger.error(f"Error getting red-hot stats: {e}")
+            logger.error(f"Error getting FAISS stats: {e}")
             return {
-                'red_hot_storage': {
+                'faiss_index': {
                     'max_size': 0,
                     'storage_path': self.storage_path,
                     'index_stats': {},
