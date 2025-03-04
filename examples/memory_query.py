@@ -490,28 +490,86 @@ async def run_server(
         server.stop()
 
 async def run_client_example():
-    """Example of using the MemoryQuery WebRTC client."""
+    """Interactive client for querying the MemoryQuery server."""
     client = MemoryQueryClient()
     
     try:
+        print("Connecting to MemoryQuery server...")
         await client.connect()
+        print("Connected successfully!")
+        print("\nMemory Query System")
+        print("==================")
+        print("Type your queries and press Enter. Type 'exit' to quit.\n")
         
-        # Example query
-        query = "What is the weather like in New York?"
-        result = await client.process_query(query)
-        print(f"Query result: {result}")
-        
-        # Example bbox query
-        bbox_result = await client.get_data_by_bbox(
-            min_lon=-74.0060,
-            min_lat=40.7128,
-            max_lon=-73.9352,
-            max_lat=40.8075
-        )
-        print(f"Bbox query result: {bbox_result}")
-        
+        while True:
+            try:
+                # Get query from user
+                query = input("\nEnter your query: ").strip()
+                
+                # Check for exit command
+                if query.lower() in ['exit', 'quit']:
+                    print("\nExiting Memory Query System...")
+                    break
+                
+                if not query:
+                    continue
+                
+                print("\nProcessing query...")
+                print("------------------")
+                
+                # Process the query
+                result = await client.process_query(query)
+                
+                # Display the results in a formatted way
+                print("\nResults:")
+                print("--------")
+                
+                # Show classification
+                if "classification" in result:
+                    print(f"Query Type: {result['classification']}")
+                
+                # Show status
+                if "status" in result:
+                    status = result["status"]
+                    status_color = "\033[92m" if status == "success" else "\033[91m"  # Green for success, red for others
+                    print(f"Status: {status_color}{status}\033[0m")
+                
+                # Show response
+                if "response" in result:
+                    print("\nResponse:")
+                    print("---------")
+                    print(result["response"])
+                
+                # Show any additional results
+                if "results" in result and result["results"]:
+                    print("\nDetailed Results:")
+                    print("----------------")
+                    for item in result["results"]:
+                        print(f"\nFunction: {item['function_name']}")
+                        if "args" in item:
+                            print("Arguments:", json.dumps(item['args'], indent=2))
+                        if "result" in item:
+                            print("Result:", json.dumps(item['result'], indent=2))
+                
+                # Show any notes
+                if "note" in result:
+                    print("\nNote:", result["note"])
+                
+                print("\n" + "="*50)  # Separator line
+                
+            except KeyboardInterrupt:
+                print("\nInterrupted by user. Type 'exit' to quit.")
+            except Exception as e:
+                print(f"\n\033[91mError: {str(e)}\033[0m")  # Show errors in red
+                logger.error(f"Error processing query: {e}")
+    
+    except Exception as e:
+        print(f"\n\033[91mConnection Error: {str(e)}\033[0m")
+        logger.error(f"Connection error: {e}")
     finally:
+        print("\nClosing connection...")
         await client.close()
+        print("Connection closed.")
 
 def main():
     """Main entry point."""
