@@ -1279,4 +1279,88 @@ class MemoryRetrieval:
             
         except Exception as e:
             logger.error(f"Error getting red-hot stats: {e}")
-            return {} 
+            return {}
+
+    def get_spatial_column_values(self, query_word, bbox, top_k=10):
+        """
+        Find similar columns and query their values within a bounding box.
+        
+        Args:
+            query_word (str): The column name to search for
+            bbox (tuple): Bounding box coordinates (min_x, min_y, max_x, max_y)
+            top_k (int): Number of similar columns to consider
+        
+        Returns:
+            dict: Results grouped by file path and column name
+        """
+        logger.info(f"Searching for columns similar to '{query_word}' within bbox {bbox}")
+        
+        # Initialize components
+        red_hot = RedHotMemory()
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+        
+        # Create embedding for query
+        query_embedding = model.encode([query_word])[0]
+        
+        # Search in FAISS index
+        D, I = red_hot.index.search(query_embedding.reshape(1, -1), top_k)
+        
+        results = {}
+        min_x, min_y, max_x, max_y = bbox
+        
+        for i, idx in enumerate(I[0]):
+            metadata = red_hot.get_metadata(str(int(idx)))
+            column_name = metadata.get('column_name')
+            file_path = metadata.get('file_path')
+            
+            if not column_name or not file_path:
+                continue
+            
+            try:
+                # Construct DuckDB query with spatial filter
+                query = f"""
+                SELECT DISTINCT {column_name}
+                FROM parquet_scan('{file_path}')
+                WHERE x BETWEEN {min_x} AND {max_x}
+                  AND y BETWEEN {min_y} AND {max_y}
+                LIMIT 100
+                """
+                
+                result_df = self.con.execute(query).fetchdf()
+                
+                if not result_df.empty:
+                    results[f"{file_path}:{column_name}"] = {
+                        'similarity': float(D[0][i]),
+                        'column_name': column_name,
+                        'file_path': file_path,
+                        'dtype': metadata.get('dtype', 'unknown'),
+                        'values': result_df[column_name].tolist()
+                    }
+                    
+                logger.debug(f"Found {len(result_df)} values for {column_name} in {file_path}")
+                
+            except Exception as e:
+                logger.error(f"Error querying {file_path} for column {column_name}: {e}")
+                continue
+        
+        logger.info(f"Found values in {len(results)} similar columns")
+        return results
+
+    def format_spatial_results(self, results):
+        """Format spatial query results for display."""
+        output = []
+        output.append("\nSpatial Query Results:")
+        output.append("-" * 100)
+        
+        for key, data in results.items():
+            output.append(f"\nColumn: {data['column_name']}")
+            output.append(f"Similarity: {data['similarity']:.4f}")
+            output.append(f"File: {data['file_path']}")
+            output.append(f"Data type: {data['dtype']}")
+            output.append("\nValues:")
+            output.append(", ".join(map(str, data['values'][:10])))
+            if len(data['values']) > 10:
+                output.append(f"... and {len(data['values']) - 10} more")
+            output.append("-" * 100)
+        
+        return "\n".join(output) 
