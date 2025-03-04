@@ -127,14 +127,10 @@ class MemoryRetrieval:
             if col in available_columns:
                 select_parts.append(col)
 
-        # Add geometry-derived columns with appropriate conversion
-        geom_expr = geom_column
-        if 'BLOB' in geom_type.upper():
-            geom_expr = f"ST_GeomFromWKB({geom_column})"
-            
+        # Add geometry-derived columns
         select_parts.extend([
-            f"ST_X(ST_Centroid({geom_expr})) as lon",
-            f"ST_Y(ST_Centroid({geom_expr})) as lat"
+            f"ST_X(ST_Centroid({geom_column})) as lon",
+            f"ST_Y(ST_Centroid({geom_column})) as lat"
         ])
 
         return ", ".join(select_parts)
@@ -182,17 +178,12 @@ class MemoryRetrieval:
                     # Build select clause based on available columns
                     select_clause = self.build_select_clause(schema, geom_column, geom_type)
                     
-                    # Build geometry expression for WHERE clause
-                    geom_expr = geom_column
-                    if 'BLOB' in geom_type.upper():
-                        geom_expr = f"ST_GeomFromWKB({geom_column})"
-                    
                     # Build and execute query for this file
                     query = f"""
                         SELECT {select_clause}
                         FROM read_parquet('{file_path}')
                         WHERE ST_Intersects(
-                            {geom_expr},
+                            {geom_column},
                             ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
                                           CAST({min_lat} AS DOUBLE), 
                                           CAST({max_lon} AS DOUBLE), 
@@ -1076,17 +1067,12 @@ class MemoryRetrieval:
                     # Build select clause based on available columns
                     select_clause = self.build_select_clause(schema, geom_column, geom_type)
                     
-                    # Build geometry expression for WHERE clause
-                    geom_expr = geom_column
-                    if 'BLOB' in geom_type.upper():
-                        geom_expr = f"ST_GeomFromWKB({geom_column})"
-                    
                     # Build and execute query for this file
                     query = f"""
                         SELECT {select_clause}
                         FROM read_parquet('{file_path}')
                         WHERE ST_Intersects(
-                            {geom_expr},
+                            {geom_column},
                             ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
                                           CAST({min_lat} AS DOUBLE), 
                                           CAST({max_lon} AS DOUBLE), 
