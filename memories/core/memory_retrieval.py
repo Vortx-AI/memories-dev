@@ -1153,15 +1153,13 @@ class MemoryRetrieval:
             logger.error(f"Error getting red-hot stats: {e}")
             return {}
 
-    def get_spatial_column_values(self, query_word, bbox, top_k=10, similarity_threshold=0.4):
-        """Find similar columns and query their values within a bounding box."""
+    def get_similar_columns(self, query_word, top_k=10):
+        """Find semantically similar columns."""
         logger.info(f"\n{'='*80}")
-        logger.info("STARTING SEMANTIC SEARCH")
+        logger.info("SEMANTIC SEARCH")
         logger.info(f"{'='*80}")
         logger.info(f"Query word: '{query_word}'")
-        logger.info(f"Bounding box: {bbox}")
         logger.info(f"Top K: {top_k}")
-        logger.info(f"Similarity threshold: {similarity_threshold}")
         
         # Initialize components
         red_hot = RedHotMemory()
@@ -1176,131 +1174,34 @@ class MemoryRetrieval:
         logger.info("\nSearching FAISS index...")
         D, I = red_hot.index.search(query_embedding.reshape(1, -1), top_k)
         
-        # Display similarity scores
+        # Display similarity results
         logger.info("\nSimilarity Results:")
         logger.info("-" * 40)
+        similar_columns = []
         for i, (distance, idx) in enumerate(zip(D[0], I[0])):
             similarity = 1 / (1 + float(distance))
             metadata = red_hot.get_metadata(str(int(idx)))
             file_name = os.path.basename(metadata.get('file_path', ''))
             column = metadata.get('column_name', '')
+            dtype = metadata.get('dtype', 'unknown')
+            
+            result = {
+                'column': column,
+                'file': file_name,
+                'full_path': metadata.get('file_path', ''),
+                'similarity': similarity,
+                'dtype': dtype
+            }
+            similar_columns.append(result)
+            
             logger.info(f"Match #{i+1}:")
             logger.info(f"  Column: {column}")
             logger.info(f"  File: {file_name}")
+            logger.info(f"  Type: {dtype}")
             logger.info(f"  Similarity Score: {similarity:.4f}")
-            logger.info(f"  Above threshold: {'✓' if similarity > similarity_threshold else '✗'}")
             logger.info("-" * 40)
         
-        results = {
-            'high_similarity': [],
-            'partial_matches': {}
-        }
-        
-        min_x, min_y, max_x, max_y = bbox
-        search_polygon = f"ST_GeomFromText('POLYGON(({min_x} {min_y}, {min_x} {max_y}, {max_x} {max_y}, {max_x} {min_y}, {min_x} {min_y}))')"
-        
-        logger.info("\nStarting Spatial Search...")
-        for i, idx in enumerate(I[0]):
-            metadata = red_hot.get_metadata(str(int(idx)))
-            column_name = metadata.get('column_name')
-            file_path = metadata.get('file_path')
-            similarity = 1 / (1 + float(D[0][i]))
-            
-            logger.info(f"\n{'='*40}")
-            logger.info(f"Processing Match #{i+1}")
-            logger.info(f"Column: {column_name}")
-            logger.info(f"File: {os.path.basename(file_path)}")
-            logger.info(f"Similarity: {similarity:.4f}")
-            
-            try:
-                if not os.path.exists(file_path):
-                    logger.warning(f"File not found: {file_path}")
-                    continue
-                    
-                if 'division' in file_path:
-                    logger.info("Type: Division file")
-                    # ... rest of division processing ...
-                else:
-                    logger.info("Type: OSM file")
-                    geometry_columns = ['geom', 'geometry', 'c', 'the_geom']
-                    found_result = False
-                    
-                    for geom_column in geometry_columns:
-                        if geom_column not in metadata.get('all_columns', []):
-                            continue
-                        
-                        logger.info(f"Trying geometry column: {geom_column}")
-                        try:
-                            # ... rest of query processing ...
-                            
-                            if not result_df.empty:
-                                found_result = True
-                                logger.info(f"Found {len(result_df)} results")
-                                if similarity > similarity_threshold:
-                                    clean_data = []
-                                    for _, row in result_df.iterrows():
-                                        clean_row = {k: v for k, v in row.items() 
-                                                  if v is not None and v != '' and v is not False}
-                                        if clean_row:
-                                            clean_data.append(clean_row)
-                                    
-                                    logger.info(f"Cleaned data rows: {len(clean_data)}")
-                                    if clean_data:
-                                        results['high_similarity'].append({
-                                            'similarity': similarity,
-                                            'column_name': column_name,
-                                            'file_path': file_path,
-                                            'geometry_column': geom_column,
-                                            'dtype': metadata.get('dtype', 'unknown'),
-                                            'data': clean_data
-                                        })
-                                        logger.info("Added to high similarity results")
-                                else:
-                                    values = [v for v in result_df[column_name].tolist() if v]
-                                    logger.info(f"Found {len(values)} unique values")
-                                    results['partial_matches'][f"{file_path}:{column_name}"] = {
-                                        'similarity': similarity,
-                                        'column_name': column_name,
-                                        'file_path': file_path,
-                                        'geometry_column': geom_column,
-                                        'dtype': metadata.get('dtype', 'unknown'),
-                                        'values': values
-                                    }
-                                    logger.info("Added to partial matches")
-                                break
-                                
-                        except Exception as e:
-                            logger.error(f"Failed with geometry column {geom_column}: {e}")
-                            continue
-                        
-                    if not found_result:
-                        logger.warning(f"No valid geometry column found in {file_path}")
-                
-            except Exception as e:
-                logger.error(f"Error processing {file_path}: {e}")
-                continue
-        
-        logger.info(f"\n{'='*80}")
-        logger.info("SEARCH COMPLETED")
-        logger.info(f"{'='*80}")
-        logger.info(f"High similarity matches: {len(results['high_similarity'])}")
-        logger.info(f"Partial matches: {len(results['partial_matches'])}")
-        
-        # Display summary of results
-        if results['high_similarity'] or results['partial_matches']:
-            logger.info("\nResults Summary:")
-            if results['high_similarity']:
-                logger.info("\nHigh Similarity Matches:")
-                for match in results['high_similarity']:
-                    logger.info(f"- {match['column_name']} ({match['similarity']:.4f}): {len(match['data'])} results")
-            if results['partial_matches']:
-                logger.info("\nPartial Matches:")
-                for key, match in results['partial_matches'].items():
-                    logger.info(f"- {match['column_name']} ({match['similarity']:.4f}): {len(match['values'])} values")
-        else:
-            logger.info("\nNo results found!")
-        
-        return results
+        return similar_columns
 
     def format_spatial_results(self, results):
         """Format spatial query results for display."""
