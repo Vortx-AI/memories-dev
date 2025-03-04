@@ -35,8 +35,6 @@ def cleanup_cold_memory():
             
             # Initialize memory manager
             memory_manager = MemoryManager(
-                storage_path=storage_dir,
-                vector_encoder=None,
                 enable_red_hot=False,
                 enable_hot=False,
                 enable_cold=True,
@@ -45,6 +43,7 @@ def cleanup_cold_memory():
                 custom_config={
                     'cold': {
                         'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
+                        'path': storage_dir / 'cold',
                         'duckdb': {
                             'db_conn': db_conn
                         }
@@ -69,10 +68,6 @@ def run_import():
     print(f"\n=== Importing Geo Memories from {GEO_MEMORIES_PATH} ===\n")
     
     try:
-        # Initialize vector encoder
-        print("Initializing vector encoder...")
-        vector_encoder = get_encoder()
-        
         # Create storage directory
         storage_dir = Path('data')
         storage_dir.mkdir(exist_ok=True)
@@ -92,8 +87,6 @@ def run_import():
         
         print("Initializing memory manager...")
         memory_manager = MemoryManager(
-            storage_path=storage_dir,  # Base directory for all memory tiers
-            vector_encoder=vector_encoder,
             enable_red_hot=False,  # Disable vector storage
             enable_hot=False,      # Disable Redis
             enable_cold=True,      # Enable cold storage for parquet files
@@ -102,6 +95,7 @@ def run_import():
             custom_config={
                 'cold': {
                     'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
+                    'path': cold_dir,
                     'duckdb': {
                         'db_conn': db_conn,  # Pass the pre-configured connection
                         'config': {
@@ -143,8 +137,6 @@ def run_import():
 @pytest.fixture
 def memory_manager(tmp_path):
     """Initialize memory manager with cold storage enabled."""
-    vector_encoder = get_encoder()
-    
     # Create test directory
     test_cold_dir = tmp_path / "test_cold"
     test_cold_dir.mkdir(exist_ok=True)
@@ -163,8 +155,6 @@ def memory_manager(tmp_path):
     # Initialize memory manager
     print("Initializing memory manager...")
     manager = MemoryManager(
-        storage_path=test_cold_dir,
-        vector_encoder=vector_encoder,
         enable_red_hot=False,  # Disable vector storage
         enable_hot=False,      # Disable Redis
         enable_cold=True,      # Enable cold storage for parquet files
@@ -173,6 +163,7 @@ def memory_manager(tmp_path):
         custom_config={
             "cold": {
                 "max_size": int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),  # 10GB default
+                "path": test_cold_dir,  # Set the cold storage path in config
                 "duckdb": {
                     'db_conn': db_conn,  # Pass the pre-configured connection
                     'config': {

@@ -44,7 +44,6 @@ def list_cold_tables():
         print("Initializing memory retrieval...")
         # Initialize memory manager with existing connection
         memory_manager = MemoryManager(
-            storage_path=storage_dir,
             vector_encoder=None,  # Not needed for listing
             enable_red_hot=False,
             enable_hot=False,
@@ -54,6 +53,7 @@ def list_cold_tables():
             custom_config={
                 'cold': {
                     'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
+                    'path': cold_dir,  # Set the cold storage path in config
                     'duckdb': {
                         'db_conn': db_conn,
                         'enable_external_access': True  # Enable external access for parquet files
@@ -123,7 +123,6 @@ def memory_retrieval(tmp_path):
     
     # Initialize memory manager
     manager = MemoryManager(
-        storage_path=test_cold_dir,
         vector_encoder=None,  # Not needed for this test
         enable_red_hot=False,
         enable_hot=False,
@@ -133,6 +132,7 @@ def memory_retrieval(tmp_path):
         custom_config={
             "cold": {
                 "max_size": int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),
+                "path": test_cold_dir,  # Set the cold storage path in config
                 "duckdb": {
                     'db_conn': db_conn
                 }
@@ -398,7 +398,6 @@ def test_spatial_queries():
         
         print("Initializing memory manager...")
         memory_manager = MemoryManager(
-            storage_path=storage_dir,
             vector_encoder=None,
             enable_red_hot=False,
             enable_hot=False,
@@ -484,7 +483,6 @@ def main():
         
         # Initialize memory manager
         memory_manager = MemoryManager(
-            storage_path=storage_dir,
             vector_encoder=None,  # Not needed for listing
             enable_red_hot=False,
             enable_hot=False,

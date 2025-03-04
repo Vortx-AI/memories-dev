@@ -74,7 +74,7 @@ def test_init_local_model(mock_base_model_class):
 
     assert model is not None
     mock_base_model.initialize_model.assert_called_once_with(
-        model_name="deepseek-coder-small",
+        model="deepseek-coder-small",
         use_gpu=False,
         device=None
     )

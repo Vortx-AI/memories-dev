@@ -1153,13 +1153,13 @@ class MemoryRetrieval:
             logger.error(f"Error getting red-hot stats: {e}")
             return {}
 
-    def get_similar_columns(self, query_word, top_k=10):
-        """Find semantically similar columns."""
+    def get_similar_columns(self, query_word, similarity_threshold=0.5):
+        """Find semantically similar columns above the similarity threshold."""
         logger.info(f"\n{'='*80}")
         logger.info("SEMANTIC SEARCH")
         logger.info(f"{'='*80}")
         logger.info(f"Query word: '{query_word}'")
-        logger.info(f"Top K: {top_k}")
+        logger.info(f"Similarity threshold: {similarity_threshold}")
         
         # Initialize components
         red_hot = RedHotMemory()
@@ -1170,39 +1170,43 @@ class MemoryRetrieval:
         query_embedding = model.encode([query_word])[0]
         logger.info(f"Embedding shape: {query_embedding.shape}")
         
-        # Search in FAISS index
+        # Search in FAISS index - use a larger k initially to filter by threshold
         logger.info("\nSearching FAISS index...")
-        D, I = red_hot.index.search(query_embedding.reshape(1, -1), top_k)
+        k = min(100, red_hot.index.ntotal)  # Search more to filter by threshold
+        D, I = red_hot.index.search(query_embedding.reshape(1, -1), k)
         
         # Display similarity results
         logger.info("\nSimilarity Results:")
         logger.info("-" * 40)
         similar_columns = []
+        
         for i, (distance, idx) in enumerate(zip(D[0], I[0])):
             similarity = 1 / (1 + float(distance))
-            metadata = red_hot.get_metadata(str(int(idx)))
-            logger.info(f"metadata #{metadata}:")
-            file_name = os.path.basename(metadata.get('file_path', ''))
-            column = metadata.get('column_name', '')
-            dtype = metadata.get('dtype', 'unknown')
-            geometry_column = metadata.get('geometry_column', '')
-            result = {
-                'column': column,
-                'file': file_name,
-                'full_path': metadata.get('file_path', ''),
-                'similarity': similarity,
-                'dtype': dtype,
-                'geometry_column': geometry_column
-            }
-            similar_columns.append(result)
             
-            logger.info(f"Match #{i+1}:")
-            logger.info(f"  Column: {column}")
-            logger.info(f"  File: {file_name}")
-            logger.info(f"  Type: {dtype}")
-            logger.info(f"  Similarity Score: {similarity:.4f}")
-            logger.info("-" * 40)
+            # Only process if above threshold
+            if similarity >= similarity_threshold:
+                metadata = red_hot.get_metadata(str(int(idx)))
+                file_name = os.path.basename(metadata.get('file_path', ''))
+                column = metadata.get('column_name', '')
+                dtype = metadata.get('dtype', 'unknown')
+                
+                result = {
+                    'column': column,
+                    'file': file_name,
+                    'full_path': metadata.get('file_path', ''),
+                    'similarity': similarity,
+                    'dtype': dtype
+                }
+                similar_columns.append(result)
+                
+                logger.info(f"Match #{len(similar_columns)}:")
+                logger.info(f"  Column: {column}")
+                logger.info(f"  File: {file_name}")
+                logger.info(f"  Type: {dtype}")
+                logger.info(f"  Similarity Score: {similarity:.4f}")
+                logger.info("-" * 40)
         
+        logger.info(f"\nFound {len(similar_columns)} matches above threshold {similarity_threshold}")
         return similar_columns
 
     def format_spatial_results(self, results):
