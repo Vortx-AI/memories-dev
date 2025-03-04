@@ -10,6 +10,8 @@ from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
 import sys
+import pandas as pd
+import numpy as np
 
 from memories.models.load_model import LoadModel
 from memories.utils.text.context_utils import classify_query
@@ -244,11 +246,14 @@ class MemoryQuery:
                 Based on the query, decide what information you need and which functions to call.
                 
                 You have access to these functions:
-                - get_bounding_box: Get coordinates for a location name
-                - get_coords_from_address: Get specific coordinates for an address
-                - search_geospatial_data_in_bbox: Search for features in an area
-                - get_data_by_bbox: Get all data in an area
-                - get_data_by_fuzzy_search: Search data using fuzzy matching
+                - get_bounding_box: Convert a text address into a geographic bounding box
+                - expand_bbox_with_radius: Expand a bounding box by radius or create box around point
+                - get_bounding_box_from_coords: Convert coordinates into a geographic bounding box
+                - get_address_from_coords: Get address details from coordinates using reverse geocoding
+                - get_coords_from_address: Get coordinates from an address using forward geocoding
+                - search_geospatial_data_in_bbox: Search for geospatial features within a bounding box
+                - download_theme_type: Download data for a specific theme and type within a bounding box
+                - execute_code: Execute custom Python code with pandas and numpy
                 
                 You can:
                 1. Use any combination of functions in any order
@@ -259,6 +264,27 @@ class MemoryQuery:
                 Always explain your reasoning before making function calls."""
             }
             
+            def serialize_result(obj):
+                """Helper function to make results JSON serializable."""
+                if isinstance(obj, bytearray):
+                    return obj.hex()  # Convert bytearray to hex string
+                elif isinstance(obj, bytes):
+                    return obj.hex()
+                elif isinstance(obj, pd.DataFrame):
+                    return obj.to_dict('records')
+                elif isinstance(obj, np.ndarray):
+                    return obj.tolist()
+                elif isinstance(obj, (datetime, date)):
+                    return obj.isoformat()
+                elif isinstance(obj, (int, float, str, bool, type(None))):
+                    return obj
+                elif isinstance(obj, (list, tuple)):
+                    return [serialize_result(item) for item in obj]
+                elif isinstance(obj, dict):
+                    return {k: serialize_result(v) for k, v in obj.items()}
+                else:
+                    return str(obj)  # Convert any other type to string
+
             messages = [
                 system_message,
                 {"role": "user", "content": query}
@@ -281,7 +307,6 @@ class MemoryQuery:
                 assistant_message = response.get("message", {})
                 tool_calls = response.get("tool_calls", [])
                 
-                # If no tool calls but has content, we're done
                 if not tool_calls and assistant_message.get("content"):
                     return {
                         "response": assistant_message.get("content"),
@@ -289,40 +314,36 @@ class MemoryQuery:
                         "results": results
                     }
                 
-                # Process tool calls
                 if tool_calls:
                     for tool_call in tool_calls:
                         function_name = tool_call.get("function", {}).get("name")
                         
                         try:
-                            # Parse arguments
                             args = json.loads(tool_call["function"]["arguments"])
                             
-                            # Get and execute function
                             if function_name in self.function_mapping:
                                 function_result = self.function_mapping[function_name](**args)
+                                # Serialize the result before storing or sending to model
+                                serialized_result = serialize_result(function_result)
                             else:
                                 return {
                                     "response": f"Unknown function: {function_name}",
                                     "status": "error"
                                 }
                             
-                            # Check result
-                            if isinstance(function_result, dict) and function_result.get("status") == "error":
-                                error_msg = function_result.get("message", f"Unknown error in {function_name}")
+                            if isinstance(serialized_result, dict) and serialized_result.get("status") == "error":
+                                error_msg = serialized_result.get("message", f"Unknown error in {function_name}")
                                 return {
                                     "response": f"Error in {function_name}: {error_msg}",
                                     "status": "error"
                                 }
                             
-                            # Store result
                             results.append({
                                 "function_name": function_name,
                                 "args": args,
-                                "result": function_result
+                                "result": serialized_result
                             })
                             
-                            # Add to conversation
                             messages.append({
                                 "role": "assistant",
                                 "content": None,
@@ -334,7 +355,7 @@ class MemoryQuery:
                             messages.append({
                                 "role": "function",
                                 "name": function_name,
-                                "content": json.dumps(function_result)
+                                "content": json.dumps(serialized_result)
                             })
                             
                         except json.JSONDecodeError as e:
@@ -350,7 +371,6 @@ class MemoryQuery:
                                 "status": "error"
                             }
                     
-                    # Let model decide next step
                     messages.append({
                         "role": "system",
                         "content": "Based on these results, decide if you need more information or can provide a final answer."
