@@ -80,6 +80,17 @@ class MemoryRetrieval:
                 return col[0], col[1]
         return None, None
 
+    def get_geometry_expression(self, column: str, col_type: str) -> str:
+        """
+        Get the appropriate geometry expression based on column type.
+        """
+        if 'BLOB' in col_type.upper():
+            return f"ST_GeomFromWKB(CAST({column} AS BLOB))"
+        elif 'GEOMETRY' in col_type.upper():
+            return column
+        else:
+            raise ValueError(f"Unsupported geometry type: {col_type}")
+
     def get_parquet_schema(self, file_path: str) -> List[Tuple]:
         """Get schema for a specific parquet file."""
         try:
@@ -127,10 +138,13 @@ class MemoryRetrieval:
             if col in available_columns:
                 select_parts.append(col)
 
+        # Get geometry expression
+        geom_expr = self.get_geometry_expression(geom_column, geom_type)
+
         # Add geometry-derived columns
         select_parts.extend([
-            f"ST_X(ST_Centroid({geom_column})) as lon",
-            f"ST_Y(ST_Centroid({geom_column})) as lat"
+            f"ST_X(ST_Centroid({geom_expr})) as lon",
+            f"ST_Y(ST_Centroid({geom_expr})) as lat"
         ])
 
         return ", ".join(select_parts)
@@ -175,6 +189,9 @@ class MemoryRetrieval:
                         
                     self.logger.info(f"Processing {file_path} with geometry column: {geom_column} ({geom_type})")
                     
+                    # Get geometry expression
+                    geom_expr = self.get_geometry_expression(geom_column, geom_type)
+                    
                     # Build select clause based on available columns
                     select_clause = self.build_select_clause(schema, geom_column, geom_type)
                     
@@ -183,7 +200,7 @@ class MemoryRetrieval:
                         SELECT {select_clause}
                         FROM read_parquet('{file_path}')
                         WHERE ST_Intersects(
-                            {geom_column},
+                            {geom_expr},
                             ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
                                           CAST({min_lat} AS DOUBLE), 
                                           CAST({max_lon} AS DOUBLE), 
@@ -1064,6 +1081,9 @@ class MemoryRetrieval:
                         
                     self.logger.info(f"Processing {file_path} with geometry column: {geom_column} ({geom_type})")
                     
+                    # Get geometry expression
+                    geom_expr = self.get_geometry_expression(geom_column, geom_type)
+                    
                     # Build select clause based on available columns
                     select_clause = self.build_select_clause(schema, geom_column, geom_type)
                     
@@ -1072,7 +1092,7 @@ class MemoryRetrieval:
                         SELECT {select_clause}
                         FROM read_parquet('{file_path}')
                         WHERE ST_Intersects(
-                            {geom_column},
+                            {geom_expr},
                             ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
                                           CAST({min_lat} AS DOUBLE), 
                                           CAST({max_lon} AS DOUBLE), 
