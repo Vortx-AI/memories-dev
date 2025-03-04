@@ -157,9 +157,6 @@ class ColdMemory:
             max_size: Maximum size in bytes
             duckdb_connection: Pre-configured DuckDB connection
         """
-        # Initialize logger
-        self.logger = logging.getLogger(__name__)
-        
         self.storage_path = Path(storage_path)
         self.max_size = max_size
         
@@ -169,13 +166,13 @@ class ColdMemory:
         # Use provided DuckDB connection
         self.con = duckdb_connection
         if self.con is None:
-            self.logger.warning("No DuckDB connection provided, cold memory will be disabled")
+            print("No DuckDB connection provided, cold memory will be disabled")
             return
         
         # Initialize schema
         self._initialize_db()
         
-        self.logger.info(f"Initialized cold storage at {self.storage_path}")
+        print(f"Initialized cold storage at {self.storage_path}")
 
     def _initialize_db(self) -> None:
         """Initialize the database schema."""
@@ -190,10 +187,10 @@ class ColdMemory:
             """)
             
             self.con.commit()
-            self.logger.info("Database schema initialized successfully")
+            print("Database schema initialized successfully")
             
         except Exception as e:
-            self.logger.error(f"Error initializing database: {e}")
+            print(f"Error initializing database: {e}")
             raise
 
     def _load_metadata(self) -> Dict[str, Any]:
@@ -203,7 +200,7 @@ class ColdMemory:
                 with open(self.metadata_file) as f:
                     return json.load(f)
             except Exception as e:
-                self.logger.error(f"Failed to load metadata: {e}")
+                print(f"Failed to load metadata: {e}")
         return {}
 
     def _find_parquet_files(self, directory: Path) -> List[Path]:
@@ -222,12 +219,12 @@ class ColdMemory:
                 parquet_files.append(path)
             
             if parquet_files:
-                self.logger.info(f"Found {len(parquet_files)} parquet files in {directory}")
+                print(f"Found {len(parquet_files)} parquet files in {directory}")
             else:
-                self.logger.warning(f"No parquet files found in {directory}")
+                print(f"No parquet files found in {directory}")
                 
         except Exception as e:
-            self.logger.error(f"Error searching for parquet files: {e}")
+            print(f"Error searching for parquet files: {e}")
             
         return parquet_files
 
@@ -269,16 +266,16 @@ class ColdMemory:
                     if file_path.exists() and file_path.suffix == '.parquet':
                         parquet_files.append(file_path)
                     else:
-                        self.logger.warning(f"Skipping invalid file: {file_path}")
+                        print(f"Skipping invalid file: {file_path}")
             
             if not parquet_files:
-                self.logger.warning(f"No Parquet files found to query")
+                print(f"No Parquet files found to query")
                 return None
             
             # Log the files being queried
-            self.logger.info("Querying the following files:")
+            print("Querying the following files:")
             for f in parquet_files:
-                self.logger.info(f"  - {f}")
+                print(f"  - {f}")
             
             # Create a view combining all relevant parquet files
             view_creation = f"""
@@ -293,14 +290,14 @@ class ColdMemory:
                 query = f"{query} FROM cold_storage"
             
             # Execute the actual query
-            self.logger.info(f"Executing query: {query}")
+            print(f"Executing query: {query}")
             result = self.con.execute(query).fetchdf()
-            self.logger.info(f"Query returned {len(result)} rows")
+            print(f"Query returned {len(result)} rows")
             
             return result
             
         except Exception as e:
-            self.logger.error(f"Error querying cold storage: {e}")
+            print(f"Error querying cold storage: {e}")
             return None
 
     def list_available_data(self) -> Dict[str, Dict[str, List[str]]]:
@@ -348,7 +345,7 @@ class ColdMemory:
             return data_structure
             
         except Exception as e:
-            self.logger.error(f"Error listing available data: {e}")
+            print(f"Error listing available data: {e}")
             return {}
 
     def store(self, data: Dict[str, Any]) -> None:
@@ -361,7 +358,7 @@ class ColdMemory:
             # Use timestamp as filename
             timestamp = data.get("timestamp", "")
             if not timestamp:
-                self.logger.error("Data must have a timestamp")
+                print("Data must have a timestamp")
                 return
             
             filename = self.storage_path / f"{timestamp}.json.gz"
@@ -378,7 +375,7 @@ class ColdMemory:
                 for old_file in files[:-self.max_size]:
                     old_file.unlink()
         except Exception as e:
-            self.logger.error(f"Failed to store data in file: {e}")
+            print(f"Failed to store data in file: {e}")
     
     def retrieve(self, query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Retrieve data from compressed files.
@@ -407,7 +404,7 @@ class ColdMemory:
             
             return None
         except Exception as e:
-            self.logger.error(f"Failed to retrieve data from file: {e}")
+            print(f"Failed to retrieve data from file: {e}")
             return None
     
     def retrieve_all(self) -> List[Dict[str, Any]]:
@@ -423,7 +420,7 @@ class ColdMemory:
                     result.append(json.load(f))
             return result
         except Exception as e:
-            self.logger.error(f"Failed to retrieve all data from files: {e}")
+            print(f"Failed to retrieve all data from files: {e}")
             return []
     
     def clear_tables(self, keep_files: bool = True) -> None:
@@ -442,14 +439,14 @@ class ColdMemory:
                 table_name = table_info["table_name"]
                 try:
                     self.con.execute(f"DROP TABLE IF EXISTS {table_name}")
-                    self.logger.info(f"Dropped table: {table_name}")
+                    print(f"Dropped table: {table_name}")
                 except Exception as e:
-                    self.logger.error(f"Error dropping table {table_name}: {e}")
+                    print(f"Error dropping table {table_name}: {e}")
             
             # Clear metadata table
             self.con.execute("DELETE FROM file_metadata")
             self.con.commit()
-            self.logger.info("Cleared file metadata")
+            print("Cleared file metadata")
             
             # Delete files if requested
             if not keep_files:
@@ -458,14 +455,14 @@ class ColdMemory:
                     try:
                         if file_path.exists():
                             file_path.unlink()
-                            self.logger.info(f"Deleted file: {file_path}")
+                            print(f"Deleted file: {file_path}")
                     except Exception as e:
-                        self.logger.error(f"Error deleting file {file_path}: {e}")
+                        print(f"Error deleting file {file_path}: {e}")
             
-            self.logger.info("Clear operation completed successfully")
+            print("Clear operation completed successfully")
             
         except Exception as e:
-            self.logger.error(f"Error clearing cold memory: {e}")
+            print(f"Error clearing cold memory: {e}")
             raise
 
     def clear(self) -> None:
@@ -515,15 +512,15 @@ class ColdMemory:
                 parquet_files = list(folder_path.glob(pattern))
 
             if not parquet_files:
-                self.logger.warning(f"No parquet files found in {folder_path}")
+                print(f"No parquet files found in {folder_path}")
                 return results
 
-            self.logger.info(f"Found {len(parquet_files)} parquet files to process")
+            print(f"Found {len(parquet_files)} parquet files to process")
             
             # Process each file
             for file_path in parquet_files:
                 try:
-                    self.logger.info(f"Processing file: {file_path}")
+                    print(f"Processing file: {file_path}")
                     
                     # Read parquet file metadata
                     table = pq.read_table(file_path)
@@ -564,7 +561,7 @@ class ColdMemory:
                         metadata["table_name"] = table_name
                         
                     except Exception as e:
-                        self.logger.error(f"Error creating table for {file_path}: {e}")
+                        print(f"Error creating table for {file_path}: {e}")
                         results["errors"].append(f"{file_path}: {str(e)}")
                         continue
                     
@@ -576,18 +573,18 @@ class ColdMemory:
                     results["records_imported"] += table.num_rows
                     results["total_size"] += file_size
                     
-                    self.logger.info(f"Successfully processed file {results['files_processed']}/{len(parquet_files)}")
+                    print(f"Successfully processed file {results['files_processed']}/{len(parquet_files)}")
                     
                 except Exception as e:
-                    self.logger.error(f"Error processing {file_path}: {e}")
+                    print(f"Error processing {file_path}: {e}")
                     results["errors"].append(str(file_path))
                     continue
 
-            self.logger.info(f"Import complete: {results}")
+            print(f"Import complete: {results}")
             return results
 
         except Exception as e:
-            self.logger.error(f"Failed to import parquet files: {e}")
+            print(f"Failed to import parquet files: {e}")
             raise
 
     def _normalize_file_path(self, file_path: Union[str, Path]) -> str:
@@ -625,7 +622,7 @@ class ColdMemory:
             """, [abs_path, json.dumps(metadata), current_time])
             
         except Exception as e:
-            self.logger.error(f"Failed to store metadata for {file_path}: {e}")
+            print(f"Failed to store metadata for {file_path}: {e}")
             raise
 
     def query(self, sql_query: str) -> pd.DataFrame:
@@ -640,10 +637,10 @@ class ColdMemory:
         try:
             # Execute the query
             result = self.con.execute(sql_query).fetchdf()
-            self.logger.info(f"Query returned {len(result)} rows")
+            print(f"Query returned {len(result)} rows")
             return result
         except Exception as e:
-            self.logger.error(f"Error executing query: {e}")
+            print(f"Error executing query: {e}")
             raise
 
     def list_tables(self) -> List[Dict[str, Any]]:
@@ -683,7 +680,7 @@ class ColdMemory:
             
             return tables
         except Exception as e:
-            self.logger.error(f"Error listing tables: {e}")
+            print(f"Error listing tables: {e}")
             return []
 
     def get_table_schema(self, table_name: str) -> Optional[Dict[str, str]]:
@@ -708,7 +705,7 @@ class ColdMemory:
                 return metadata["schema"]
             return None
         except Exception as e:
-            self.logger.error(f"Error getting schema for table {table_name}: {e}")
+            print(f"Error getting schema for table {table_name}: {e}")
             return None
 
     def search(self, 
@@ -733,7 +730,7 @@ class ColdMemory:
                 tables = [t["table_name"] for t in available_tables]
             
             if not tables:
-                self.logger.warning("No tables available to search")
+                print("No tables available to search")
                 return pd.DataFrame()
             
             # Build WHERE clause from conditions
@@ -759,11 +756,11 @@ class ColdMemory:
             
             # Execute query
             result = self.con.execute(full_query, params * len(tables)).fetchdf()
-            self.logger.info(f"Search returned {len(result)} results")
+            print(f"Search returned {len(result)} results")
             return result
             
         except Exception as e:
-            self.logger.error(f"Error searching tables: {e}")
+            print(f"Error searching tables: {e}")
             return pd.DataFrame()
 
     def get_table_preview(self, table_name: str, limit: int = 5) -> pd.DataFrame:
@@ -782,6 +779,6 @@ class ColdMemory:
             """).fetchdf()
             return result
         except Exception as e:
-            self.logger.error(f"Error previewing table {table_name}: {e}")
+            print(f"Error previewing table {table_name}: {e}")
             return pd.DataFrame()
 
