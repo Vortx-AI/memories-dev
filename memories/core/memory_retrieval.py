@@ -30,6 +30,10 @@ class MemoryRetrieval:
             
         self.con = duckdb.connect(str(self.db_path))
         self.logger = logging.getLogger(__name__)
+        
+        # Load spatial extension
+        self.con.execute("INSTALL spatial;")
+        self.con.execute("LOAD spatial;")
 
     def get_storage_stats(self) -> Dict[str, Any]:
         """Get statistics about registered files from metadata."""
@@ -798,4 +802,60 @@ class MemoryRetrieval:
             
         except Exception as e:
             logger.error(f"Error executing query: {e}")
+            raise
+
+    def query_by_bbox(self, min_lon: float, min_lat: float, max_lon: float, max_lat: float) -> pd.DataFrame:
+        """
+        Query places within a bounding box.
+        
+        Args:
+            min_lon: Minimum longitude (west)
+            min_lat: Minimum latitude (south)
+            max_lon: Maximum longitude (east)
+            max_lat: Maximum latitude (north)
+            
+        Returns:
+            pandas.DataFrame with places in the bounding box
+        """
+        try:
+            # Get all registered parquet files
+            files_query = """
+                SELECT path 
+                FROM cold_metadata 
+                WHERE data_type = 'parquet'
+            """
+            files = self.con.execute(files_query).fetchall()
+            
+            if not files:
+                logger.warning("No parquet files registered in the database")
+                return pd.DataFrame()
+
+            # Create a view combining all parquet files
+            file_paths = [f[0] for f in files]
+            files_list = ", ".join(f"'{path}'" for path in file_paths)
+            
+            # Create view with spatial data
+            create_view = f"""
+                CREATE OR REPLACE VIEW files AS 
+                SELECT *, 
+                    ST_GeomFromWKB(geometry) as geom
+                FROM read_parquet([{files_list}])
+            """
+            self.con.execute(create_view)
+            
+            # Query within bounding box
+            query = f"""
+                SELECT *
+                FROM files
+                WHERE ST_Intersects(
+                    geom,
+                    ST_MakeEnvelope({min_lon}, {min_lat}, {max_lon}, {max_lat}, 4326)
+                )
+            """
+            
+            result = self.con.execute(query).df()
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error executing spatial query: {e}")
             raise 
