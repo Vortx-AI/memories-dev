@@ -1268,47 +1268,49 @@ class MemoryRetrieval:
             logger.warning("No similar columns found")
             return pd.DataFrame()
         
-        # Create unique list of files to query
-        unique_files = set(match['full_path'] for match in similar_columns)
+        # Deduplicate file paths and group columns
+        unique_files = {}
+        for match in similar_columns:
+            file_path = match['full_path']
+            if file_path not in unique_files:
+                unique_files[file_path] = {
+                    'columns': set(),
+                    'geometry_column': None
+                }
+            unique_files[file_path]['columns'].add(match['column'])
         
-        # For each file, check its schema directly using DuckDB
-        query_targets = {}
-        for file_path in unique_files:
+        logger.info(f"\nFound {len(unique_files)} unique files to process")
+        for file_path, info in unique_files.items():
+            logger.info(f"\nFile: {os.path.basename(file_path)}")
+            logger.info(f"Columns to query: {info['columns']}")
+        
+        # Process each unique file
+        min_lon, min_lat, max_lon, max_lat = bbox
+        results = pd.DataFrame()
+        
+        for file_path, info in unique_files.items():
             try:
                 # Get schema info directly from parquet file
                 schema_query = f"DESCRIBE SELECT * FROM parquet_scan('{file_path}')"
                 schema_df = self.con.execute(schema_query).fetchdf()
                 
                 # Look for geometry column
-                geom_col = None
                 for _, row in schema_df.iterrows():
                     col_name = row['column_name']
                     col_type = str(row['column_type']).lower()
                     if ('geometry' in col_type or 
                         'binary' in col_type or 
                         col_name.lower() in ['geom', 'geometry', 'the_geom']):
-                        geom_col = col_name
-                        logger.info(f"Found geometry column in {file_path}: {col_name} ({col_type})")
+                        info['geometry_column'] = col_name
+                        logger.info(f"Found geometry column: {col_name} ({col_type})")
                         break
                 
-                # Store file info if geometry column found
-                if geom_col:
-                    query_targets[file_path] = {
-                        'columns': set(col['column'] for col in similar_columns if col['full_path'] == file_path),
-                        'geometry_column': geom_col
-                    }
-            
-            except Exception as e:
-                logger.error(f"Error checking schema for {file_path}: {e}")
-                continue
-        
-        # Build and execute spatial queries
-        min_lon, min_lat, max_lon, max_lat = bbox
-        results = pd.DataFrame()
-        
-        for file_path, info in query_targets.items():
-            try:
-                # Build column list for query
+                # Skip if no geometry column found
+                if not info['geometry_column']:
+                    logger.warning(f"No geometry column found in {file_path}, skipping")
+                    continue
+                
+                # Build and execute spatial query
                 columns = list(info['columns'])
                 columns.append(info['geometry_column'])
                 cols_str = ', '.join(f'"{col}"' for col in columns)
@@ -1325,7 +1327,7 @@ class MemoryRetrieval:
                 )
                 """
                 
-                logger.info(f"\nExecuting query for {os.path.basename(file_path)}")
+                logger.info(f"Executing query...")
                 logger.debug(f"Query: {query}")
                 df = self.con.execute(query).fetchdf()
                 logger.info(f"Found {len(df)} results")
@@ -1334,7 +1336,7 @@ class MemoryRetrieval:
                     results = pd.concat([results, df], ignore_index=True)
                 
             except Exception as e:
-                logger.error(f"Error querying {file_path}: {e}")
+                logger.error(f"Error processing {file_path}: {e}")
                 continue
         
         logger.info(f"\nTotal results found: {len(results)}")
