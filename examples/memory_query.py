@@ -318,28 +318,37 @@ class MemoryQuery:
             elif query_type == "L1_2":
                 # For L1_2, use chat completion with loaded functions
                 messages = [{"role": "user", "content": query}]
+                results = []
                 
-                try:
-                    # Use chat_completion from LoadModel with loaded tools
-                    response = self.model.chat_completion(
-                        messages=messages,
-                        tools=self.tools,
-                        tool_choice="auto"
-                    )
-                    
-                    if response.get("error"):
-                        return {
-                            "classification": "L1_2",
-                            "response": f"Error in chat completion: {response['error']}",
-                            "status": "error"
-                        }
-                    
-                    assistant_message = response.get("message", {})
-                    tool_calls = response.get("tool_calls", [])
-                    
-                    # Handle tool calls if present
-                    if tool_calls:
-                        results = []
+                # Continue processing until no more function calls are needed
+                while True:
+                    try:
+                        # Use chat_completion from LoadModel with loaded tools
+                        response = self.model.chat_completion(
+                            messages=messages,
+                            tools=self.tools,
+                            tool_choice="auto"
+                        )
+                        
+                        if response.get("error"):
+                            return {
+                                "classification": "L1_2",
+                                "response": f"Error in chat completion: {response['error']}",
+                                "status": "error"
+                            }
+                        
+                        assistant_message = response.get("message", {})
+                        tool_calls = response.get("tool_calls", [])
+                        
+                        # If no tool calls and we have a message, we're done
+                        if not tool_calls and assistant_message.get("content"):
+                            return {
+                                "classification": "L1_2",
+                                "response": assistant_message.get("content"),
+                                "status": "success",
+                                "results": results
+                            }
+                        
                         # Process each tool call
                         for tool_call in tool_calls:
                             function_name = tool_call.get("function", {}).get("name")
@@ -358,15 +367,6 @@ class MemoryQuery:
                                         "status": "error"
                                     }
                                 
-                                # Check if request was successful
-                                if isinstance(function_result, dict) and function_result.get("status") == "error":
-                                    error_msg = function_result.get("message", f"Unknown error in {function_name}")
-                                    return {
-                                        "classification": "L1_2",
-                                        "response": f"Error in {function_name}: {error_msg}",
-                                        "status": "error"
-                                    }
-                                
                                 # Store the result
                                 results.append({
                                     "function_name": function_name,
@@ -374,7 +374,7 @@ class MemoryQuery:
                                     "result": function_result
                                 })
                                 
-                                # Add the function result to messages
+                                # Add the function call and result to messages
                                 messages.append({
                                     "role": "assistant",
                                     "content": None,
@@ -389,54 +389,34 @@ class MemoryQuery:
                                     "content": json.dumps(function_result)
                                 })
                                 
-                            except json.JSONDecodeError as e:
-                                logger.error(f"Error parsing tool arguments: {e}")
-                                return {
-                                    "classification": "L1_2",
-                                    "response": "Error parsing location request",
-                                    "status": "error"
-                                }
                             except Exception as e:
-                                logger.error(f"Error processing tool call: {e}")
+                                logger.error(f"Error in function call {function_name}: {e}")
                                 return {
                                     "classification": "L1_2",
-                                    "response": f"Error processing location: {str(e)}",
+                                    "response": f"Error in function {function_name}: {str(e)}",
                                     "status": "error"
                                 }
                         
-                        # Get final response after processing all function calls
-                        final_response = self.model.chat_completion(
-                            messages=messages
-                        )
+                        # If no message content, continue the conversation
+                        if not assistant_message.get("content"):
+                            continue
                         
-                        if final_response.get("error"):
-                            return {
-                                "classification": "L1_2",
-                                "response": f"Error in final response: {final_response['error']}",
-                                "status": "error"
-                            }
-                        
+                        # If we have both results and a final message, we're done
                         return {
                             "classification": "L1_2",
-                            "response": final_response.get("message", {}).get("content", "No response generated"),
+                            "response": assistant_message.get("content"),
                             "status": "success",
                             "results": results
                         }
-                    
-                    # If no tool calls, return the direct response
-                    return {
-                        "classification": "L1_2",
-                        "response": assistant_message.get("content", "No response generated"),
-                        "status": "success"
-                    }
-                    
-                except Exception as e:
-                    logger.error(f"Error in chat completion: {e}")
-                    return {
-                        "classification": "L1_2",
-                        "response": f"Error processing location query: {str(e)}",
-                        "status": "error"
-                    }
+                        
+                    except Exception as e:
+                        logger.error(f"Error in chat completion loop: {e}")
+                        return {
+                            "classification": "L1_2",
+                            "response": f"Error processing query: {str(e)}",
+                            "status": "error"
+                        }
+            
             else:
                 return {
                     "classification": "unknown",
