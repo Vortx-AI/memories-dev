@@ -19,22 +19,39 @@ class SignalingServer:
         self.port = port
         self._sock = None
         self._running = False
+        logger.info(f"SignalingServer initialized with host={host}, port={port}")
         
     def start(self) -> None:
         """Start the signaling server."""
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self._sock.bind((self.host, self.port))
-        self._sock.listen(1)
-        self._running = True
-        logger.info(f"Signaling server listening on {self.host}:{self.port}")
+        try:
+            logger.info("Creating socket...")
+            self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            
+            logger.info(f"Binding to {self.host}:{self.port}...")
+            self._sock.bind((self.host, self.port))
+            
+            logger.info("Starting to listen...")
+            self._sock.listen(1)
+            self._running = True
+            logger.info(f"✅ Signaling server listening on {self.host}:{self.port}")
+        except Exception as e:
+            logger.error(f"❌ Failed to start signaling server: {e}")
+            if self._sock:
+                self._sock.close()
+                self._sock = None
+            raise
         
     def stop(self) -> None:
         """Stop the signaling server."""
         self._running = False
         if self._sock:
-            self._sock.close()
-            self._sock = None
+            try:
+                self._sock.close()
+            except Exception as e:
+                logger.error(f"Error closing signaling server socket: {e}")
+            finally:
+                self._sock = None
 
 class WebRTCInterface:
     """A WebRTC interface that allows exposing Python functions through WebRTC data channels."""
@@ -55,6 +72,7 @@ class WebRTCInterface:
         self._registered_functions: Dict[str, Callable] = {}
         self._message_queue = queue.Queue()
         self._running = False
+        logger.info(f"Creating SignalingServer on {host}:{port}")
         self._signaling_server = SignalingServer(host, port)
         
     def register_function(self, func: Callable, name: Optional[str] = None) -> None:
@@ -117,34 +135,44 @@ class WebRTCInterface:
     async def _run_server(self) -> None:
         """Run the WebRTC server."""
         # Start the signaling server first
+        logger.info("Starting signaling server...")
         self._signaling_server.start()
         
         try:
+            logger.info("Creating TcpSocketSignaling...")
             self.signaling = TcpSocketSignaling(self.host, self.port)
             
             while self._running:
+                logger.info("Creating new RTCPeerConnection...")
                 self.pc = RTCPeerConnection()
                 
                 @self.pc.on("datachannel")
                 def on_datachannel(channel):
+                    logger.info(f"New data channel: {channel.label}")
                     self.data_channel = channel
                     asyncio.create_task(self._handle_data_channel(channel))
                 
                 # Wait for the client to connect
                 try:
+                    logger.info("Waiting for client offer...")
                     offer = await self.signaling.receive()
+                    logger.info("Received offer, setting remote description...")
                     await self.pc.setRemoteDescription(offer)
                     
+                    logger.info("Creating answer...")
                     answer = await self.pc.createAnswer()
+                    logger.info("Setting local description...")
                     await self.pc.setLocalDescription(answer)
                     
+                    logger.info("Sending answer...")
                     await self.signaling.send(self.pc.localDescription)
+                    logger.info("✅ Connection established!")
                     
                     # Wait for connection to close
                     await self.pc.wait_closed()
                     
                 except Exception as e:
-                    logger.error(f"Error in WebRTC server: {e}")
+                    logger.error(f"❌ Error in WebRTC server: {e}")
                 finally:
                     if self.pc:
                         await self.pc.close()
@@ -199,6 +227,11 @@ class WebRTCClient:
         try:
             # Create a custom signaling class that doesn't try to bind
             class ClientSignaling(TcpSocketSignaling):
+                def __init__(self, host, port):
+                    super().__init__(host, port)
+                    self.host = host
+                    self.port = port
+                    
                 async def connect(self):
                     self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     await asyncio.get_event_loop().sock_connect(self._sock, (self.host, self.port))
@@ -245,6 +278,8 @@ class WebRTCClient:
             
         except Exception as e:
             logger.error(f"Error connecting to WebRTC server: {e}")
+            if self.signaling:
+                await self.signaling.close()
             await self.close()
             raise
         

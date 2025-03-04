@@ -14,7 +14,7 @@ import pandas as pd
 load_dotenv()
 
 # Get geo_memories path from environment variable
-GEO_MEMORIES_PATH = Path(os.getenv('GEO_MEMORIES_PATH', '/home/jaya/geo_memories'))
+GEO_MEMORIES_PATH = Path(os.getenv('GEO_MEMORIES_PATH', ''))
 
 def list_cold_tables():
     """List all tables in cold memory directly without pytest."""

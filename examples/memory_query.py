@@ -8,6 +8,7 @@ import os
 import json
 import asyncio
 from pathlib import Path
+from dotenv import load_dotenv
 from memories.models.load_model import LoadModel
 from memories.utils.text.context_utils import classify_query
 from memories.utils.earth.location_utils import (
@@ -23,6 +24,11 @@ from memories.interface.webrtc import WebRTCInterface, WebRTCClient
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Load environment variables
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(env_path)
+logger.info(f"Loading environment from {env_path}")
 
 class MemoryQuery:
     """Memory query handler for processing different types of queries."""
@@ -46,6 +52,13 @@ class MemoryQuery:
             functions_file (str): Path to the JSON file containing function definitions
         """
         try:
+            # If api_key is not provided, try to get it from environment
+            if api_key is None:
+                api_key = os.getenv('OPENAI_API_KEY')
+                if not api_key:
+                    raise ValueError("OPENAI_API_KEY not found in environment variables")
+                logger.info("Using OpenAI API key from environment")
+
             self.model = LoadModel(
                 model_provider=model_provider,
                 deployment_type=deployment_type,
