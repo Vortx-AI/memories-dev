@@ -66,17 +66,19 @@ class MemoryRetrieval:
             self.logger.error(f"Error getting schema: {e}")
             return []
 
-    def find_geometry_column(self, schema: List[Tuple]) -> Optional[str]:
+    def find_geometry_column(self, schema: List[Tuple]) -> Tuple[Optional[str], Optional[str]]:
         """
-        Find the geometry column in the schema.
-        Common names: geom, geometry, the_geom, wkb_geometry
+        Find the geometry column and its type in the schema.
+        
+        Returns:
+            Tuple of (column_name, column_type) or (None, None) if not found
         """
         geometry_names = ['geom', 'geometry', 'the_geom', 'wkb_geometry']
         for col in schema:
             col_name = col[0].lower()
             if col_name in geometry_names:
-                return col[0]
-        return None
+                return col[0], col[1]
+        return None, None
 
     def get_parquet_schema(self, file_path: str) -> List[Tuple]:
         """Get schema for a specific parquet file."""
@@ -97,7 +99,7 @@ class MemoryRetrieval:
             self.logger.error(f"Error getting schema for {file_path}: {e}")
             return []
 
-    def build_select_clause(self, schema: List[Tuple], geom_column: str) -> str:
+    def build_select_clause(self, schema: List[Tuple], geom_column: str, geom_type: str) -> str:
         """Build SELECT clause based on available columns."""
         available_columns = [col[0] for col in schema]
         select_parts = []
@@ -125,10 +127,14 @@ class MemoryRetrieval:
             if col in available_columns:
                 select_parts.append(col)
 
-        # Add geometry-derived columns, converting BLOB to geometry if needed
+        # Add geometry-derived columns with appropriate conversion
+        geom_expr = geom_column
+        if 'BLOB' in geom_type.upper():
+            geom_expr = f"ST_GeomFromWKB({geom_column})"
+            
         select_parts.extend([
-            f"ST_X(ST_Centroid(ST_GeomFromWKB({geom_column}))) as lon",
-            f"ST_Y(ST_Centroid(ST_GeomFromWKB({geom_column}))) as lat"
+            f"ST_X(ST_Centroid({geom_expr})) as lon",
+            f"ST_Y(ST_Centroid({geom_expr})) as lat"
         ])
 
         return ", ".join(select_parts)
@@ -165,23 +171,28 @@ class MemoryRetrieval:
                 try:
                     # Get schema for this file
                     schema = self.get_parquet_schema(file_path)
-                    geom_column = self.find_geometry_column(schema)
+                    geom_column, geom_type = self.find_geometry_column(schema)
                     
                     if not geom_column:
                         self.logger.warning(f"No geometry column found in {file_path}, skipping...")
                         continue
                         
-                    self.logger.info(f"Processing {file_path} with geometry column: {geom_column}")
+                    self.logger.info(f"Processing {file_path} with geometry column: {geom_column} ({geom_type})")
                     
                     # Build select clause based on available columns
-                    select_clause = self.build_select_clause(schema, geom_column)
+                    select_clause = self.build_select_clause(schema, geom_column, geom_type)
+                    
+                    # Build geometry expression for WHERE clause
+                    geom_expr = geom_column
+                    if 'BLOB' in geom_type.upper():
+                        geom_expr = f"ST_GeomFromWKB({geom_column})"
                     
                     # Build and execute query for this file
                     query = f"""
                         SELECT {select_clause}
                         FROM read_parquet('{file_path}')
                         WHERE ST_Intersects(
-                            ST_GeomFromWKB({geom_column}),
+                            {geom_expr},
                             ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
                                           CAST({min_lat} AS DOUBLE), 
                                           CAST({max_lon} AS DOUBLE), 
@@ -1054,23 +1065,28 @@ class MemoryRetrieval:
                 try:
                     # Get schema for this file
                     schema = self.get_parquet_schema(file_path)
-                    geom_column = self.find_geometry_column(schema)
+                    geom_column, geom_type = self.find_geometry_column(schema)
                     
                     if not geom_column:
                         self.logger.warning(f"No geometry column found in {file_path}, skipping...")
                         continue
                         
-                    self.logger.info(f"Processing {file_path} with geometry column: {geom_column}")
+                    self.logger.info(f"Processing {file_path} with geometry column: {geom_column} ({geom_type})")
                     
                     # Build select clause based on available columns
-                    select_clause = self.build_select_clause(schema, geom_column)
+                    select_clause = self.build_select_clause(schema, geom_column, geom_type)
+                    
+                    # Build geometry expression for WHERE clause
+                    geom_expr = geom_column
+                    if 'BLOB' in geom_type.upper():
+                        geom_expr = f"ST_GeomFromWKB({geom_column})"
                     
                     # Build and execute query for this file
                     query = f"""
                         SELECT {select_clause}
                         FROM read_parquet('{file_path}')
                         WHERE ST_Intersects(
-                            {geom_column},
+                            {geom_expr},
                             ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
                                           CAST({min_lat} AS DOUBLE), 
                                           CAST({max_lon} AS DOUBLE), 
