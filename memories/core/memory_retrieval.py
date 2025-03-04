@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import duckdb
 from memories.core.cold import Config
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -17,24 +18,20 @@ class MemoryRetrieval:
     
     def __init__(self):
         """Initialize memory retrieval."""
-        # Get the project root (memories-dev directory)
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+        self.con = duckdb.connect(database=':memory:')
+        self.con.install_extension("spatial")
+        self.con.load_extension("spatial")
         
-        # Use the same config path as MemoryManager
-        config_path = os.path.join(project_root, 'memories-dev', 'config', 'db_config.yml')
-        
-        # Initialize DuckDB connection
-        self.db_path = os.path.join(project_root, 'memories-dev', 'memories.db')
-        if not os.path.exists(self.db_path):
-            raise FileNotFoundError(f"Database file not found at: {self.db_path}")
-            
-        self.con = duckdb.connect(str(self.db_path))
-        self.logger = logging.getLogger(__name__)
-        
-        # Load spatial extension
-        self.con.execute("INSTALL spatial;")
-        self.con.execute("LOAD spatial;")
+        # Create spatial index table if it doesn't exist
+        self.con.execute("""
+            CREATE TABLE IF NOT EXISTS spatial_index (
+                path VARCHAR,
+                min_lon DOUBLE,
+                min_lat DOUBLE,
+                max_lon DOUBLE,
+                max_lat DOUBLE
+            )
+        """)
 
     def get_table_schema(self) -> List[str]:
         """Get the schema of the parquet files."""
@@ -63,7 +60,7 @@ class MemoryRetrieval:
             return [col[0] for col in schema]
             
         except Exception as e:
-            self.logger.error(f"Error getting schema: {e}")
+            logger.error(f"Error getting schema: {e}")
             return []
 
     def find_geometry_column(self, schema: List[Tuple]) -> Tuple[Optional[str], Optional[str]]:
@@ -101,13 +98,13 @@ class MemoryRetrieval:
             schema = self.con.execute("DESCRIBE temp_view").fetchall()
             
             # Print schema details for debugging
-            self.logger.debug(f"Schema for {file_path}:")
+            logger.debug(f"Schema for {file_path}:")
             for col in schema:
-                self.logger.debug(f"Column: {col[0]}, Type: {col[1]}")
+                logger.debug(f"Column: {col[0]}, Type: {col[1]}")
                 
             return schema
         except Exception as e:
-            self.logger.error(f"Error getting schema for {file_path}: {e}")
+            logger.error(f"Error getting schema for {file_path}: {e}")
             return []
 
     def build_select_clause(self, schema: List[Tuple], geom_column: str, geom_type: str) -> str:
@@ -149,19 +146,8 @@ class MemoryRetrieval:
 
         return ", ".join(select_parts)
 
-    def query_by_bbox(self, min_lon: float, min_lat: float, max_lon: float, max_lat: float) -> pd.DataFrame:
-        """
-        Query places within a bounding box.
-        
-        Args:
-            min_lon: Minimum longitude (west)
-            min_lat: Minimum latitude (south)
-            max_lon: Maximum longitude (east)
-            max_lat: Maximum latitude (north)
-            
-        Returns:
-            pandas.DataFrame with places in the bounding box
-        """
+    def build_spatial_index(self):
+        """Build spatial index for all parquet files."""
         try:
             # Get all registered parquet files
             files_query = """
@@ -171,31 +157,81 @@ class MemoryRetrieval:
             """
             files = self.con.execute(files_query).fetchall()
             
-            if not files:
-                self.logger.warning("No parquet files registered in the database")
-                return pd.DataFrame()
-
-            # Process each parquet file separately
-            results = []
+            # Clear existing index
+            self.con.execute("DELETE FROM spatial_index")
+            
             for file_path in [f[0] for f in files]:
                 try:
-                    # Get schema for this file
+                    # Get schema and geometry column
                     schema = self.get_parquet_schema(file_path)
                     geom_column, geom_type = self.find_geometry_column(schema)
                     
                     if not geom_column:
-                        self.logger.warning(f"No geometry column found in {file_path}, skipping...")
                         continue
                         
-                    self.logger.info(f"Processing {file_path} with geometry column: {geom_column} ({geom_type})")
-                    
                     # Get geometry expression
                     geom_expr = self.get_geometry_expression(geom_column, geom_type)
                     
-                    # Build select clause based on available columns
+                    # Calculate bounds for this file
+                    bounds_query = f"""
+                        SELECT 
+                            MIN(ST_X(ST_Envelope({geom_expr}))) as min_lon,
+                            MIN(ST_Y(ST_Envelope({geom_expr}))) as min_lat,
+                            MAX(ST_X(ST_Envelope({geom_expr}))) as max_lon,
+                            MAX(ST_Y(ST_Envelope({geom_expr}))) as max_lat
+                        FROM read_parquet('{file_path}')
+                    """
+                    bounds = self.con.execute(bounds_query).fetchone()
+                    
+                    # Insert into spatial index
+                    if bounds and None not in bounds:
+                        self.con.execute("""
+                            INSERT INTO spatial_index 
+                            VALUES (?, ?, ?, ?, ?)
+                        """, (file_path, *bounds))
+                        
+                except Exception as e:
+                    logger.error(f"Error indexing {file_path}: {e}")
+                    continue
+                    
+            # Create index on bounds
+            self.con.execute("CREATE INDEX IF NOT EXISTS idx_spatial ON spatial_index(min_lon, min_lat, max_lon, max_lat)")
+            
+        except Exception as e:
+            logger.error(f"Error building spatial index: {e}")
+            raise
+
+    def query_by_bbox(self, min_lon: float, min_lat: float, max_lon: float, max_lat: float) -> pd.DataFrame:
+        """Query places within a bounding box using spatial index."""
+        try:
+            # Find potentially intersecting files using spatial index
+            files_query = """
+                SELECT path 
+                FROM spatial_index 
+                WHERE max_lon >= ? AND min_lon <= ? 
+                  AND max_lat >= ? AND min_lat <= ?
+            """
+            files = self.con.execute(files_query, 
+                                   (min_lon, max_lon, min_lat, max_lat)).fetchall()
+            
+            if not files:
+                logger.warning("No files intersect the query bbox")
+                return pd.DataFrame()
+
+            # Process matching files
+            results = []
+            for file_path in [f[0] for f in files]:
+                try:
+                    # Rest of the processing remains the same...
+                    schema = self.get_parquet_schema(file_path)
+                    geom_column, geom_type = self.find_geometry_column(schema)
+                    
+                    if not geom_column:
+                        continue
+                        
+                    geom_expr = self.get_geometry_expression(geom_column, geom_type)
                     select_clause = self.build_select_clause(schema, geom_column, geom_type)
                     
-                    # Build and execute query for this file
                     query = f"""
                         SELECT {select_clause}
                         FROM read_parquet('{file_path}')
@@ -208,28 +244,25 @@ class MemoryRetrieval:
                         )
                     """
                     
-                    self.logger.debug(f"Executing query for {file_path}: {query}")
                     result = self.con.execute(query).df()
                     
                     if not result.empty:
-                        # Add source file information
                         result['source_file'] = os.path.basename(file_path)
                         result['source_type'] = os.path.basename(os.path.dirname(os.path.dirname(file_path)))
                         results.append(result)
                         
                 except Exception as e:
-                    self.logger.error(f"Error processing {file_path}: {e}")
+                    logger.error(f"Error processing {file_path}: {e}")
                     continue
             
             if not results:
                 return pd.DataFrame()
                 
-            # Combine results, handling different schemas
             combined = pd.concat(results, ignore_index=True, sort=False)
             return combined.sort_values('name') if 'name' in combined.columns else combined
             
         except Exception as e:
-            self.logger.error(f"Error executing spatial query: {e}")
+            logger.error(f"Error executing spatial query: {e}")
             raise
 
     def query_files(self, sql_query: str) -> pd.DataFrame:
@@ -252,7 +285,7 @@ class MemoryRetrieval:
             files = self.con.execute(files_query).fetchall()
             
             if not files:
-                self.logger.warning("No parquet files registered in the database")
+                logger.warning("No parquet files registered in the database")
                 return pd.DataFrame()
 
             # Create a view combining all parquet files
@@ -270,7 +303,7 @@ class MemoryRetrieval:
             return result
             
         except Exception as e:
-            self.logger.error(f"Error executing query: {e}")
+            logger.error(f"Error executing query: {e}")
             raise
 
     def get_storage_stats(self) -> Dict[str, Any]:
@@ -283,12 +316,12 @@ class MemoryRetrieval:
             """).fetchone()
             
             if not table_exists:
-                self.logger.warning("cold_metadata table does not exist!")
+                logger.warning("cold_metadata table does not exist!")
                 return {
                     'total_files': 0,
                     'total_size_mb': 0,
                     'file_types': {},
-                    'storage_path': os.path.dirname(self.db_path)
+                    'storage_path': os.path.dirname(self.con.database)
                 }
             
             # Query the metadata table
@@ -308,18 +341,18 @@ class MemoryRetrieval:
                 'total_files': results['total_files'].sum() if not results.empty else 0,
                 'total_size_mb': round(results['total_size'].sum() / (1024 * 1024), 2) if not results.empty else 0,
                 'file_types': dict(zip(results['data_type'], results['type_count'])) if not results.empty else {},
-                'storage_path': os.path.dirname(self.db_path)
+                'storage_path': os.path.dirname(self.con.database)
             }
             
             return stats
             
         except Exception as e:
-            self.logger.error(f"Error getting storage stats: {e}")
+            logger.error(f"Error getting storage stats: {e}")
             return {
                 'total_files': 0,
                 'total_size_mb': 0,
                 'file_types': {},
-                'storage_path': os.path.dirname(self.db_path)
+                'storage_path': os.path.dirname(self.con.database)
             }
 
     def list_registered_files(self) -> List[Dict]:
@@ -349,7 +382,7 @@ class MemoryRetrieval:
             return files
             
         except Exception as e:
-            self.logger.error(f"Error listing registered files: {e}")
+            logger.error(f"Error listing registered files: {e}")
             return []
 
     def list_available_data(self) -> List[Dict[str, Any]]:
@@ -434,7 +467,7 @@ class MemoryRetrieval:
             theme_tables = [t["table_name"] for t in tables if t["theme"] == theme]
             
             if not theme_tables:
-                self.logger.warning(f"No tables found with theme: {theme}")
+                logger.warning(f"No tables found with theme: {theme}")
                 return pd.DataFrame()
             
             # Build query to union all matching tables
@@ -449,7 +482,7 @@ class MemoryRetrieval:
             return self.cold.query(full_query)
             
         except Exception as e:
-            self.logger.error(f"Error getting data for theme {theme}: {e}")
+            logger.error(f"Error getting data for theme {theme}: {e}")
             return pd.DataFrame()
 
     def get_data_by_tag(self, tag: str, limit: int = 100) -> pd.DataFrame:
@@ -468,7 +501,7 @@ class MemoryRetrieval:
             tag_tables = [t["table_name"] for t in tables if t["tag"] == tag]
             
             if not tag_tables:
-                self.logger.warning(f"No tables found with tag: {tag}")
+                logger.warning(f"No tables found with tag: {tag}")
                 return pd.DataFrame()
             
             # Build query to union all matching tables
@@ -483,7 +516,7 @@ class MemoryRetrieval:
             return self.cold.query(full_query)
             
         except Exception as e:
-            self.logger.error(f"Error getting data for tag {tag}: {e}")
+            logger.error(f"Error getting data for tag {tag}: {e}")
             return pd.DataFrame()
 
     def get_data_by_date_range(
@@ -508,7 +541,7 @@ class MemoryRetrieval:
             # Get all tables
             tables = self.cold.list_tables()
             if not tables:
-                self.logger.warning("No tables available")
+                logger.warning("No tables available")
                 return pd.DataFrame()
             
             # Build query to union all tables with date filter
@@ -524,7 +557,7 @@ class MemoryRetrieval:
                     """)
             
             if not queries:
-                self.logger.warning(f"No tables found with date column: {date_column}")
+                logger.warning(f"No tables found with date column: {date_column}")
                 return pd.DataFrame()
             
             full_query = f"""
@@ -537,7 +570,7 @@ class MemoryRetrieval:
             return self.cold.query(full_query)
             
         except Exception as e:
-            self.logger.error(f"Error getting data for date range: {e}")
+            logger.error(f"Error getting data for date range: {e}")
             return pd.DataFrame()
 
     def get_table_stats(self, table_name: str) -> Dict[str, Any]:
@@ -590,7 +623,7 @@ class MemoryRetrieval:
             }
             
         except Exception as e:
-            self.logger.error(f"Error getting stats for table {table_name}: {e}")
+            logger.error(f"Error getting stats for table {table_name}: {e}")
             return {}
 
     def get_data_by_bbox(
@@ -623,7 +656,7 @@ class MemoryRetrieval:
             # Get all tables
             tables = self.cold.list_tables()
             if not tables:
-                self.logger.warning("No tables available")
+                logger.warning("No tables available")
                 return pd.DataFrame()
             
             # Install and load spatial extension if needed
@@ -653,7 +686,7 @@ class MemoryRetrieval:
                         if not df.empty:
                             results = pd.concat([results, df], ignore_index=True)
                     except Exception as e:
-                        self.logger.warning(f"Error querying table {table_name} with geometry: {e}")
+                        logger.warning(f"Error querying table {table_name} with geometry: {e}")
                         
                 # Fall back to lat/lon columns if they exist
                 elif lon_column in schema and lat_column in schema:
@@ -669,10 +702,10 @@ class MemoryRetrieval:
                         if not df.empty:
                             results = pd.concat([results, df], ignore_index=True)
                     except Exception as e:
-                        self.logger.warning(f"Error querying table {table_name} with lat/lon: {e}")
+                        logger.warning(f"Error querying table {table_name} with lat/lon: {e}")
             
             if results.empty:
-                self.logger.warning(
+                logger.warning(
                     f"No tables found with either geometry column ({geom_column}) "
                     f"or coordinate columns ({lon_column}, {lat_column})"
                 )
@@ -680,7 +713,7 @@ class MemoryRetrieval:
             return results.head(limit) if not results.empty else results
             
         except Exception as e:
-            self.logger.error(f"Error getting data for bounding box: {e}")
+            logger.error(f"Error getting data for bounding box: {e}")
             return pd.DataFrame()
 
     def get_data_by_bbox_and_value(
@@ -717,7 +750,7 @@ class MemoryRetrieval:
             # Get all tables
             tables = self.cold.list_tables()
             if not tables:
-                self.logger.warning("No tables available")
+                logger.warning("No tables available")
                 return pd.DataFrame()
             
             # Install and load spatial extension if needed
@@ -769,7 +802,7 @@ class MemoryRetrieval:
                     queries.append(query)
             
             if not queries:
-                self.logger.warning(
+                logger.warning(
                     f"No tables found with either geometry column ({geom_column}) "
                     f"or coordinate columns ({lon_column}, {lat_column})"
                 )
@@ -787,18 +820,18 @@ class MemoryRetrieval:
             try:
                 results = self.cold.query(full_query)
             except Exception as e:
-                self.logger.error(f"Error executing combined query: {e}")
+                logger.error(f"Error executing combined query: {e}")
                 return pd.DataFrame()
             
             if results.empty:
-                self.logger.warning(
+                logger.warning(
                     f"No data found within bounding box containing value '{search_value}'"
                 )
             
             return results
             
         except Exception as e:
-            self.logger.error(f"Error getting data for bounding box and value: {e}")
+            logger.error(f"Error getting data for bounding box and value: {e}")
             return pd.DataFrame()
 
     def get_data_by_fuzzy_search(
@@ -823,7 +856,7 @@ class MemoryRetrieval:
             # Get all tables
             tables = self.cold.list_tables()
             if not tables:
-                self.logger.warning("No tables available")
+                logger.warning("No tables available")
                 return pd.DataFrame()
             
             # Build query to search across all tables with similarity scoring
@@ -869,7 +902,7 @@ class MemoryRetrieval:
                 queries.append(query)
             
             if not queries:
-                self.logger.warning("No tables to search")
+                logger.warning("No tables to search")
                 return pd.DataFrame()
             
             # Combine all queries and sort by similarity
@@ -885,11 +918,11 @@ class MemoryRetrieval:
             try:
                 results = self.cold.query(full_query)
             except Exception as e:
-                self.logger.error(f"Error executing fuzzy search query: {e}")
+                logger.error(f"Error executing fuzzy search query: {e}")
                 return pd.DataFrame()
             
             if results.empty:
-                self.logger.warning(
+                logger.warning(
                     f"No data found matching search term '{search_term}' with "
                     f"similarity threshold {similarity_threshold}"
                 )
@@ -897,7 +930,7 @@ class MemoryRetrieval:
             return results
             
         except Exception as e:
-            self.logger.error(f"Error in fuzzy search: {e}")
+            logger.error(f"Error in fuzzy search: {e}")
             return pd.DataFrame()
 
     def get_data_by_polygon(
@@ -911,7 +944,7 @@ class MemoryRetrieval:
             # Get all tables
             tables = self.cold.list_tables()
             if not tables:
-                self.logger.warning("No tables available")
+                logger.warning("No tables available")
                 return pd.DataFrame()
             
             # Install and load spatial extension
@@ -941,15 +974,15 @@ class MemoryRetrieval:
                         if not df.empty:
                             results = pd.concat([results, df], ignore_index=True)
                     except Exception as e:
-                        self.logger.warning(f"Error querying table {table_name}: {e}")
+                        logger.warning(f"Error querying table {table_name}: {e}")
             
             if results.empty:
-                self.logger.warning(f"No tables found with geometry column: {geom_column}")
+                logger.warning(f"No tables found with geometry column: {geom_column}")
             
             return results.head(limit) if not results.empty else results
             
         except Exception as e:
-            self.logger.error(f"Error getting data for polygon: {e}")
+            logger.error(f"Error getting data for polygon: {e}")
             return pd.DataFrame()
 
     @staticmethod
@@ -1076,10 +1109,10 @@ class MemoryRetrieval:
                     geom_column, geom_type = self.find_geometry_column(schema)
                     
                     if not geom_column:
-                        self.logger.warning(f"No geometry column found in {file_path}, skipping...")
+                        logger.warning(f"No geometry column found in {file_path}, skipping...")
                         continue
                         
-                    self.logger.info(f"Processing {file_path} with geometry column: {geom_column} ({geom_type})")
+                    logger.info(f"Processing {file_path} with geometry column: {geom_column} ({geom_type})")
                     
                     # Get geometry expression
                     geom_expr = self.get_geometry_expression(geom_column, geom_type)
@@ -1100,7 +1133,7 @@ class MemoryRetrieval:
                         )
                     """
                     
-                    self.logger.debug(f"Executing query for {file_path}: {query}")
+                    logger.debug(f"Executing query for {file_path}: {query}")
                     result = self.con.execute(query).df()
                     
                     if not result.empty:
@@ -1110,7 +1143,7 @@ class MemoryRetrieval:
                         results.append(result)
                         
                 except Exception as e:
-                    self.logger.error(f"Error processing {file_path}: {e}")
+                    logger.error(f"Error processing {file_path}: {e}")
                     continue
             
             if not results:
@@ -1121,5 +1154,5 @@ class MemoryRetrieval:
             return combined.sort_values('name') if 'name' in combined.columns else combined
             
         except Exception as e:
-            self.logger.error(f"Error executing spatial query: {e}")
+            logger.error(f"Error executing spatial query: {e}")
             raise 
