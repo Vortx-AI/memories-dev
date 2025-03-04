@@ -10,17 +10,21 @@ from pathlib import Path
 import duckdb
 from memories.core.cold import Config
 import json
+import glob
 
 logger = logging.getLogger(__name__)
 
 class MemoryRetrieval:
     """Memory retrieval class for querying cold memory storage."""
     
-    def __init__(self):
+    def __init__(self, data_dir: str = None):
         """Initialize memory retrieval."""
         self.con = duckdb.connect(database=':memory:')
         self.con.install_extension("spatial")
         self.con.load_extension("spatial")
+        
+        # Set data directory
+        self.data_dir = data_dir or os.path.expanduser("~/geo_memories")
         
         # Create spatial index table if it doesn't exist
         self.con.execute("""
@@ -146,21 +150,31 @@ class MemoryRetrieval:
 
         return ", ".join(select_parts)
 
+    def get_parquet_files(self) -> List[str]:
+        """Get all parquet files in the data directory."""
+        parquet_files = []
+        for pattern in ["**/*.parquet", "**/*.zstd.parquet"]:
+            parquet_files.extend(
+                glob.glob(os.path.join(self.data_dir, pattern), recursive=True)
+            )
+        return parquet_files
+
     def build_spatial_index(self):
         """Build spatial index for all parquet files."""
         try:
-            # Get all registered parquet files
-            files_query = """
-                SELECT path 
-                FROM cold_metadata 
-                WHERE data_type = 'parquet'
-            """
-            files = self.con.execute(files_query).fetchall()
+            # Get all parquet files
+            files = self.get_parquet_files()
+            
+            if not files:
+                logger.warning(f"No parquet files found in {self.data_dir}")
+                return
+                
+            logger.info(f"Found {len(files)} parquet files")
             
             # Clear existing index
             self.con.execute("DELETE FROM spatial_index")
             
-            for file_path in [f[0] for f in files]:
+            for file_path in files:
                 try:
                     # Get schema and geometry column
                     schema = self.get_parquet_schema(file_path)
@@ -169,6 +183,8 @@ class MemoryRetrieval:
                     if not geom_column:
                         continue
                         
+                    logger.info(f"Indexing {file_path}")
+                    
                     # Get geometry expression
                     geom_expr = self.get_geometry_expression(geom_column, geom_type)
                     
@@ -189,6 +205,7 @@ class MemoryRetrieval:
                             INSERT INTO spatial_index 
                             VALUES (?, ?, ?, ?, ?)
                         """, (file_path, *bounds))
+                        logger.info(f"Indexed {file_path} with bounds: {bounds}")
                         
                 except Exception as e:
                     logger.error(f"Error indexing {file_path}: {e}")
@@ -196,6 +213,10 @@ class MemoryRetrieval:
                     
             # Create index on bounds
             self.con.execute("CREATE INDEX IF NOT EXISTS idx_spatial ON spatial_index(min_lon, min_lat, max_lon, max_lat)")
+            
+            # Log index statistics
+            count = self.con.execute("SELECT COUNT(*) FROM spatial_index").fetchone()[0]
+            logger.info(f"Built spatial index with {count} entries")
             
         except Exception as e:
             logger.error(f"Error building spatial index: {e}")
@@ -218,11 +239,12 @@ class MemoryRetrieval:
                 logger.warning("No files intersect the query bbox")
                 return pd.DataFrame()
 
+            logger.info(f"Found {len(files)} potentially matching files")
+
             # Process matching files
             results = []
             for file_path in [f[0] for f in files]:
                 try:
-                    # Rest of the processing remains the same...
                     schema = self.get_parquet_schema(file_path)
                     geom_column, geom_type = self.find_geometry_column(schema)
                     
@@ -250,6 +272,7 @@ class MemoryRetrieval:
                         result['source_file'] = os.path.basename(file_path)
                         result['source_type'] = os.path.basename(os.path.dirname(os.path.dirname(file_path)))
                         results.append(result)
+                        logger.info(f"Found {len(result)} results in {file_path}")
                         
                 except Exception as e:
                     logger.error(f"Error processing {file_path}: {e}")
