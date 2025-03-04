@@ -667,4 +667,42 @@ class MemoryRetrieval:
             lat_column=lat_column,
             geom_column=geom_column,
             limit=limit
-        ) 
+        )
+
+    def get_storage_stats(self) -> Dict[str, Any]:
+        """Get statistics about the cold storage.
+        
+        Returns:
+            Dictionary containing:
+                - total_files: Number of registered files
+                - total_size: Total size in bytes
+                - file_types: Count of different file types
+        """
+        try:
+            query = """
+                SELECT 
+                    COUNT(*) as total_files,
+                    SUM(size) as total_size,
+                    data_type,
+                    COUNT(*) as type_count
+                FROM cold_metadata
+                GROUP BY data_type
+            """
+            
+            results = self.cold.query(query)
+            
+            stats = {
+                'total_files': results['total_files'].sum(),
+                'total_size_mb': round(results['total_size'].sum() / (1024 * 1024), 2),
+                'file_types': dict(zip(results['data_type'], results['type_count']))
+            }
+            
+            return stats
+            
+        except Exception as e:
+            self.logger.error(f"Error getting storage stats: {e}")
+            return {
+                'total_files': 0,
+                'total_size_mb': 0,
+                'file_types': {}
+            } 
