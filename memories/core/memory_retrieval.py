@@ -6,19 +6,16 @@ import logging
 from typing import Dict, Any, Optional, List, Union
 import pandas as pd
 from pathlib import Path
+from memories.core.memory_manager import MemoryManager
 
 logger = logging.getLogger(__name__)
 
 class MemoryRetrieval:
     """Memory retrieval class for querying cold memory storage."""
     
-    def __init__(self, cold_memory):
-        """Initialize memory retrieval.
-        
-        Args:
-            cold_memory: ColdMemory instance to query from
-        """
-        self.cold = cold_memory
+    def __init__(self):
+        """Initialize memory retrieval using the existing MemoryManager instance."""
+        self.cold = MemoryManager().cold_memory  # Get the existing ColdMemory instance
         self.logger = logging.getLogger(__name__)
 
     def list_available_data(self) -> List[Dict[str, Any]]:
