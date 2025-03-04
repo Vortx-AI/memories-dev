@@ -256,7 +256,13 @@ class MemoryQuery:
                 # For L1_2, use chat completion with loaded functions
                 system_message = {
                     "role": "system",
-                    "content": """You may Use one or more of the provided functions to fetch data to answer location-based queries. Multiple functions can be used to answer the question in which output of one can be used as input of the other"""
+                    "content": """You are a helpful assistant that uses available functions to fully answer location-based queries. 
+                    When searching for features like buildings, roads, or places:
+                    1. First get the location's bounding box
+                    2. Then use search_geospatial_data_in_bbox to find the features
+                    3. Finally, summarize the results for the user
+                    
+                    Always complete all necessary steps to answer the query."""
                 }
                 messages = [
                     system_message,
