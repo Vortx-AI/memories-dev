@@ -281,72 +281,79 @@ class ColdMemory:
             logger.error(f"Failed to unregister file {file_id}: {e}")
             return False
 
-    def list_registered_files(self) -> pd.DataFrame:
-        """List all registered files and their metadata.
-        
-        Returns:
-            DataFrame containing file metadata
-        """
+    def list_registered_files(self) -> List[Dict]:
+        """List all registered files and their metadata."""
         try:
-            return self.con.execute("""
-                SELECT id, timestamp, data_type, size, additional_meta
-                FROM cold_metadata
+            result = self.con.execute("""
+                SELECT * FROM cold_metadata 
+                WHERE data_type = 'parquet'
                 ORDER BY timestamp DESC
-            """).df()
+            """).fetchall()
+            
+            files = []
+            for row in result:
+                meta = json.loads(row[4])  # additional_meta column
+                files.append({
+                    'id': row[0],
+                    'timestamp': row[1],
+                    'size': row[2],
+                    'file_path': meta.get('file_path'),
+                    'table_name': meta.get('table_name'),
+                    **meta
+                })
+            
+            return files
+            
         except Exception as e:
-            logger.error(f"Failed to list registered files: {e}")
-            return pd.DataFrame()
+            self.logger.error(f"Failed to list registered files: {e}")
+            return []
 
     def cleanup(self) -> None:
         """Cleanup resources."""
         pass  # DuckDB connection is managed by MemoryManager
 
-    def register_external_file(self, file_path: Union[str, Path], metadata: Optional[Dict[str, Any]] = None) -> bool:
-        """Register an existing file in cold storage without moving it.
-        
-        Args:
-            file_path: Path to the existing file
-            metadata: Optional metadata about the file (type, description, etc.)
-            
-        Returns:
-            bool: True if registration successful, False otherwise
-        """
+    def register_external_file(self, file_path: Union[str, Path], metadata: Optional[Dict] = None) -> bool:
+        """Register an external Parquet file."""
         try:
-            file_path = Path(file_path)
-            if not file_path.exists():
-                logger.error(f"File not found: {file_path}")
-                return False
-                
-            # Generate ID for the file
-            file_id = str(uuid.uuid4())
+            file_path = str(file_path)
+            # Escape the file path for DuckDB
+            escaped_path = file_path.replace("'", "''")
             
-            # Store file metadata
+            # Create a unique table name based on the file
+            table_name = f"parquet_file_{uuid.uuid4().hex[:8]}"
+            
+            # Register the Parquet file with quotes around the path
+            self.con.execute(f"""
+                CREATE VIEW {table_name} AS 
+                SELECT * FROM parquet_scan('{escaped_path}')
+            """)
+            
+            # Store metadata
+            if metadata is None:
+                metadata = {}
+            
+            metadata.update({
+                'file_path': file_path,
+                'table_name': table_name,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+            # Insert into metadata table
             self.con.execute("""
                 INSERT INTO cold_metadata (id, timestamp, data_type, size, additional_meta)
                 VALUES (?, ?, ?, ?, ?)
             """, (
-                file_id,
+                str(uuid.uuid4()),
                 datetime.now(),
-                metadata.get('type', file_path.suffix[1:]),  # Use file extension as type if not specified
-                file_path.stat().st_size,
-                json.dumps({
-                    **(metadata or {}),
-                    'original_path': str(file_path.absolute())
-                })
+                'parquet',
+                Path(file_path).stat().st_size,
+                json.dumps(metadata)
             ))
             
-            # Create view in DuckDB pointing to the file
-            if file_path.suffix.lower() == '.parquet':
-                self.con.execute(f"""
-                    CREATE VIEW IF NOT EXISTS file_{file_id} AS 
-                    SELECT * FROM parquet_scan('{file_path.absolute()}')
-                """)
-            
-            logger.info(f"Successfully registered file: {file_path}")
             return True
             
         except Exception as e:
-            logger.error(f"Failed to register file {file_path}: {e}")
+            self.logger.error(f"Failed to register file {file_path}: {e}")
             return False
 
 
