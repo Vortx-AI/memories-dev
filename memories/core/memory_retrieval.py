@@ -1185,13 +1185,14 @@ class MemoryRetrieval:
             file_name = os.path.basename(metadata.get('file_path', ''))
             column = metadata.get('column_name', '')
             dtype = metadata.get('dtype', 'unknown')
-            
+            geometry_column = metadata.get('geometry_column', '')
             result = {
                 'column': column,
                 'file': file_name,
                 'full_path': metadata.get('file_path', ''),
                 'similarity': similarity,
-                'dtype': dtype
+                'dtype': dtype,
+                'geometry_column': geometry_column
             }
             similar_columns.append(result)
             
