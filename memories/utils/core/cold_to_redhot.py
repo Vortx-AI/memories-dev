@@ -7,6 +7,8 @@ from typing import Dict, List, Tuple, Optional
 from memories.core.red_hot_memory import RedHotMemory
 import pyarrow.parquet as pq
 import glob
+from sentence_transformers import SentenceTransformer
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,19 @@ class ColdToRedHot:
         
         # Initialize cold metadata table
         self._initialize_cold_metadata()
+
+        # Get project root for FAISS storage location
+        self.faiss_dir = os.path.join(project_root, "data", "red_hot")
+        
+        # Initialize components
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        
+        logger.info(f"Initialized ColdToRedHot")
+        logger.info(f"Cold storage directory: {self.data_dir}")
+        logger.info(f"FAISS storage location: {self.faiss_dir}")
+        print(f"\nFAISS storage location: {self.faiss_dir}")
+        print(f"FAISS index file: {os.path.join(self.faiss_dir, 'faiss.index')}")
+        print(f"FAISS metadata file: {os.path.join(self.faiss_dir, 'metadata.json')}\n")
 
     def get_file_schema(self, file_path: str) -> List[Tuple[str, str]]:
         """Get schema information from a parquet file."""
@@ -92,8 +107,14 @@ class ColdToRedHot:
                 'created_at': cold_metadata.get('created_at')
             }
             
+            # Create text representation for embedding
+            column_text = " ".join([f"{col}: {dtype}" for col, dtype in schema])
+            
+            # Create embedding from column names
+            embedding = self.model.encode([column_text])[0]
+            
             # Add to red-hot memory
-            self.red_hot.add_file_schema(file_path, schema, additional_info)
+            self.red_hot.add_vector(embedding, metadata=additional_info)
             logger.info(f"Transferred schema for {file_path} to red-hot memory")
             
         except Exception as e:
@@ -228,6 +249,12 @@ class ColdToRedHot:
         
         # Log final statistics
         self._log_final_stats(stats)
+        
+        # Print final FAISS index size and location
+        print(f"\nFinal FAISS index size: {self.red_hot.index.ntotal} vectors")
+        print(f"FAISS index dimension: {self.red_hot.dimension}")
+        print(f"FAISS storage location: {self.faiss_dir}")
+        
         return stats
 
     def _log_progress(self, stats):
