@@ -10,6 +10,7 @@ import yaml
 import os
 import duckdb
 
+from .config import Config
 from .hot import HotMemory
 from .red_hot import RedHotMemory
 from .warm import WarmMemory
