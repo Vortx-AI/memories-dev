@@ -419,7 +419,7 @@ class MemoryQuery:
                 query_word=query_word,
                 bbox=bbox_tuple,
                 similarity_threshold=similarity_threshold,
-                debug=True  # Enable detailed logging
+                #debug=True  # Enable detailed logging
             )
 
             # Convert results to dictionary format
