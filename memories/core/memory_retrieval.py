@@ -756,4 +756,46 @@ class MemoryRetrieval:
             lat_column=lat_column,
             geom_column=geom_column,
             limit=limit
-        ) 
+        )
+
+    def query_files(self, sql_query: str) -> pd.DataFrame:
+        """
+        Query across all registered parquet files.
+        
+        Args:
+            sql_query: SQL query string. Use 'files.*' to query all columns from all files.
+                      The files are automatically combined into a single table named 'files'.
+        
+        Returns:
+            pandas.DataFrame with query results
+        """
+        try:
+            # Get all registered parquet files
+            files_query = """
+                SELECT path 
+                FROM cold_metadata 
+                WHERE data_type = 'parquet'
+            """
+            files = self.con.execute(files_query).fetchall()
+            
+            if not files:
+                logger.warning("No parquet files registered in the database")
+                return pd.DataFrame()
+
+            # Create a view combining all parquet files
+            file_paths = [f[0] for f in files]
+            files_list = ", ".join(f"'{path}'" for path in file_paths)
+            
+            create_view = f"""
+                CREATE OR REPLACE VIEW files AS 
+                SELECT * FROM read_parquet([{files_list}])
+            """
+            self.con.execute(create_view)
+            
+            # Execute the actual query
+            result = self.con.execute(sql_query).df()
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error executing query: {e}")
+            raise 
