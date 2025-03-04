@@ -368,26 +368,19 @@ class ColdMemory:
     def get_all_schemas(self):
         """Get all file paths from cold storage metadata and extract their schemas."""
         try:
-            # First, let's check the schema
-            schema_query = """
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name='cold_metadata'
-            """
-            schema_result = self.con.execute(schema_query).fetchdf()
-            logger.info(f"Cold metadata columns: {list(schema_result['column_name'])}")
-            
-            # Get all file paths from cold_metadata using DuckDB
+            # Query cold metadata table directly like in memory_retrieval
             query = """
-            SELECT DISTINCT path as file_path
-            FROM parquet_scan('data/cold_metadata.parquet')
+            SELECT DISTINCT id 
+            FROM cold_metadata
             """
             result = self.con.execute(query).fetchdf()
+            
+            logger.info(f"Found {len(result)} unique file paths")
             
             # Extract schema for each file
             schemas = []
             for _, row in result.iterrows():
-                file_path = row['file_path']
+                file_path = row['id']  # This is the full path
                 try:
                     # Read parquet file schema
                     df = pd.read_parquet(file_path)
