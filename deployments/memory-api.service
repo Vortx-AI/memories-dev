@@ -1,0 +1,21 @@
+[Unit]
+Description=Memory Query REST API Server
+After=network.target
+
+[Service]
+Type=simple
+User=jaya
+Group=jaya
+WorkingDirectory=/home/jaya/memories-dev
+Environment=PYTHONPATH=/home/jaya/memories-dev
+Environment=VIRTUAL_ENV=/home/jaya/venv
+Environment=PATH=/home/jaya/venv/bin:${PATH}
+EnvironmentFile=/home/jaya/memories-dev/.env
+ExecStart=/home/jaya/venv/bin/python3 /home/jaya/memories-dev/examples/memory_query.py --host 0.0.0.0 --port 8000 --workers 2
+Restart=always
+RestartSec=3
+StandardOutput=append:/var/log/memory-api.log
+StandardError=append:/var/log/memory-api.error.log
+
+[Install]
+WantedBy=multi-user.target 

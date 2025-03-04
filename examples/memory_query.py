@@ -18,6 +18,15 @@ from dotenv import load_dotenv
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
 
+# Load environment variables
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(env_path)
+logger.info(f"Loading environment from {env_path}")
+
+# Set default API key
+DEFAULT_API_KEY = os.getenv('MEMORY_API_KEY', 'default-memory-key-12345')
+os.environ['MEMORY_API_KEY'] = DEFAULT_API_KEY
+
 from memories.models.load_model import LoadModel
 from memories.utils.text.context_utils import classify_query
 from memories.utils.earth.location_utils import (
@@ -40,10 +49,68 @@ from memories.interface.api.core.config import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load environment variables
-env_path = Path(__file__).parent.parent / '.env'
-load_dotenv(env_path)
-logger.info(f"Loading environment from {env_path}")
+class MemoryQueryProcessor:
+    """Memory Query Processor for handling different types of queries."""
+    
+    def __init__(self):
+        """Initialize the Memory Query Processor."""
+        self.model = LoadModel()
+        self.memory_retrieval = MemoryRetrieval()
+        self.code_execution = CodeExecution()
+        
+    async def process_query(self, query: str) -> Dict[str, Any]:
+        """
+        Process a memory query and return appropriate response.
+        
+        Args:
+            query: The query text to process
+            
+        Returns:
+            Dict containing the processed response
+        """
+        try:
+            # First classify the query
+            classification = classify_query(query, self.model)
+            logger.info(f"Query classification: {classification}")
+            
+            if classification["classification"] == "L1_2":
+                # Handle location-based query
+                location_info = classification.get("location_details", {})
+                if location_info:
+                    # Get coordinates for the location
+                    coords = await get_coords_from_address(location_info["text"])
+                    if coords:
+                        # Get bounding box for the location
+                        bbox = get_bounding_box_from_coords(*coords)
+                        # Retrieve memories for the location
+                        memories = await self.memory_retrieval.get_memories_for_location(bbox)
+                        return {
+                            "type": "location_based",
+                            "query": query,
+                            "location": location_info,
+                            "coordinates": coords,
+                            "memories": memories,
+                            "timestamp": datetime.now().isoformat()
+                        }
+                
+            # For non-location queries or if location processing fails
+            # Get direct response from the model
+            response = self.model.get_response(query)
+            
+            return {
+                "type": "direct_response",
+                "query": query,
+                "response": response.get("text"),
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing query: {e}")
+            return {
+                "error": str(e),
+                "query": query,
+                "timestamp": datetime.now().isoformat()
+            }
 
 def run_server(
     host: str = "0.0.0.0",
@@ -64,6 +131,30 @@ def run_server(
     """
     logger.info(f"Starting {PROJECT_TITLE} {VERSION}")
     logger.info(f"API Documentation: http://{host}:{port}/docs")
+    logger.info(f"Using API key: {DEFAULT_API_KEY}")
+    
+    # Initialize the memory query processor
+    processor = MemoryQueryProcessor()
+    
+    # Update the API route to use the processor
+    from memories.interface.api.routers.memory import router, MemoryRequest, MemoryResponse
+    
+    @router.post("/process", response_model=MemoryResponse)
+    async def process_memory(request: MemoryRequest):
+        """Process a memory request"""
+        try:
+            # Process the query
+            result = await processor.process_query(request.text)
+            
+            return MemoryResponse(
+                status="success",
+                message="Request processed successfully",
+                data=result,
+                timestamp=datetime.now()
+            )
+        except Exception as e:
+            logger.error(f"Error processing memory request: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
     
     config = uvicorn.Config(
         app="memories.interface.api.main:app",
