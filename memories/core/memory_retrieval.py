@@ -1153,7 +1153,7 @@ class MemoryRetrieval:
             logger.error(f"Error getting red-hot stats: {e}")
             return {}
 
-    def get_similar_columns(self, query_word, similarity_threshold=0.5):
+    def get_similar_columns(self, query_word, similarity_threshold=0.7):
         """Find semantically similar columns above the similarity threshold."""
         logger.info(f"\n{'='*80}")
         logger.info("SEMANTIC SEARCH")
@@ -1250,7 +1250,7 @@ class MemoryRetrieval:
         self,
         query_word: str,
         bbox: tuple,
-        similarity_threshold: float = 0.5
+        similarity_threshold: float = 0.7
     ) -> pd.DataFrame:
         """
         Search for geospatial features (like roads, buildings, landuse, etc.) within a geographic bounding box.
