@@ -135,7 +135,7 @@ class MemoryManager:
             
         self.storage_path.mkdir(parents=True, exist_ok=True)
         
-        # Initialize DuckDB
+        # Initialize single DuckDB connection for both warm and cold storage
         self._init_duckdb()
         
         # Store vector encoder if provided
@@ -203,45 +203,14 @@ class MemoryManager:
                 base_dict[key] = value
 
     def _init_duckdb(self) -> None:
-        """Initialize DuckDB connections for warm and cold storage."""
+        """Initialize single DuckDB connection for warm and cold storage."""
         try:
-            # Get DuckDB configurations
-            warm_config = self.config['memory'].get('warm', {}).get('duckdb', {})
-            cold_config = self.config['memory'].get('cold', {}).get('duckdb', {})
-
-            # Initialize warm memory DuckDB (in-memory)
-            self.warm_db = duckdb.connect(':memory:')
-            if warm_config.get('memory_limit'):
-                self.warm_db.execute(f"SET memory_limit='{warm_config['memory_limit']}'")
-            if warm_config.get('threads'):
-                self.warm_db.execute(f"SET threads={warm_config['threads']}")
-            for key, value in warm_config.get('config', {}).items():
-                try:
-                    if isinstance(value, bool):
-                        value = 'true' if value else 'false'
-                    self.warm_db.execute(f"SET {key}='{value}'")
-                except Exception as e:
-                    self.logger.warning(f"Failed to set warm config {key}={value}: {e}")
-
-            # Initialize cold memory DuckDB (persistent)
-            cold_db_path = self.storage_path / cold_config.get('db_file', 'cold.duckdb')
-            self.cold_db = duckdb.connect(str(cold_db_path))
-            if cold_config.get('memory_limit'):
-                self.cold_db.execute(f"SET memory_limit='{cold_config['memory_limit']}'")
-            if cold_config.get('threads'):
-                self.cold_db.execute(f"SET threads={cold_config['threads']}")
-            for key, value in cold_config.get('config', {}).items():
-                try:
-                    if isinstance(value, bool):
-                        value = 'true' if value else 'false'
-                    self.cold_db.execute(f"SET {key}='{value}'")
-                except Exception as e:
-                    self.logger.warning(f"Failed to set cold config {key}={value}: {e}")
-
-            self.logger.info("Initialized DuckDB connections for warm and cold storage")
+            import duckdb
+            self.db_connection = duckdb.connect(database=':memory:', read_only=False)
+            self.logger.info("Initialized DuckDB connection")
         except Exception as e:
             self.logger.error(f"Failed to initialize DuckDB: {e}")
-            raise
+            self.db_connection = None
 
     def _init_red_hot_memory(self) -> None:
         """Initialize red hot memory tier."""
@@ -280,14 +249,7 @@ class MemoryManager:
     def _init_warm_memory(self) -> None:
         """Initialize warm memory tier."""
         try:
-            warm_config = self.config['memory'].get('warm', {})
-            warm_path = self.storage_path / warm_config.get('path', 'warm')
-            warm_path.mkdir(parents=True, exist_ok=True)
-            self.warm = WarmMemory(
-                storage_path=warm_path,
-                max_size=warm_config.get('max_size', 1024*1024*1024),
-                duckdb_connection=self.warm_db
-            )
+            self.warm = WarmMemory(duckdb_connection=self.db_connection)
             self.logger.info("Initialized warm memory")
         except Exception as e:
             self.logger.error(f"Failed to initialize warm memory: {e}")
@@ -296,15 +258,7 @@ class MemoryManager:
     def _init_cold_memory(self) -> None:
         """Initialize cold memory tier."""
         try:
-            cold_config = self.config['memory'].get('cold', {})
-            cold_path = self.storage_path / cold_config.get('path', 'cold')
-            cold_path.mkdir(parents=True, exist_ok=True)
-            
-            self.cold = ColdMemory(
-                storage_path=cold_path,
-                max_size=cold_config.get('max_size', 10*1024*1024*1024),
-                duckdb_connection=self.cold_db
-            )
+            self.cold = ColdMemory(duckdb_connection=self.db_connection)
             self.logger.info("Initialized cold memory")
         except Exception as e:
             self.logger.error(f"Failed to initialize cold memory: {e}")
@@ -488,34 +442,17 @@ class MemoryManager:
             logger.error(f"Failed to clear memory: {e}")
     
     def cleanup(self) -> None:
-        """Clean up resources for all memory tiers."""
-        try:
-            if self.red_hot:
-                self.red_hot.cleanup()
-            
-            if self.hot:
-                self.hot.cleanup()
-            
-            if self.warm:
-                self.warm.cleanup()
-            
-            if self.cold:
-                self.cold.cleanup()
-            
-            if self.glacier:
-                self.glacier.cleanup()
-                
-            # Close DuckDB connections
-            if hasattr(self, 'warm_db'):
-                self.warm_db.close()
-                self.logger.info("Closed warm DuckDB connection")
-                
-            if hasattr(self, 'cold_db'):
-                self.cold_db.close()
-                self.logger.info("Closed cold DuckDB connection")
-                
-        except Exception as e:
-            logger.error(f"Failed to cleanup memory manager: {e}")
+        """Cleanup all memory tiers and connections."""
+        # Cleanup memory tiers
+        if self.warm:
+            self.warm.cleanup()
+        if self.cold:
+            self.cold.cleanup()
+        
+        # Close shared DuckDB connection
+        if self.db_connection:
+            self.db_connection.close()
+            self.db_connection = None
     
     def __del__(self):
         """Destructor to ensure cleanup is performed."""
