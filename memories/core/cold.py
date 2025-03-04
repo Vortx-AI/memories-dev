@@ -64,17 +64,20 @@ class Config:
         # Make config_path absolute if it's not already
         if not os.path.isabs(config_path):
             config_path = os.path.join(self.project_root, config_path)
-            print(f"[Config] Converted to absolute path: {config_path}")
-        else:
-            print(f"[Config] Using absolute config path: {config_path}")
-
+        
         # Load the configuration
         if not os.path.exists(config_path):
             raise FileNotFoundError(f"Config file not found at: {config_path}")
             
         self.config = self._load_config(config_path)
-        print(f"[Config] Loaded configuration successfully")
-        #self._discover_modalities()
+        
+        # Set default storage path if not specified
+        if 'storage' not in self.config:
+            self.config['storage'] = {}
+        if 'path' not in self.config['storage']:
+            self.config['storage']['path'] = os.path.join(self.project_root, 'data')
+            os.makedirs(self.config['storage']['path'], exist_ok=True)
+            print(f"[Config] Using default storage path: {self.config['storage']['path']}")
     
     def _get_project_root(self) -> str:
         """Get the project root directory."""

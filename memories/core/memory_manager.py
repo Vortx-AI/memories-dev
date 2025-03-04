@@ -95,10 +95,9 @@ class MemoryManager:
     
     def __init__(
         self,
-        storage_path: Optional[Union[str, Path]] = None,
         config_path: Optional[Union[str, Path]] = None,
         vector_encoder: Optional[Any] = None,
-        force_cpu: bool = True,  # Default to CPU for FAISS to avoid GPU errors
+        force_cpu: bool = True,
         enable_red_hot: bool = True,
         enable_hot: bool = True,
         enable_warm: bool = True,
@@ -109,49 +108,19 @@ class MemoryManager:
         """Initialize MemoryManager.
         
         Args:
-            storage_path: Optional explicit storage path. If provided, overrides config.
-            config_path: Optional path to config file. If None, uses default configuration.
-            vector_encoder: Optional vector encoder function for red hot memory.
-            force_cpu: Whether to force CPU usage for FAISS (default: True)
-            enable_red_hot: Whether to enable red hot memory tier (default: True)
-            enable_hot: Whether to enable hot memory tier (default: True)
-            enable_warm: Whether to enable warm memory tier (default: True)
-            enable_cold: Whether to enable cold memory tier (default: True)
-            enable_glacier: Whether to enable glacier memory tier (default: True)
+            config_path: Optional path to config file. If None, uses default configuration
+            vector_encoder: Optional vector encoder for red hot memory
+            force_cpu: Whether to force CPU usage
+            enable_*: Flags to enable/disable different memory tiers
             custom_config: Optional dictionary to override specific config values
         """
-        self.logger = logging.getLogger(__name__)
+        # Load configuration
+        self.config = Config(config_path)
         
-        # Load and merge configurations
-        self.config = self._load_and_merge_config(config_path, custom_config)
-        
-        # Get base storage path (prefer explicit path over config)
-        if storage_path:
-            self.storage_path = Path(storage_path)
-            self.logger.info(f"Using explicit storage path: {self.storage_path}")
-        else:
-            self.storage_path = Path(self.config['memory']['base_path'])
-            self.logger.info(f"Using config storage path: {self.storage_path}")
-            
-        self.storage_path.mkdir(parents=True, exist_ok=True)
-        
-        # Initialize single DuckDB connection for both warm and cold storage
+        # Initialize single DuckDB connection
         self._init_duckdb()
-        
-        # Store vector encoder if provided
-        self.vector_encoder = vector_encoder
 
         # Initialize enabled memory tiers
-        if enable_red_hot:
-            self._init_red_hot_memory()
-        else:
-            self.red_hot = None
-
-        if enable_hot:
-            self._init_hot_memory()
-        else:
-            self.hot = None
-
         if enable_warm:
             self._init_warm_memory()
         else:
@@ -162,10 +131,23 @@ class MemoryManager:
         else:
             self.cold = None
 
+        if enable_red_hot:
+            self._init_red_hot_memory()
+        else:
+            self.red_hot = None
+
+        if enable_hot:
+            self._init_hot_memory()
+        else:
+            self.hot = None
+
         if enable_glacier:
             self._init_glacier_memory()
         else:
             self.glacier = None
+
+        # Store vector encoder if provided
+        self.vector_encoder = vector_encoder
 
     def _load_and_merge_config(
         self,
@@ -216,7 +198,7 @@ class MemoryManager:
         """Initialize red hot memory tier."""
         try:
             red_hot_config = self.config['memory'].get('red_hot', {})
-            red_hot_path = self.storage_path / red_hot_config.get('path', 'red_hot')
+            red_hot_path = self.config['memory']['base_path'] / red_hot_config.get('path', 'red_hot')
             red_hot_path.mkdir(parents=True, exist_ok=True)
             
             self.red_hot = RedHotMemory(
@@ -268,7 +250,7 @@ class MemoryManager:
         """Initialize glacier memory tier."""
         try:
             glacier_config = self.config['memory'].get('glacier', {})
-            glacier_path = self.storage_path / glacier_config.get('path', 'glacier')
+            glacier_path = self.config['memory']['base_path'] / glacier_config.get('path', 'glacier')
             glacier_path.mkdir(parents=True, exist_ok=True)
             self.glacier = GlacierMemory(
                 storage_path=glacier_path,
@@ -286,7 +268,7 @@ class MemoryManager:
                 raise ValueError(f"Invalid memory type: {memory_type}")
                 
             config = self.config['memory'][memory_type]
-            return self.storage_path / config['path']
+            return self.config['memory']['base_path'] / config['path']
             
         except Exception as e:
             self.logger.error(f"Error getting {memory_type} memory path: {e}")
@@ -737,7 +719,7 @@ class MemoryManager:
             return
             
         try:
-            storage_dir = self.storage_path
+            storage_dir = self.config['memory']['base_path']
             if not storage_dir.exists():
                 self.logger.info("No existing storage directory found")
                 return
