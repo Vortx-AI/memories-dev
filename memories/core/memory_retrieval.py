@@ -1179,6 +1179,9 @@ class MemoryRetrieval:
             column_name = metadata.get('column_name')
             file_path = metadata.get('file_path')
             
+            # Try different geometry column names
+            geometry_columns = ['geom', 'geometry', 'c', 'the_geom']
+            
             try:
                 # First check if file exists
                 if not os.path.exists(file_path):
@@ -1188,99 +1191,70 @@ class MemoryRetrieval:
                 # Calculate similarity
                 similarity = 1 / (1 + float(D[0][i]))
                 
-                # Handle different file types and schemas
-                if 'division' in file_path:
-                    # Special handling for division files with complex names structure
-                    query = f"""
-                    SELECT 
-                        id,
-                        names.primary as name,
-                        names.common['en'] as name_en,
-                        subtype,
-                        class,
-                        ST_AsText(geometry) as geom_text
-                    FROM parquet_scan('{file_path}')
-                    WHERE ST_Intersects(
-                        geometry,
-                        ST_GeomFromText('POLYGON(({min_x} {min_y}, {min_x} {max_y}, {max_x} {max_y}, {max_x} {min_y}, {min_x} {min_y}))')
-                    )
-                    LIMIT 1000
-                    """
-                else:
-                    # Regular OSM files
-                    geometry_columns = ['geom', 'geometry', 'c', 'the_geom']
-                    found_result = False
-                    
-                    for geom_column in geometry_columns:
-                        if geom_column not in metadata.get('all_columns', []):
-                            continue
+                # Try each possible geometry column
+                for geom_column in geometry_columns:
+                    try:
+                        if similarity > similarity_threshold:
+                            # For high similarity, get selected columns to avoid huge output
+                            selected_cols = [column_name, 'osm_id', 'place', 'highway', 'amenity', 'building', geom_column]
+                            selected_cols = [col for col in selected_cols if col in metadata.get('all_columns', [])]
+                            cols_str = ', '.join(f'"{col}"' for col in selected_cols)
+                            
+                            query = f"""
+                            SELECT {cols_str}
+                            FROM parquet_scan('{file_path}')
+                            WHERE ST_Intersects(
+                                ST_GeomFromWKB({geom_column}),
+                                ST_GeomFromText('POLYGON(({min_x} {min_y}, {min_x} {max_y}, {max_x} {max_y}, {max_x} {min_y}, {min_x} {min_y}))')
+                            )
+                            LIMIT 1000
+                            """
+                        else:
+                            query = f"""
+                            SELECT DISTINCT "{column_name}"
+                            FROM parquet_scan('{file_path}')
+                            WHERE ST_Intersects(
+                                ST_GeomFromWKB({geom_column}),
+                                ST_GeomFromText('POLYGON(({min_x} {min_y}, {min_x} {max_y}, {max_x} {max_y}, {max_x} {min_y}, {min_x} {min_y}))')
+                            )
+                            LIMIT 100
+                            """
                         
-                        try:
+                        result_df = self.con.execute(query).fetchdf()
+                        
+                        if not result_df.empty:
                             if similarity > similarity_threshold:
-                                # For high similarity, get selected columns
-                                selected_cols = [column_name, 'osm_id', 'place', 'highway', 'amenity', 'building']
-                                selected_cols = [col for col in selected_cols if col in metadata.get('all_columns', [])]
-                                cols_str = ', '.join(f'"{col}"' for col in selected_cols)
-                                cols_str += f', ST_AsText({geom_column}) as geom_text'
+                                # Clean up the data before returning
+                                clean_data = []
+                                for _, row in result_df.iterrows():
+                                    clean_row = {k: v for k, v in row.items() 
+                                              if k != geom_column and v is not None and v != ''}
+                                    if clean_row:
+                                        clean_data.append(clean_row)
                                 
-                                query = f"""
-                                SELECT {cols_str}
-                                FROM parquet_scan('{file_path}')
-                                WHERE ST_Intersects(
-                                    ST_GeomFromWKB({geom_column}),
-                                    ST_GeomFromText('POLYGON(({min_x} {min_y}, {min_x} {max_y}, {max_x} {max_y}, {max_x} {min_y}, {min_x} {min_y}))')
-                                )
-                                LIMIT 1000
-                                """
+                                results['high_similarity'].append({
+                                    'similarity': similarity,
+                                    'column_name': column_name,
+                                    'file_path': file_path,
+                                    'geometry_column': geom_column,
+                                    'dtype': metadata.get('dtype', 'unknown'),
+                                    'data': clean_data
+                                })
                             else:
-                                query = f"""
-                                SELECT DISTINCT "{column_name}"
-                                FROM parquet_scan('{file_path}')
-                                WHERE ST_Intersects(
-                                    ST_GeomFromWKB({geom_column}),
-                                    ST_GeomFromText('POLYGON(({min_x} {min_y}, {min_x} {max_y}, {max_x} {max_y}, {max_x} {min_y}, {min_x} {min_y}))')
-                                )
-                                LIMIT 100
-                                """
-                            
-                            result_df = self.con.execute(query).fetchdf()
-                            
-                            if not result_df.empty:
-                                found_result = True
-                                if similarity > similarity_threshold:
-                                    # Clean up the data before returning
-                                    clean_data = []
-                                    for _, row in result_df.iterrows():
-                                        clean_row = {k: v for k, v in row.items() 
-                                                  if k != 'geom_text' and v is not None and v != '' and v is not False}
-                                        if clean_row:
-                                            clean_data.append(clean_row)
-                                    
-                                    results['high_similarity'].append({
-                                        'similarity': similarity,
-                                        'column_name': column_name,
-                                        'file_path': file_path,
-                                        'geometry_column': geom_column,
-                                        'dtype': metadata.get('dtype', 'unknown'),
-                                        'data': clean_data
-                                    })
-                                else:
-                                    results['partial_matches'][f"{file_path}:{column_name}"] = {
-                                        'similarity': similarity,
-                                        'column_name': column_name,
-                                        'file_path': file_path,
-                                        'geometry_column': geom_column,
-                                        'dtype': metadata.get('dtype', 'unknown'),
-                                        'values': [v for v in result_df[column_name].tolist() if v]
-                                    }
-                                break  # Found working geometry column
-                            
-                        except Exception as e:
-                            logger.debug(f"Failed with geometry column {geom_column}: {e}")
-                            continue
+                                results['partial_matches'][f"{file_path}:{column_name}"] = {
+                                    'similarity': similarity,
+                                    'column_name': column_name,
+                                    'file_path': file_path,
+                                    'geometry_column': geom_column,
+                                    'dtype': metadata.get('dtype', 'unknown'),
+                                    'values': [v for v in result_df[column_name].tolist() if v]
+                                }
+                            logger.info(f"Found {len(result_df)} results using {geom_column} in {file_path}")
+                            break  # Found working geometry column, stop trying others
                         
-                    if not found_result:
-                        logger.warning(f"No valid geometry column found in {file_path}")
+                    except Exception as e:
+                        logger.debug(f"Failed with geometry column {geom_column}: {e}")
+                        continue
             
             except Exception as e:
                 logger.error(f"Error processing {file_path}: {e}")
