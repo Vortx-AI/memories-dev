@@ -22,61 +22,70 @@ class RedHotMemory:
         """Initialize red-hot memory storage."""
         self.storage_path = storage_path
         self.max_size = max_size
+        self.dimension = 384  # dimension for all-MiniLM-L6-v2
         
         # Create storage directory if it doesn't exist
         os.makedirs(storage_path, exist_ok=True)
         
-        # Initialize FAISS index
-        self.index = faiss.IndexFlatL2(384)  # 384 dimensions for all-MiniLM-L6-v2
-        
-        # Initialize metadata storage
+        # Initialize FAISS index and metadata
+        self.index = None
         self.metadata = {}
         
-        # Load existing index and metadata if available
-        self._load_state()
+        # Initialize storage
+        self._init_storage()
 
-    def _load_state(self):
-        """Load index and metadata from files."""
-        index_path = os.path.join(self.storage_path, 'faiss.index')
-        metadata_path = os.path.join(self.storage_path, 'metadata.json')
-        
-        # Load FAISS index if exists
-        if os.path.exists(index_path):
-            try:
-                self.index = faiss.read_index(index_path)
-                logger.info(f"Loaded FAISS index with {self.index.ntotal} vectors")
-            except Exception as e:
-                logger.error(f"Failed to load FAISS index: {e}")
-        
-        # Load metadata if exists
-        if os.path.exists(metadata_path):
-            try:
-                with open(metadata_path, 'r') as f:
-                    self.metadata = json.load(f)
-                logger.info(f"Loaded metadata for {len(self.metadata)} vectors")
-            except Exception as e:
-                logger.error(f"Failed to load metadata: {e}")
-                self.metadata = {}
+    def _init_storage(self):
+        """Initialize or load existing storage."""
+        try:
+            index_path = os.path.join(self.storage_path, 'faiss.index')
+            metadata_path = os.path.join(self.storage_path, 'metadata.json')
+            
+            # Try to load existing index
+            if os.path.exists(index_path):
+                try:
+                    self.index = faiss.read_index(index_path)
+                    logger.info(f"Loaded existing FAISS index with {self.index.ntotal} vectors")
+                except Exception as e:
+                    logger.error(f"Failed to load existing index: {e}")
+                    self.index = None
+            
+            # Create new index if needed
+            if self.index is None:
+                self.index = faiss.IndexFlatL2(self.dimension)
+                logger.info("Created new FAISS index")
+            
+            # Load metadata if exists
+            if os.path.exists(metadata_path):
+                try:
+                    with open(metadata_path, 'r') as f:
+                        self.metadata = json.load(f)
+                    logger.info(f"Loaded metadata for {len(self.metadata)} vectors")
+                except Exception as e:
+                    logger.error(f"Failed to load metadata: {e}")
+                    self.metadata = {}
+                    
+        except Exception as e:
+            logger.error(f"Error initializing storage: {e}")
+            # Ensure we at least have a working index
+            self.index = faiss.IndexFlatL2(self.dimension)
+            self.metadata = {}
 
     def _save_state(self):
-        """Save index and metadata to files."""
-        index_path = os.path.join(self.storage_path, 'faiss.index')
-        metadata_path = os.path.join(self.storage_path, 'metadata.json')
-        
-        # Save FAISS index
+        """Save current state to disk."""
         try:
+            # Save index
+            index_path = os.path.join(self.storage_path, 'faiss.index')
             faiss.write_index(self.index, index_path)
-            logger.info(f"Saved FAISS index with {self.index.ntotal} vectors")
-        except Exception as e:
-            logger.error(f"Failed to save FAISS index: {e}")
-        
-        # Save metadata
-        try:
+            
+            # Save metadata
+            metadata_path = os.path.join(self.storage_path, 'metadata.json')
             with open(metadata_path, 'w') as f:
                 json.dump(self.metadata, f)
-            logger.info(f"Saved metadata for {len(self.metadata)} vectors")
+                
+            logger.info(f"Saved state: {self.index.ntotal} vectors")
+            
         except Exception as e:
-            logger.error(f"Failed to save metadata: {e}")
+            logger.error(f"Failed to save state: {e}")
 
     def add_vector(self, vector: np.ndarray, metadata: Dict[str, Any] = None):
         """Add a vector and its metadata to storage."""
@@ -99,7 +108,7 @@ class RedHotMemory:
 
     def __len__(self):
         """Return number of vectors in storage."""
-        return self.index.ntotal
+        return self.index.ntotal if self.index is not None else 0
 
     def _init_index(self):
         """Initialize FAISS index."""
@@ -313,10 +322,8 @@ class RedHotMemory:
             bool: True if cleared successfully, False otherwise
         """
         try:
-            # Reset FAISS index
-            self.index = faiss.IndexFlatL2(384)
-            
-            # Clear metadata
+            # Reset index
+            self.index = faiss.IndexFlatL2(self.dimension)
             self.metadata = {}
             
             # Remove storage files
@@ -327,12 +334,12 @@ class RedHotMemory:
                 os.remove(index_path)
             if os.path.exists(metadata_path):
                 os.remove(metadata_path)
-                
+            
             logger.info("Successfully cleared red-hot memory")
             return True
             
         except Exception as e:
-            logger.error(f"Error clearing red-hot memory: {e}")
+            logger.error(f"Error clearing storage: {e}")
             return False
 
     def reset(self) -> bool:
@@ -346,7 +353,7 @@ class RedHotMemory:
             os.makedirs(self.storage_path)
             
             # Reinitialize empty index
-            self.index = faiss.IndexFlatL2(384)
+            self.index = faiss.IndexFlatL2(self.dimension)
             self.metadata = {}
             
             logger.info("Successfully reset red-hot memory storage")
