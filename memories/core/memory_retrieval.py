@@ -350,14 +350,22 @@ class MemoryRetrieval:
                 max_size=1_000_000  # Default max size or from config
             )
             
-            # Get index info if available
-            index_info = red_hot.index.info() if hasattr(red_hot, 'index') and red_hot.index else "No index"
+            # Get index statistics if available
+            index_stats = {}
+            if hasattr(red_hot, 'index') and red_hot.index:
+                index = red_hot.index
+                index_stats = {
+                    'type': type(index).__name__,
+                    'dimension': index.d,
+                    'total_vectors': index.ntotal,
+                    'is_trained': getattr(index, 'is_trained', True)
+                }
             
             stats = {
                 'red_hot_storage': {
                     'max_size': red_hot.max_size,
                     'storage_path': red_hot.storage_path,
-                    'index_info': index_info,
+                    'index_stats': index_stats,
                     'is_initialized': hasattr(red_hot, 'index') and red_hot.index is not None
                 }
             }
@@ -371,7 +379,7 @@ class MemoryRetrieval:
                 'red_hot_storage': {
                     'max_size': 0,
                     'storage_path': self.storage_path,
-                    'index_info': "Error getting index info",
+                    'index_stats': {},
                     'is_initialized': False
                 }
             }
