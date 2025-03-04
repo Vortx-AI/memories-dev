@@ -87,11 +87,14 @@ class ColdToRedHot:
 
     def transfer_all_schemas(self):
         """Transfer schema information from cold storage metadata to red-hot memory."""
+        print("\nStarting schema transfer process...")
+        
         # Get all schemas from cold storage
+        print("Fetching schemas from cold storage...")
         schemas = self.cold.get_all_schemas()
         total_schemas = len(schemas)
         
-        logger.info(f"Found {total_schemas} schemas in cold storage")
+        print(f"\nFound {total_schemas} schemas to process")
         
         stats = {
             'total_files': total_schemas,
@@ -107,6 +110,7 @@ class ColdToRedHot:
             }
         }
         
+        print("\nProcessing schemas:")
         for schema in schemas:
             try:
                 # Create text from column names
@@ -143,41 +147,32 @@ class ColdToRedHot:
                     source_type = 'buildings'
                 stats['by_source_type'][source_type] += 1
                 
-                # Log progress periodically
-                if stats['processed_files'] % 100 == 0:
-                    self._log_progress(stats)
+                # Print progress every 10 files
+                if stats['processed_files'] % 10 == 0:
+                    print(f"Progress: {stats['processed_files']}/{total_schemas} schemas processed")
+                    print(f"Success: {stats['successful_transfers']}, Failed: {stats['failed_transfers']}")
                     
             except Exception as e:
                 logger.error(f"Error transferring schema: {e}")
                 stats['failed_transfers'] += 1
                 stats['processed_files'] += 1
         
-        # Log final statistics
-        self._log_final_stats(stats)
+        print("\nTransfer completed!")
+        print(f"Total processed: {stats['processed_files']}/{total_schemas}")
+        print(f"Successful: {stats['successful_transfers']}")
+        print(f"Failed: {stats['failed_transfers']}")
         
-        # Print final FAISS index size and location
+        print("\nBy source type:")
+        for source_type, count in stats['by_source_type'].items():
+            if count > 0:
+                print(f"  {source_type}: {count} schemas")
+        
+        # Print final FAISS index info
         print(f"\nFinal FAISS index size: {self.red_hot.index.ntotal} vectors")
         print(f"FAISS index dimension: {self.red_hot.dimension}")
         print(f"FAISS storage location: {self.faiss_dir}")
         
         return stats
-
-    def _log_progress(self, stats):
-        """Log progress of the transfer process."""
-        progress = (stats['processed_files'] / stats['total_files']) * 100 if stats['total_files'] > 0 else 0
-        logger.info(f"Progress: {progress:.2f}% ({stats['processed_files']}/{stats['total_files']} schemas)")
-        logger.info(f"Successful: {stats['successful_transfers']}, Failed: {stats['failed_transfers']}")
-
-    def _log_final_stats(self, stats):
-        """Log final statistics of the transfer process."""
-        logger.info("\n=== Transfer Complete ===")
-        logger.info(f"Total schemas processed: {stats['processed_files']}/{stats['total_files']}")
-        logger.info(f"Successful transfers: {stats['successful_transfers']}")
-        logger.info(f"Failed transfers: {stats['failed_transfers']}")
-        logger.info("\nBy source type:")
-        for source_type, count in stats['by_source_type'].items():
-            if count > 0:  # Only show non-zero counts
-                logger.info(f"  {source_type}: {count} schemas")
 
 def main():
     """Main function to run the transfer process."""

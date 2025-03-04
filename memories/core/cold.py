@@ -380,15 +380,18 @@ class ColdMemory:
             # Extract schema for each file
             schemas = []
             for _, row in result.iterrows():
-                file_path = row['path']  # Use the path column instead of id
+                file_path = row['path']
                 try:
-                    # Read parquet file schema
-                    df = pd.read_parquet(file_path)
+                    # Use DuckDB to get schema information
+                    schema_query = f"""
+                    DESCRIBE SELECT * FROM parquet_scan('{file_path}')
+                    """
+                    schema_df = self.con.execute(schema_query).fetchdf()
                     
                     schema = {
                         'file_path': file_path,
-                        'columns': list(df.columns),
-                        'dtypes': {col: str(dtype) for col, dtype in df.dtypes.items()},
+                        'columns': list(schema_df['column_name']),
+                        'dtypes': dict(zip(schema_df['column_name'], schema_df['column_type'])),
                         'type': 'schema'
                     }
                     schemas.append(schema)
