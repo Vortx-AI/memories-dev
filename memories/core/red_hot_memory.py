@@ -45,8 +45,10 @@ class RedHotMemory:
     def _initialize_schema_storage(self):
         """Initialize tables for storing schema information."""
         self.con.execute("""
+            CREATE SEQUENCE IF NOT EXISTS file_id_seq;
+            
             CREATE TABLE IF NOT EXISTS file_metadata (
-                file_id INTEGER PRIMARY KEY,  -- DuckDB will auto-increment by default
+                file_id INTEGER DEFAULT nextval('file_id_seq'),
                 file_path VARCHAR UNIQUE,
                 file_name VARCHAR,
                 file_type VARCHAR,
@@ -54,19 +56,23 @@ class RedHotMemory:
                 size_bytes BIGINT,
                 row_count BIGINT,
                 source_type VARCHAR,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (file_id)
             )
         """)
         
         self.con.execute("""
+            CREATE SEQUENCE IF NOT EXISTS column_id_seq;
+            
             CREATE TABLE IF NOT EXISTS column_metadata (
-                column_id INTEGER PRIMARY KEY,  -- DuckDB will auto-increment by default
+                column_id INTEGER DEFAULT nextval('column_id_seq'),
                 file_id INTEGER,
                 column_name VARCHAR,
                 data_type VARCHAR,
                 is_nullable BOOLEAN,
                 description TEXT,
                 statistics JSON,
+                PRIMARY KEY (column_id),
                 FOREIGN KEY (file_id) REFERENCES file_metadata(file_id)
             )
         """)
