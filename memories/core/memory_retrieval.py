@@ -1327,27 +1327,32 @@ class MemoryRetrieval:
         bbox: tuple,
         similarity_threshold: float = 0.5,
         max_workers: int = None,
-        batch_size: int = 10
+        batch_size: int = 10,
+        debug: bool = True  # Add debug flag
     ) -> pd.DataFrame:
-        """
-        Search for geospatial features using parallel processing and GPU acceleration.
-
-        Args:
-            query_word (str): Search term (e.g., 'road', 'building', 'park')
-            bbox (tuple): Geographic bounding box as (min_lon, min_lat, max_lon, max_lat)
-            similarity_threshold (float, optional): Minimum similarity score. Defaults to 0.5.
-            max_workers (int, optional): Maximum number of parallel processes.
-            batch_size (int, optional): Number of tables to process in each batch. Defaults to 10.
-
-        Returns:
-            pd.DataFrame: Matching features within the bounding box
-        """
+        """Search for geospatial features with detailed debugging."""
         try:
             # Get all tables
             tables = self.cold.list_tables()
             if not tables:
                 logger.warning("No tables available")
                 return pd.DataFrame()
+            
+            if debug:
+                logger.info(f"\nDEBUG INFO:")
+                logger.info(f"Query word: {query_word}")
+                logger.info(f"Bounding box: {bbox}")
+                logger.info(f"Total tables found: {len(tables)}")
+                logger.info("\nTable Information:")
+                for table in tables[:5]:  # Show first 5 tables
+                    logger.info(f"\nTable: {table['table_name']}")
+                    logger.info(f"Schema: {table['schema']}")
+                    # Sample query to check data
+                    try:
+                        sample = self.cold.query(f"SELECT * FROM {table['table_name']} LIMIT 1")
+                        logger.info(f"Sample data columns: {list(sample.columns)}")
+                    except Exception as e:
+                        logger.info(f"Error getting sample: {e}")
             
             # Remove duplicates based on file path
             unique_tables = {}
@@ -1357,88 +1362,93 @@ class MemoryRetrieval:
                     unique_tables[file_path] = table
             
             tables = list(unique_tables.values())
-            total_tables = len(tables)
-            logger.info(f"Processing {total_tables} unique tables")
+            if debug:
+                logger.info(f"\nUnique tables after deduplication: {len(tables)}")
             
             # Log GPU availability
             gpu_available = _has_gpu()
             logger.info(f"GPU acceleration: {'enabled' if gpu_available else 'disabled'}")
             
-            # Determine optimal number of workers
-            if max_workers is None:
-                max_workers = max(1, multiprocessing.cpu_count() - 1)
-            logger.info(f"Using {max_workers} worker processes")
-            
-            # Create batches of tables
-            batches = [tables[i:i + batch_size] for i in range(0, len(tables), batch_size)]
-            logger.info(f"Processing in {len(batches)} batches of size {batch_size}")
-            
-            # Process batches
+            # Process tables in parallel
             start_time = time.time()
             all_results = []
+            
+            # Create batches
+            batches = [tables[i:i + batch_size] for i in range(0, len(tables), batch_size)]
             
             for batch_num, batch in enumerate(batches, 1):
                 batch_start = time.time()
                 results = []
                 
-                # Process batch in parallel
+                if debug:
+                    logger.info(f"\nProcessing batch {batch_num}/{len(batches)}")
+                
                 with ProcessPoolExecutor(max_workers=max_workers) as executor:
                     future_to_table = {
-                        executor.submit(_process_table_gpu, (table, bbox, self.cold)): table["table_name"]
+                        executor.submit(_process_table_gpu, (table, bbox, self.cold)): table
                         for table in batch
                     }
                     
                     for future in as_completed(future_to_table):
-                        table_name = future_to_table[future]
+                        table = future_to_table[future]
                         try:
                             df = future.result()
                             if not df.empty:
+                                if debug:
+                                    logger.info(f"Found {len(df)} results in {table['table_name']}")
                                 results.append(df)
-                                logger.debug(f"Found {len(df)} results in table {table_name}")
+                            elif debug:
+                                logger.info(f"No results in {table['table_name']}")
                         except Exception as e:
-                            logger.error(f"Error processing table {table_name}: {e}")
+                            logger.error(f"Error processing {table['table_name']}: {e}")
                 
-                # Combine batch results
                 if results:
                     if gpu_available:
                         try:
-                            # Concatenate on GPU
                             batch_df = cudf.concat(results, ignore_index=True)
                             all_results.append(batch_df)
                         except Exception as e:
-                            logger.warning(f"GPU concatenation failed, falling back to CPU: {e}")
-                            # Convert to pandas and concatenate
+                            logger.warning(f"GPU concatenation failed: {e}")
                             cpu_results = [df.to_pandas() if isinstance(df, cudf.DataFrame) else df 
                                          for df in results]
                             all_results.append(pd.concat(cpu_results, ignore_index=True))
                     else:
                         all_results.append(pd.concat(results, ignore_index=True))
                 
-                batch_time = time.time() - batch_start
-                logger.info(f"Batch {batch_num}/{len(batches)} processed in {batch_time:.2f}s")
+                if debug:
+                    batch_time = time.time() - batch_start
+                    logger.info(f"Batch {batch_num} took {batch_time:.2f}s")
             
-            # Combine all results
+            # Combine final results
             final_results = pd.DataFrame()
             if all_results:
                 if gpu_available:
                     try:
-                        # Final concatenation on GPU
                         final_results = cudf.concat(all_results, ignore_index=True).to_pandas()
                     except Exception as e:
-                        logger.warning(f"Final GPU concatenation failed, falling back to CPU: {e}")
+                        logger.warning(f"Final GPU concatenation failed: {e}")
                         cpu_results = [df.to_pandas() if isinstance(df, cudf.DataFrame) else df 
                                      for df in all_results]
                         final_results = pd.concat(cpu_results, ignore_index=True)
                 else:
                     final_results = pd.concat(all_results, ignore_index=True)
             
-            total_time = time.time() - start_time
-            logger.info(f"Total processing time: {total_time:.2f}s")
-            logger.info(f"Found {len(final_results)} total results")
-            logger.info(f"Processing speed: {total_tables/total_time:.2f} tables/second")
+            if debug:
+                total_time = time.time() - start_time
+                logger.info("\nFinal Results:")
+                logger.info(f"Total processing time: {total_time:.2f}s")
+                logger.info(f"Total results found: {len(final_results)}")
+                if not final_results.empty:
+                    logger.info(f"Columns in results: {list(final_results.columns)}")
+                    logger.info("\nSample of results:")
+                    logger.info(final_results.head())
+                else:
+                    logger.info("No results found in any table")
             
             return final_results
             
         except Exception as e:
             logger.error(f"Error in search_geospatial_data_in_bbox: {e}")
+            if debug:
+                logger.exception("Full error traceback:")
             return pd.DataFrame() 
