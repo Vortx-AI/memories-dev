@@ -1244,4 +1244,94 @@ class MemoryRetrieval:
                     output.append(f"... and {len(data['values'])-10} more values")
                 output.append("-" * 80)
         
-        return "\n".join(output) 
+        return "\n".join(output)
+
+    def get_spatial_semantic_data(
+        self,
+        query_word: str,
+        bbox: tuple,
+        similarity_threshold: float = 0.5
+    ) -> pd.DataFrame:
+        """
+        Search for data that matches semantically and falls within a bounding box.
+        
+        Args:
+            query_word: Term to search for
+            bbox: Tuple of (min_lon, min_lat, max_lon, max_lat)
+            similarity_threshold: Minimum similarity score (default: 0.5)
+        
+        Returns:
+            DataFrame containing matching records
+        """
+        logger.info(f"\n{'='*80}")
+        logger.info("SPATIAL SEMANTIC SEARCH")
+        logger.info(f"{'='*80}")
+        logger.info(f"Query word: '{query_word}'")
+        logger.info(f"Bounding box: {bbox}")
+        
+        # First get semantically similar columns
+        similar_columns = self.get_similar_columns(query_word, similarity_threshold)
+        
+        if not similar_columns:
+            logger.warning("No similar columns found")
+            return pd.DataFrame()
+        
+        # Create unique list of files and their columns to query
+        query_targets = {}  # file_path -> {columns, geometry_column}
+        for match in similar_columns:
+            file_path = match['full_path']
+            if file_path not in query_targets:
+                metadata = self.red_hot.get_metadata(file_path)
+                query_targets[file_path] = {
+                    'columns': set([match['column']]),
+                    'geometry_column': metadata.get('geometry_column')
+                }
+            else:
+                query_targets[file_path]['columns'].add(match['column'])
+        
+        logger.info("\nFiles to query:")
+        for file_path, info in query_targets.items():
+            logger.info(f"\nFile: {os.path.basename(file_path)}")
+            logger.info(f"Columns: {info['columns']}")
+            logger.info(f"Geometry column: {info['geometry_column']}")
+        
+        # Build and execute spatial queries
+        min_lon, min_lat, max_lon, max_lat = bbox
+        results = pd.DataFrame()
+        
+        for file_path, info in query_targets.items():
+            if not info['geometry_column']:
+                logger.warning(f"No geometry column found for {file_path}, skipping")
+                continue
+            
+            try:
+                # Build column list for query
+                columns = list(info['columns'])
+                columns.append(info['geometry_column'])
+                cols_str = ', '.join(f'"{col}"' for col in columns)
+                
+                query = f"""
+                SELECT 
+                    {cols_str},
+                    '{os.path.basename(file_path)}' as source_file
+                FROM parquet_scan('{file_path}')
+                WHERE ST_Intersects(
+                    "{info['geometry_column']}"::GEOMETRY,
+                    ST_GeomFromText('POLYGON(({min_lon} {min_lat}, {min_lon} {max_lat}, 
+                    {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))')
+                )
+                """
+                
+                logger.info(f"\nExecuting query for {os.path.basename(file_path)}")
+                df = self.con.execute(query).fetchdf()
+                logger.info(f"Found {len(df)} results")
+                
+                if not df.empty:
+                    results = pd.concat([results, df], ignore_index=True)
+                
+            except Exception as e:
+                logger.error(f"Error querying {file_path}: {e}")
+                continue
+        
+        logger.info(f"\nTotal results found: {len(results)}")
+        return results 
