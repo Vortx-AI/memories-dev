@@ -115,23 +115,23 @@ class ColdToRedHot:
         print("\nProcessing schemas:")
         for schema in schemas:
             try:
-                # Create text from column names
+                # Create embeddings for each column name individually
                 columns = schema.get('columns', [])
-                column_text = " ".join(columns)
-                
-                # Create embedding
-                embedding = self.model.encode([column_text])[0]
-                
-                # Add to red-hot memory
-                self.red_hot.add_vector(
-                    embedding,
-                    metadata={
-                        'file_path': schema.get('file_path', ''),
-                        'columns': columns,
-                        'dtypes': schema.get('dtypes', {}),
-                        'type': 'schema'
-                    }
-                )
+                for column in columns:
+                    # Create embedding for single column
+                    embedding = self.model.encode([column])[0]
+                    
+                    # Add to red-hot memory with column-specific metadata
+                    self.red_hot.add_vector(
+                        embedding,
+                        metadata={
+                            'file_path': schema.get('file_path', ''),
+                            'column_name': column,
+                            'dtype': schema.get('dtypes', {}).get(column, 'unknown'),
+                            'all_columns': columns,  # Include full schema context
+                            'type': 'column'
+                        }
+                    )
                 
                 stats['processed_files'] += 1
                 stats['successful_transfers'] += 1
