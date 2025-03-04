@@ -1221,7 +1221,7 @@ class MemoryRetrieval:
                             class
                         FROM parquet_scan('{file_path}')
                         WHERE ST_Intersects(
-                            ST_GeomFromWKB(geometry),
+                            geometry::GEOMETRY,
                             {search_polygon}
                         )
                         LIMIT 1000
@@ -1274,7 +1274,7 @@ class MemoryRetrieval:
                                 SELECT {cols_str}
                                 FROM parquet_scan('{file_path}')
                                 WHERE ST_Intersects(
-                                    ST_GeomFromWKB("{geom_column}"),
+                                    "{geom_column}"::GEOMETRY,
                                     {search_polygon}
                                 )
                                 LIMIT 1000
@@ -1284,13 +1284,14 @@ class MemoryRetrieval:
                                 SELECT DISTINCT "{column_name}"
                                 FROM parquet_scan('{file_path}')
                                 WHERE ST_Intersects(
-                                    ST_GeomFromWKB("{geom_column}"),
+                                    "{geom_column}"::GEOMETRY,
                                     {search_polygon}
                                 )
                                 LIMIT 100
                                 """
                             
                             logger.info("Executing query...")
+                            logger.debug(f"Query: {query}")
                             result_df = self.con.execute(query).fetchdf()
                             logger.info(f"Found {len(result_df)} results")
                             
