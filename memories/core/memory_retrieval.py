@@ -16,6 +16,11 @@ from memories.core.red_hot import RedHotMemory
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from memories.core.memory_manager import MemoryManager
+import cudf
+import cupy as cp
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import multiprocessing
+import torch
 
 logger = logging.getLogger(__name__)
 
@@ -1246,106 +1251,194 @@ class MemoryRetrieval:
         
         return "\n".join(output)
 
+    def _has_gpu():
+        """Check if GPU is available."""
+        try:
+            return torch.cuda.is_available()
+        except:
+            return False
+
+    def _process_table_gpu(args: Tuple) -> Union[pd.DataFrame, cudf.DataFrame]:
+        """Helper function to process a single table using GPU if available."""
+        table, bbox, cold = args
+        try:
+            table_name = table["table_name"]
+            schema = table["schema"]
+            min_lon, min_lat, max_lon, max_lat = bbox
+            
+            # Look for geometry column
+            geom_col = None
+            for col_name, col_type in schema.items():
+                if ('geometry' in col_type.lower() or 
+                    'binary' in col_type.lower() or 
+                    'blob' in col_type.lower() or
+                    col_name.lower() in ['geom', 'geometry', 'the_geom']):
+                    geom_col = col_name
+                    break
+            
+            if not geom_col:
+                return pd.DataFrame() if not _has_gpu() else cudf.DataFrame()
+            
+            # Build and execute spatial query
+            geom_type = schema[geom_col].lower()
+            if 'blob' in geom_type:
+                geom_expr = f'ST_GeomFromWKB(CAST("{geom_col}" AS BLOB))'
+            elif 'binary' in geom_type:
+                geom_expr = f'ST_GeomFromWKB("{geom_col}")'
+            else:
+                geom_expr = f'"{geom_col}"'
+            
+            query = f"""
+            SELECT *
+            FROM {table_name}
+            WHERE ST_Intersects(
+                {geom_expr},
+                ST_GeomFromText('POLYGON(({min_lon} {min_lat}, {min_lon} {max_lat}, 
+                {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))')
+            )
+            """
+            
+            # Use GPU acceleration if available
+            if _has_gpu():
+                try:
+                    # Convert query result to cuDF DataFrame
+                    df = cudf.from_pandas(cold.query(query))
+                    if not df.empty:
+                        df['source_table'] = table_name
+                        df['source_file'] = table.get("file_path", "")
+                    return df
+                except Exception as e:
+                    logger.warning(f"GPU processing failed for {table_name}, falling back to CPU: {e}")
+                
+            # Fall back to CPU processing
+            df = cold.query(query)
+            if not df.empty:
+                df['source_table'] = table_name
+                df['source_file'] = table.get("file_path", "")
+            return df
+            
+        except Exception as e:
+            logger.error(f"Error processing table {table.get('table_name', 'unknown')}: {e}")
+            return pd.DataFrame() if not _has_gpu() else cudf.DataFrame()
+
     def search_geospatial_data_in_bbox(
         self,
         query_word: str,
         bbox: tuple,
-        similarity_threshold: float = 0.7
+        similarity_threshold: float = 0.5,
+        max_workers: int = None,
+        batch_size: int = 10
     ) -> pd.DataFrame:
         """
-        Search for geospatial features (like roads, buildings, landuse, etc.) within a geographic bounding box.
-        Uses semantic search to find relevant data based on the query word.
-        
+        Search for geospatial features using parallel processing and GPU acceleration.
+
         Args:
-            query_word: Search term (e.g., 'road', 'building', 'park', 'landuse', 'water')
-            bbox: Geographic bounding box as (min_lon, min_lat, max_lon, max_lat)
-            similarity_threshold: Minimum semantic similarity score (0-1) for matching columns
-        
+            query_word (str): Search term (e.g., 'road', 'building', 'park')
+            bbox (tuple): Geographic bounding box as (min_lon, min_lat, max_lon, max_lat)
+            similarity_threshold (float, optional): Minimum similarity score. Defaults to 0.5.
+            max_workers (int, optional): Maximum number of parallel processes.
+            batch_size (int, optional): Number of tables to process in each batch. Defaults to 10.
+
         Returns:
-            DataFrame containing matching features within the bounding box
+            pd.DataFrame: Matching features within the bounding box
         """
-        logger.info(f"\n{'='*80}")
-        logger.info("GEOSPATIAL FEATURE SEARCH")
-        logger.info(f"{'='*80}")
-        logger.info(f"Search term: '{query_word}'")
-        logger.info(f"Bounding box: {bbox}")
-        
-        # First get semantically similar columns
-        similar_columns = self.get_similar_columns(query_word, similarity_threshold)
-        
-        if not similar_columns:
-            logger.warning("No similar columns found")
-            return pd.DataFrame()
-        
-        # Deduplicate file paths and group columns
-        unique_files = {}
-        for match in similar_columns:
-            file_path = match['full_path']
-            if file_path not in unique_files:
-                unique_files[file_path] = {
-                    'columns': set(),
-                    'geometry_column': None
-                }
-            unique_files[file_path]['columns'].add(match['column'])
-        
-        logger.info(f"\nFound {len(unique_files)} unique files to process")
-        
-        # Process each unique file
-        min_lon, min_lat, max_lon, max_lat = bbox
-        results = pd.DataFrame()
-        
-        for i, (file_path, info) in enumerate(unique_files.items(), 1):
-            try:
-                # Get schema info directly from parquet file
-                schema_query = f"DESCRIBE SELECT * FROM parquet_scan('{file_path}')"
-                schema_df = self.con.execute(schema_query).fetchdf()
+        try:
+            # Get all tables
+            tables = self.cold.list_tables()
+            if not tables:
+                logger.warning("No tables available")
+                return pd.DataFrame()
+            
+            # Remove duplicates based on file path
+            unique_tables = {}
+            for table in tables:
+                file_path = table.get("file_path", table["table_name"])
+                if file_path not in unique_tables:
+                    unique_tables[file_path] = table
+            
+            tables = list(unique_tables.values())
+            total_tables = len(tables)
+            logger.info(f"Processing {total_tables} unique tables")
+            
+            # Log GPU availability
+            gpu_available = _has_gpu()
+            logger.info(f"GPU acceleration: {'enabled' if gpu_available else 'disabled'}")
+            
+            # Determine optimal number of workers
+            if max_workers is None:
+                max_workers = max(1, multiprocessing.cpu_count() - 1)
+            logger.info(f"Using {max_workers} worker processes")
+            
+            # Create batches of tables
+            batches = [tables[i:i + batch_size] for i in range(0, len(tables), batch_size)]
+            logger.info(f"Processing in {len(batches)} batches of size {batch_size}")
+            
+            # Process batches
+            start_time = time.time()
+            all_results = []
+            
+            for batch_num, batch in enumerate(batches, 1):
+                batch_start = time.time()
+                results = []
                 
-                # Look for geometry column
-                for _, row in schema_df.iterrows():
-                    col_name = row['column_name']
-                    col_type = str(row['column_type']).lower()
-                    if ('geometry' in col_type or 
-                        'binary' in col_type or 
-                        'blob' in col_type or
-                        col_name.lower() in ['geom', 'geometry', 'the_geom']):
-                        info['geometry_column'] = col_name
-                        info['geometry_type'] = col_type
-                        break
+                # Process batch in parallel
+                with ProcessPoolExecutor(max_workers=max_workers) as executor:
+                    future_to_table = {
+                        executor.submit(_process_table_gpu, (table, bbox, self.cold)): table["table_name"]
+                        for table in batch
+                    }
+                    
+                    for future in as_completed(future_to_table):
+                        table_name = future_to_table[future]
+                        try:
+                            df = future.result()
+                            if not df.empty:
+                                results.append(df)
+                                logger.debug(f"Found {len(df)} results in table {table_name}")
+                        except Exception as e:
+                            logger.error(f"Error processing table {table_name}: {e}")
                 
-                # Skip if no geometry column found
-                if not info['geometry_column']:
-                    logger.warning(f"No geometry column found in {file_path}, skipping")
-                    continue
+                # Combine batch results
+                if results:
+                    if gpu_available:
+                        try:
+                            # Concatenate on GPU
+                            batch_df = cudf.concat(results, ignore_index=True)
+                            all_results.append(batch_df)
+                        except Exception as e:
+                            logger.warning(f"GPU concatenation failed, falling back to CPU: {e}")
+                            # Convert to pandas and concatenate
+                            cpu_results = [df.to_pandas() if isinstance(df, cudf.DataFrame) else df 
+                                         for df in results]
+                            all_results.append(pd.concat(cpu_results, ignore_index=True))
+                    else:
+                        all_results.append(pd.concat(results, ignore_index=True))
                 
-                # Build and execute spatial query
-                geom_col = info["geometry_column"]
-                geom_type = info["geometry_type"].lower()
-                
-                if 'blob' in geom_type:
-                    geom_expr = f'ST_GeomFromWKB(CAST("{geom_col}" AS BLOB))'
-                elif 'binary' in geom_type:
-                    geom_expr = f'ST_GeomFromWKB("{geom_col}")'
+                batch_time = time.time() - batch_start
+                logger.info(f"Batch {batch_num}/{len(batches)} processed in {batch_time:.2f}s")
+            
+            # Combine all results
+            final_results = pd.DataFrame()
+            if all_results:
+                if gpu_available:
+                    try:
+                        # Final concatenation on GPU
+                        final_results = cudf.concat(all_results, ignore_index=True).to_pandas()
+                    except Exception as e:
+                        logger.warning(f"Final GPU concatenation failed, falling back to CPU: {e}")
+                        cpu_results = [df.to_pandas() if isinstance(df, cudf.DataFrame) else df 
+                                     for df in all_results]
+                        final_results = pd.concat(cpu_results, ignore_index=True)
                 else:
-                    geom_expr = f'"{geom_col}"'
-                
-                # Query all columns from the file
-                query = f"""
-                SELECT *
-                FROM parquet_scan('{file_path}')
-                WHERE ST_Intersects(
-                    {geom_expr},
-                    ST_GeomFromText('POLYGON(({min_lon} {min_lat}, {min_lon} {max_lat}, 
-                    {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))')
-                )
-                """
-                
-                df = self.con.execute(query).fetchdf()
-                
-                if not df.empty:
-                    results = pd.concat([results, df], ignore_index=True)
-                
-            except Exception as e:
-                logger.error(f"Error processing {file_path}: {e}")
-                continue
-        
-        return results 
+                    final_results = pd.concat(all_results, ignore_index=True)
+            
+            total_time = time.time() - start_time
+            logger.info(f"Total processing time: {total_time:.2f}s")
+            logger.info(f"Found {len(final_results)} total results")
+            logger.info(f"Processing speed: {total_tables/total_time:.2f} tables/second")
+            
+            return final_results
+            
+        except Exception as e:
+            logger.error(f"Error in search_geospatial_data_in_bbox: {e}")
+            return pd.DataFrame() 
