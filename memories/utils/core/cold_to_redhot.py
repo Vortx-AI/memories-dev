@@ -36,6 +36,12 @@ class ColdToRedHot:
         # Initialize components
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
         
+        # Debug prints
+        print("\nDebug info:")
+        print(f"RedHotMemory methods: {dir(self.red_hot)}")
+        print(f"RedHotMemory class: {type(self.red_hot)}")
+        print(f"Has add_vector: {'add_vector' in dir(self.red_hot)}\n")
+        
         logger.info(f"Initialized ColdToRedHot")
         logger.info(f"Cold storage directory: {self.data_dir}")
         logger.info(f"FAISS storage location: {self.faiss_dir}")
