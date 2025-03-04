@@ -1,0 +1,9 @@
+# WebRTC dependencies
+aiortc>=1.5.0
+aioconsole>=0.7.0
+
+# Core dependencies
+aiohttp>=3.9.0
+cryptography>=42.0.0  # Required for WebRTC security
+typing-extensions>=4.9.0
+python-multipart>=0.0.9  # For handling data channels 

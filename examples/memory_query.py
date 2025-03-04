@@ -6,6 +6,7 @@ from typing import Dict, Any, Union, Optional
 import logging
 import os
 import json
+import asyncio
 from pathlib import Path
 from memories.models.load_model import LoadModel
 from memories.utils.text.context_utils import classify_query
@@ -17,6 +18,7 @@ from memories.utils.earth.location_utils import (
 )
 from memories.core.memory_retrieval import MemoryRetrieval
 from memories.utils.code.code_execution import CodeExecution
+from memories.interface.webrtc import WebRTCInterface, WebRTCClient
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -92,7 +94,7 @@ class MemoryQuery:
         try:
             # Initialize memory_retrieval if not already done
             if self.memory_retrieval is None:
-                from memories.core.cold_memory import ColdMemory
+                from memories.core.cold import ColdMemory
                 cold_memory = ColdMemory(storage_path=Path('data'))
                 self.memory_retrieval = MemoryRetrieval(cold_memory)
 
@@ -139,7 +141,7 @@ class MemoryQuery:
         try:
             # Initialize memory_retrieval if not already done
             if self.memory_retrieval is None:
-                from memories.core.cold_memory import ColdMemory
+                from memories.core.cold import ColdMemory
                 cold_memory = ColdMemory(storage_path=Path('data'))
                 self.memory_retrieval = MemoryRetrieval(cold_memory)
 
@@ -182,7 +184,7 @@ class MemoryQuery:
         try:
             # Initialize memory_retrieval if not already done
             if self.memory_retrieval is None:
-                from memories.core.cold_memory import ColdMemory
+                from memories.core.cold import ColdMemory
                 cold_memory = ColdMemory(storage_path=Path('data'))
                 self.memory_retrieval = MemoryRetrieval(cold_memory)
 
@@ -371,48 +373,183 @@ class MemoryQuery:
                 "status": "error"
             }
 
-def main():
-    """Main function to demonstrate memory query usage."""
-    try:
-        # Get API key from environment variable or user input
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            api_key = input("Please enter your OpenAI API key: ")
-        
-        # Initialize memory query with specific model parameters
-        memory_query = MemoryQuery(
-            model_provider="openai",
-            deployment_type="api",
-            model_name="gpt-4",
-            api_key=api_key
+class MemoryQueryServer:
+    """WebRTC server wrapper for MemoryQuery."""
+    
+    def __init__(
+        self,
+        host: str = "0.0.0.0",
+        port: int = 8765,
+        model_provider: str = "openai",
+        deployment_type: str = "api",
+        model_name: str = "gpt-4",
+        api_key: Optional[str] = None,
+        functions_file: str = "function_definitions.json"
+    ):
+        """Initialize the WebRTC server with MemoryQuery backend."""
+        self.memory_query = MemoryQuery(
+            model_provider=model_provider,
+            deployment_type=deployment_type,
+            model_name=model_name,
+            api_key=api_key,
+            functions_file=functions_file
         )
+        self.server = WebRTCInterface(host=host, port=port)
         
-        print("\nMemory Query System initialized successfully!")
-        print("Type 'exit' to quit the program")
-       
+    def setup(self):
+        """Register MemoryQuery functions with the WebRTC server."""
+        self.server.register_function(self.process_query)
+        self.server.register_function(self.get_data_by_bbox)
+        self.server.register_function(self.get_data_by_bbox_and_value)
+        self.server.register_function(self.get_data_by_fuzzy_search)
         
-        while True:
-            # Get query from user
-            query = input("\nEnter your query: ").strip()
-            
-            # Check if user wants to exit
-            if query.lower() == 'exit':
-                print("Exiting Memory Query System...")
-                break
-            
-            # Process the query
-            if query:
-                result = memory_query.process_query(query)
-                print(f"\nClassification: {result['classification']}")
-                print(f"Response: {result['response']}")
-                print(f"Status: {result['status']}")
-                if "note" in result:
-                    print(f"Note: {result['note']}")
-            else:
-                print("Please enter a valid query.")
+    async def process_query(self, query: str) -> Dict[str, Any]:
+        """WebRTC wrapper for process_query."""
+        return self.memory_query.process_query(query)
+        
+    async def get_data_by_bbox(self, *args, **kwargs) -> Dict[str, Any]:
+        """WebRTC wrapper for get_data_by_bbox."""
+        return self.memory_query.get_data_by_bbox_wrapper(*args, **kwargs)
+        
+    async def get_data_by_bbox_and_value(self, *args, **kwargs) -> Dict[str, Any]:
+        """WebRTC wrapper for get_data_by_bbox_and_value."""
+        return self.memory_query.get_data_by_bbox_and_value_wrapper(*args, **kwargs)
+        
+    async def get_data_by_fuzzy_search(self, *args, **kwargs) -> Dict[str, Any]:
+        """WebRTC wrapper for get_data_by_fuzzy_search."""
+        return self.memory_query.get_data_by_fuzzy_search_wrapper(*args, **kwargs)
+        
+    def start(self):
+        """Start the WebRTC server."""
+        self.setup()
+        self.server.start()
+        
+    def stop(self):
+        """Stop the WebRTC server."""
+        self.server.stop()
 
-    except Exception as e:
-        logger.error(f"Error in main: {e}")
+class MemoryQueryClient:
+    """WebRTC client for MemoryQuery."""
+    
+    def __init__(self, host: str = "localhost", port: int = 8765):
+        """Initialize the WebRTC client."""
+        self.client = WebRTCClient(host=host, port=port)
+        
+    async def connect(self):
+        """Connect to the MemoryQuery server."""
+        await self.client.connect()
+        
+    async def close(self):
+        """Close the connection."""
+        await self.client.close()
+        
+    async def process_query(self, query: str) -> Dict[str, Any]:
+        """Process a query through WebRTC."""
+        return await self.client.call_function("process_query", query)
+        
+    async def get_data_by_bbox(self, *args, **kwargs) -> Dict[str, Any]:
+        """Get data by bounding box through WebRTC."""
+        return await self.client.call_function("get_data_by_bbox", *args, **kwargs)
+        
+    async def get_data_by_bbox_and_value(self, *args, **kwargs) -> Dict[str, Any]:
+        """Get data by bounding box and value through WebRTC."""
+        return await self.client.call_function("get_data_by_bbox_and_value", *args, **kwargs)
+        
+    async def get_data_by_fuzzy_search(self, *args, **kwargs) -> Dict[str, Any]:
+        """Get data by fuzzy search through WebRTC."""
+        return await self.client.call_function("get_data_by_fuzzy_search", *args, **kwargs)
+
+async def run_server(
+    host: str = "0.0.0.0",
+    port: int = 8765,
+    model_provider: str = "openai",
+    deployment_type: str = "api",
+    model_name: str = "gpt-4",
+    api_key: Optional[str] = None,
+    functions_file: str = "function_definitions.json"
+):
+    """Run the MemoryQuery WebRTC server."""
+    server = MemoryQueryServer(
+        host=host,
+        port=port,
+        model_provider=model_provider,
+        deployment_type=deployment_type,
+        model_name=model_name,
+        api_key=api_key,
+        functions_file=functions_file
+    )
+    server.start()
+    
+    try:
+        logger.info(f"MemoryQuery WebRTC server running on {host}:{port}")
+        while True:
+            await asyncio.sleep(1)
+    except KeyboardInterrupt:
+        logger.info("Shutting down server...")
+    finally:
+        server.stop()
+
+async def run_client_example():
+    """Example of using the MemoryQuery WebRTC client."""
+    client = MemoryQueryClient()
+    
+    try:
+        await client.connect()
+        
+        # Example query
+        query = "What is the weather like in New York?"
+        result = await client.process_query(query)
+        print(f"Query result: {result}")
+        
+        # Example bbox query
+        bbox_result = await client.get_data_by_bbox(
+            min_lon=-74.0060,
+            min_lat=40.7128,
+            max_lon=-73.9352,
+            max_lat=40.8075
+        )
+        print(f"Bbox query result: {bbox_result}")
+        
+    finally:
+        await client.close()
+
+def main():
+    """Main entry point."""
+    import sys
+    
+    if len(sys.argv) < 2:
+        print("Usage:")
+        print("  Server: python memory_query.py server [--host HOST] [--port PORT]")
+        print("  Client: python memory_query.py client")
+        sys.exit(1)
+        
+    if sys.argv[1] == "server":
+        # Parse server arguments
+        host = "0.0.0.0"
+        port = 8765
+        i = 2
+        while i < len(sys.argv):
+            if sys.argv[i] == "--host":
+                host = sys.argv[i + 1]
+                i += 2
+            elif sys.argv[i] == "--port":
+                port = int(sys.argv[i + 1])
+                i += 2
+            else:
+                i += 1
+                
+        try:
+            asyncio.run(run_server(host=host, port=port))
+        except KeyboardInterrupt:
+            logger.info("Server stopped by user")
+    elif sys.argv[1] == "client":
+        try:
+            asyncio.run(run_client_example())
+        except KeyboardInterrupt:
+            logger.info("Client stopped by user")
+    else:
+        print("Invalid argument. Use 'server' or 'client'")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main() 

@@ -80,7 +80,7 @@
             "type": "function",
             "function": {
                 "name": "get_data_by_bbox",
-                "description": "Find all geographic features within a specified area. Returns data about parks, buildings, roads, and other features that intersect with the given bounding box coordinates.",
+                "description": "Find all geographic features such as parks, buildings, roads, and other features within a specified area.",
                 "parameters": {
                     "type": "object",
                     "properties": {
