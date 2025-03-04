@@ -81,6 +81,7 @@ class MemoryQuery:
                 "get_address_from_coords": get_address_from_coords,
                 "get_coords_from_address": get_coords_from_address,
                 "expand_bbox_with_radius": expand_bbox_with_radius,
+                "search_geospatial_data_in_bbox": self.search_geospatial_data_in_bbox_wrapper,
                 "download_theme_type": self.overture_api.download_theme_type,
                 "get_data_by_bbox": self.get_data_by_bbox_wrapper,
                 "get_data_by_bbox_and_value": self.get_data_by_bbox_and_value_wrapper,
