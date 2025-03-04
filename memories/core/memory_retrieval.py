@@ -1250,7 +1250,7 @@ class MemoryRetrieval:
         self,
         query_word: str,
         bbox: tuple,
-        similarity_threshold: float = 0.5
+        similarity_threshold: float = 0.7
     ) -> pd.DataFrame:
         """
         Search for data that matches semantically and falls within a bounding box.
