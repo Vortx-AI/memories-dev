@@ -1297,6 +1297,7 @@ class MemoryRetrieval:
                     col_type = str(row['column_type']).lower()
                     if ('geometry' in col_type or 
                         'binary' in col_type or 
+                        'blob' in col_type or
                         col_name.lower() in ['geom', 'geometry', 'the_geom']):
                         info['geometry_column'] = col_name
                         info['geometry_type'] = col_type
@@ -1313,10 +1314,16 @@ class MemoryRetrieval:
                 columns.append(info['geometry_column'])
                 cols_str = ', '.join(f'"{col}"' for col in columns)
                 
-                # Adjust query based on geometry type
-                geom_expr = f'"{info["geometry_column"]}"'
-                if 'binary' in info['geometry_type'].lower():
-                    geom_expr = f'ST_GeomFromWKB("{info["geometry_column"]}")'
+                # Adjust geometry expression based on type
+                geom_col = info["geometry_column"]
+                geom_type = info["geometry_type"].lower()
+                
+                if 'blob' in geom_type:
+                    geom_expr = f'ST_GeomFromWKB(CAST("{geom_col}" AS BLOB))'
+                elif 'binary' in geom_type:
+                    geom_expr = f'ST_GeomFromWKB("{geom_col}")'
+                else:
+                    geom_expr = f'"{geom_col}"'
                 
                 query = f"""
                 SELECT 
@@ -1330,7 +1337,7 @@ class MemoryRetrieval:
                 )
                 """
                 
-                logger.info(f"Executing query...")
+                logger.info(f"Executing query for {os.path.basename(file_path)}...")
                 logger.debug(f"Query: {query}")
                 df = self.con.execute(query).fetchdf()
                 logger.info(f"Found {len(df)} results")
@@ -1340,6 +1347,7 @@ class MemoryRetrieval:
                 
             except Exception as e:
                 logger.error(f"Error processing {file_path}: {e}")
+                logger.error(f"Query attempted: {query}")
                 continue
         
         logger.info(f"\nTotal results found: {len(results)}")
