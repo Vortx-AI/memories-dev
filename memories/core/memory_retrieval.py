@@ -18,6 +18,7 @@ import numpy as np
 from memories.core.memory_manager import MemoryManager
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing
+from memories.core.cold import ColdMemory
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,9 @@ class MemoryRetrieval:
         
         # Initialize sentence transformer model
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        
+        # Initialize ColdMemory
+        self.cold = ColdMemory()
         
         logger.info(f"Initialized MemoryRetrieval")
         logger.info(f"Data directory: {self.data_dir}")
