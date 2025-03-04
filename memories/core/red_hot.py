@@ -61,9 +61,20 @@ class RedHotMemory:
             logger.error(f"Failed to save state: {e}")
 
     def add_vector(self, vector: np.ndarray, metadata: Dict[str, Any] = None):
-        """Add a vector and its metadata to storage."""
+        """
+        Add a vector and its metadata to storage.
+        
+        Args:
+            vector: numpy array of shape (dimension,)
+            metadata: dictionary of metadata to store with the vector
+        """
         if self.index.ntotal >= self.max_size:
             raise ValueError("Storage is full")
+        
+        # Ensure vector is the right shape and type
+        vector = np.asarray(vector).astype('float32')
+        if vector.shape != (self.dimension,):
+            raise ValueError(f"Vector must have shape ({self.dimension},), got {vector.shape}")
         
         # Add vector to FAISS index
         self.index.add(vector.reshape(1, -1))
@@ -71,9 +82,7 @@ class RedHotMemory:
         # Add metadata
         if metadata is not None:
             self.metadata[str(self.index.ntotal - 1)] = metadata
-            
-        # Save state
-        self._save_state()
+            logger.debug(f"Added vector {self.index.ntotal - 1} with metadata")
 
     def get_metadata(self, idx: int) -> Dict[str, Any]:
         """Get metadata for a vector by index."""
