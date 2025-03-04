@@ -210,14 +210,14 @@ FUNCTIONS = [
                     "max_length": {
                         "type": "integer",
                         "description": "Maximum length of generated response",
-                        "optional": true
+                        "optional": True
                     },
                     "temperature": {
                         "type": "number",
                         "description": "Sampling temperature (0.0 to 1.0)",
                         "minimum": 0.0,
                         "maximum": 1.0,
-                        "optional": true
+                        "optional": True
                     }
                 },
                 "required": ["prompt"]

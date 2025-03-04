@@ -24,6 +24,7 @@ import torch
 from diffusers import StableDiffusionPipeline
 from PIL import Image, ImageDraw, ImageFont
 import random
+import numpy.typing as npt
 
 from memories.utils.exceptions import SyntheticDataError
 from memories.utils.validation import validate_parameters
@@ -32,6 +33,10 @@ logger = logging.getLogger(__name__)
 
 # Initialize StableDiffusion pipeline
 pipe = None
+
+# Type definitions
+RasterType = npt.NDArray[np.float32]
+BBox = Tuple[float, float, float, float]  # (min_x, min_y, max_x, max_y)
 
 def initialize_stable_diffusion():
     """Initialize the Stable Diffusion pipeline"""
