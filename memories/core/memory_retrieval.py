@@ -20,14 +20,32 @@ class MemoryRetrieval:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         self.project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
         
-        # Connect to the metadata database
-        self.db_path = os.path.join(self.project_root, 'data', 'memories.db')
+        # Connect to the metadata database in memories-dev/data
+        self.db_path = os.path.join(self.project_root, 'memories-dev', 'data', 'memories.db')
+        if not os.path.exists(self.db_path):
+            raise FileNotFoundError(f"Database file not found at: {self.db_path}")
+            
         self.con = duckdb.connect(self.db_path)
         self.logger = logging.getLogger(__name__)
 
     def get_storage_stats(self) -> Dict[str, Any]:
         """Get statistics about registered files from metadata."""
         try:
+            # First check if table exists
+            table_exists = self.con.execute("""
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='cold_metadata'
+            """).fetchone()
+            
+            if not table_exists:
+                self.logger.warning("cold_metadata table does not exist!")
+                return {
+                    'total_files': 0,
+                    'total_size_mb': 0,
+                    'file_types': {},
+                    'storage_path': os.path.join(self.project_root, 'memories-dev', 'data')
+                }
+            
             # Query the metadata table for registered files
             query = """
                 SELECT 
@@ -45,7 +63,7 @@ class MemoryRetrieval:
                 'total_files': results['total_files'].sum() if not results.empty else 0,
                 'total_size_mb': round(results['total_size'].sum() / (1024 * 1024), 2) if not results.empty else 0,
                 'file_types': dict(zip(results['data_type'], results['type_count'])) if not results.empty else {},
-                'storage_path': os.path.join(self.project_root, 'data')
+                'storage_path': os.path.join(self.project_root, 'memories-dev', 'data')
             }
             
             return stats
@@ -56,7 +74,7 @@ class MemoryRetrieval:
                 'total_files': 0,
                 'total_size_mb': 0,
                 'file_types': {},
-                'storage_path': os.path.join(self.project_root, 'data')
+                'storage_path': os.path.join(self.project_root, 'memories-dev', 'data')
             }
 
     def list_registered_files(self) -> List[Dict]:
