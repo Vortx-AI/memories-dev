@@ -111,6 +111,16 @@ class MemoryRetrieval:
             logger.error(f"Error getting schema for {file_path}: {e}")
             return []
 
+    def get_geometry_bounds(self, geom_expr: str) -> str:
+        """Get the bounds of a geometry using ST_Envelope."""
+        return f"""
+            SELECT 
+                MIN(ST_XMin(ST_Envelope({geom_expr}))) as min_lon,
+                MIN(ST_YMin(ST_Envelope({geom_expr}))) as min_lat,
+                MAX(ST_XMax(ST_Envelope({geom_expr}))) as max_lon,
+                MAX(ST_YMax(ST_Envelope({geom_expr}))) as max_lat
+        """
+
     def build_select_clause(self, schema: List[Tuple], geom_column: str, geom_type: str) -> str:
         """Build SELECT clause based on available columns."""
         available_columns = [col[0] for col in schema]
@@ -190,11 +200,7 @@ class MemoryRetrieval:
                     
                     # Calculate bounds for this file
                     bounds_query = f"""
-                        SELECT 
-                            MIN(ST_X(ST_Envelope({geom_expr}))) as min_lon,
-                            MIN(ST_Y(ST_Envelope({geom_expr}))) as min_lat,
-                            MAX(ST_X(ST_Envelope({geom_expr}))) as max_lon,
-                            MAX(ST_Y(ST_Envelope({geom_expr}))) as max_lat
+                        {self.get_geometry_bounds(geom_expr)}
                         FROM read_parquet('{file_path}')
                     """
                     bounds = self.con.execute(bounds_query).fetchone()
