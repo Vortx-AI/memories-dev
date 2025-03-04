@@ -8,7 +8,6 @@ import pandas as pd
 import os
 from pathlib import Path
 import duckdb
-from dotenv import load_dotenv
 from memories.core.cold import Config
 
 logger = logging.getLogger(__name__)
@@ -18,13 +17,14 @@ class MemoryRetrieval:
     
     def __init__(self):
         """Initialize memory retrieval."""
-        # Load environment variables
-        load_dotenv()
+        # Get the project root (where memories-dev is located)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
         
-        # Get project root from environment variable
-        self.project_root = os.getenv("PROJECT_ROOT", os.path.expanduser("~"))
+        # Use the same config path as MemoryManager
+        config_path = os.path.join(project_root, 'memories-dev', 'config', 'db_config.yml')
         
-        self.config = Config()
+        self.config = Config(config_path)
         
         # Use the same storage path as ColdMemory
         storage_path = Path(self.config.config['storage']['path'])
