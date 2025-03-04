@@ -368,9 +368,18 @@ class ColdMemory:
     def get_all_schemas(self):
         """Get all file paths from cold storage metadata and extract their schemas."""
         try:
+            # First, let's check the schema
+            schema_query = """
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name='cold_metadata'
+            """
+            schema_result = self.con.execute(schema_query).fetchdf()
+            logger.info(f"Cold metadata columns: {list(schema_result['column_name'])}")
+            
             # Get all file paths from cold_metadata
             query = """
-            SELECT DISTINCT file_path
+            SELECT DISTINCT id as file_path
             FROM cold_metadata
             """
             result = self.con.execute(query).fetchdf()
