@@ -34,8 +34,16 @@ class MemoryRetrieval:
         self.memory_manager = MemoryManager()
         self.con = self.memory_manager.con
         
+        # Install and load spatial extension
+        try:
+            self.con.execute("INSTALL spatial;")
+            self.con.execute("LOAD spatial;")
+            logger.info("Spatial extension installed and loaded successfully")
+        except Exception as e:
+            logger.error(f"Error setting up spatial extension: {e}")
+        
         # Initialize red-hot memory
-        self.red_hot = RedHotMemory()  # Removed storage_path argument
+        self.red_hot = RedHotMemory()
         
         # Initialize sentence transformer model
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
