@@ -34,16 +34,8 @@ class MemoryRetrieval:
         self.memory_manager = MemoryManager()
         self.con = self.memory_manager.con
         
-        # Install and load spatial extension
-        try:
-            self.con.execute("INSTALL spatial;")
-            self.con.execute("LOAD spatial;")
-            logger.info("DuckDB spatial extension loaded successfully")
-        except Exception as e:
-            logger.warning(f"Error loading spatial extension: {e}")
-        
         # Initialize red-hot memory
-        self.red_hot = RedHotMemory()
+        self.red_hot = RedHotMemory()  # Removed storage_path argument
         
         # Initialize sentence transformer model
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -1154,7 +1146,16 @@ class MemoryRetrieval:
             return {}
 
     def get_spatial_column_values(self, query_word, bbox, top_k=10, similarity_threshold=0.4):
-        """Find similar columns and query their values within a bounding box."""
+        """
+        Find similar columns and query their values within a bounding box.
+        For high similarity matches (> threshold), return complete rows.
+        
+        Args:
+            query_word (str): The column name to search for
+            bbox (tuple): Bounding box coordinates (min_x, min_y, max_x, max_y)
+            top_k (int): Number of similar columns to consider
+            similarity_threshold (float): Threshold for returning complete rows
+        """
         logger.info(f"Searching for columns similar to '{query_word}' within bbox {bbox}")
         
         # Initialize components
@@ -1168,8 +1169,8 @@ class MemoryRetrieval:
         D, I = red_hot.index.search(query_embedding.reshape(1, -1), top_k)
         
         results = {
-            'high_similarity': [],
-            'partial_matches': {}
+            'high_similarity': [],  # Will contain complete rows
+            'partial_matches': {}   # Will contain only column values
         }
         
         min_x, min_y, max_x, max_y = bbox
@@ -1178,86 +1179,64 @@ class MemoryRetrieval:
             metadata = red_hot.get_metadata(str(int(idx)))
             column_name = metadata.get('column_name')
             file_path = metadata.get('file_path')
+            geom_col = metadata.get('geometry_column')
             
-            # Try different geometry column names
-            geometry_columns = ['geom', 'geometry', 'c', 'the_geom']
+            if not column_name or not file_path or not geom_col:
+                continue
+            
+            # Calculate similarity score (convert distance to similarity)
+            similarity = 1 / (1 + float(D[0][i]))
             
             try:
-                # First check if file exists
-                if not os.path.exists(file_path):
-                    logger.warning(f"File not found: {file_path}")
-                    continue
+                if similarity > similarity_threshold:
+                    # High similarity - get complete rows
+                    query = f"""
+                    SELECT *
+                    FROM parquet_scan('{file_path}')
+                    WHERE ST_Intersects(
+                        {geom_col},
+                        ST_MakeEnvelope({min_x}, {min_y}, {max_x}, {max_y})
+                    )
+                    LIMIT 1000
+                    """
+                else:
+                    # Lower similarity - get only the specific column
+                    query = f"""
+                    SELECT DISTINCT {column_name}
+                    FROM parquet_scan('{file_path}')
+                    WHERE ST_Intersects(
+                        {geom_col},
+                        ST_MakeEnvelope({min_x}, {min_y}, {max_x}, {max_y})
+                    )
+                    LIMIT 100
+                    """
                 
-                # Calculate similarity
-                similarity = 1 / (1 + float(D[0][i]))
+                result_df = self.con.execute(query).fetchdf()
                 
-                # Try each possible geometry column
-                for geom_column in geometry_columns:
-                    try:
-                        if similarity > similarity_threshold:
-                            # For high similarity, get selected columns to avoid huge output
-                            selected_cols = [column_name, 'osm_id', 'place', 'highway', 'amenity', 'building', geom_column]
-                            selected_cols = [col for col in selected_cols if col in metadata.get('all_columns', [])]
-                            cols_str = ', '.join(f'"{col}"' for col in selected_cols)
-                            
-                            query = f"""
-                            SELECT {cols_str}
-                            FROM parquet_scan('{file_path}')
-                            WHERE ST_Intersects(
-                                ST_GeomFromWKB({geom_column}),
-                                ST_GeomFromText('POLYGON(({min_x} {min_y}, {min_x} {max_y}, {max_x} {max_y}, {max_x} {min_y}, {min_x} {min_y}))')
-                            )
-                            LIMIT 1000
-                            """
-                        else:
-                            query = f"""
-                            SELECT DISTINCT "{column_name}"
-                            FROM parquet_scan('{file_path}')
-                            WHERE ST_Intersects(
-                                ST_GeomFromWKB({geom_column}),
-                                ST_GeomFromText('POLYGON(({min_x} {min_y}, {min_x} {max_y}, {max_x} {max_y}, {max_x} {min_y}, {min_x} {min_y}))')
-                            )
-                            LIMIT 100
-                            """
-                        
-                        result_df = self.con.execute(query).fetchdf()
-                        
-                        if not result_df.empty:
-                            if similarity > similarity_threshold:
-                                # Clean up the data before returning
-                                clean_data = []
-                                for _, row in result_df.iterrows():
-                                    clean_row = {k: v for k, v in row.items() 
-                                              if k != geom_column and v is not None and v != ''}
-                                    if clean_row:
-                                        clean_data.append(clean_row)
-                                
-                                results['high_similarity'].append({
-                                    'similarity': similarity,
-                                    'column_name': column_name,
-                                    'file_path': file_path,
-                                    'geometry_column': geom_column,
-                                    'dtype': metadata.get('dtype', 'unknown'),
-                                    'data': clean_data
-                                })
-                            else:
-                                results['partial_matches'][f"{file_path}:{column_name}"] = {
-                                    'similarity': similarity,
-                                    'column_name': column_name,
-                                    'file_path': file_path,
-                                    'geometry_column': geom_column,
-                                    'dtype': metadata.get('dtype', 'unknown'),
-                                    'values': [v for v in result_df[column_name].tolist() if v]
-                                }
-                            logger.info(f"Found {len(result_df)} results using {geom_column} in {file_path}")
-                            break  # Found working geometry column, stop trying others
-                        
-                    except Exception as e:
-                        logger.debug(f"Failed with geometry column {geom_column}: {e}")
-                        continue
-            
+                if not result_df.empty:
+                    if similarity > similarity_threshold:
+                        results['high_similarity'].append({
+                            'similarity': similarity,
+                            'column_name': column_name,
+                            'file_path': file_path,
+                            'geometry_column': geom_col,
+                            'dtype': metadata.get('dtype', 'unknown'),
+                            'data': result_df.to_dict('records')
+                        })
+                    else:
+                        results['partial_matches'][f"{file_path}:{column_name}"] = {
+                            'similarity': similarity,
+                            'column_name': column_name,
+                            'file_path': file_path,
+                            'geometry_column': geom_col,
+                            'dtype': metadata.get('dtype', 'unknown'),
+                            'values': result_df[column_name].tolist()
+                        }
+                
+                logger.debug(f"Found {len(result_df)} results for {column_name} in {file_path}")
+                
             except Exception as e:
-                logger.error(f"Error processing {file_path}: {e}")
+                logger.error(f"Error querying {file_path} for column {column_name}: {e}")
                 continue
         
         logger.info(f"Found {len(results['high_similarity'])} high similarity matches")
