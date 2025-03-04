@@ -1280,9 +1280,6 @@ class MemoryRetrieval:
             unique_files[file_path]['columns'].add(match['column'])
         
         logger.info(f"\nFound {len(unique_files)} unique files to process")
-        for file_path, info in unique_files.items():
-            logger.info(f"\nFile: {os.path.basename(file_path)}")
-            logger.info(f"Columns to query: {info['columns']}")
         
         # Process each unique file
         min_lon, min_lat, max_lon, max_lat = bbox
@@ -1302,6 +1299,7 @@ class MemoryRetrieval:
                         'binary' in col_type or 
                         col_name.lower() in ['geom', 'geometry', 'the_geom']):
                         info['geometry_column'] = col_name
+                        info['geometry_type'] = col_type
                         logger.info(f"Found geometry column: {col_name} ({col_type})")
                         break
                 
@@ -1315,13 +1313,18 @@ class MemoryRetrieval:
                 columns.append(info['geometry_column'])
                 cols_str = ', '.join(f'"{col}"' for col in columns)
                 
+                # Adjust query based on geometry type
+                geom_expr = f'"{info["geometry_column"]}"'
+                if 'binary' in info['geometry_type'].lower():
+                    geom_expr = f'ST_GeomFromWKB("{info["geometry_column"]}")'
+                
                 query = f"""
                 SELECT 
                     {cols_str},
                     '{os.path.basename(file_path)}' as source_file
                 FROM parquet_scan('{file_path}')
                 WHERE ST_Intersects(
-                    ST_GeomFromWKB("{info['geometry_column']}"),
+                    {geom_expr},
                     ST_GeomFromText('POLYGON(({min_lon} {min_lat}, {min_lon} {max_lat}, 
                     {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))')
                 )
