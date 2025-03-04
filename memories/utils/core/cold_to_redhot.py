@@ -14,7 +14,10 @@ class ColdToRedHot:
         """Initialize cold to red-hot transfer manager."""
         self.data_dir = data_dir or os.path.expanduser("~/geo_memories")
         self.red_hot = RedHotMemory(config_path)
-        self.con = duckdb.connect(database=':memory:')
+        
+        # Connect to cold storage database
+        cold_db_path = os.path.join(self.data_dir, "cold_storage.db")
+        self.con = duckdb.connect(database=cold_db_path)
         self.con.install_extension("spatial")
         self.con.load_extension("spatial")
 
