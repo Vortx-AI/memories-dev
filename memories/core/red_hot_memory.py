@@ -76,25 +76,18 @@ class RedHotMemory:
         self.con.execute("CREATE INDEX IF NOT EXISTS idx_column_name ON column_metadata(column_name)")
 
     def add_file_schema(self, file_path: str, schema: List[Tuple[str, Any]], additional_info: Dict = None):
-        """
-        Add file schema information to red-hot memory.
-        
-        Args:
-            file_path: Path to the parquet file
-            schema: List of (name, type) tuples describing the schema
-            additional_info: Additional file metadata (row count, stats, etc.)
-        """
+        """Add file schema information to red-hot memory."""
         try:
             # Get file metadata
             file_info = {
                 'file_path': file_path,
                 'file_name': os.path.basename(file_path),
                 'file_type': os.path.splitext(file_path)[1],
-                'last_modified': os.path.getmtime(file_path),
+                'last_modified': pd.Timestamp.fromtimestamp(os.path.getmtime(file_path)),
                 'size_bytes': os.path.getsize(file_path),
                 'row_count': additional_info.get('row_count') if additional_info else None,
                 'source_type': additional_info.get('source_type') if additional_info else 'unknown',
-                'created_at': additional_info.get('created_at')
+                'created_at': pd.Timestamp(additional_info.get('created_at')) if additional_info and additional_info.get('created_at') else None
             }
             
             # Insert file metadata
