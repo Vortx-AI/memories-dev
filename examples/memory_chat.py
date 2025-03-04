@@ -409,7 +409,7 @@ class MemoryQuery:
             # Initialize memory_retrieval if not already done
             if self.memory_retrieval is None:
                 from memories.core.cold import ColdMemory
-                cold_memory = ColdMemory(storage_path=Path('data'))
+                cold_memory = ColdMemory('data')  # Changed from storage_path to direct path
                 self.memory_retrieval = MemoryRetrieval(cold_memory)
 
             # Convert bbox list to tuple
