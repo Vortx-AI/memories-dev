@@ -16,6 +16,7 @@ from memories.core.red_hot import RedHotMemory
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from memories.core.memory_manager import MemoryManager
+import cudf
 
 logger = logging.getLogger(__name__)
 
@@ -1349,3 +1350,69 @@ class MemoryRetrieval:
                 continue
         
         return results 
+
+    def _process_table_gpu(args: Tuple) -> Union[pd.DataFrame, cudf.DataFrame]:
+        """Helper function to process a single table using GPU if available."""
+        table, bbox, cold = args
+        try:
+            table_name = table["table_name"]
+            schema = table["schema"]
+            min_lon, min_lat, max_lon, max_lat = bbox
+            
+            # Look for geometry column
+            geom_col = None
+            for col_name, col_type in schema.items():
+                if ('geometry' in col_type.lower() or 
+                    'binary' in col_type.lower() or 
+                    'blob' in col_type.lower() or
+                    col_name.lower() in ['geom', 'geometry', 'the_geom']):
+                    geom_col = col_name
+                    break
+            
+            if not geom_col:
+                return pd.DataFrame() if not _has_gpu() else cudf.DataFrame()
+            
+            # Build and execute spatial query
+            geom_type = schema[geom_col].lower()
+            if 'blob' in geom_type:
+                geom_expr = f'ST_GeomFromWKB(CAST("{geom_col}" AS BLOB))'
+            elif 'binary' in geom_type:
+                geom_expr = f'ST_GeomFromWKB("{geom_col}")'
+            else:
+                geom_expr = f'"{geom_col}"'
+            
+            # Select all columns except geometry
+            columns = [col for col in schema.keys() if col != geom_col]
+            columns_str = ', '.join([f'"{col}"' for col in columns])
+            
+            query = f"""
+            SELECT {columns_str}
+            FROM {table_name}
+            WHERE ST_Intersects(
+                {geom_expr},
+                ST_GeomFromText('POLYGON(({min_lon} {min_lat}, {min_lon} {max_lat}, 
+                {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))')
+            )
+            """
+            
+            # Use GPU acceleration if available
+            if _has_gpu():
+                try:
+                    df = cudf.from_pandas(cold.query(query))
+                    if not df.empty:
+                        df['source_table'] = table_name
+                        df['source_file'] = table.get("file_path", "")
+                    return df
+                except Exception as e:
+                    logger.warning(f"GPU processing failed for {table_name}, falling back to CPU: {e}")
+                
+            # Fall back to CPU processing
+            df = cold.query(query)
+            if not df.empty:
+                df['source_table'] = table_name
+                df['source_file'] = table.get("file_path", "")
+            return df
+            
+        except Exception as e:
+            logger.error(f"Error processing table {table.get('table_name', 'unknown')}: {e}")
+            return pd.DataFrame() if not _has_gpu() else cudf.DataFrame() 
