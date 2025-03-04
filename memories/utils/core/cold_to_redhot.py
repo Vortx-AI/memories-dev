@@ -12,21 +12,26 @@ logger = logging.getLogger(__name__)
 class ColdToRedHot:
     def __init__(self, data_dir: str = None, config_path: str = None):
         """Initialize cold to red-hot transfer manager."""
-        self.data_dir = data_dir or os.path.expanduser("~/geo_memories")
+        # Get project root directory
+        project_root = Path(__file__).parent.parent.parent.parent
+        
+        # Set data directory relative to project root
+        self.data_dir = data_dir or os.path.join(project_root, "data")
         self.red_hot = RedHotMemory(config_path)
         
-        # Use in-memory database like memory_retrieval.py
+        # Use in-memory database
         self.con = duckdb.connect(database=':memory:')
         self.con.install_extension("spatial")
         self.con.load_extension("spatial")
         
         # Create view of cold_metadata from parquet
-        cold_metadata_path = os.path.join(self.data_dir, "cold_metadata.parquet")
+        cold_metadata_path = os.path.join(project_root, "data", "cold_metadata.parquet")
         if os.path.exists(cold_metadata_path):
             self.con.execute(f"""
                 CREATE VIEW cold_metadata AS 
                 SELECT * FROM parquet_scan('{cold_metadata_path}')
             """)
+            logger.info(f"Loaded cold metadata from {cold_metadata_path}")
         else:
             logger.error(f"Cold metadata file not found at {cold_metadata_path}")
 
