@@ -109,8 +109,11 @@ class MemoryManager:
             
         self.config = Config()
         
-        # Initialize DuckDB connection
-        db_path = Path(self.config.config['storage']['path']) / 'memories.db'
+        # Get project root from Config
+        project_root = os.getenv("PROJECT_ROOT", os.path.expanduser("~"))
+        
+        # Initialize DuckDB connection in project root
+        db_path = Path(project_root) / 'memories.db'
         self.con = duckdb.connect(str(db_path))
         
         # Initialize cold memory with the connection
