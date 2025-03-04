@@ -365,5 +365,43 @@ class ColdMemory:
         """Cleanup resources."""
         pass  # DuckDB connection is managed by MemoryManager
 
+    def get_all_schemas(self):
+        """Get all file paths from cold storage metadata and extract their schemas."""
+        try:
+            # Get all file paths from cold_metadata
+            query = """
+            SELECT DISTINCT file_path
+            FROM cold_metadata
+            """
+            result = self.con.execute(query).fetchdf()
+            
+            # Extract schema for each file
+            schemas = []
+            for _, row in result.iterrows():
+                file_path = row['file_path']
+                try:
+                    # Read parquet file schema
+                    df = pd.read_parquet(file_path)
+                    
+                    schema = {
+                        'file_path': file_path,
+                        'columns': list(df.columns),
+                        'dtypes': {col: str(dtype) for col, dtype in df.dtypes.items()},
+                        'type': 'schema'
+                    }
+                    schemas.append(schema)
+                    logger.debug(f"Extracted schema from {file_path}")
+                    
+                except Exception as e:
+                    logger.error(f"Error extracting schema from {file_path}: {e}")
+                    continue
+            
+            logger.info(f"Extracted schemas from {len(schemas)} files")
+            return schemas
+            
+        except Exception as e:
+            logger.error(f"Error getting file paths from cold storage: {e}")
+            return []
+
 
 
