@@ -11,6 +11,8 @@ import pyarrow.parquet as pq
 import glob
 from sentence_transformers import SentenceTransformer
 import numpy as np
+import faiss
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -174,6 +176,29 @@ class ColdToRedHot:
         
         return stats
 
+    def show_first_ten(self):
+        """Display the first 10 vectors and their metadata from the FAISS index."""
+        print("\nRetrieving first 10 vectors from FAISS index:")
+        
+        if self.red_hot.index.ntotal == 0:
+            print("FAISS index is empty!")
+            return
+        
+        # Create a dummy query vector (using the first vector in the index)
+        dummy_vector = self.red_hot.index.reconstruct(0)
+        
+        # Search for nearest neighbors
+        D, I = self.red_hot.index.search(dummy_vector.reshape(1, -1), min(10, self.red_hot.index.ntotal))
+        
+        print(f"\nFound {len(I[0])} vectors:")
+        for i, idx in enumerate(I[0]):
+            metadata = self.red_hot.get_metadata(int(idx))
+            print(f"\nVector {i+1}:")
+            print(f"Distance: {D[0][i]:.4f}")
+            print(f"File path: {metadata.get('file_path', 'N/A')}")
+            print(f"Columns: {', '.join(metadata.get('columns', []))}")
+            print("-" * 80)
+
 def main():
     """Main function to run the transfer process."""
     logging.basicConfig(
@@ -201,5 +226,4 @@ def main():
             print(f"  {source_type}: {count} schemas")
 
 if __name__ == "__main__":
-    import sys
     main() 
