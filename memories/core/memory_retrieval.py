@@ -16,36 +16,33 @@ class MemoryRetrieval:
     """Memory retrieval class for querying cold memory storage."""
     
     def __init__(self):
-        """Initialize memory retrieval using the existing MemoryManager instance."""
-        memory_manager = MemoryManager()
-        self.con = memory_manager.cold_memory.con  # Get connection from cold_memory
-        self.config = memory_manager.config
+        """Initialize memory retrieval using configuration."""
+        self.config = Config()
         self.logger = logging.getLogger(__name__)
-
-    def get_storage_path(self) -> str:
-        """Get the configured storage path."""
-        return self.config.config['storage']['path']
 
     def get_storage_stats(self) -> Dict[str, Any]:
         """Get statistics about the storage."""
         try:
-            query = """
-                SELECT 
-                    COUNT(*) as total_files,
-                    SUM(size) as total_size,
-                    data_type,
-                    COUNT(*) as type_count
-                FROM cold_metadata
-                GROUP BY data_type
-            """
+            storage_path = self.config.config['storage']['path']
+            total_size = 0
+            file_count = 0
+            file_types = {}
             
-            results = self.con.execute(query).df()
+            # Walk through the storage directory
+            for root, _, files in os.walk(storage_path):
+                for file in files:
+                    if file.endswith('.parquet'):
+                        file_path = Path(root) / file
+                        size = file_path.stat().st_size
+                        total_size += size
+                        file_count += 1
+                        file_types['parquet'] = file_types.get('parquet', 0) + 1
             
             stats = {
-                'total_files': results['total_files'].sum(),
-                'total_size_mb': round(results['total_size'].sum() / (1024 * 1024), 2),
-                'file_types': dict(zip(results['data_type'], results['type_count'])),
-                'storage_path': self.config.config['storage']['path']
+                'total_files': file_count,
+                'total_size_mb': round(total_size / (1024 * 1024), 2),
+                'file_types': file_types,
+                'storage_path': storage_path
             }
             
             return stats
