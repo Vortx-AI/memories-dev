@@ -17,37 +17,15 @@ class MemoryRetrieval:
     
     def __init__(self):
         """Initialize memory retrieval."""
-        # Get the project root (where memories-dev is located)
+        # Get the project root (memories-dev directory)
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+        self.project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
         
-        # Use the same config path as MemoryManager
-        config_path = os.path.join(project_root, 'memories-dev', 'config', 'db_config.yml')
-        print(f"Config path: {config_path}")
-        
-        self.config = Config(config_path)
-        
-        # Use the same storage path as ColdMemory
-        storage_path = Path(self.config.config['storage']['path'])
-        print(f"Storage path: {storage_path}")
-        
-        # Connect to the metadata database
-        self.db_path = storage_path / 'memories.db'
+        # Connect to the metadata database in project root
+        self.db_path = os.path.join(self.project_root, 'memories-dev', 'memories.db')
         print(f"Looking for DuckDB at: {self.db_path}")
         
         if not os.path.exists(self.db_path):
-            # Try to find where the database actually is
-            possible_paths = [
-                self.db_path,
-                Path(project_root) / 'geo_memories' / 'memories.db',
-                Path(project_root) / 'memories-dev' / 'data' / 'memories.db',
-                Path(project_root) / 'data' / 'memories.db'
-            ]
-            
-            print("\nSearching for DuckDB in possible locations:")
-            for path in possible_paths:
-                print(f"Checking {path}: {'EXISTS' if path.exists() else 'NOT FOUND'}")
-            
             raise FileNotFoundError(f"Database file not found at: {self.db_path}")
             
         self.con = duckdb.connect(str(self.db_path))
@@ -68,7 +46,7 @@ class MemoryRetrieval:
                     'total_files': 0,
                     'total_size_mb': 0,
                     'file_types': {},
-                    'storage_path': str(self.db_path.parent)
+                    'storage_path': os.path.join(self.project_root, 'memories-dev')
                 }
             
             # Query the metadata table for registered files
@@ -88,7 +66,7 @@ class MemoryRetrieval:
                 'total_files': results['total_files'].sum() if not results.empty else 0,
                 'total_size_mb': round(results['total_size'].sum() / (1024 * 1024), 2) if not results.empty else 0,
                 'file_types': dict(zip(results['data_type'], results['type_count'])) if not results.empty else {},
-                'storage_path': str(self.db_path.parent)
+                'storage_path': os.path.join(self.project_root, 'memories-dev')
             }
             
             return stats
@@ -99,7 +77,7 @@ class MemoryRetrieval:
                 'total_files': 0,
                 'total_size_mb': 0,
                 'file_types': {},
-                'storage_path': str(self.db_path.parent)
+                'storage_path': os.path.join(self.project_root, 'memories-dev')
             }
 
     def list_registered_files(self) -> List[Dict]:
