@@ -6,6 +6,7 @@ import os
 from typing import Dict, List, Tuple, Optional
 from memories.core.red_hot_memory import RedHotMemory
 import pyarrow.parquet as pq
+import glob
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +16,8 @@ class ColdToRedHot:
         # Get project root directory
         project_root = Path(__file__).parent.parent.parent.parent
         
-        # Set data directory relative to project root
-        self.data_dir = data_dir or os.path.join(project_root, "data")
+        # Set data directory
+        self.data_dir = data_dir or os.path.expanduser("~/geo_memories")
         self.red_hot = RedHotMemory(config_path)
         
         # Use in-memory database
@@ -24,16 +25,51 @@ class ColdToRedHot:
         self.con.install_extension("spatial")
         self.con.load_extension("spatial")
         
-        # Create view of cold_metadata from parquet
-        cold_metadata_path = os.path.join(project_root, "data", "cold_metadata.parquet")
-        if os.path.exists(cold_metadata_path):
-            self.con.execute(f"""
-                CREATE VIEW cold_metadata AS 
-                SELECT * FROM parquet_scan('{cold_metadata_path}')
+        # Initialize cold metadata table
+        self._initialize_cold_metadata()
+
+    def _initialize_cold_metadata(self):
+        """Initialize cold_metadata table from parquet files."""
+        try:
+            # Create cold_metadata table
+            self.con.execute("""
+                CREATE TABLE IF NOT EXISTS cold_metadata (
+                    file_path VARCHAR,
+                    created_at TIMESTAMP,
+                    source_type VARCHAR
+                )
             """)
-            logger.info(f"Loaded cold metadata from {cold_metadata_path}")
-        else:
-            logger.error(f"Cold metadata file not found at {cold_metadata_path}")
+
+            # Find all parquet files
+            parquet_files = []
+            for pattern in ["**/*.parquet", "**/*.zstd.parquet"]:
+                parquet_files.extend(
+                    glob.glob(os.path.join(self.data_dir, pattern), recursive=True)
+                )
+
+            # Insert file information
+            for file_path in parquet_files:
+                file_stat = os.stat(file_path)
+                source_type = 'unknown'
+                if 'base' in file_path:
+                    source_type = 'base'
+                elif 'divisions' in file_path:
+                    source_type = 'divisions'
+
+                self.con.execute("""
+                    INSERT INTO cold_metadata (file_path, created_at, source_type)
+                    VALUES (?, ?, ?)
+                """, [
+                    file_path,
+                    pd.Timestamp.fromtimestamp(file_stat.st_mtime),
+                    source_type
+                ])
+
+            logger.info(f"Initialized cold_metadata with {len(parquet_files)} files")
+
+        except Exception as e:
+            logger.error(f"Error initializing cold_metadata: {e}")
+            raise
 
     def get_parquet_files(self) -> List[str]:
         """Get all parquet files from cold_metadata."""
