@@ -1254,14 +1254,6 @@ class MemoryRetrieval:
     ) -> pd.DataFrame:
         """
         Search for data that matches semantically and falls within a bounding box.
-        
-        Args:
-            query_word: Term to search for
-            bbox: Tuple of (min_lon, min_lat, max_lon, max_lat)
-            similarity_threshold: Minimum similarity score (default: 0.5)
-        
-        Returns:
-            DataFrame containing matching records
         """
         logger.info(f"\n{'='*80}")
         logger.info("SPATIAL SEMANTIC SEARCH")
@@ -1276,34 +1268,45 @@ class MemoryRetrieval:
             logger.warning("No similar columns found")
             return pd.DataFrame()
         
-        # Create unique list of files and their columns to query
-        query_targets = {}  # file_path -> {columns, geometry_column}
-        for match in similar_columns:
-            file_path = match['full_path']
-            if file_path not in query_targets:
-                metadata = self.red_hot.get_metadata(file_path)
-                query_targets[file_path] = {
-                    'columns': set([match['column']]),
-                    'geometry_column': metadata.get('geometry_column')
-                }
-            else:
-                query_targets[file_path]['columns'].add(match['column'])
+        # Create unique list of files to query
+        unique_files = set(match['full_path'] for match in similar_columns)
         
-        logger.info("\nFiles to query:")
-        for file_path, info in query_targets.items():
-            logger.info(f"\nFile: {os.path.basename(file_path)}")
-            logger.info(f"Columns: {info['columns']}")
-            logger.info(f"Geometry column: {info['geometry_column']}")
+        # For each file, check its schema directly using DuckDB
+        query_targets = {}
+        for file_path in unique_files:
+            try:
+                # Get schema info directly from parquet file
+                schema_query = f"DESCRIBE SELECT * FROM parquet_scan('{file_path}')"
+                schema_df = self.con.execute(schema_query).fetchdf()
+                
+                # Look for geometry column
+                geom_col = None
+                for _, row in schema_df.iterrows():
+                    col_name = row['column_name']
+                    col_type = str(row['column_type']).lower()
+                    if ('geometry' in col_type or 
+                        'binary' in col_type or 
+                        col_name.lower() in ['geom', 'geometry', 'the_geom']):
+                        geom_col = col_name
+                        logger.info(f"Found geometry column in {file_path}: {col_name} ({col_type})")
+                        break
+                
+                # Store file info if geometry column found
+                if geom_col:
+                    query_targets[file_path] = {
+                        'columns': set(col['column'] for col in similar_columns if col['full_path'] == file_path),
+                        'geometry_column': geom_col
+                    }
+            
+            except Exception as e:
+                logger.error(f"Error checking schema for {file_path}: {e}")
+                continue
         
         # Build and execute spatial queries
         min_lon, min_lat, max_lon, max_lat = bbox
         results = pd.DataFrame()
         
         for file_path, info in query_targets.items():
-            if not info['geometry_column']:
-                logger.warning(f"No geometry column found for {file_path}, skipping")
-                continue
-            
             try:
                 # Build column list for query
                 columns = list(info['columns'])
@@ -1316,13 +1319,14 @@ class MemoryRetrieval:
                     '{os.path.basename(file_path)}' as source_file
                 FROM parquet_scan('{file_path}')
                 WHERE ST_Intersects(
-                    "{info['geometry_column']}"::GEOMETRY,
+                    ST_GeomFromWKB("{info['geometry_column']}"),
                     ST_GeomFromText('POLYGON(({min_lon} {min_lat}, {min_lon} {max_lat}, 
                     {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))')
                 )
                 """
                 
                 logger.info(f"\nExecuting query for {os.path.basename(file_path)}")
+                logger.debug(f"Query: {query}")
                 df = self.con.execute(query).fetchdf()
                 logger.info(f"Found {len(df)} results")
                 
