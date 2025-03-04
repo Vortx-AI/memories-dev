@@ -243,34 +243,31 @@ class MemoryQuery:
             
             logger.info(f"Query classified as: {query_type}")
             
-            # Handle based on classification
-            if query_type in ["N", "L0"]:
-                # For N and L0, get direct response from model
-                response = self.model.get_response(query)
-                return {
-                    "classification": query_type,
-                    "response": response,
-                    "status": "success"
-                }
-            elif query_type == "L1_2":
-                # For L1_2, use chat completion with loaded functions
+            if query_type == "L1_2":
                 system_message = {
                     "role": "system",
-                    "content": """You are a helpful assistant that uses available functions to fully answer location-based queries. 
-                    When searching for features like buildings, roads, or places:
-                    1. First get the location's bounding box
-                    2. Then use search_geospatial_data_in_bbox to find the features
-                    3. Finally, summarize the results for the user
+                    "content": """You are a helpful assistant that MUST use the available functions to completely answer location-based queries.
+                    For queries about buildings, roads, or other features, you MUST:
+                    1. Use get_bounding_box to get the area coordinates
+                    2. IMMEDIATELY use search_geospatial_data_in_bbox with those coordinates to find the features
+                    3. Summarize the results
                     
-                    Always complete all necessary steps to answer the query."""
+                    DO NOT stop after getting the bounding box - you must search for the features!
+                    DO NOT just describe what you will do - actually do it!
+                    
+                    Example flow:
+                    1. get_bounding_box -> gets coordinates
+                    2. search_geospatial_data_in_bbox with "building" as query_word -> finds buildings
+                    3. Summarize what was found."""
                 }
+                
                 messages = [
                     system_message,
                     {"role": "user", "content": query}
                 ]
+                results = []
                 
-                try:
-                    # Use chat_completion from LoadModel with loaded tools
+                while True:
                     response = self.model.chat_completion(
                         messages=messages,
                         tools=self.tools,
@@ -287,10 +284,8 @@ class MemoryQuery:
                     assistant_message = response.get("message", {})
                     tool_calls = response.get("tool_calls", [])
                     
-                    # Handle tool calls if present
+                    # Process tool calls
                     if tool_calls:
-                        results = []
-                        # Process each tool call
                         for tool_call in tool_calls:
                             function_name = tool_call.get("function", {}).get("name")
                             
@@ -354,39 +349,39 @@ class MemoryQuery:
                                     "status": "error"
                                 }
                         
-                        # Get final response after processing all function calls
-                        final_response = self.model.chat_completion(
-                            messages=messages
-                        )
-                        
-                        if final_response.get("error"):
-                            return {
-                                "classification": "L1_2",
-                                "response": f"Error in final response: {final_response['error']}",
-                                "status": "error"
-                            }
-                        
+                        # Force continuation if only get_bounding_box was called
+                        if len(results) == 1 and results[0]["function_name"] == "get_bounding_box":
+                            messages.append({
+                                "role": "system",
+                                "content": "You MUST now use search_geospatial_data_in_bbox to find the features in this area. Do not stop here!"
+                            })
+                            continue
+                    
+                    # Only return if we have both get_bounding_box and search_geospatial_data_in_bbox results
+                    if len(results) >= 2:
                         return {
                             "classification": "L1_2",
-                            "response": final_response.get("message", {}).get("content", "No response generated"),
+                            "response": assistant_message.get("content", ""),
                             "status": "success",
                             "results": results
                         }
+                        
+                    # If we only have get_bounding_box, force continuation
+                    if len(results) == 1:
+                        messages.append({
+                            "role": "system",
+                            "content": "Continue with search_geospatial_data_in_bbox to find the features!"
+                        })
+                        continue
                     
-                    # If no tool calls, return the direct response
-                    return {
-                        "classification": "L1_2",
-                        "response": assistant_message.get("content", "No response generated"),
-                        "status": "success"
-                    }
-                    
-                except Exception as e:
-                    logger.error(f"Error in chat completion: {e}")
-                    return {
-                        "classification": "L1_2",
-                        "response": f"Error processing location query: {str(e)}",
-                        "status": "error"
-                    }
+            elif query_type in ["N", "L0"]:
+                # For N and L0, get direct response from model
+                response = self.model.get_response(query)
+                return {
+                    "classification": query_type,
+                    "response": response,
+                    "status": "success"
+                }
             else:
                 return {
                     "classification": "unknown",
