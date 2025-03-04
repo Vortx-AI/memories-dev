@@ -44,21 +44,40 @@ class RedHotMemory:
             self.metadata = {}
 
     def _save_state(self):
-        """Save current state to disk."""
-        try:
-            # Save index
-            index_path = os.path.join(self.storage_path, 'faiss.index')
-            faiss.write_index(self.index, index_path)
+        """Save FAISS index and metadata to disk."""
+        if not os.path.exists(self.storage_path):
+            os.makedirs(self.storage_path)
+        
+        # Save FAISS index
+        index_path = os.path.join(self.storage_path, "index.faiss")
+        faiss.write_index(self.index, index_path)
+        
+        # Save metadata
+        metadata_path = os.path.join(self.storage_path, "metadata.json")
+        with open(metadata_path, 'w') as f:
+            json.dump(self.metadata, f)
+        
+        logger.info(f"Saved FAISS index to {index_path}")
+        logger.info(f"Saved metadata to {metadata_path}")
+
+    def _load_state(self):
+        """Load FAISS index and metadata from disk."""
+        index_path = os.path.join(self.storage_path, "index.faiss")
+        metadata_path = os.path.join(self.storage_path, "metadata.json")
+        
+        if os.path.exists(index_path) and os.path.exists(metadata_path):
+            # Load FAISS index
+            self.index = faiss.read_index(index_path)
             
-            # Save metadata
-            metadata_path = os.path.join(self.storage_path, 'metadata.json')
-            with open(metadata_path, 'w') as f:
-                json.dump(self.metadata, f)
-                
-            logger.info(f"Saved state: {self.index.ntotal} vectors")
+            # Load metadata
+            with open(metadata_path, 'r') as f:
+                self.metadata = json.load(f)
             
-        except Exception as e:
-            logger.error(f"Failed to save state: {e}")
+            logger.info(f"Loaded FAISS index from {index_path}")
+            logger.info(f"Loaded metadata from {metadata_path}")
+        else:
+            logger.info("No existing state found, initializing new index")
+            self._init_index()
 
     def add_vector(self, vector: np.ndarray, metadata: Dict[str, Any] = None):
         """
@@ -83,6 +102,11 @@ class RedHotMemory:
         if metadata is not None:
             self.metadata[str(self.index.ntotal - 1)] = metadata
             logger.debug(f"Added vector {self.index.ntotal - 1} with metadata")
+
+        # Save state after each addition
+        self._save_state()
+        
+        return self.index.ntotal - 1
 
     def get_metadata(self, idx: int) -> Dict[str, Any]:
         """Get metadata for a vector by index."""
