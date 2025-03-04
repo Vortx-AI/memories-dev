@@ -162,54 +162,71 @@ class ColdMemory:
         self.storage_path = Path(project_root)
         self.storage_path.mkdir(parents=True, exist_ok=True)
 
-    def register_external_file(self, file_path: str) -> None:
-        """Register an external file in the cold storage metadata."""
+    def register_external_file(self, file_path: Union[str, Path], metadata: Optional[Dict] = None) -> bool:
+        """Register an external Parquet file."""
         try:
-            file_path = Path(file_path)
-            if not file_path.exists():
-                raise FileNotFoundError(f"File not found: {file_path}")
+            file_path = str(file_path)
+            # Escape the file path for DuckDB
+            escaped_path = file_path.replace("'", "''")
+            
+            # Create a unique table name based on the file
+            table_name = f"parquet_file_{uuid.uuid4().hex[:8]}"
+            
+            # Register the Parquet file with quotes around the path and allow_unsigned=true
+            self.con.execute(f"""
+                CREATE VIEW {table_name} AS 
+                SELECT * FROM read_parquet(
+                    '{escaped_path}',
+                    binary_as_string=true,
+                    file_row_number=true
+                )
+            """)
+            
+            # Store metadata
+            if metadata is None:
+                metadata = {}
+            
+            metadata.update({
+                'file_path': file_path,
+                'table_name': table_name,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+            # Insert into metadata table
+            self.con.execute("""
+                INSERT INTO cold_metadata (id, timestamp, data_type, size, additional_meta)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                str(uuid.uuid4()),
+                datetime.now(),
+                'parquet',
+                Path(file_path).stat().st_size,
+                json.dumps(metadata)
+            ))
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to register file {file_path}: {e}")
+            return False
 
-            # Get file metadata
-            file_stats = file_path.stat()
-            file_type = file_path.suffix.lstrip('.')
-
-            # Create table if it doesn't exist with auto-incrementing id
+    def _initialize_schema(self):
+        """Initialize database schema."""
+        try:
+            # Create metadata table if it doesn't exist with BIGINT for size
             self.con.execute("""
                 CREATE TABLE IF NOT EXISTS cold_metadata (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    path VARCHAR,
-                    size BIGINT,
+                    id VARCHAR PRIMARY KEY,
+                    timestamp TIMESTAMP,
                     data_type VARCHAR,
+                    size BIGINT,  -- Changed from INTEGER to BIGINT
                     additional_meta JSON
                 )
             """)
-
-            # Check if file is already registered
-            existing = self.con.execute(
-                "SELECT id FROM cold_metadata WHERE path = ?",
-                [str(file_path)]
-            ).fetchone()
-
-            if existing:
-                logger.info(f"File already registered: {file_path}")
-                return
-
-            # Insert new file metadata (without specifying id)
-            self.con.execute("""
-                INSERT INTO cold_metadata (path, size, data_type, additional_meta)
-                VALUES (?, ?, ?, ?)
-            """, [
-                str(file_path),
-                file_stats.st_size,
-                file_type,
-                '{}'  # Empty JSON object for additional metadata
-            ])
-
-            logger.info(f"Registered external file: {file_path}")
-
+            
+            self.logger.info("Initialized cold storage schema")
         except Exception as e:
-            logger.error(f"Error registering external file: {e}")
+            self.logger.error(f"Failed to initialize database schema: {e}")
             raise
 
     def store(self, data: Dict[str, Any], metadata: Optional[Dict[str, Any]] = None) -> bool:
