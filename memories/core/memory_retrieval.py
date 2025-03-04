@@ -16,18 +16,10 @@ class MemoryRetrieval:
     """Memory retrieval class for querying cold memory storage."""
     
     def __init__(self):
-        """Initialize memory retrieval using configuration."""
-        # Get the project root (where memories-dev is located)
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
-        
-        # Set PROJECT_ROOT environment variable
-        os.environ["PROJECT_ROOT"] = project_root
-        
-        # Initialize config with correct path
-        config_path = os.path.join(project_root, 'config', 'db_config.yml')
-        self.config = Config(config_path)
-        self.con = MemoryManager().con
+        """Initialize memory retrieval using the existing MemoryManager instance."""
+        memory_manager = MemoryManager()
+        self.con = memory_manager.con
+        self.config = memory_manager.config  # Use the same config as MemoryManager
         self.logger = logging.getLogger(__name__)
 
     def get_storage_path(self) -> str:
@@ -35,14 +27,7 @@ class MemoryRetrieval:
         return self.config.config['storage']['path']
 
     def get_storage_stats(self) -> Dict[str, Any]:
-        """Get statistics about the storage.
-        
-        Returns:
-            Dictionary containing:
-                - total_files: Number of registered files
-                - total_size: Total size in bytes
-                - file_types: Count of different file types
-        """
+        """Get statistics about the storage."""
         try:
             query = """
                 SELECT 
@@ -60,7 +45,7 @@ class MemoryRetrieval:
                 'total_files': results['total_files'].sum(),
                 'total_size_mb': round(results['total_size'].sum() / (1024 * 1024), 2),
                 'file_types': dict(zip(results['data_type'], results['type_count'])),
-                'storage_path': self.get_storage_path()  # Added storage path to stats
+                'storage_path': self.config.config['storage']['path']
             }
             
             return stats
@@ -71,7 +56,7 @@ class MemoryRetrieval:
                 'total_files': 0,
                 'total_size_mb': 0,
                 'file_types': {},
-                'storage_path': self.get_storage_path()
+                'storage_path': self.config.config['storage']['path']
             }
 
     def list_available_data(self) -> List[Dict[str, Any]]:
