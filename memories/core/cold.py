@@ -158,6 +158,7 @@ class ColdMemory:
         Args:
             duckdb_connection: DuckDB connection from memory manager
         """
+        self.logger = logger
         self.con = duckdb_connection
         if self.con is None:
             raise ValueError("DuckDB connection is required")
@@ -178,17 +179,9 @@ class ColdMemory:
                 )
             """)
             
-            # Create data table if it doesn't exist
-            self.con.execute("""
-                CREATE TABLE IF NOT EXISTS cold_data (
-                    id VARCHAR PRIMARY KEY,
-                    data JSON,
-                    FOREIGN KEY (id) REFERENCES cold_metadata(id)
-                )
-            """)
-            
+            self.logger.info("Initialized cold storage schema")
         except Exception as e:
-            logger.error(f"Failed to initialize database schema: {e}")
+            self.logger.error(f"Failed to initialize database schema: {e}")
             raise
 
     def store(self, data: Dict[str, Any], metadata: Optional[Dict[str, Any]] = None) -> bool:

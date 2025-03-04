@@ -20,6 +20,7 @@ class WarmMemory:
         Args:
             duckdb_connection: DuckDB connection from memory manager
         """
+        self.logger = logger
         self.con = duckdb_connection
         if self.con is None:
             raise ValueError("DuckDB connection is required")

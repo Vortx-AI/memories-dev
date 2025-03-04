@@ -122,34 +122,32 @@ class MemoryManager:
         # Load configuration
         self.config = Config(config_path)
         
+        # Initialize attributes to None
+        self.warm = None
+        self.cold = None
+        self.hot = None
+        self.red_hot = None
+        self.glacier = None
+        
         # Initialize single DuckDB connection
         self._init_duckdb()
 
         # Initialize enabled memory tiers
-        if enable_warm:
+        if enable_warm and self.db_connection:
             self._init_warm_memory()
-        else:
-            self.warm = None
 
-        if enable_cold:
+        if enable_cold and self.db_connection:
             self._init_cold_memory()
-        else:
-            self.cold = None
 
-        if enable_red_hot:
-            self._init_red_hot_memory()
-        else:
-            self.red_hot = None
-
+        # Disable other tiers for now as we focus on warm/cold
         if enable_hot:
             self._init_hot_memory()
-        else:
-            self.hot = None
-
+        
+        if enable_red_hot:
+            self._init_red_hot_memory()
+        
         if enable_glacier:
             self._init_glacier_memory()
-        else:
-            self.glacier = None
 
         # Store vector encoder if provided
         self.vector_encoder = vector_encoder
