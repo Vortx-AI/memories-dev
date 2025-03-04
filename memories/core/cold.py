@@ -168,13 +168,13 @@ class ColdMemory:
     def _initialize_schema(self):
         """Initialize database schema."""
         try:
-            # Create metadata table if it doesn't exist
+            # Create metadata table if it doesn't exist with BIGINT for size
             self.con.execute("""
                 CREATE TABLE IF NOT EXISTS cold_metadata (
                     id VARCHAR PRIMARY KEY,
                     timestamp TIMESTAMP,
                     data_type VARCHAR,
-                    size INTEGER,
+                    size BIGINT,  -- Changed from INTEGER to BIGINT
                     additional_meta JSON
                 )
             """)
@@ -322,10 +322,14 @@ class ColdMemory:
             # Create a unique table name based on the file
             table_name = f"parquet_file_{uuid.uuid4().hex[:8]}"
             
-            # Register the Parquet file with quotes around the path
+            # Register the Parquet file with quotes around the path and allow_unsigned=true
             self.con.execute(f"""
                 CREATE VIEW {table_name} AS 
-                SELECT * FROM parquet_scan('{escaped_path}')
+                SELECT * FROM read_parquet(
+                    '{escaped_path}',
+                    binary_as_string=true,
+                    file_row_number=true
+                )
             """)
             
             # Store metadata
