@@ -338,58 +338,33 @@ class MemoryRetrieval:
             raise
 
     def get_storage_stats(self) -> Dict:
-        """Get statistics about the data in both cold and red-hot storage."""
+        """Get statistics about the vector data in red-hot storage."""
         try:
-            # Get cold storage stats
-            cold_stats = self.con.execute("""
-                SELECT 
-                    COUNT(DISTINCT file_path) as total_files,
-                    SUM(CASE WHEN source_type = 'base' THEN 1 ELSE 0 END) as base_files,
-                    SUM(CASE WHEN source_type = 'divisions' THEN 1 ELSE 0 END) as division_files,
-                    SUM(CASE WHEN source_type = 'transportation' THEN 1 ELSE 0 END) as transportation_files
-                FROM cold_metadata
-            """).fetchone()
-
-            # Initialize red-hot memory with the same connection
+            # Initialize red-hot memory
             red_hot = RedHotMemory()
-            red_hot.con = self.con  # Share the connection
-
-            # Get red-hot storage stats
-            red_hot_stats = self.con.execute("""
-                SELECT 
-                    COUNT(DISTINCT file_path) as total_files,
-                    COUNT(DISTINCT column_name) as total_columns,
-                    SUM(CASE WHEN source_type = 'base' THEN 1 ELSE 0 END) as base_files,
-                    SUM(CASE WHEN source_type = 'divisions' THEN 1 ELSE 0 END) as division_files,
-                    SUM(CASE WHEN source_type = 'transportation' THEN 1 ELSE 0 END) as transportation_files
-                FROM file_metadata f
-                LEFT JOIN column_metadata c ON f.file_id = c.file_id
-            """).fetchone()
-
+            
+            # Get FAISS index statistics
             stats = {
-                'cold_storage': {
-                    'total_files': cold_stats[0] if cold_stats else 0,
-                    'base_files': cold_stats[1] if cold_stats else 0,
-                    'division_files': cold_stats[2] if cold_stats else 0,
-                    'transportation_files': cold_stats[3] if cold_stats else 0
-                },
                 'red_hot_storage': {
-                    'total_files': red_hot_stats[0] if red_hot_stats else 0,
-                    'total_columns': red_hot_stats[1] if red_hot_stats else 0,
-                    'base_files': red_hot_stats[2] if red_hot_stats else 0,
-                    'division_files': red_hot_stats[3] if red_hot_stats else 0,
-                    'transportation_files': red_hot_stats[4] if red_hot_stats else 0
+                    'total_vectors': red_hot.get_total_vectors(),
+                    'vector_dimension': red_hot.get_dimension(),
+                    'index_type': red_hot.get_index_type(),
+                    'memory_usage': red_hot.get_memory_usage()  # in bytes
                 }
             }
 
-            logger.info(f"Storage statistics: {stats}")
+            logger.info(f"Red-hot storage statistics: {stats}")
             return stats
 
         except Exception as e:
-            logger.error(f"Error getting storage stats: {e}")
+            logger.error(f"Error getting red-hot stats: {e}")
             return {
-                'cold_storage': {'total_files': 0, 'base_files': 0, 'division_files': 0, 'transportation_files': 0},
-                'red_hot_storage': {'total_files': 0, 'total_columns': 0, 'base_files': 0, 'division_files': 0, 'transportation_files': 0}
+                'red_hot_storage': {
+                    'total_vectors': 0,
+                    'vector_dimension': 0,
+                    'index_type': 'unknown',
+                    'memory_usage': 0
+                }
             }
 
     def list_registered_files(self) -> List[Dict]:
