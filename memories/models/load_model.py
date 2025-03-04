@@ -86,7 +86,7 @@ class LoadModel:
         if deployment_type == "local":
             self.base_model = BaseModel.get_instance()
             success = self.base_model.initialize_model(
-                model_name=model_name,
+                model=model_name,
                 use_gpu=use_gpu,
                 device=device
             )
