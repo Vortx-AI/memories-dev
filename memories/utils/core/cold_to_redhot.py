@@ -15,11 +15,20 @@ class ColdToRedHot:
         self.data_dir = data_dir or os.path.expanduser("~/geo_memories")
         self.red_hot = RedHotMemory(config_path)
         
-        # Connect to cold storage database
-        cold_db_path = os.path.join(self.data_dir, "cold_storage.db")
-        self.con = duckdb.connect(database=cold_db_path)
+        # Use in-memory database like memory_retrieval.py
+        self.con = duckdb.connect(database=':memory:')
         self.con.install_extension("spatial")
         self.con.load_extension("spatial")
+        
+        # Create view of cold_metadata from parquet
+        cold_metadata_path = os.path.join(self.data_dir, "cold_metadata.parquet")
+        if os.path.exists(cold_metadata_path):
+            self.con.execute(f"""
+                CREATE VIEW cold_metadata AS 
+                SELECT * FROM parquet_scan('{cold_metadata_path}')
+            """)
+        else:
+            logger.error(f"Cold metadata file not found at {cold_metadata_path}")
 
     def get_parquet_files(self) -> List[str]:
         """Get all parquet files from cold_metadata."""
