@@ -3,7 +3,7 @@ Memory retrieval functionality for querying cold memory storage.
 """
 
 import logging
-from typing import Dict, Any, Optional, List, Union
+from typing import Dict, Any, Optional, List, Union, Tuple
 import pandas as pd
 import os
 from pathlib import Path
@@ -66,6 +66,18 @@ class MemoryRetrieval:
             self.logger.error(f"Error getting schema: {e}")
             return []
 
+    def find_geometry_column(self, schema: List[Tuple]) -> Optional[str]:
+        """
+        Find the geometry column in the schema.
+        Common names: geom, geometry, the_geom, wkb_geometry
+        """
+        geometry_names = ['geom', 'geometry', 'the_geom', 'wkb_geometry']
+        for col in schema:
+            col_name = col[0].lower()
+            if col_name in geometry_names:
+                return col[0]
+        return None
+
     def query_by_bbox(self, min_lon: float, min_lat: float, max_lon: float, max_lat: float) -> pd.DataFrame:
         """
         Query places within a bounding box.
@@ -96,11 +108,23 @@ class MemoryRetrieval:
             file_paths = [f[0] for f in files]
             files_list = ", ".join(f"'{path}'" for path in file_paths)
             
-            # First, let's check the schema
-            schema = self.get_table_schema()
-            self.logger.info(f"Available columns: {schema}")
+            # Create temporary view to inspect schema
+            self.con.execute(f"""
+                CREATE OR REPLACE VIEW temp_view AS 
+                SELECT * FROM read_parquet('{file_paths[0]}')
+            """)
             
-            # Create view with spatial data
+            # Get schema and find geometry column
+            schema = self.con.execute("DESCRIBE temp_view").fetchall()
+            geom_column = self.find_geometry_column(schema)
+            
+            if not geom_column:
+                self.logger.error("No geometry column found in the parquet files")
+                return pd.DataFrame()
+                
+            self.logger.info(f"Using geometry column: {geom_column}")
+            
+            # Create view with all files
             create_view = f"""
                 CREATE OR REPLACE VIEW files AS 
                 SELECT * 
@@ -108,20 +132,36 @@ class MemoryRetrieval:
             """
             self.con.execute(create_view)
             
-            # Query within bounding box (without SRID parameter)
+            # Get available columns for selection
+            available_columns = [col[0] for col in schema]
+            select_columns = ['osm_id', 'name', 'highway', 'waterway', 'other_tags']
+            select_columns = [col for col in select_columns if col in available_columns]
+            
+            # Add geometry-derived columns
+            select_columns.extend([
+                f"ST_X(ST_Centroid({geom_column})) as lon",
+                f"ST_Y(ST_Centroid({geom_column})) as lat"
+            ])
+            
+            # Build the query
+            select_clause = ", ".join(select_columns)
             query = f"""
-                SELECT *
+                SELECT {select_clause}
                 FROM files
                 WHERE ST_Intersects(
-                    ST_GeomFromWKB(way),
+                    {geom_column},
                     ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
                                   CAST({min_lat} AS DOUBLE), 
                                   CAST({max_lon} AS DOUBLE), 
                                   CAST({max_lat} AS DOUBLE))
                 )
+                AND name IS NOT NULL
+                ORDER BY name
             """
             
+            self.logger.debug(f"Executing query: {query}")
             result = self.con.execute(query).df()
+            
             return result
             
         except Exception as e:
@@ -968,11 +1008,23 @@ class MemoryRetrieval:
             file_paths = [f[0] for f in files]
             files_list = ", ".join(f"'{path}'" for path in file_paths)
             
-            # First, let's check the schema
-            schema = self.get_table_schema()
-            self.logger.info(f"Available columns: {schema}")
+            # Create temporary view to inspect schema
+            self.con.execute(f"""
+                CREATE OR REPLACE VIEW temp_view AS 
+                SELECT * FROM read_parquet('{file_paths[0]}')
+            """)
             
-            # Create view with spatial data
+            # Get schema and find geometry column
+            schema = self.con.execute("DESCRIBE temp_view").fetchall()
+            geom_column = self.find_geometry_column(schema)
+            
+            if not geom_column:
+                self.logger.error("No geometry column found in the parquet files")
+                return pd.DataFrame()
+                
+            self.logger.info(f"Using geometry column: {geom_column}")
+            
+            # Create view with all files
             create_view = f"""
                 CREATE OR REPLACE VIEW files AS 
                 SELECT * 
@@ -980,22 +1032,38 @@ class MemoryRetrieval:
             """
             self.con.execute(create_view)
             
-            # Query within bounding box (without SRID parameter)
+            # Get available columns for selection
+            available_columns = [col[0] for col in schema]
+            select_columns = ['osm_id', 'name', 'highway', 'waterway', 'other_tags']
+            select_columns = [col for col in select_columns if col in available_columns]
+            
+            # Add geometry-derived columns
+            select_columns.extend([
+                f"ST_X(ST_Centroid({geom_column})) as lon",
+                f"ST_Y(ST_Centroid({geom_column})) as lat"
+            ])
+            
+            # Build the query
+            select_clause = ", ".join(select_columns)
             query = f"""
-                SELECT *
+                SELECT {select_clause}
                 FROM files
                 WHERE ST_Intersects(
-                    ST_GeomFromWKB(way),
+                    {geom_column},
                     ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
                                   CAST({min_lat} AS DOUBLE), 
                                   CAST({max_lon} AS DOUBLE), 
                                   CAST({max_lat} AS DOUBLE))
                 )
+                AND name IS NOT NULL
+                ORDER BY name
             """
             
+            self.logger.debug(f"Executing query: {query}")
             result = self.con.execute(query).df()
+            
             return result
             
         except Exception as e:
-            logger.error(f"Error executing spatial query: {e}")
+            self.logger.error(f"Error executing spatial query: {e}")
             raise 
