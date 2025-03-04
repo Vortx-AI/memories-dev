@@ -1246,20 +1246,28 @@ class MemoryRetrieval:
         
         return "\n".join(output)
 
-    def get_spatial_semantic_data(
+    def search_geospatial_data_in_bbox(
         self,
         query_word: str,
         bbox: tuple,
-        similarity_threshold: float = 0.7
+        similarity_threshold: float = 0.5
     ) -> pd.DataFrame:
         """
-        Search for data that matches semantically and falls within a bounding box.
-        Returns a DataFrame without geometry columns.
+        Search for geospatial features (like roads, buildings, landuse, etc.) within a geographic bounding box.
+        Uses semantic search to find relevant data based on the query word.
+        
+        Args:
+            query_word: Search term (e.g., 'road', 'building', 'park', 'landuse', 'water')
+            bbox: Geographic bounding box as (min_lon, min_lat, max_lon, max_lat)
+            similarity_threshold: Minimum semantic similarity score (0-1) for matching columns
+        
+        Returns:
+            DataFrame containing matching features within the bounding box
         """
         logger.info(f"\n{'='*80}")
-        logger.info("SPATIAL SEMANTIC SEARCH")
+        logger.info("GEOSPATIAL FEATURE SEARCH")
         logger.info(f"{'='*80}")
-        logger.info(f"Query word: '{query_word}'")
+        logger.info(f"Search term: '{query_word}'")
         logger.info(f"Bounding box: {bbox}")
         
         # First get semantically similar columns
@@ -1302,7 +1310,6 @@ class MemoryRetrieval:
                         col_name.lower() in ['geom', 'geometry', 'the_geom']):
                         info['geometry_column'] = col_name
                         info['geometry_type'] = col_type
-                        logger.info(f"Found geometry column: {col_name} ({col_type})")
                         break
                 
                 # Skip if no geometry column found
@@ -1311,11 +1318,6 @@ class MemoryRetrieval:
                     continue
                 
                 # Build and execute spatial query
-                columns = list(info['columns'])
-                columns.append(info['geometry_column'])
-                cols_str = ', '.join(f'"{col}"' for col in columns)
-                
-                # Adjust geometry expression based on type
                 geom_col = info["geometry_column"]
                 geom_type = info["geometry_type"].lower()
                 
@@ -1326,10 +1328,9 @@ class MemoryRetrieval:
                 else:
                     geom_expr = f'"{geom_col}"'
                 
+                # Query all columns from the file
                 query = f"""
-                SELECT 
-                    {cols_str},
-                    '{os.path.basename(file_path)}' as source_file
+                SELECT *
                 FROM parquet_scan('{file_path}')
                 WHERE ST_Intersects(
                     {geom_expr},
@@ -1338,27 +1339,13 @@ class MemoryRetrieval:
                 )
                 """
                 
-                logger.info(f"Executing query for {os.path.basename(file_path)}...")
-                logger.debug(f"Query: {query}")
                 df = self.con.execute(query).fetchdf()
-                logger.info(f"Found {len(df)} results")
                 
                 if not df.empty:
-                    # Drop geometry column before concatenating
-                    df = df.drop(columns=[info['geometry_column']])
                     results = pd.concat([results, df], ignore_index=True)
                 
             except Exception as e:
                 logger.error(f"Error processing {file_path}: {e}")
-                logger.error(f"Query attempted: {query}")
                 continue
-        
-        logger.info(f"\nTotal results found: {len(results)}")
-        
-        # Drop any remaining geometry columns (in case they have different names)
-        geometry_columns = [col for col in results.columns if 
-                           any(geom in col.lower() for geom in ['geom', 'geometry', 'the_geom'])]
-        if geometry_columns:
-            results = results.drop(columns=geometry_columns)
         
         return results 
