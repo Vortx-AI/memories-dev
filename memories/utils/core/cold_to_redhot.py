@@ -4,7 +4,7 @@ import pandas as pd
 import duckdb
 import os
 from typing import Dict, List, Tuple, Optional
-from memories.core.red_hot_memory import RedHotMemory
+from memories.core.red_hot import RedHotMemory
 import pyarrow.parquet as pq
 import glob
 from sentence_transformers import SentenceTransformer
@@ -13,41 +13,30 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 class ColdToRedHot:
-    def __init__(self, data_dir: str = None, config_path: str = None):
-        """Initialize cold to red-hot transfer manager."""
+    def __init__(self):
+        """Initialize cold to red-hot transfer."""
         # Get project root directory
         project_root = Path(__file__).parent.parent.parent.parent
         
-        # Set data directory
-        self.data_dir = data_dir or os.path.expanduser("~/geo_memories")
-        self.red_hot = RedHotMemory(config_path)
-        
-        # Use in-memory database
-        self.con = duckdb.connect(database=':memory:')
-        self.con.install_extension("spatial")
-        self.con.load_extension("spatial")
-        
-        # Initialize cold metadata table
-        self._initialize_cold_metadata()
-
-        # Get project root for FAISS storage location
-        self.faiss_dir = os.path.join(project_root, "data", "red_hot")
+        # Set up data directories
+        self.data_dir = os.path.join(project_root, "data")
+        self.faiss_dir = os.path.join(self.data_dir, "red_hot")
         
         # Initialize components
+        self.red_hot = RedHotMemory()
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
         
         # Debug prints
         print("\nDebug info:")
+        print(f"Project root: {project_root}")
+        print(f"Data directory: {self.data_dir}")
+        print(f"FAISS storage location: {self.faiss_dir}")
         print(f"RedHotMemory methods: {dir(self.red_hot)}")
-        print(f"RedHotMemory class: {type(self.red_hot)}")
         print(f"Has add_vector: {'add_vector' in dir(self.red_hot)}\n")
         
         logger.info(f"Initialized ColdToRedHot")
-        logger.info(f"Cold storage directory: {self.data_dir}")
+        logger.info(f"Data directory: {self.data_dir}")
         logger.info(f"FAISS storage location: {self.faiss_dir}")
-        print(f"\nFAISS storage location: {self.faiss_dir}")
-        print(f"FAISS index file: {os.path.join(self.faiss_dir, 'faiss.index')}")
-        print(f"FAISS metadata file: {os.path.join(self.faiss_dir, 'metadata.json')}\n")
 
     def get_file_schema(self, file_path: str) -> List[Tuple[str, str]]:
         """Get schema information from a parquet file."""
