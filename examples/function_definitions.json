@@ -144,7 +144,39 @@
                 }
             }
         },
-        
+        {
+            "type": "function",
+            "function": {
+                "name": "search_geospatial_data_in_bbox",
+                "description": "Search for geospatial features (like roads, buildings, landuse, etc.) within a geographic bounding box. Uses semantic search to find relevant data based on the query word.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query_word": {
+                            "type": "string",
+                            "description": "Search term (e.g., 'road', 'building', 'park', 'landuse', 'water')"
+                        },
+                        "bbox": {
+                            "type": "array",
+                            "items": {
+                                "type": "number"
+                            },
+                            "minItems": 4,
+                            "maxItems": 4,
+                            "description": "Geographic bounding box as [min_lon, min_lat, max_lon, max_lat]"
+                        },
+                        "similarity_threshold": {
+                            "type": "number",
+                            "description": "Minimum semantic similarity score (0-1) for matching columns",
+                            "default": 0.5,
+                            "minimum": 0,
+                            "maximum": 1
+                        }
+                    },
+                    "required": ["query_word", "bbox"]
+                }
+            }
+        },
         {
             "type": "function",
             "function": {

@@ -20,7 +20,8 @@ from memories.utils.earth.location_utils import (
     get_bounding_box_from_address,
     get_bounding_box_from_coords,
     get_address_from_coords,
-    get_coords_from_address
+    get_coords_from_address,
+    
 )
 from memories.core.memory_retrieval import MemoryRetrieval
 from memories.utils.code.code_execution import CodeExecution
@@ -108,6 +109,7 @@ class MemoryQuery:
                 "get_data_by_bbox": self.get_data_by_bbox_wrapper,
                 "get_data_by_bbox_and_value": self.get_data_by_bbox_and_value_wrapper,
                 "get_data_by_fuzzy_search": self.get_data_by_fuzzy_search_wrapper,
+                "search_geospatial_data_in_bbox": self.search_geospatial_data_in_bbox_wrapper,
                 "execute_code": self.code_execution.execute_code
             }
             
@@ -243,6 +245,44 @@ class MemoryQuery:
             }
         except Exception as e:
             logger.error(f"Error in get_data_by_fuzzy_search: {e}")
+            return {
+                "status": "error",
+                "message": str(e),
+                "data": []
+            }
+
+    def search_geospatial_data_in_bbox_wrapper(
+        self,
+        query_word: str,
+        bbox: list,
+        similarity_threshold: float = 0.5
+    ) -> Dict[str, Any]:
+        """Wrapper for search_geospatial_data_in_bbox to handle initialization and return format."""
+        try:
+            # Initialize memory_retrieval if not already done
+            if self.memory_retrieval is None:
+                from memories.core.cold import ColdMemory
+                cold_memory = ColdMemory(storage_path=Path('data'))
+                self.memory_retrieval = MemoryRetrieval(cold_memory)
+
+            # Convert bbox list to tuple
+            bbox_tuple = tuple(bbox)
+            
+            # Call search function
+            results = self.memory_retrieval.search_geospatial_data_in_bbox(
+                query_word=query_word,
+                bbox=bbox_tuple,
+                similarity_threshold=similarity_threshold
+            )
+
+            # Convert results to dictionary format
+            return {
+                "status": "success" if not results.empty else "no_results",
+                "data": results.to_dict('records') if not results.empty else [],
+                "count": len(results) if not results.empty else 0
+            }
+        except Exception as e:
+            logger.error(f"Error in search_geospatial_data_in_bbox: {e}")
             return {
                 "status": "error",
                 "message": str(e),
