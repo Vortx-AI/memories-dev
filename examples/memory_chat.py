@@ -7,7 +7,7 @@ import logging
 import os
 import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, date
 from dotenv import load_dotenv
 import sys
 import pandas as pd
