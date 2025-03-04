@@ -11,6 +11,7 @@ from pathlib import Path
 import json
 from datetime import datetime
 import os
+import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -305,21 +306,55 @@ class RedHotMemory:
             logger.error(f"Failed to rebuild index: {e}")
             raise
     
-    def clear(self) -> None:
-        """Clear all data."""
+    def clear(self) -> bool:
+        """
+        Clear all vectors and metadata from storage.
+        Returns:
+            bool: True if cleared successfully, False otherwise
+        """
         try:
-            # Reset index
-            self._init_index()
+            # Reset FAISS index
+            self.index = faiss.IndexFlatL2(384)
             
             # Clear metadata
             self.metadata = {}
-            self._save_metadata()
             
-            logger.info("Cleared all data")
+            # Remove storage files
+            index_path = os.path.join(self.storage_path, 'faiss.index')
+            metadata_path = os.path.join(self.storage_path, 'metadata.json')
+            
+            if os.path.exists(index_path):
+                os.remove(index_path)
+            if os.path.exists(metadata_path):
+                os.remove(metadata_path)
+                
+            logger.info("Successfully cleared red-hot memory")
+            return True
             
         except Exception as e:
-            logger.error(f"Failed to clear data: {e}")
-            raise
+            logger.error(f"Error clearing red-hot memory: {e}")
+            return False
+
+    def reset(self) -> bool:
+        """
+        Reset the entire storage directory.
+        WARNING: This will delete everything in the storage directory.
+        """
+        try:
+            if os.path.exists(self.storage_path):
+                shutil.rmtree(self.storage_path)
+            os.makedirs(self.storage_path)
+            
+            # Reinitialize empty index
+            self.index = faiss.IndexFlatL2(384)
+            self.metadata = {}
+            
+            logger.info("Successfully reset red-hot memory storage")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error resetting red-hot memory: {e}")
+            return False
     
     def cleanup(self) -> None:
         """Clean up resources."""
