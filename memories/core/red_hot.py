@@ -10,51 +10,96 @@ import torch
 from pathlib import Path
 import json
 from datetime import datetime
+import os
 
 logger = logging.getLogger(__name__)
 
 class RedHotMemory:
     """Red hot memory layer using FAISS for ultra-fast vector similarity search."""
     
-    def __init__(
-        self,
-        storage_path: Path,
-        max_size: int,
-        vector_dim: int = 384,
-        gpu_id: int = 0,
-        index_type: str = "Flat",  # Default to simple Flat index
-        force_cpu: bool = True  # Default to CPU for stability
-    ):
-        """Initialize red hot memory.
-        
-        Args:
-            storage_path: Path to store index and metadata
-            max_size: Maximum number of vectors to store
-            vector_dim: Dimension of vectors to store (default: 384 for BERT-like models)
-            gpu_id: GPU device ID to use (default: 0)
-            index_type: FAISS index type ("Flat" only for now)
-            force_cpu: Force CPU usage even if GPU is available
-        """
-        self.storage_path = Path(storage_path)
+    def __init__(self, storage_path: str, max_size: int):
+        """Initialize red-hot memory storage."""
+        self.storage_path = storage_path
         self.max_size = max_size
-        self.vector_dim = vector_dim
-        self.gpu_id = gpu_id
-        self.index_type = index_type
-        self.force_cpu = force_cpu
-        self.using_gpu = False
         
-        # Create storage directory
-        self.storage_path.mkdir(parents=True, exist_ok=True)
-        
-        # Initialize metadata storage
-        self.metadata_file = self.storage_path / "metadata.json"
-        self.metadata = self._load_metadata()
+        # Create storage directory if it doesn't exist
+        os.makedirs(storage_path, exist_ok=True)
         
         # Initialize FAISS index
-        self._init_index()
-        device = "CPU" if not self.using_gpu else f"GPU {gpu_id}"
-        logger.info(f"Initialized red hot memory at {storage_path} using {device}")
-    
+        self.index = faiss.IndexFlatL2(384)  # 384 dimensions for all-MiniLM-L6-v2
+        
+        # Initialize metadata storage
+        self.metadata = {}
+        
+        # Load existing index and metadata if available
+        self._load_state()
+
+    def _load_state(self):
+        """Load index and metadata from files."""
+        index_path = os.path.join(self.storage_path, 'faiss.index')
+        metadata_path = os.path.join(self.storage_path, 'metadata.json')
+        
+        # Load FAISS index if exists
+        if os.path.exists(index_path):
+            try:
+                self.index = faiss.read_index(index_path)
+                logger.info(f"Loaded FAISS index with {self.index.ntotal} vectors")
+            except Exception as e:
+                logger.error(f"Failed to load FAISS index: {e}")
+        
+        # Load metadata if exists
+        if os.path.exists(metadata_path):
+            try:
+                with open(metadata_path, 'r') as f:
+                    self.metadata = json.load(f)
+                logger.info(f"Loaded metadata for {len(self.metadata)} vectors")
+            except Exception as e:
+                logger.error(f"Failed to load metadata: {e}")
+                self.metadata = {}
+
+    def _save_state(self):
+        """Save index and metadata to files."""
+        index_path = os.path.join(self.storage_path, 'faiss.index')
+        metadata_path = os.path.join(self.storage_path, 'metadata.json')
+        
+        # Save FAISS index
+        try:
+            faiss.write_index(self.index, index_path)
+            logger.info(f"Saved FAISS index with {self.index.ntotal} vectors")
+        except Exception as e:
+            logger.error(f"Failed to save FAISS index: {e}")
+        
+        # Save metadata
+        try:
+            with open(metadata_path, 'w') as f:
+                json.dump(self.metadata, f)
+            logger.info(f"Saved metadata for {len(self.metadata)} vectors")
+        except Exception as e:
+            logger.error(f"Failed to save metadata: {e}")
+
+    def add_vector(self, vector: np.ndarray, metadata: Dict[str, Any] = None):
+        """Add a vector and its metadata to storage."""
+        if self.index.ntotal >= self.max_size:
+            raise ValueError("Storage is full")
+        
+        # Add vector to FAISS index
+        self.index.add(vector.reshape(1, -1))
+        
+        # Add metadata
+        if metadata is not None:
+            self.metadata[str(self.index.ntotal - 1)] = metadata
+            
+        # Save state
+        self._save_state()
+
+    def get_metadata(self, idx: int) -> Dict[str, Any]:
+        """Get metadata for a vector by index."""
+        return self.metadata.get(str(idx), {})
+
+    def __len__(self):
+        """Return number of vectors in storage."""
+        return self.index.ntotal
+
     def _init_index(self):
         """Initialize FAISS index."""
         try:
