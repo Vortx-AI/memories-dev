@@ -1174,9 +1174,6 @@ class MemoryRetrieval:
         
         min_x, min_y, max_x, max_y = bbox
         
-        # Create spatial envelope once
-        envelope = f"ST_GeomFromText('POLYGON(({min_x} {min_y}, {min_x} {max_y}, {max_x} {max_y}, {max_x} {min_y}, {min_x} {min_y}))')"
-        
         for i, idx in enumerate(I[0]):
             metadata = red_hot.get_metadata(str(int(idx)))
             column_name = metadata.get('column_name')
@@ -1198,12 +1195,17 @@ class MemoryRetrieval:
                 for geom_column in geometry_columns:
                     try:
                         if similarity > similarity_threshold:
+                            # For high similarity, get selected columns to avoid huge output
+                            selected_cols = [column_name, 'osm_id', 'place', 'highway', 'amenity', 'building', geom_column]
+                            selected_cols = [col for col in selected_cols if col in metadata.get('all_columns', [])]
+                            cols_str = ', '.join(f'"{col}"' for col in selected_cols)
+                            
                             query = f"""
-                            SELECT *
+                            SELECT {cols_str}
                             FROM parquet_scan('{file_path}')
                             WHERE ST_Intersects(
                                 ST_GeomFromWKB({geom_column}),
-                                {envelope}
+                                ST_GeomFromText('POLYGON(({min_x} {min_y}, {min_x} {max_y}, {max_x} {max_y}, {max_x} {min_y}, {min_x} {min_y}))')
                             )
                             LIMIT 1000
                             """
@@ -1213,7 +1215,7 @@ class MemoryRetrieval:
                             FROM parquet_scan('{file_path}')
                             WHERE ST_Intersects(
                                 ST_GeomFromWKB({geom_column}),
-                                {envelope}
+                                ST_GeomFromText('POLYGON(({min_x} {min_y}, {min_x} {max_y}, {max_x} {max_y}, {max_x} {min_y}, {min_x} {min_y}))')
                             )
                             LIMIT 100
                             """
@@ -1222,13 +1224,21 @@ class MemoryRetrieval:
                         
                         if not result_df.empty:
                             if similarity > similarity_threshold:
+                                # Clean up the data before returning
+                                clean_data = []
+                                for _, row in result_df.iterrows():
+                                    clean_row = {k: v for k, v in row.items() 
+                                              if k != geom_column and v is not None and v != ''}
+                                    if clean_row:
+                                        clean_data.append(clean_row)
+                                
                                 results['high_similarity'].append({
                                     'similarity': similarity,
                                     'column_name': column_name,
                                     'file_path': file_path,
                                     'geometry_column': geom_column,
                                     'dtype': metadata.get('dtype', 'unknown'),
-                                    'data': result_df.to_dict('records')
+                                    'data': clean_data
                                 })
                             else:
                                 results['partial_matches'][f"{file_path}:{column_name}"] = {
@@ -1237,7 +1247,7 @@ class MemoryRetrieval:
                                     'file_path': file_path,
                                     'geometry_column': geom_column,
                                     'dtype': metadata.get('dtype', 'unknown'),
-                                    'values': result_df[column_name].tolist()
+                                    'values': [v for v in result_df[column_name].tolist() if v]
                                 }
                             logger.info(f"Found {len(result_df)} results using {geom_column} in {file_path}")
                             break  # Found working geometry column, stop trying others
