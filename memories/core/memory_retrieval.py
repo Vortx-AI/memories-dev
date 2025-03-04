@@ -8,6 +8,7 @@ import pandas as pd
 from pathlib import Path
 from memories.core.cold import Config
 from memories.core.memory_manager import MemoryManager
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +17,17 @@ class MemoryRetrieval:
     
     def __init__(self):
         """Initialize memory retrieval using configuration."""
-        self.config = Config()  # Get configuration including paths
-        self.con = MemoryManager().con  # Get the existing DuckDB connection
+        # Get the project root (where memories-dev is located)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+        
+        # Set PROJECT_ROOT environment variable
+        os.environ["PROJECT_ROOT"] = project_root
+        
+        # Initialize config with correct path
+        config_path = os.path.join(project_root, 'config', 'db_config.yml')
+        self.config = Config(config_path)
+        self.con = MemoryManager().con
         self.logger = logging.getLogger(__name__)
 
     def get_storage_path(self) -> str:
