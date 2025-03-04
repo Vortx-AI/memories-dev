@@ -452,8 +452,13 @@ def main():
         )
         logger.info("MemoryQuery initialized successfully")
         
-        # Example query
-        query = sys.argv[1] 
+        # Check if query was provided
+        if len(sys.argv) < 2:
+            logger.error("No query provided. Usage: python3 memory_chat.py 'your query here'")
+            return
+            
+        # Join all arguments after the script name to form the complete query
+        query = ' '.join(sys.argv[1:])
         logger.info("-" * 50)
         logger.info(f"Processing query: {query}")
         logger.info("-" * 50)
@@ -462,27 +467,41 @@ def main():
         
         # Print the result in a formatted way
         print("\nQuery Result:")
-        print("=" * 50)
+        print("=" * 80)
         print(f"Classification: {result.get('classification', 'unknown')}")
         print(f"Status: {result.get('status', 'unknown')}")
-        print("\nResponse:")
-        print("-" * 50)
+        
+        # If there are function calls, show them first
+        if 'results' in result and result['results']:
+            print("\nFunction Call Sequence:")
+            print("-" * 80)
+            for i, r in enumerate(result['results'], 1):
+                print(f"\n{i}. Function: {r.get('function_name')}")
+                print(f"   Arguments: {json.dumps(r.get('args'), indent=2)}")
+                
+                # Format the result based on its type
+                result_data = r.get('result', {})
+                if isinstance(result_data, dict):
+                    if 'data' in result_data and isinstance(result_data['data'], list):
+                        print(f"   Results: Found {len(result_data['data'])} items")
+                        if result_data['data']:
+                            print("   Sample data:")
+                            print(json.dumps(result_data['data'][0], indent=2))
+                    else:
+                        print(f"   Result: {json.dumps(result_data, indent=2)}")
+                else:
+                    print(f"   Result: {result_data}")
+                print("   " + "-" * 70)
+        
+        # Show the final response
+        print("\nFinal Response:")
+        print("-" * 80)
         if isinstance(result.get('response'), dict):
             print(json.dumps(result['response'], indent=2))
         else:
             print(result.get('response', 'No response generated'))
         
-        # If there are results from function calls, print them
-        if 'results' in result:
-            print("\nFunction Calls Sequence:")
-            print("-" * 50)
-            for i, r in enumerate(result['results'], 1):
-                print(f"\n{i}. Function: {r.get('function_name')}")
-                print(f"   Arguments: {json.dumps(r.get('args'), indent=2)}")
-                print(f"   Result: {json.dumps(r.get('result'), indent=2)}")
-                print("   " + "-" * 40)
-        
-        print("=" * 50)
+        print("=" * 80)
         
     except Exception as e:
         logger.error(f"Error in main: {str(e)}", exc_info=True)
