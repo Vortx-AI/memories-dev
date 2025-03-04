@@ -18,36 +18,33 @@ logger = logging.getLogger(__name__)
 class RedHotMemory:
     """Red hot memory layer using FAISS for ultra-fast vector similarity search."""
     
-    def __init__(self):
-        """Initialize red-hot memory storage."""
-        self.dimension = 384  # dimension for all-MiniLM-L6-v2
-        self.max_size = 1_000_000  # default max size
-        
-        # Initialize FAISS index and metadata
-        self.index = None
+    def __init__(self, dimension=384, max_size=10000):
+        """Initialize red-hot memory with FAISS index."""
+        self.dimension = dimension
+        self.max_size = max_size
         self.metadata = {}
         
-        # Initialize storage
-        self._init_storage()
-
-    def _init_storage(self):
-        """Initialize storage with default FAISS index."""
-        try:
-            # Create new index
-            self.index = faiss.IndexFlatL2(self.dimension)
-            logger.info("Created new FAISS index")
+        # Set up storage path
+        project_root = Path(__file__).parent.parent.parent
+        self.storage_path = os.path.join(project_root, "data", "red_hot")
+        
+        # Create storage directory if it doesn't exist
+        if not os.path.exists(self.storage_path):
+            os.makedirs(self.storage_path)
             
-        except Exception as e:
-            logger.error(f"Error initializing storage: {e}")
-            # Ensure we at least have a working index
-            self.index = faiss.IndexFlatL2(self.dimension)
-            self.metadata = {}
+        logger.info(f"Initialized RedHotMemory with storage at: {self.storage_path}")
+        
+        # Try to load existing state, or initialize new if none exists
+        self._load_state()
+
+    def _init_index(self):
+        """Initialize a new FAISS index."""
+        self.index = faiss.IndexFlatL2(self.dimension)
+        self.metadata = {}
+        logger.info("Initialized new FAISS index")
 
     def _save_state(self):
         """Save FAISS index and metadata to disk."""
-        if not os.path.exists(self.storage_path):
-            os.makedirs(self.storage_path)
-        
         # Save FAISS index
         index_path = os.path.join(self.storage_path, "index.faiss")
         faiss.write_index(self.index, index_path)
@@ -56,9 +53,9 @@ class RedHotMemory:
         metadata_path = os.path.join(self.storage_path, "metadata.json")
         with open(metadata_path, 'w') as f:
             json.dump(self.metadata, f)
-        
-        logger.info(f"Saved FAISS index to {index_path}")
-        logger.info(f"Saved metadata to {metadata_path}")
+            
+        logger.debug(f"Saved FAISS index to {index_path}")
+        logger.debug(f"Saved metadata to {metadata_path}")
 
     def _load_state(self):
         """Load FAISS index and metadata from disk."""
@@ -72,9 +69,8 @@ class RedHotMemory:
             # Load metadata
             with open(metadata_path, 'r') as f:
                 self.metadata = json.load(f)
-            
-            logger.info(f"Loaded FAISS index from {index_path}")
-            logger.info(f"Loaded metadata from {metadata_path}")
+                
+            logger.info(f"Loaded existing state from {self.storage_path}")
         else:
             logger.info("No existing state found, initializing new index")
             self._init_index()
@@ -116,39 +112,6 @@ class RedHotMemory:
         """Return number of vectors in storage."""
         return self.index.ntotal if self.index is not None else 0
 
-    def _init_index(self):
-        """Initialize FAISS index."""
-        try:
-            # For now, only support Flat index type for stability
-            if self.index_type != "Flat":
-                logger.warning("Only Flat index type is currently supported. Using Flat index.")
-                self.index_type = "Flat"
-            
-            # Create CPU index
-            self.index = faiss.IndexFlatL2(self.vector_dim)
-            
-            # Try to use GPU if not forced to use CPU
-            if not self.force_cpu:
-                try:
-                    # Check if GPU is available
-                    gpu_available = faiss.get_num_gpus() > 0
-                    if gpu_available and self.gpu_id < faiss.get_num_gpus():
-                        res = faiss.StandardGpuResources()
-                        self.index = faiss.index_cpu_to_gpu(res, self.gpu_id, self.index)
-                        self.using_gpu = True
-                        logger.info(f"FAISS index initialized on GPU {self.gpu_id}")
-                    else:
-                        logger.warning(f"GPU {self.gpu_id} not available, using CPU")
-                except Exception as e:
-                    logger.warning(f"Failed to initialize on GPU, using CPU: {e}")
-            
-            if not self.using_gpu:
-                logger.info("FAISS index initialized on CPU")
-            
-        except Exception as e:
-            logger.error(f"Failed to initialize FAISS index: {e}")
-            raise
-    
     def _load_metadata(self) -> Dict[str, Any]:
         """Load metadata from disk."""
         if self.metadata_file.exists():
