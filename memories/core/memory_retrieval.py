@@ -51,11 +51,14 @@ class MemoryRetrieval:
             if not first_file:
                 return []
                 
-            # Get schema
-            schema = self.con.execute(f"""
-                SELECT column_name 
-                FROM parquet_schema('{first_file[0]}')
-            """).fetchall()
+            # Create temporary view to inspect schema
+            self.con.execute(f"""
+                CREATE OR REPLACE VIEW temp_view AS 
+                SELECT * FROM read_parquet('{first_file[0]}')
+            """)
+            
+            # Get column names
+            schema = self.con.execute("DESCRIBE temp_view").fetchall()
             
             return [col[0] for col in schema]
             
@@ -105,13 +108,16 @@ class MemoryRetrieval:
             """
             self.con.execute(create_view)
             
-            # Query within bounding box
+            # Query within bounding box (without SRID parameter)
             query = f"""
                 SELECT *
                 FROM files
                 WHERE ST_Intersects(
-                    ST_GeomFromWKB(way),  -- Assuming 'way' is the geometry column
-                    ST_MakeEnvelope({min_lon}, {min_lat}, {max_lon}, {max_lat}, 4326)
+                    ST_GeomFromWKB(way),
+                    ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
+                                  CAST({min_lat} AS DOUBLE), 
+                                  CAST({max_lon} AS DOUBLE), 
+                                  CAST({max_lat} AS DOUBLE))
                 )
             """
             
@@ -974,13 +980,16 @@ class MemoryRetrieval:
             """
             self.con.execute(create_view)
             
-            # Query within bounding box
+            # Query within bounding box (without SRID parameter)
             query = f"""
                 SELECT *
                 FROM files
                 WHERE ST_Intersects(
-                    ST_GeomFromWKB(way),  -- Assuming 'way' is the geometry column
-                    ST_MakeEnvelope({min_lon}, {min_lat}, {max_lon}, {max_lat}, 4326)
+                    ST_GeomFromWKB(way),
+                    ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
+                                  CAST({min_lat} AS DOUBLE), 
+                                  CAST({max_lon} AS DOUBLE), 
+                                  CAST({max_lat} AS DOUBLE))
                 )
             """
             
