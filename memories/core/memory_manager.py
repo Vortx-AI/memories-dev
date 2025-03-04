@@ -9,6 +9,7 @@ from datetime import datetime
 import yaml
 import os
 import duckdb
+import numpy as np
 
 from .config import Config
 from .hot import HotMemory
@@ -727,3 +728,11 @@ class MemoryManager:
         except Exception as e:
             self.logger.error(f"Error during cold memory cleanup: {e}")
             raise 
+
+    def add_to_hot_memory(self, vector: np.ndarray, metadata: dict):
+        """Add item to red-hot memory."""
+        self.red_hot.add_item(vector, metadata)
+
+    def search_hot_memory(self, query_vector: np.ndarray, k: int = 5):
+        """Search red-hot memory."""
+        return self.red_hot.search_knn(query_vector, k) 

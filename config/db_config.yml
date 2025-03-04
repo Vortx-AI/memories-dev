@@ -25,4 +25,10 @@ memory:
 data:
   storage: ./data/storage
   models: ./data/models
-  cache: ./data/cache 
+  cache: ./data/cache
+
+red_hot:
+  vector_dim: 128
+  max_size: 10000
+  index_type: 'L2'  # or 'IVF' for larger datasets
+  nlist: 100  # number of clusters for IVF index 
