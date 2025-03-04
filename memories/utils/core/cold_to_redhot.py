@@ -5,6 +5,7 @@ import duckdb
 import os
 from typing import Dict, List, Tuple, Optional
 from memories.core.red_hot import RedHotMemory
+from memories.core.cold import ColdMemory
 import pyarrow.parquet as pq
 import glob
 from sentence_transformers import SentenceTransformer
@@ -23,6 +24,7 @@ class ColdToRedHot:
         self.faiss_dir = os.path.join(self.data_dir, "red_hot")
         
         # Initialize components
+        self.cold = ColdMemory()
         self.red_hot = RedHotMemory()
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
         
@@ -80,26 +82,15 @@ class ColdToRedHot:
             raise
 
     def transfer_all_schemas(self):
-        """Transfer schema information for all files in cold storage to red-hot memory."""
-        # Find all parquet files
-        patterns = [
-            "base/**/*.parquet",
-            "divisions/**/*.parquet",
-            "transportation/**/*.parquet"
-        ]
+        """Transfer schema information from cold storage metadata to red-hot memory."""
+        # Get all schemas from cold storage
+        schemas = self.cold.get_all_schemas()
+        total_schemas = len(schemas)
         
-        all_files = []
-        for pattern in patterns:
-            full_pattern = os.path.join(self.data_dir, pattern)
-            found_files = glob.glob(full_pattern, recursive=True)
-            logger.info(f"Found {len(found_files)} files matching {pattern}")
-            all_files.extend(found_files)
-        
-        total_files = len(all_files)
-        logger.info(f"Found total {total_files} parquet files")
+        logger.info(f"Found {total_schemas} schemas in cold storage")
         
         stats = {
-            'total_files': total_files,
+            'total_files': total_schemas,
             'processed_files': 0,
             'successful_transfers': 0,
             'failed_transfers': 0,
@@ -107,24 +98,45 @@ class ColdToRedHot:
                 'base': 0,
                 'divisions': 0,
                 'transportation': 0,
+                'buildings': 0,
                 'unknown': 0
             }
         }
         
-        for file_path in all_files:
+        for schema in schemas:
             try:
-                self.transfer_schema_to_redhot(file_path)
+                # Create text from column names
+                columns = schema.get('columns', [])
+                column_text = " ".join(columns)
+                
+                # Create embedding
+                embedding = self.model.encode([column_text])[0]
+                
+                # Add to red-hot memory
+                self.red_hot.add_vector(
+                    embedding,
+                    metadata={
+                        'file_path': schema.get('file_path', ''),
+                        'columns': columns,
+                        'dtypes': schema.get('dtypes', {}),
+                        'type': 'schema'
+                    }
+                )
+                
                 stats['processed_files'] += 1
                 stats['successful_transfers'] += 1
                 
                 # Update source type stats
                 source_type = 'unknown'
+                file_path = schema.get('file_path', '')
                 if 'base' in file_path:
                     source_type = 'base'
                 elif 'divisions' in file_path:
                     source_type = 'divisions'
                 elif 'transportation' in file_path:
                     source_type = 'transportation'
+                elif 'buildings' in file_path:
+                    source_type = 'buildings'
                 stats['by_source_type'][source_type] += 1
                 
                 # Log progress periodically
@@ -132,7 +144,7 @@ class ColdToRedHot:
                     self._log_progress(stats)
                     
             except Exception as e:
-                logger.error(f"Error transferring schema for {file_path}: {e}")
+                logger.error(f"Error transferring schema: {e}")
                 stats['failed_transfers'] += 1
                 stats['processed_files'] += 1
         
@@ -149,19 +161,19 @@ class ColdToRedHot:
     def _log_progress(self, stats):
         """Log progress of the transfer process."""
         progress = (stats['processed_files'] / stats['total_files']) * 100 if stats['total_files'] > 0 else 0
-        logger.info(f"Progress: {progress:.2f}% ({stats['processed_files']}/{stats['total_files']} files)")
+        logger.info(f"Progress: {progress:.2f}% ({stats['processed_files']}/{stats['total_files']} schemas)")
         logger.info(f"Successful: {stats['successful_transfers']}, Failed: {stats['failed_transfers']}")
 
     def _log_final_stats(self, stats):
         """Log final statistics of the transfer process."""
         logger.info("\n=== Transfer Complete ===")
-        logger.info(f"Total files processed: {stats['processed_files']}/{stats['total_files']}")
+        logger.info(f"Total schemas processed: {stats['processed_files']}/{stats['total_files']}")
         logger.info(f"Successful transfers: {stats['successful_transfers']}")
         logger.info(f"Failed transfers: {stats['failed_transfers']}")
         logger.info("\nBy source type:")
         for source_type, count in stats['by_source_type'].items():
             if count > 0:  # Only show non-zero counts
-                logger.info(f"  {source_type}: {count} files")
+                logger.info(f"  {source_type}: {count} schemas")
 
 def main():
     """Main function to run the transfer process."""
@@ -181,13 +193,13 @@ def main():
     
     # Print final summary
     print("\nTransfer Summary:")
-    print(f"Total files: {stats['total_files']}")
+    print(f"Total schemas: {stats['total_files']}")
     print(f"Successfully transferred: {stats['successful_transfers']}")
     print(f"Failed transfers: {stats['failed_transfers']}")
     print("\nBy source type:")
     for source_type, count in stats['by_source_type'].items():
         if count > 0:  # Only show non-zero counts
-            print(f"  {source_type}: {count} files")
+            print(f"  {source_type}: {count} schemas")
 
 if __name__ == "__main__":
     import sys
