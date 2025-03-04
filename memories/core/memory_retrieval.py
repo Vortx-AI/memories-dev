@@ -337,53 +337,59 @@ class MemoryRetrieval:
             logger.error(f"Error executing query: {e}")
             raise
 
-    def get_storage_stats(self) -> Dict[str, Any]:
-        """Get statistics about registered files from metadata."""
+    def get_storage_stats(self) -> Dict:
+        """Get statistics about the data in both cold and red-hot storage."""
         try:
-            # First check if table exists
-            table_exists = self.con.execute("""
-                SELECT name FROM sqlite_master 
-                WHERE type='table' AND name='cold_metadata'
-            """).fetchone()
-            
-            if not table_exists:
-                logger.warning("cold_metadata table does not exist!")
-                return {
-                    'total_files': 0,
-                    'total_size_mb': 0,
-                    'file_types': {},
-                    'storage_path': os.path.dirname(self.con.database)
-                }
-            
-            # Query the metadata table
-            query = """
+            # Get cold storage stats
+            cold_stats = self.con.execute("""
                 SELECT 
-                    COUNT(*) as total_files,
-                    SUM(size) as total_size,
-                    data_type,
-                    COUNT(*) as type_count
+                    COUNT(DISTINCT file_path) as total_files,
+                    SUM(CASE WHEN source_type = 'base' THEN 1 ELSE 0 END) as base_files,
+                    SUM(CASE WHEN source_type = 'divisions' THEN 1 ELSE 0 END) as division_files,
+                    SUM(CASE WHEN source_type = 'transportation' THEN 1 ELSE 0 END) as transportation_files
                 FROM cold_metadata
-                GROUP BY data_type
-            """
-            
-            results = self.con.execute(query).df()
-            
+            """).fetchone()
+
+            # Initialize red-hot memory with the same connection
+            red_hot = RedHotMemory()
+            red_hot.con = self.con  # Share the connection
+
+            # Get red-hot storage stats
+            red_hot_stats = self.con.execute("""
+                SELECT 
+                    COUNT(DISTINCT file_path) as total_files,
+                    COUNT(DISTINCT column_name) as total_columns,
+                    SUM(CASE WHEN source_type = 'base' THEN 1 ELSE 0 END) as base_files,
+                    SUM(CASE WHEN source_type = 'divisions' THEN 1 ELSE 0 END) as division_files,
+                    SUM(CASE WHEN source_type = 'transportation' THEN 1 ELSE 0 END) as transportation_files
+                FROM file_metadata f
+                LEFT JOIN column_metadata c ON f.file_id = c.file_id
+            """).fetchone()
+
             stats = {
-                'total_files': results['total_files'].sum() if not results.empty else 0,
-                'total_size_mb': round(results['total_size'].sum() / (1024 * 1024), 2) if not results.empty else 0,
-                'file_types': dict(zip(results['data_type'], results['type_count'])) if not results.empty else {},
-                'storage_path': os.path.dirname(self.con.database)
+                'cold_storage': {
+                    'total_files': cold_stats[0] if cold_stats else 0,
+                    'base_files': cold_stats[1] if cold_stats else 0,
+                    'division_files': cold_stats[2] if cold_stats else 0,
+                    'transportation_files': cold_stats[3] if cold_stats else 0
+                },
+                'red_hot_storage': {
+                    'total_files': red_hot_stats[0] if red_hot_stats else 0,
+                    'total_columns': red_hot_stats[1] if red_hot_stats else 0,
+                    'base_files': red_hot_stats[2] if red_hot_stats else 0,
+                    'division_files': red_hot_stats[3] if red_hot_stats else 0,
+                    'transportation_files': red_hot_stats[4] if red_hot_stats else 0
+                }
             }
-            
+
+            logger.info(f"Storage statistics: {stats}")
             return stats
-            
+
         except Exception as e:
             logger.error(f"Error getting storage stats: {e}")
             return {
-                'total_files': 0,
-                'total_size_mb': 0,
-                'file_types': {},
-                'storage_path': os.path.dirname(self.con.database)
+                'cold_storage': {'total_files': 0, 'base_files': 0, 'division_files': 0, 'transportation_files': 0},
+                'red_hot_storage': {'total_files': 0, 'total_columns': 0, 'base_files': 0, 'division_files': 0, 'transportation_files': 0}
             }
 
     def list_registered_files(self) -> List[Dict]:
