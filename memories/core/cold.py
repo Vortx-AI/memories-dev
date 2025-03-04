@@ -157,8 +157,9 @@ class ColdMemory:
         self.config = Config()
         self.con = con  # Use the connection passed from MemoryManager
         
-        # Set up storage path
-        self.storage_path = Path(self.config.config['storage']['path'])
+        # Set up storage path in project root
+        project_root = os.getenv("PROJECT_ROOT", os.path.expanduser("~"))
+        self.storage_path = Path(project_root)
         self.storage_path.mkdir(parents=True, exist_ok=True)
 
     def register_external_file(self, file_path: str) -> None:
@@ -172,10 +173,10 @@ class ColdMemory:
             file_stats = file_path.stat()
             file_type = file_path.suffix.lstrip('.')
 
-            # Insert into metadata table
+            # Create table if it doesn't exist with auto-incrementing id
             self.con.execute("""
                 CREATE TABLE IF NOT EXISTS cold_metadata (
-                    id INTEGER PRIMARY KEY,
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     path VARCHAR,
                     size BIGINT,
@@ -194,7 +195,7 @@ class ColdMemory:
                 logger.info(f"File already registered: {file_path}")
                 return
 
-            # Insert new file metadata
+            # Insert new file metadata (without specifying id)
             self.con.execute("""
                 INSERT INTO cold_metadata (path, size, data_type, additional_meta)
                 VALUES (?, ?, ?, ?)
