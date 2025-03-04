@@ -350,12 +350,15 @@ class MemoryRetrieval:
                 max_size=1_000_000  # Default max size or from config
             )
             
+            # Get index info if available
+            index_info = red_hot.index.info() if hasattr(red_hot, 'index') and red_hot.index else "No index"
+            
             stats = {
                 'red_hot_storage': {
-                    'total_vectors': len(red_hot),  # Assuming this method exists
-                    'dimension': red_hot.dimension if hasattr(red_hot, 'dimension') else 0,
                     'max_size': red_hot.max_size,
-                    'storage_path': red_hot.storage_path
+                    'storage_path': red_hot.storage_path,
+                    'index_info': index_info,
+                    'is_initialized': hasattr(red_hot, 'index') and red_hot.index is not None
                 }
             }
 
@@ -366,10 +369,10 @@ class MemoryRetrieval:
             logger.error(f"Error getting red-hot stats: {e}")
             return {
                 'red_hot_storage': {
-                    'total_vectors': 0,
-                    'dimension': 0,
                     'max_size': 0,
-                    'storage_path': self.storage_path
+                    'storage_path': self.storage_path,
+                    'index_info': "Error getting index info",
+                    'is_initialized': False
                 }
             }
 
