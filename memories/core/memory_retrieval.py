@@ -7,6 +7,7 @@ from typing import Dict, Any, Optional, List, Union
 import pandas as pd
 import os
 from pathlib import Path
+import duckdb
 
 logger = logging.getLogger(__name__)
 
@@ -19,32 +20,32 @@ class MemoryRetrieval:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         self.project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
         
-        # Default storage path is 'data' in the project root
-        self.storage_path = os.path.join(self.project_root, 'data')
+        # Connect to the metadata database
+        self.db_path = os.path.join(self.project_root, 'data', 'memories.db')
+        self.con = duckdb.connect(self.db_path)
         self.logger = logging.getLogger(__name__)
 
     def get_storage_stats(self) -> Dict[str, Any]:
-        """Get statistics about the storage."""
+        """Get statistics about registered files from metadata."""
         try:
-            total_size = 0
-            file_count = 0
-            file_types = {}
+            # Query the metadata table for registered files
+            query = """
+                SELECT 
+                    COUNT(*) as total_files,
+                    SUM(size) as total_size,
+                    data_type,
+                    COUNT(*) as type_count
+                FROM cold_metadata
+                GROUP BY data_type
+            """
             
-            # Walk through the storage directory
-            for root, _, files in os.walk(self.storage_path):
-                for file in files:
-                    if file.endswith('.parquet'):
-                        file_path = Path(root) / file
-                        size = file_path.stat().st_size
-                        total_size += size
-                        file_count += 1
-                        file_types['parquet'] = file_types.get('parquet', 0) + 1
+            results = self.con.execute(query).df()
             
             stats = {
-                'total_files': file_count,
-                'total_size_mb': round(total_size / (1024 * 1024), 2),
-                'file_types': file_types,
-                'storage_path': self.storage_path
+                'total_files': results['total_files'].sum() if not results.empty else 0,
+                'total_size_mb': round(results['total_size'].sum() / (1024 * 1024), 2) if not results.empty else 0,
+                'file_types': dict(zip(results['data_type'], results['type_count'])) if not results.empty else {},
+                'storage_path': os.path.join(self.project_root, 'data')
             }
             
             return stats
@@ -55,8 +56,38 @@ class MemoryRetrieval:
                 'total_files': 0,
                 'total_size_mb': 0,
                 'file_types': {},
-                'storage_path': self.storage_path
+                'storage_path': os.path.join(self.project_root, 'data')
             }
+
+    def list_registered_files(self) -> List[Dict]:
+        """List all registered files and their metadata."""
+        try:
+            query = """
+                SELECT 
+                    id,
+                    timestamp,
+                    size,
+                    data_type,
+                    additional_meta
+                FROM cold_metadata
+                ORDER BY timestamp DESC
+            """
+            
+            results = self.con.execute(query).fetchall()
+            files = []
+            for row in results:
+                files.append({
+                    'id': row[0],
+                    'timestamp': row[1],
+                    'size': row[2],
+                    'data_type': row[3],
+                    'metadata': row[4]
+                })
+            return files
+            
+        except Exception as e:
+            self.logger.error(f"Error listing registered files: {e}")
+            return []
 
     def list_available_data(self) -> List[Dict[str, Any]]:
         """List all available data tables and their metadata.
