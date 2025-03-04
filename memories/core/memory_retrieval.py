@@ -23,15 +23,31 @@ class MemoryRetrieval:
         
         # Use the same config path as MemoryManager
         config_path = os.path.join(project_root, 'memories-dev', 'config', 'db_config.yml')
+        print(f"Config path: {config_path}")
         
         self.config = Config(config_path)
         
         # Use the same storage path as ColdMemory
         storage_path = Path(self.config.config['storage']['path'])
+        print(f"Storage path: {storage_path}")
         
         # Connect to the metadata database
         self.db_path = storage_path / 'memories.db'
+        print(f"Looking for DuckDB at: {self.db_path}")
+        
         if not os.path.exists(self.db_path):
+            # Try to find where the database actually is
+            possible_paths = [
+                self.db_path,
+                Path(project_root) / 'geo_memories' / 'memories.db',
+                Path(project_root) / 'memories-dev' / 'data' / 'memories.db',
+                Path(project_root) / 'data' / 'memories.db'
+            ]
+            
+            print("\nSearching for DuckDB in possible locations:")
+            for path in possible_paths:
+                print(f"Checking {path}: {'EXISTS' if path.exists() else 'NOT FOUND'}")
+            
             raise FileNotFoundError(f"Database file not found at: {self.db_path}")
             
         self.con = duckdb.connect(str(self.db_path))
