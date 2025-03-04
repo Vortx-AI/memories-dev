@@ -8,6 +8,7 @@ import pandas as pd
 import os
 from pathlib import Path
 import duckdb
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
@@ -16,12 +17,14 @@ class MemoryRetrieval:
     
     def __init__(self):
         """Initialize memory retrieval."""
-        # Get the project root (where memories-dev is located)
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        self.project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+        # Load environment variables
+        load_dotenv()
         
-        # Connect to the metadata database in memories-dev/data
-        self.db_path = os.path.join(self.project_root, 'memories-dev', 'data', 'memories.db')
+        # Get project root from environment variable
+        self.project_root = os.getenv("PROJECT_ROOT", os.path.expanduser("~"))
+        
+        # Connect to the metadata database
+        self.db_path = os.path.join(self.project_root, 'geo_memories', 'memories.db')
         if not os.path.exists(self.db_path):
             raise FileNotFoundError(f"Database file not found at: {self.db_path}")
             
@@ -43,7 +46,7 @@ class MemoryRetrieval:
                     'total_files': 0,
                     'total_size_mb': 0,
                     'file_types': {},
-                    'storage_path': os.path.join(self.project_root, 'memories-dev', 'data')
+                    'storage_path': os.path.join(self.project_root, 'geo_memories')
                 }
             
             # Query the metadata table for registered files
@@ -63,7 +66,7 @@ class MemoryRetrieval:
                 'total_files': results['total_files'].sum() if not results.empty else 0,
                 'total_size_mb': round(results['total_size'].sum() / (1024 * 1024), 2) if not results.empty else 0,
                 'file_types': dict(zip(results['data_type'], results['type_count'])) if not results.empty else {},
-                'storage_path': os.path.join(self.project_root, 'memories-dev', 'data')
+                'storage_path': os.path.join(self.project_root, 'geo_memories')
             }
             
             return stats
@@ -74,7 +77,7 @@ class MemoryRetrieval:
                 'total_files': 0,
                 'total_size_mb': 0,
                 'file_types': {},
-                'storage_path': os.path.join(self.project_root, 'memories-dev', 'data')
+                'storage_path': os.path.join(self.project_root, 'geo_memories')
             }
 
     def list_registered_files(self) -> List[Dict]:
