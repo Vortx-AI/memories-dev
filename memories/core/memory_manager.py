@@ -95,62 +95,29 @@ class MemoryManager:
     - Glacier Memory: Parquet files for off-device compressed storage
     """
     
-    def __init__(
-        self,
-        config_path: Optional[Union[str, Path]] = None,
-        vector_encoder: Optional[Any] = None,
-        force_cpu: bool = True,
-        enable_red_hot: bool = True,
-        enable_hot: bool = True,
-        enable_warm: bool = True,
-        enable_cold: bool = True,
-        enable_glacier: bool = True,
-        custom_config: Optional[Dict[str, Any]] = None
-    ):
-        """Initialize MemoryManager.
+    _instance = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+    
+    def __init__(self):
+        if self._initialized:
+            return
+            
+        self.config = Config()
         
-        Args:
-            config_path: Optional path to config file. If None, uses default configuration
-            vector_encoder: Optional vector encoder for red hot memory
-            force_cpu: Whether to force CPU usage
-            enable_*: Flags to enable/disable different memory tiers
-            custom_config: Optional dictionary to override specific config values
-        """
-        # Initialize logger
-        self.logger = logger
+        # Initialize DuckDB connection
+        db_path = Path(self.config.config['storage']['path']) / 'memories.db'
+        self.con = duckdb.connect(str(db_path))
         
-        # Load configuration
-        self.config = Config(config_path)
+        # Initialize cold memory with the connection
+        self.cold_memory = ColdMemory(self.con)
         
-        # Initialize attributes to None
-        self.warm = None
-        self.cold = None
-        self.hot = None
-        self.red_hot = None
-        self.glacier = None
-        
-        # Initialize single DuckDB connection
-        self._init_duckdb()
-
-        # Initialize enabled memory tiers
-        if enable_warm and self.db_connection:
-            self._init_warm_memory()
-
-        if enable_cold and self.db_connection:
-            self._init_cold_memory()
-
-        # Disable other tiers for now as we focus on warm/cold
-        if enable_hot:
-            self._init_hot_memory()
-        
-        if enable_red_hot:
-            self._init_red_hot_memory()
-        
-        if enable_glacier:
-            self._init_glacier_memory()
-
-        # Store vector encoder if provided
-        self.vector_encoder = vector_encoder
+        self._initialized = True
+        logger.info(f"Initialized MemoryManager with database at: {db_path}")
 
     def _load_and_merge_config(
         self,
