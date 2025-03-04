@@ -37,6 +37,20 @@ class OSMDataAPI(DataSource):
             'other': []
         }
 
+        # Natural language to OSM tag mapping
+        self.feature_map = {
+            "park": '["leisure"="park"]',
+            "road": '["highway"]',
+            "building": '["building"]',
+            "water": '["natural"="water"]',
+            "forest": '["landuse"="forest"]',
+            "restaurant": '["amenity"="restaurant"]',
+            "school": '["amenity"="school"]',
+            "hospital": '["amenity"="hospital"]',
+            "shop": '["shop"]',
+            "parking": '["amenity"="parking"]'
+        }
+
     def _build_query(
         self,
         bbox: Union[Tuple[float, float, float, float], List[float], Polygon],
@@ -383,3 +397,78 @@ class OSMDataAPI(DataSource):
                 file_paths[layer] = file_path
         
         return file_paths 
+
+    def find_nearby_places(self, feature: str, bbox: Union[Tuple[float, float, float, float], List[float]]) -> Dict[str, Any]:
+        """
+        Fetches OpenStreetMap data for a given feature within a bounding box using the Overpass API.
+        This is a synchronous version of the function.
+
+        Args:
+            feature: Natural language input (e.g., 'park', 'road', 'building')
+            bbox: Bounding box as (min_lat, min_lon, max_lat, max_lon)
+
+        Returns:
+            Dictionary containing the JSON response with feature data
+
+        Raises:
+            ValueError: If the feature type is not supported
+            Exception: If the API request fails
+        """
+        if feature.lower() not in self.feature_map:
+            raise ValueError(f"Feature '{feature}' not supported. Available options: {list(self.feature_map.keys())}")
+
+        min_lat, min_lon, max_lat, max_lon = bbox
+        query = f"""
+        [out:json];
+        (
+          node{self.feature_map[feature.lower()]}({min_lat},{min_lon},{max_lat},{max_lon});
+          way{self.feature_map[feature.lower()]}({min_lat},{min_lon},{max_lat},{max_lon});
+          relation{self.feature_map[feature.lower()]}({min_lat},{min_lon},{max_lat},{max_lon});
+        );
+        out body;
+        """
+
+        response = requests.get(self.base_url, params={"data": query})
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Failed to fetch data: {response.status_code}, {response.text}")
+
+    async def find_nearby_places_async(self, feature: str, bbox: Union[Tuple[float, float, float, float], List[float]]) -> Dict[str, Any]:
+        """
+        Fetches OpenStreetMap data for a given feature within a bounding box using the Overpass API.
+        This is an asynchronous version of the function.
+
+        Args:
+            feature: Natural language input (e.g., 'park', 'road', 'building')
+            bbox: Bounding box as (min_lat, min_lon, max_lat, max_lon)
+
+        Returns:
+            Dictionary containing the JSON response with feature data
+
+        Raises:
+            ValueError: If the feature type is not supported
+            Exception: If the API request fails
+        """
+        if feature.lower() not in self.feature_map:
+            raise ValueError(f"Feature '{feature}' not supported. Available options: {list(self.feature_map.keys())}")
+
+        min_lat, min_lon, max_lat, max_lon = bbox
+        query = f"""
+        [out:json];
+        (
+          node{self.feature_map[feature.lower()]}({min_lat},{min_lon},{max_lat},{max_lon});
+          way{self.feature_map[feature.lower()]}({min_lat},{min_lon},{max_lat},{max_lon});
+          relation{self.feature_map[feature.lower()]}({min_lat},{min_lon},{max_lat},{max_lon});
+        );
+        out body;
+        """
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(self.base_url, params={"data": query}) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    text = await response.text()
+                    raise Exception(f"Failed to fetch data: {response.status}, {text}") 

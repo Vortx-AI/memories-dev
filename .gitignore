@@ -105,3 +105,5 @@ test_overture_query.py
 batch_import_parquet.py
 
 deployments/memory-webrtc.service
+examples/memory_query1.py
+examples/test_nearby_parks.py

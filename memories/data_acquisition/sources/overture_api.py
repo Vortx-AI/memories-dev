@@ -436,47 +436,78 @@ api = OvertureAPI()
             logger.error(f"Error processing schema metadata: {e}", exc_info=True)
             return {}
 
-    def download_theme_type(self, theme: str, tag: str, bbox: Dict[str, float], storage_path: Optional[str] = None, max_size: int = 1024*1024*1024) -> bool:
-        """Download data for a specific theme and type (tag) with bbox filtering.
+    def validate_bbox(self, bbox: Dict[str, float]) -> bool:
+        """Validate bounding box coordinates.
         
         Args:
-            theme: Theme name (e.g., 'buildings', 'places')
-            tag: Type/tag name (e.g., 'building', 'place')
             bbox: Bounding box dictionary with xmin, ymin, xmax, ymax
-            storage_path: Optional path for storage. If None, uses self.data_dir
-            max_size: Maximum size for cold storage in bytes (default: 1GB)
+            
+        Returns:
+            bool: True if bbox is valid
+        """
+        try:
+            # Check coordinate ranges
+            if not (-180 <= bbox['xmin'] <= 180 and -180 <= bbox['xmax'] <= 180):
+                logger.error("Invalid longitude values. Must be between -180 and 180.")
+                return False
+                
+            if not (-90 <= bbox['ymin'] <= 90 and -90 <= bbox['ymax'] <= 90):
+                logger.error("Invalid latitude values. Must be between -90 and 90.")
+                return False
+                
+            # Check that min is less than max
+            if bbox['xmin'] >= bbox['xmax']:
+                logger.error("xmin must be less than xmax")
+                return False
+                
+            if bbox['ymin'] >= bbox['ymax']:
+                logger.error("ymin must be less than ymax")
+                return False
+                
+            return True
+            
+        except KeyError as e:
+            logger.error(f"Missing required bbox coordinate: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Error validating bbox: {e}")
+            return False
+
+    def download_theme_type(self, theme: str, tag: str, bbox: Dict[str, float], storage_path: str = None, max_size: int = None) -> bool:
+        """Download data for a specific theme and type with bbox filtering.
         
+        Args:
+            theme: Theme name
+            tag: Type name within theme
+            bbox: Bounding box dictionary with xmin, ymin, xmax, ymax
+            storage_path: Optional override for storage path
+            max_size: Optional maximum file size in bytes
+            
         Returns:
             bool: True if download successful
         """
+        if theme not in self.THEMES:
+            logger.error(f"Invalid theme: {theme}")
+            return False
+            
+        if tag not in self.THEMES[theme]:
+            logger.error(f"Invalid tag {tag} for theme {theme}")
+            return False
+            
+        if not self.validate_bbox(bbox):
+            return False
+            
         try:
-            logger.info(f"Starting download for {theme}/{tag}")
+            # Use provided storage path or default
+            storage_dir = Path(storage_path) if storage_path else self.data_dir
+            storage_dir = storage_dir / "overture" / theme / tag
+            storage_dir.mkdir(parents=True, exist_ok=True)
             
-            # Validate theme and tag
-            if theme not in self.THEMES:
-                logger.error(f"Invalid theme: {theme}")
-                return False
-            
-            if tag not in self.THEMES[theme]:
-                logger.error(f"Invalid tag {tag} for theme {theme}")
-                return False
-            
-            # Get S3 path for the specific theme and tag
             s3_path = self.get_s3_path(theme, tag)
+            output_file = storage_dir / f"{tag}_filtered.parquet"
+            
+            logger.info(f"Starting download for {theme}/{tag}")
             logger.info(f"Using S3 path: {s3_path}")
-            
-            # Use provided storage path or default to self.data_dir
-            storage_path = Path(storage_path) if storage_path else Path(self.data_dir)
-            
-            # Initialize ColdMemory with Path object
-            cold_storage = ColdMemory(storage_path, max_size=max_size)
-            
-            # Create theme/tag directory in cold storage
-            output_dir = storage_path / "overture" / theme / tag
-            output_dir.mkdir(parents=True, exist_ok=True)
-            
-            # Define output file path
-            output_file = output_dir / f"{tag}_filtered.parquet"
             logger.info(f"Output will be saved to: {output_file}")
             
             # Test S3 access
@@ -499,7 +530,7 @@ api = OvertureAPI()
                 SELECT 
                     id, 
                     names.primary AS primary_name,
-                    ST_AsText(geometry) as geometry,
+                    geometry,
                     *
                 FROM 
                     read_parquet('{s3_path}', filename=true, hive_partitioning=1)
@@ -520,31 +551,113 @@ api = OvertureAPI()
                     count_query = f"SELECT COUNT(*) as count FROM read_parquet('{output_file}')"
                     count = self.con.execute(count_query).fetchone()[0]
                     logger.info(f"Successfully saved {count} features for {theme}/{tag}")
-                    
-                    # Store metadata in cold storage
-                    metadata = {
-                        "theme": theme,
-                        "tag": tag,
-                        "bbox": bbox,
-                        "count": count,
-                        "timestamp": str(datetime.now()),
-                        "file_path": str(output_file)
-                    }
-                    
-                    # Store using the store property
-                    cold_storage.store = {f"overture_{theme}_{tag}": metadata}
-                    
                     return True
                 else:
-                    logger.warning(f"No features found for {theme}/{tag} in the specified bbox")
-                    return False
-                
+                    logger.warning(f"No features found for {theme}/{tag}")
+                    return True  # Still return True as the operation completed successfully
             except Exception as e:
                 logger.error(f"Error downloading {theme}/{tag}: {e}")
                 return False
+                
+        except Exception as e:
+            logger.error(f"Error downloading {theme}/{tag} data: {e}")
+            return False
+
+    def search_features_by_type(self, feature_type: str, bbox: Union[List[float], Dict[str, float]]) -> Dict[str, Any]:
+        """
+        Search for specific features (like parks, roads, etc.) within a bounding box.
+        
+        Args:
+            feature_type: Type of feature to search for (e.g., "parks", "roads", "buildings")
+            bbox: Bounding box as either:
+                 - List [min_lon, min_lat, max_lon, max_lat]
+                 - Dict with keys 'xmin', 'ymin', 'xmax', 'ymax'
+            
+        Returns:
+            Dictionary containing matching features
+        """
+        try:
+            # Convert bbox to dictionary format if it's a list
+            if isinstance(bbox, (list, tuple)):
+                bbox_dict = {
+                    "xmin": bbox[0],
+                    "ymin": bbox[1],
+                    "xmax": bbox[2],
+                    "ymax": bbox[3]
+                }
+            else:
+                bbox_dict = bbox
+            
+            # Map common feature types to Overture themes and tags
+            feature_mapping = {
+                "parks": {"theme": "places", "tags": ["place"], "filters": ["leisure=park", "landuse=recreation_ground"]},
+                "roads": {"theme": "transportation", "tags": ["segment"], "filters": ["highway"]},
+                "buildings": {"theme": "buildings", "tags": ["building"], "filters": []},
+                "water": {"theme": "base", "tags": ["water"], "filters": []},
+                "land": {"theme": "base", "tags": ["land", "land_use", "land_cover"], "filters": []},
+                "addresses": {"theme": "addresses", "tags": ["address"], "filters": []}
+            }
+            
+            if feature_type.lower() not in feature_mapping:
+                logger.error(f"Unsupported feature type: {feature_type}")
+                return {"error": f"Unsupported feature type. Supported types are: {list(feature_mapping.keys())}"}
+            
+            mapping = feature_mapping[feature_type.lower()]
+            theme = mapping["theme"]
+            tags = mapping["tags"]
+            filters = mapping["filters"]
+            
+            # Create theme directory if it doesn't exist
+            theme_dir = self.data_dir / theme
+            theme_dir.mkdir(parents=True, exist_ok=True)
+            
+            results = []
+            for tag in tags:
+                parquet_file = theme_dir / f"{tag}_filtered.parquet"
+                
+                # Download data if it doesn't exist
+                if not parquet_file.exists():
+                    success = self.download_theme_type(theme, tag, bbox_dict)
+                    if not success:
+                        logger.warning(f"Failed to download data for {theme}/{tag}")
+                        continue
+                
+                try:
+                    # Build query with filters if any
+                    filter_conditions = ""
+                    if filters:
+                        filter_conditions = " AND (" + " OR ".join([
+                            f"class LIKE '%{f}%' OR subclass LIKE '%{f}%'"
+                            for f in filters
+                        ]) + ")"
+                    
+                    query = f"""
+                    SELECT 
+                        id,
+                        names.primary AS name,
+                        geometry,
+                        class,
+                        subclass,
+                        *
+                    FROM read_parquet('{parquet_file}')
+                    WHERE 1=1 {filter_conditions}
+                    """
+                    
+                    df = self.con.execute(query).fetchdf()
+                    if not df.empty:
+                        results.extend(df.to_dict('records'))
+                        logger.info(f"Found {len(df)} {feature_type} features in {tag}")
+                except Exception as e:
+                    logger.warning(f"Error reading {parquet_file}: {str(e)}")
+            
+            return {
+                "type": feature_type,
+                "count": len(results),
+                "features": results
+            }
             
         except Exception as e:
-            logger.error(f"Error in download_theme_type: {e}", exc_info=True)
-            return False
+            logger.error(f"Error searching for {feature_type}: {str(e)}")
+            return {"error": str(e)}
 
     

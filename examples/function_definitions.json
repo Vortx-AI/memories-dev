@@ -20,6 +20,74 @@
         {
             "type": "function",
             "function": {
+                "name": "expand_bbox_with_radius",
+                "description": "Expands a bounding box by a specified radius, or creates a bounding box around a point with given radius. Perfect for finding locations 'near', 'around', or 'within' a certain distance of a point or area. For example, finding all buildings within 5km of a location, or expanding a neighborhood's bounds by 2km to include nearby areas. The radius is applied in all directions.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "input_type": {
+                            "type": "string",
+                            "description": "Type of input - either 'coordinates' or 'bbox'",
+                            "enum": ["coordinates", "bbox"]
+                        },
+                        "coordinates": {
+                            "type": "object",
+                            "description": "Point coordinates (required if input_type is 'coordinates')",
+                            "properties": {
+                                "lat": {
+                                    "type": "number",
+                                    "description": "Latitude of the point (-90 to 90)"
+                                },
+                                "lon": {
+                                    "type": "number",
+                                    "description": "Longitude of the point (-180 to 180)"
+                                }
+                            },
+                            "required": ["lat", "lon"]
+                        },
+                        "bbox": {
+                            "type": "object",
+                            "description": "Bounding box (required if input_type is 'bbox')",
+                            "properties": {
+                                "xmin": {
+                                    "type": "number",
+                                    "description": "Minimum longitude (-180 to 180)"
+                                },
+                                "ymin": {
+                                    "type": "number",
+                                    "description": "Minimum latitude (-90 to 90)"
+                                },
+                                "xmax": {
+                                    "type": "number",
+                                    "description": "Maximum longitude (-180 to 180)"
+                                },
+                                "ymax": {
+                                    "type": "number",
+                                    "description": "Maximum latitude (-90 to 90)"
+                                }
+                            },
+                            "required": ["xmin", "ymin", "xmax", "ymax"]
+                        },
+                        "radius_km": {
+                            "type": "number",
+                            "description": "Radius in kilometers to expand the bounding box or create box around point",
+                            "minimum": 0.1,
+                            "maximum": 1000
+                        },
+                        "return_format": {
+                            "type": "string",
+                            "description": "Format of the returned bounding box",
+                            "enum": ["bbox", "geojson"],
+                            "default": "bbox"
+                        }
+                    },
+                    "required": ["input_type", "radius_km"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "get_bounding_box_from_coords",
                 "description": "Convert a point location (latitude/longitude) into a geographic bounding box. Returns coordinates that define the area's boundaries, useful for subsequent spatial queries.",
                 "parameters": {
@@ -76,145 +144,7 @@
                 }
             }
         },
-        {
-            "type": "function",
-            "function": {
-                "name": "get_data_by_bbox",
-                "description": "Find all geographic features such as parks, buildings, roads, and other features within a specified area.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "min_lon": {
-                            "type": "number",
-                            "description": "Western boundary longitude"
-                        },
-                        "min_lat": {
-                            "type": "number",
-                            "description": "Southern boundary latitude"
-                        },
-                        "max_lon": {
-                            "type": "number",
-                            "description": "Eastern boundary longitude"
-                        },
-                        "max_lat": {
-                            "type": "number",
-                            "description": "Northern boundary latitude"
-                        },
-                        "lon_column": {
-                            "type": "string",
-                            "description": "Name of the longitude column in the data tables",
-                            "default": "longitude"
-                        },
-                        "lat_column": {
-                            "type": "string",
-                            "description": "Name of the latitude column in the data tables",
-                            "default": "latitude"
-                        },
-                        "geom_column": {
-                            "type": "string",
-                            "description": "Name of the geometry column for spatial data",
-                            "default": "geometry"
-                        },
-                        "limit": {
-                            "type": "integer",
-                            "description": "Maximum number of features to return",
-                            "default": 1000
-                        }
-                    },
-                    "required": ["min_lon", "min_lat", "max_lon", "max_lat"]
-                }
-            }
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "get_data_by_bbox_and_value",
-                "description": "Find specific types of geographic features within an area. Useful for queries like 'find parks near X' or 'find restaurants in Y area'. Combines spatial search with feature type filtering.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "min_lon": {
-                            "type": "number",
-                            "description": "Western boundary longitude"
-                        },
-                        "min_lat": {
-                            "type": "number",
-                            "description": "Southern boundary latitude"
-                        },
-                        "max_lon": {
-                            "type": "number",
-                            "description": "Eastern boundary longitude"
-                        },
-                        "max_lat": {
-                            "type": "number",
-                            "description": "Northern boundary latitude"
-                        },
-                        "search_value": {
-                            "type": "string",
-                            "description": "Type of feature to find (e.g., 'park', 'building', 'road', 'restaurant')"
-                        },
-                        "case_sensitive": {
-                            "type": "boolean",
-                            "description": "Whether to perform case-sensitive search",
-                            "default": false
-                        },
-                        "lon_column": {
-                            "type": "string",
-                            "description": "Name of the longitude column in the data tables",
-                            "default": "longitude"
-                        },
-                        "lat_column": {
-                            "type": "string",
-                            "description": "Name of the latitude column in the data tables",
-                            "default": "latitude"
-                        },
-                        "geom_column": {
-                            "type": "string",
-                            "description": "Name of the geometry column for spatial data",
-                            "default": "geometry"
-                        },
-                        "limit": {
-                            "type": "integer",
-                            "description": "Maximum number of features to return",
-                            "default": 1000
-                        }
-                    },
-                    "required": ["min_lon", "min_lat", "max_lon", "max_lat", "search_value"]
-                }
-            }
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "get_data_by_fuzzy_search",
-                "description": "Search for data across all columns using fuzzy string matching to find the most similar matches",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "search_term": {
-                            "type": "string",
-                            "description": "Term to search for across all columns"
-                        },
-                        "similarity_threshold": {
-                            "type": "number",
-                            "description": "Minimum similarity score (0-1) for matches",
-                            "default": 0.3
-                        },
-                        "case_sensitive": {
-                            "type": "boolean",
-                            "description": "Whether to perform case-sensitive search",
-                            "default": false
-                        },
-                        "limit": {
-                            "type": "integer",
-                            "description": "Maximum number of results to return",
-                            "default": 10
-                        }
-                    },
-                    "required": ["search_term"]
-                }
-            }
-        },
+        
         {
             "type": "function",
             "function": {
@@ -234,6 +164,67 @@
                         }
                     },
                     "required": ["code"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "download_theme_type",
+                "description": "Download data for a specific theme and type within a geographic bounding box.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "theme": {
+                            "type": "string",
+                            "description": "Theme name from Overture Maps",
+                            "enum": ["buildings", "places", "transportation", "base", "divisions", "addresses"]
+                        },
+                        "tag": {
+                            "type": "string",
+                            "description": "Type/tag name within the theme",
+                            "enum": [
+                                "building", "building_part",
+                                "place",
+                                "segment", "connector",
+                                "water", "land", "land_cover", "land_use", "infrastructure",
+                                "division_area", "division_boundary",
+                                "address"
+                            ]
+                        },
+                        "bbox": {
+                            "type": "object",
+                            "description": "Bounding box coordinates",
+                            "properties": {
+                                "xmin": {
+                                    "type": "number",
+                                    "description": "Minimum longitude (-180 to 180)"
+                                },
+                                "ymin": {
+                                    "type": "number",
+                                    "description": "Minimum latitude (-90 to 90)"
+                                },
+                                "xmax": {
+                                    "type": "number",
+                                    "description": "Maximum longitude (-180 to 180)"
+                                },
+                                "ymax": {
+                                    "type": "number",
+                                    "description": "Maximum latitude (-90 to 90)"
+                                }
+                            },
+                            "required": ["xmin", "ymin", "xmax", "ymax"]
+                        },
+                        "storage_path": {
+                            "type": "string",
+                            "description": "Optional path for storing downloaded data"
+                        },
+                        "max_size": {
+                            "type": "integer",
+                            "description": "Optional maximum file size in bytes"
+                        }
+                    },
+                    "required": ["theme", "tag", "bbox"]
                 }
             }
         }
