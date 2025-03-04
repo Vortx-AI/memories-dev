@@ -16,9 +16,6 @@ from memories.core.red_hot import RedHotMemory
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from memories.core.memory_manager import MemoryManager
-from concurrent.futures import ProcessPoolExecutor, as_completed
-import multiprocessing
-from memories.core.cold import ColdMemory
 
 logger = logging.getLogger(__name__)
 
@@ -27,15 +24,32 @@ class MemoryRetrieval:
     
     def __init__(self):
         """Initialize memory retrieval with DuckDB connection."""
-        # Get the connection from MemoryManager
-        memory_manager = MemoryManager()
-        con = memory_manager.get_connection()
+        # Get project root directory
+        project_root = Path(__file__).parent.parent.parent
         
-        # Initialize ColdMemory with the connection
-        from memories.core.cold import ColdMemory
-        self.cold = ColdMemory(con)
+        # Set up data directories
+        self.data_dir = os.path.join(project_root, "data")
         
-        logger.info("Initialized MemoryRetrieval with ColdMemory")
+        # Get memory manager instance and its connection
+        self.memory_manager = MemoryManager()
+        self.con = self.memory_manager.con
+        
+        # Install and load spatial extension
+        try:
+            self.con.execute("INSTALL spatial;")
+            self.con.execute("LOAD spatial;")
+            logger.info("Spatial extension installed and loaded successfully")
+        except Exception as e:
+            logger.error(f"Error setting up spatial extension: {e}")
+        
+        # Initialize red-hot memory
+        self.red_hot = RedHotMemory()
+        
+        # Initialize sentence transformer model
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        
+        logger.info(f"Initialized MemoryRetrieval")
+        logger.info(f"Data directory: {self.data_dir}")
 
     def get_table_schema(self) -> List[str]:
         """Get the schema of the parquet files."""
@@ -1232,134 +1246,106 @@ class MemoryRetrieval:
         
         return "\n".join(output)
 
-    def _process_table(self, args: Tuple) -> pd.DataFrame:
-        """Helper function to process a single table in parallel."""
-        table, bbox, cold = args
-        try:
-            table_name = table["table_name"]
-            schema = table["schema"]
-            min_lon, min_lat, max_lon, max_lat = bbox
-            
-            # Look for geometry column
-            geom_col = None
-            for col_name, col_type in schema.items():
-                if ('geometry' in col_type.lower() or 
-                    'binary' in col_type.lower() or 
-                    'blob' in col_type.lower() or
-                    col_name.lower() in ['geom', 'geometry', 'the_geom']):
-                    geom_col = col_name
-                    break
-            
-            if not geom_col:
-                return pd.DataFrame()
-            
-            # Build and execute spatial query
-            geom_type = schema[geom_col].lower()
-            if 'blob' in geom_type:
-                geom_expr = f'ST_GeomFromWKB(CAST("{geom_col}" AS BLOB))'
-            elif 'binary' in geom_type:
-                geom_expr = f'ST_GeomFromWKB("{geom_col}")'
-            else:
-                geom_expr = f'"{geom_col}"'
-            
-            query = f"""
-            SELECT *
-            FROM {table_name}
-            WHERE ST_Intersects(
-                {geom_expr},
-                ST_GeomFromText('POLYGON(({min_lon} {min_lat}, {min_lon} {max_lat}, 
-                {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))')
-            )
-            """
-            
-            df = cold.query(query)
-            
-            if not df.empty:
-                df['source_table'] = table_name
-                df['source_file'] = table.get("file_path", "")
-            
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error processing table {table.get('table_name', 'unknown')}: {e}")
-            return pd.DataFrame()
-
     def search_geospatial_data_in_bbox(
         self,
         query_word: str,
         bbox: tuple,
-        similarity_threshold: float = 0.5,
-        max_workers: int = None
+        similarity_threshold: float = 0.7
     ) -> pd.DataFrame:
         """
-        Search for geospatial features within a geographic bounding box using parallel processing.
-
+        Search for geospatial features (like roads, buildings, landuse, etc.) within a geographic bounding box.
+        Uses semantic search to find relevant data based on the query word.
+        
         Args:
-            query_word (str): Search term (e.g., 'road', 'building', 'park', 'landuse', 'water')
-            bbox (tuple): Geographic bounding box as (min_lon, min_lat, max_lon, max_lat)
-            similarity_threshold (float, optional): Minimum semantic similarity score (0-1). Defaults to 0.5.
-            max_workers (int, optional): Maximum number of parallel processes. Defaults to CPU count.
-
+            query_word: Search term (e.g., 'road', 'building', 'park', 'landuse', 'water')
+            bbox: Geographic bounding box as (min_lon, min_lat, max_lon, max_lat)
+            similarity_threshold: Minimum semantic similarity score (0-1) for matching columns
+        
         Returns:
-            pd.DataFrame: Matching features within the bounding box
+            DataFrame containing matching features within the bounding box
         """
-        try:
-            # Get all tables
-            tables = self.cold.list_tables()
-            if not tables:
-                logger.warning("No tables available")
-                return pd.DataFrame()
-            
-            # Remove duplicates based on file path
-            unique_tables = {}
-            for table in tables:
-                file_path = table.get("file_path", table["table_name"])
-                if file_path not in unique_tables:
-                    unique_tables[file_path] = table
-            
-            tables = list(unique_tables.values())
-            logger.info(f"Processing {len(tables)} unique tables")
-            
-            # Determine number of workers
-            if max_workers is None:
-                max_workers = max(1, multiprocessing.cpu_count() - 1)  # Leave one CPU free
-            
-            # Create arguments for parallel processing
-            process_args = [(table, bbox, self.cold) for table in tables]
-            
-            # Process tables in parallel
-            start_time = time.time()
-            results = []
-            
-            with ProcessPoolExecutor(max_workers=max_workers) as executor:
-                # Submit all tasks
-                future_to_table = {
-                    executor.submit(self._process_table, args): args[0]["table_name"] 
-                    for args in process_args
+        logger.info(f"\n{'='*80}")
+        logger.info("GEOSPATIAL FEATURE SEARCH")
+        logger.info(f"{'='*80}")
+        logger.info(f"Search term: '{query_word}'")
+        logger.info(f"Bounding box: {bbox}")
+        
+        # First get semantically similar columns
+        similar_columns = self.get_similar_columns(query_word, similarity_threshold)
+        
+        if not similar_columns:
+            logger.warning("No similar columns found")
+            return pd.DataFrame()
+        
+        # Deduplicate file paths and group columns
+        unique_files = {}
+        for match in similar_columns:
+            file_path = match['full_path']
+            if file_path not in unique_files:
+                unique_files[file_path] = {
+                    'columns': set(),
+                    'geometry_column': None
                 }
+            unique_files[file_path]['columns'].add(match['column'])
+        
+        logger.info(f"\nFound {len(unique_files)} unique files to process")
+        
+        # Process each unique file
+        min_lon, min_lat, max_lon, max_lat = bbox
+        results = pd.DataFrame()
+        
+        for i, (file_path, info) in enumerate(unique_files.items(), 1):
+            try:
+                # Get schema info directly from parquet file
+                schema_query = f"DESCRIBE SELECT * FROM parquet_scan('{file_path}')"
+                schema_df = self.con.execute(schema_query).fetchdf()
                 
-                # Process completed tasks
-                for future in as_completed(future_to_table):
-                    table_name = future_to_table[future]
-                    try:
-                        df = future.result()
-                        if not df.empty:
-                            results.append(df)
-                            logger.debug(f"Found {len(df)} results in table {table_name}")
-                    except Exception as e:
-                        logger.error(f"Error processing table {table_name}: {e}")
-            
-            # Combine results
-            if results:
-                final_df = pd.concat(results, ignore_index=True)
-                processing_time = time.time() - start_time
-                logger.info(f"Found {len(final_df)} total results in {processing_time:.2f} seconds")
-                logger.info(f"Processing speed: {len(tables)/processing_time:.2f} tables/second")
-                return final_df
-            else:
-                logger.warning("No results found in any table")
-                return pd.DataFrame()
-            
-        except Exception as e:
-            logger.error(f"Error in search_geospatial_data_in_bbox: {e}")
-            return pd.DataFrame() 
+                # Look for geometry column
+                for _, row in schema_df.iterrows():
+                    col_name = row['column_name']
+                    col_type = str(row['column_type']).lower()
+                    if ('geometry' in col_type or 
+                        'binary' in col_type or 
+                        'blob' in col_type or
+                        col_name.lower() in ['geom', 'geometry', 'the_geom']):
+                        info['geometry_column'] = col_name
+                        info['geometry_type'] = col_type
+                        break
+                
+                # Skip if no geometry column found
+                if not info['geometry_column']:
+                    logger.warning(f"No geometry column found in {file_path}, skipping")
+                    continue
+                
+                # Build and execute spatial query
+                geom_col = info["geometry_column"]
+                geom_type = info["geometry_type"].lower()
+                
+                if 'blob' in geom_type:
+                    geom_expr = f'ST_GeomFromWKB(CAST("{geom_col}" AS BLOB))'
+                elif 'binary' in geom_type:
+                    geom_expr = f'ST_GeomFromWKB("{geom_col}")'
+                else:
+                    geom_expr = f'"{geom_col}"'
+                
+                # Query all columns from the file
+                query = f"""
+                SELECT *
+                FROM parquet_scan('{file_path}')
+                WHERE ST_Intersects(
+                    {geom_expr},
+                    ST_GeomFromText('POLYGON(({min_lon} {min_lat}, {min_lon} {max_lat}, 
+                    {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))')
+                )
+                """
+                
+                df = self.con.execute(query).fetchdf()
+                
+                if not df.empty:
+                    results = pd.concat([results, df], ignore_index=True)
+                
+            except Exception as e:
+                logger.error(f"Error processing {file_path}: {e}")
+                continue
+        
+        return results 
