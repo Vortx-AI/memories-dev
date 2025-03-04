@@ -14,6 +14,10 @@ from datetime import datetime
 import argparse
 from dotenv import load_dotenv
 
+# Configure logging first
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Add the project root to Python path
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
@@ -23,8 +27,8 @@ env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(env_path)
 logger.info(f"Loading environment from {env_path}")
 
-# Set default API key
-DEFAULT_API_KEY = os.getenv('MEMORY_API_KEY', 'default-memory-key-12345')
+# Set default API key - using a secure hexadecimal key
+DEFAULT_API_KEY = os.getenv('MEMORY_API_KEY', 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6')
 os.environ['MEMORY_API_KEY'] = DEFAULT_API_KEY
 
 from memories.models.load_model import LoadModel
@@ -44,10 +48,6 @@ from memories.interface.api.core.config import (
     PROJECT_DESCRIPTION,
     VERSION
 )
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 class MemoryQueryProcessor:
     """Memory Query Processor for handling different types of queries."""
