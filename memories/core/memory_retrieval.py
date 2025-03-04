@@ -15,44 +15,33 @@ import time
 from memories.core.red_hot import RedHotMemory
 from sentence_transformers import SentenceTransformer
 import numpy as np
+from memories.core.memory_manager import MemoryManager
 
 logger = logging.getLogger(__name__)
 
 class MemoryRetrieval:
     """Memory retrieval class for querying cold memory storage."""
     
-    def __init__(self, data_dir: str = None):
-        """Initialize memory retrieval."""
-        self.con = duckdb.connect(database=':memory:')
-        self.con.install_extension("spatial")
-        self.con.load_extension("spatial")
-        
-        # Set data directory
-        self.data_dir = data_dir or os.path.expanduser("~/geo_memories")
-        
-        # Set up red-hot storage path
+    def __init__(self):
+        """Initialize memory retrieval with DuckDB connection."""
+        # Get project root directory
         project_root = Path(__file__).parent.parent.parent
-        self.storage_path = os.path.join(project_root, "data", "red_hot")
         
-        # Initialize red-hot memory (FAISS storage)
-        self.red_hot = RedHotMemory(
-            storage_path=self.storage_path,
-            max_size=1_000_000
-        )
+        # Set up data directories
+        self.data_dir = os.path.join(project_root, "data")
         
-        # Initialize the sentence transformer model - using same model as cold_to_redhot.py
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')  # Ensure this matches cold_to_redhot.py
-
-        # Create spatial index table if it doesn't exist
-        self.con.execute("""
-            CREATE TABLE IF NOT EXISTS spatial_index (
-                path VARCHAR,
-                min_lon DOUBLE,
-                min_lat DOUBLE,
-                max_lon DOUBLE,
-                max_lat DOUBLE
-            )
-        """)
+        # Get memory manager instance and its connection
+        self.memory_manager = MemoryManager()
+        self.con = self.memory_manager.con
+        
+        # Initialize red-hot memory
+        self.red_hot = RedHotMemory()  # Removed storage_path argument
+        
+        # Initialize sentence transformer model
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        
+        logger.info(f"Initialized MemoryRetrieval")
+        logger.info(f"Data directory: {self.data_dir}")
 
     def get_table_schema(self) -> List[str]:
         """Get the schema of the parquet files."""
@@ -460,7 +449,7 @@ class MemoryRetrieval:
             return {
                 'faiss_index': {
                     'max_size': 0,
-                    'storage_path': self.storage_path,
+                    'storage_path': self.red_hot.storage_path,
                     'index_stats': {},
                     'is_initialized': False
                 }
