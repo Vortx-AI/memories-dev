@@ -46,7 +46,7 @@ class RedHotMemory:
         """Initialize tables for storing schema information."""
         self.con.execute("""
             CREATE TABLE IF NOT EXISTS file_metadata (
-                file_id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+                file_id INTEGER PRIMARY KEY,  -- DuckDB will auto-increment by default
                 file_path VARCHAR UNIQUE,
                 file_name VARCHAR,
                 file_type VARCHAR,
@@ -60,7 +60,7 @@ class RedHotMemory:
         
         self.con.execute("""
             CREATE TABLE IF NOT EXISTS column_metadata (
-                column_id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+                column_id INTEGER PRIMARY KEY,  -- DuckDB will auto-increment by default
                 file_id INTEGER,
                 column_name VARCHAR,
                 data_type VARCHAR,
