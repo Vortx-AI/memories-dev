@@ -377,10 +377,10 @@ class ColdMemory:
             schema_result = self.con.execute(schema_query).fetchdf()
             logger.info(f"Cold metadata columns: {list(schema_result['column_name'])}")
             
-            # Get all file paths from cold_metadata
+            # Get all file paths from cold_metadata using DuckDB
             query = """
-            SELECT DISTINCT id as file_path
-            FROM cold_metadata
+            SELECT DISTINCT path as file_path
+            FROM parquet_scan('data/cold_metadata.parquet')
             """
             result = self.con.execute(query).fetchdf()
             
