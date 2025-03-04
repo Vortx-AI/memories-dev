@@ -136,13 +136,9 @@ class RedHotMemory:
         return {}
     
     def _save_metadata(self):
-        """Save metadata to disk."""
-        try:
-            with open(self.metadata_file, "w") as f:
-                json.dump(self.metadata, f, indent=2)
-        except Exception as e:
-            logger.error(f"Failed to save metadata: {e}")
-    
+        """No-op method to handle metadata saving calls."""
+        pass
+
     def store(
         self,
         key: str,
