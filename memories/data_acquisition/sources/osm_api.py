@@ -398,4 +398,18 @@ class OSMDataAPI(DataSource):
         
         return file_paths 
 
+    def get_overture_data(self, name: str, bbox: Union[Tuple[float, float, float, float], List[float], Polygon]) -> Any:
+        """Synchronous wrapper for fetching Overture data using Overpass API.
+        
+        Args:
+            name: Natural language name of the feature (e.g., "park")
+            bbox: Bounding box coordinates or Polygon
+            
+        Returns:
+            Search results as a dictionary.
+        """
+        import asyncio
+        tag = self.feature_map.get(name, f'["{name}"]')
+        return asyncio.run(self.search(bbox, tags=[tag]))
+
    

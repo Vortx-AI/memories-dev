@@ -1132,131 +1132,6 @@ class MemoryRetrieval:
             limit=limit
         )
 
-    def query_files(self, sql_query: str) -> pd.DataFrame:
-        """
-        Query across all registered parquet files.
-        
-        Args:
-            sql_query: SQL query string. Use 'files.*' to query all columns from all files.
-                      The files are automatically combined into a single table named 'files'.
-        
-        Returns:
-            pandas.DataFrame with query results
-        """
-        try:
-            # Get all registered parquet files
-            files_query = """
-                SELECT path 
-                FROM cold_metadata 
-                WHERE data_type = 'parquet'
-            """
-            files = self.con.execute(files_query).fetchall()
-            
-            if not files:
-                logger.warning("No parquet files registered in the database")
-                return pd.DataFrame()
-
-            # Create a view combining all parquet files
-            file_paths = [f[0] for f in files]
-            files_list = ", ".join(f"'{path}'" for path in file_paths)
-            
-            create_view = f"""
-                CREATE OR REPLACE VIEW files AS 
-                SELECT * FROM read_parquet([{files_list}])
-            """
-            self.con.execute(create_view)
-            
-            # Execute the actual query
-            result = self.con.execute(sql_query).df()
-            return result
-            
-        except Exception as e:
-            logger.error(f"Error executing query: {e}")
-            raise
-
-    def query_by_bbox(self, min_lon: float, min_lat: float, max_lon: float, max_lat: float) -> pd.DataFrame:
-        """
-        Query places within a bounding box.
-        
-        Args:
-            min_lon: Minimum longitude (west)
-            min_lat: Minimum latitude (south)
-            max_lon: Maximum longitude (east)
-            max_lat: Maximum latitude (north)
-            
-        Returns:
-            pandas.DataFrame with places in the bounding box
-        """
-        try:
-            # Get all registered parquet files
-            files_query = """
-                SELECT path 
-                FROM cold_metadata 
-                WHERE data_type = 'parquet'
-            """
-            files = self.con.execute(files_query).fetchall()
-            
-            if not files:
-                logger.warning("No parquet files registered in the database")
-                return pd.DataFrame()
-
-            # Process each parquet file separately
-            results = []
-            for file_path in [f[0] for f in files]:
-                try:
-                    # Get schema for this file
-                    schema = self.get_parquet_schema(file_path)
-                    geom_column, geom_type = self.find_geometry_column(schema)
-                    
-                    if not geom_column:
-                        logger.warning(f"No geometry column found in {file_path}, skipping...")
-                        continue
-                        
-                    logger.info(f"Processing {file_path} with geometry column: {geom_column} ({geom_type})")
-                    
-                    # Get geometry expression
-                    geom_expr = self.get_geometry_expression(geom_column, geom_type)
-                    
-                    # Build select clause based on available columns
-                    select_clause = self.build_select_clause(schema, geom_column, geom_type)
-                    
-                    # Build and execute query for this file
-                    query = f"""
-                        SELECT {select_clause}
-                        FROM read_parquet('{file_path}')
-                        WHERE ST_Intersects(
-                            {geom_expr},
-                            ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
-                                          CAST({min_lat} AS DOUBLE), 
-                                          CAST({max_lon} AS DOUBLE), 
-                                          CAST({max_lat} AS DOUBLE))
-                        )
-                    """
-                    
-                    logger.debug(f"Executing query for {file_path}: {query}")
-                    result = self.con.execute(query).df()
-                    
-                    if not result.empty:
-                        # Add source file information
-                        result['source_file'] = os.path.basename(file_path)
-                        result['source_type'] = os.path.basename(os.path.dirname(os.path.dirname(file_path)))
-                        results.append(result)
-                        
-                except Exception as e:
-                    logger.error(f"Error processing {file_path}: {e}")
-                    continue
-            
-            if not results:
-                return pd.DataFrame()
-                
-            # Combine results, handling different schemas
-            combined = pd.concat(results, ignore_index=True, sort=False)
-            return combined.sort_values('name') if 'name' in combined.columns else combined
-            
-        except Exception as e:
-            logger.error(f"Error executing spatial query: {e}")
-            raise
-
     def get_red_hot_stats(self) -> dict:
         """Get statistics about the data in red-hot storage."""
         try:
@@ -1270,17 +1145,16 @@ class MemoryRetrieval:
             logger.error(f"Error getting red-hot stats: {e}")
             return {}
 
-    def get_spatial_column_values(self, query_word, bbox, top_k=10):
+    def get_spatial_column_values(self, query_word, bbox, top_k=10, similarity_threshold=0.4):
         """
         Find similar columns and query their values within a bounding box.
+        For high similarity matches (> threshold), return complete rows.
         
         Args:
             query_word (str): The column name to search for
             bbox (tuple): Bounding box coordinates (min_x, min_y, max_x, max_y)
             top_k (int): Number of similar columns to consider
-        
-        Returns:
-            dict: Results grouped by file path and column name
+            similarity_threshold (float): Threshold for returning complete rows
         """
         logger.info(f"Searching for columns similar to '{query_word}' within bbox {bbox}")
         
@@ -1294,66 +1168,114 @@ class MemoryRetrieval:
         # Search in FAISS index
         D, I = red_hot.index.search(query_embedding.reshape(1, -1), top_k)
         
-        results = {}
+        results = {
+            'high_similarity': [],  # Will contain complete rows
+            'partial_matches': {}   # Will contain only column values
+        }
+        
         min_x, min_y, max_x, max_y = bbox
         
         for i, idx in enumerate(I[0]):
             metadata = red_hot.get_metadata(str(int(idx)))
             column_name = metadata.get('column_name')
             file_path = metadata.get('file_path')
-            geom_col = metadata.get('geometry_column')  # Get geometry column from metadata
+            geom_col = metadata.get('geometry_column')
             
             if not column_name or not file_path or not geom_col:
                 continue
             
+            # Calculate similarity score (convert distance to similarity)
+            similarity = 1 / (1 + float(D[0][i]))
+            
             try:
-                # Use the stored geometry column name directly
-                query = f"""
-                SELECT DISTINCT {column_name}
-                FROM parquet_scan('{file_path}')
-                WHERE ST_Intersects(
-                    {geom_col},
-                    ST_MakeEnvelope({min_x}, {min_y}, {max_x}, {max_y})
-                )
-                LIMIT 100
-                """
+                if similarity > similarity_threshold:
+                    # High similarity - get complete rows
+                    query = f"""
+                    SELECT *
+                    FROM parquet_scan('{file_path}')
+                    WHERE ST_Intersects(
+                        {geom_col},
+                        ST_MakeEnvelope({min_x}, {min_y}, {max_x}, {max_y})
+                    )
+                    LIMIT 1000
+                    """
+                else:
+                    # Lower similarity - get only the specific column
+                    query = f"""
+                    SELECT DISTINCT {column_name}
+                    FROM parquet_scan('{file_path}')
+                    WHERE ST_Intersects(
+                        {geom_col},
+                        ST_MakeEnvelope({min_x}, {min_y}, {max_x}, {max_y})
+                    )
+                    LIMIT 100
+                    """
                 
                 result_df = self.con.execute(query).fetchdf()
                 
                 if not result_df.empty:
-                    results[f"{file_path}:{column_name}"] = {
-                        'similarity': float(D[0][i]),
-                        'column_name': column_name,
-                        'file_path': file_path,
-                        'dtype': metadata.get('dtype', 'unknown'),
-                        'geometry_column': geom_col,  # Include in results
-                        'values': result_df[column_name].tolist()
-                    }
-                    
-                logger.debug(f"Found {len(result_df)} values for {column_name} in {file_path}")
+                    if similarity > similarity_threshold:
+                        results['high_similarity'].append({
+                            'similarity': similarity,
+                            'column_name': column_name,
+                            'file_path': file_path,
+                            'geometry_column': geom_col,
+                            'dtype': metadata.get('dtype', 'unknown'),
+                            'data': result_df.to_dict('records')
+                        })
+                    else:
+                        results['partial_matches'][f"{file_path}:{column_name}"] = {
+                            'similarity': similarity,
+                            'column_name': column_name,
+                            'file_path': file_path,
+                            'geometry_column': geom_col,
+                            'dtype': metadata.get('dtype', 'unknown'),
+                            'values': result_df[column_name].tolist()
+                        }
+                
+                logger.debug(f"Found {len(result_df)} results for {column_name} in {file_path}")
                 
             except Exception as e:
                 logger.error(f"Error querying {file_path} for column {column_name}: {e}")
                 continue
         
-        logger.info(f"Found values in {len(results)} similar columns")
+        logger.info(f"Found {len(results['high_similarity'])} high similarity matches")
+        logger.info(f"Found {len(results['partial_matches'])} partial matches")
         return results
 
     def format_spatial_results(self, results):
         """Format spatial query results for display."""
         output = []
         output.append("\nSpatial Query Results:")
-        output.append("-" * 100)
+        output.append("=" * 100)
         
-        for key, data in results.items():
-            output.append(f"\nColumn: {data['column_name']}")
-            output.append(f"Similarity: {data['similarity']:.4f}")
-            output.append(f"File: {data['file_path']}")
-            output.append(f"Data type: {data['dtype']}")
-            output.append("\nValues:")
-            output.append(", ".join(map(str, data['values'][:10])))
-            if len(data['values']) > 10:
-                output.append(f"... and {len(data['values']) - 10} more")
-            output.append("-" * 100)
+        # High similarity matches (complete rows)
+        if results['high_similarity']:
+            output.append("\nHigh Similarity Matches (Complete Rows):")
+            output.append("-" * 80)
+            for match in results['high_similarity']:
+                output.append(f"\nSource: {match['file_path']}")
+                output.append(f"Column: {match['column_name']}")
+                output.append(f"Similarity Score: {match['similarity']:.4f}")
+                output.append("\nSample Rows:")
+                for row in match['data'][:5]:  # Show first 5 rows
+                    output.append(f"  {row}")
+                if len(match['data']) > 5:
+                    output.append(f"  ... and {len(match['data'])-5} more rows")
+                output.append("-" * 80)
+        
+        # Partial matches (column values only)
+        if results['partial_matches']:
+            output.append("\nPartial Matches (Column Values Only):")
+            output.append("-" * 80)
+            for key, data in results['partial_matches'].items():
+                output.append(f"\nSource: {data['file_path']}")
+                output.append(f"Column: {data['column_name']}")
+                output.append(f"Similarity Score: {data['similarity']:.4f}")
+                output.append("\nValues:")
+                output.append(", ".join(map(str, data['values'][:10])))
+                if len(data['values']) > 10:
+                    output.append(f"... and {len(data['values'])-10} more values")
+                output.append("-" * 80)
         
         return "\n".join(output) 

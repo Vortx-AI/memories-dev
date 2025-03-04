@@ -83,3 +83,7 @@ class VectorProcessor:
             feature for feature in features
             if feature.get("properties", {}).get("type") == feature_type
         ] 
+
+def gpu_stat():
+    """Return dummy GPU statistics."""
+    return {"status": "ok", "gpu": "not available"} 
