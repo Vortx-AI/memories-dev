@@ -85,7 +85,14 @@ class MemoryRetrieval:
                 CREATE OR REPLACE VIEW temp_view AS 
                 SELECT * FROM read_parquet('{file_path}')
             """)
-            return self.con.execute("DESCRIBE temp_view").fetchall()
+            schema = self.con.execute("DESCRIBE temp_view").fetchall()
+            
+            # Print schema details for debugging
+            self.logger.debug(f"Schema for {file_path}:")
+            for col in schema:
+                self.logger.debug(f"Column: {col[0]}, Type: {col[1]}")
+                
+            return schema
         except Exception as e:
             self.logger.error(f"Error getting schema for {file_path}: {e}")
             return []
@@ -118,10 +125,10 @@ class MemoryRetrieval:
             if col in available_columns:
                 select_parts.append(col)
 
-        # Add geometry-derived columns
+        # Add geometry-derived columns, converting BLOB to geometry if needed
         select_parts.extend([
-            f"ST_X(ST_Centroid({geom_column})) as lon",
-            f"ST_Y(ST_Centroid({geom_column})) as lat"
+            f"ST_X(ST_Centroid(ST_GeomFromWKB({geom_column}))) as lon",
+            f"ST_Y(ST_Centroid(ST_GeomFromWKB({geom_column}))) as lat"
         ])
 
         return ", ".join(select_parts)
@@ -174,7 +181,7 @@ class MemoryRetrieval:
                         SELECT {select_clause}
                         FROM read_parquet('{file_path}')
                         WHERE ST_Intersects(
-                            {geom_column},
+                            ST_GeomFromWKB({geom_column}),
                             ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
                                           CAST({min_lat} AS DOUBLE), 
                                           CAST({max_lon} AS DOUBLE), 
@@ -489,7 +496,6 @@ class MemoryRetrieval:
             queries = []
             for table in tables:
                 table_name = table["table_name"]
-                # Check if the date column exists in this table
                 schema = table["schema"]
                 if date_column in schema:
                     queries.append(f"""
