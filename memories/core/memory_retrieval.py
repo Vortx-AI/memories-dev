@@ -90,6 +90,42 @@ class MemoryRetrieval:
             self.logger.error(f"Error getting schema for {file_path}: {e}")
             return []
 
+    def build_select_clause(self, schema: List[Tuple], geom_column: str) -> str:
+        """Build SELECT clause based on available columns."""
+        available_columns = [col[0] for col in schema]
+        select_parts = []
+
+        # Map of possible column names to standardized names
+        column_mappings = {
+            'names': 'name',
+            'name': 'name',
+            'osm_id': 'id',
+            'id': 'id',
+            'highway': 'type',
+            'waterway': 'type',
+            'place': 'type',
+            'building': 'type'
+        }
+
+        # Add mapped columns that exist
+        for source, target in column_mappings.items():
+            if source in available_columns:
+                select_parts.append(f"{source} as {target}")
+
+        # Add other interesting columns that exist
+        extra_columns = ['min_height', 'num_floors', 'addresses', 'categories', 'confidence']
+        for col in extra_columns:
+            if col in available_columns:
+                select_parts.append(col)
+
+        # Add geometry-derived columns
+        select_parts.extend([
+            f"ST_X(ST_Centroid({geom_column})) as lon",
+            f"ST_Y(ST_Centroid({geom_column})) as lat"
+        ])
+
+        return ", ".join(select_parts)
+
     def query_by_bbox(self, min_lon: float, min_lat: float, max_lon: float, max_lat: float) -> pd.DataFrame:
         """
         Query places within a bounding box.
@@ -130,26 +166,10 @@ class MemoryRetrieval:
                         
                     self.logger.info(f"Processing {file_path} with geometry column: {geom_column}")
                     
-                    # Get available columns for this file
-                    available_columns = [col[0] for col in schema]
-                    
                     # Build select clause based on available columns
-                    select_columns = []
-                    
-                    # Add available standard columns
-                    standard_columns = ['osm_id', 'name', 'highway', 'waterway', 'other_tags']
-                    for col in standard_columns:
-                        if col in available_columns:
-                            select_columns.append(col)
-                    
-                    # Add geometry-derived columns
-                    select_columns.extend([
-                        f"ST_X(ST_Centroid({geom_column})) as lon",
-                        f"ST_Y(ST_Centroid({geom_column})) as lat"
-                    ])
+                    select_clause = self.build_select_clause(schema, geom_column)
                     
                     # Build and execute query for this file
-                    select_clause = ", ".join(select_columns)
                     query = f"""
                         SELECT {select_clause}
                         FROM read_parquet('{file_path}')
@@ -160,7 +180,6 @@ class MemoryRetrieval:
                                           CAST({max_lon} AS DOUBLE), 
                                           CAST({max_lat} AS DOUBLE))
                         )
-                        AND (name IS NOT NULL OR osm_id IS NOT NULL)
                     """
                     
                     self.logger.debug(f"Executing query for {file_path}: {query}")
@@ -169,6 +188,7 @@ class MemoryRetrieval:
                     if not result.empty:
                         # Add source file information
                         result['source_file'] = os.path.basename(file_path)
+                        result['source_type'] = os.path.basename(os.path.dirname(os.path.dirname(file_path)))
                         results.append(result)
                         
                 except Exception as e:
@@ -1036,26 +1056,10 @@ class MemoryRetrieval:
                         
                     self.logger.info(f"Processing {file_path} with geometry column: {geom_column}")
                     
-                    # Get available columns for this file
-                    available_columns = [col[0] for col in schema]
-                    
                     # Build select clause based on available columns
-                    select_columns = []
-                    
-                    # Add available standard columns
-                    standard_columns = ['osm_id', 'name', 'highway', 'waterway', 'other_tags']
-                    for col in standard_columns:
-                        if col in available_columns:
-                            select_columns.append(col)
-                    
-                    # Add geometry-derived columns
-                    select_columns.extend([
-                        f"ST_X(ST_Centroid({geom_column})) as lon",
-                        f"ST_Y(ST_Centroid({geom_column})) as lat"
-                    ])
+                    select_clause = self.build_select_clause(schema, geom_column)
                     
                     # Build and execute query for this file
-                    select_clause = ", ".join(select_columns)
                     query = f"""
                         SELECT {select_clause}
                         FROM read_parquet('{file_path}')
@@ -1066,7 +1070,6 @@ class MemoryRetrieval:
                                           CAST({max_lon} AS DOUBLE), 
                                           CAST({max_lat} AS DOUBLE))
                         )
-                        AND (name IS NOT NULL OR osm_id IS NOT NULL)
                     """
                     
                     self.logger.debug(f"Executing query for {file_path}: {query}")
@@ -1075,6 +1078,7 @@ class MemoryRetrieval:
                     if not result.empty:
                         # Add source file information
                         result['source_file'] = os.path.basename(file_path)
+                        result['source_type'] = os.path.basename(os.path.dirname(os.path.dirname(file_path)))
                         results.append(result)
                         
                 except Exception as e:
