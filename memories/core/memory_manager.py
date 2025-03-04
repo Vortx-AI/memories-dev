@@ -236,7 +236,9 @@ class MemoryManager:
     def _init_warm_memory(self) -> None:
         """Initialize warm memory tier."""
         try:
-            self.warm = WarmMemory(duckdb_connection=self.db_connection)
+            self.warm = WarmMemory(
+                duckdb_connection=self.db_connection
+            )
             self.logger.info("Initialized warm memory")
         except Exception as e:
             self.logger.error(f"Failed to initialize warm memory: {e}")
@@ -245,7 +247,9 @@ class MemoryManager:
     def _init_cold_memory(self) -> None:
         """Initialize cold memory tier."""
         try:
-            self.cold = ColdMemory(duckdb_connection=self.db_connection)
+            self.cold = ColdMemory(
+                duckdb_connection=self.db_connection
+            )
             self.logger.info("Initialized cold memory")
         except Exception as e:
             self.logger.error(f"Failed to initialize cold memory: {e}")
