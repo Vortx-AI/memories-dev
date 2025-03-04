@@ -1328,60 +1328,74 @@ class MemoryRetrieval:
         similarity_threshold: float = 0.5,
         max_workers: int = None,
         batch_size: int = 10,
-        debug: bool = True  # Add debug flag
+        debug: bool = True
     ) -> pd.DataFrame:
-        """Search for geospatial features with detailed debugging."""
+        """Search for geospatial features with detailed step-by-step logging."""
         try:
-            # Get all tables
+            logger.info("\n" + "="*80)
+            logger.info("STARTING GEOSPATIAL SEARCH")
+            logger.info("="*80)
+            
+            # Step 1: Initial Setup
+            logger.info("\nSTEP 1: Initial Setup")
+            logger.info(f"Query word: {query_word}")
+            logger.info(f"Bounding box: {bbox}")
+            logger.info(f"Similarity threshold: {similarity_threshold}")
+            
+            # Step 2: Get Tables
+            logger.info("\nSTEP 2: Getting Tables")
             tables = self.cold.list_tables()
             if not tables:
-                logger.warning("No tables available")
+                logger.warning("No tables available in cold storage")
                 return pd.DataFrame()
+            logger.info(f"Found {len(tables)} total tables")
             
-            if debug:
-                logger.info(f"\nDEBUG INFO:")
-                logger.info(f"Query word: {query_word}")
-                logger.info(f"Bounding box: {bbox}")
-                logger.info(f"Total tables found: {len(tables)}")
-                logger.info("\nTable Information:")
-                for table in tables[:5]:  # Show first 5 tables
-                    logger.info(f"\nTable: {table['table_name']}")
-                    logger.info(f"Schema: {table['schema']}")
-                    # Sample query to check data
-                    try:
-                        sample = self.cold.query(f"SELECT * FROM {table['table_name']} LIMIT 1")
-                        logger.info(f"Sample data columns: {list(sample.columns)}")
-                    except Exception as e:
-                        logger.info(f"Error getting sample: {e}")
+            # Step 3: Table Analysis
+            logger.info("\nSTEP 3: Analyzing Tables")
+            for idx, table in enumerate(tables[:5], 1):  # Show first 5 tables
+                logger.info(f"\nTable {idx}:")
+                logger.info(f"  Name: {table['table_name']}")
+                logger.info(f"  Schema: {table['schema']}")
+                try:
+                    sample = self.cold.query(f"SELECT * FROM {table['table_name']} LIMIT 1")
+                    logger.info(f"  Sample columns: {list(sample.columns)}")
+                except Exception as e:
+                    logger.info(f"  Error getting sample: {e}")
+            if len(tables) > 5:
+                logger.info(f"... and {len(tables)-5} more tables")
             
-            # Remove duplicates based on file path
+            # Step 4: Deduplication
+            logger.info("\nSTEP 4: Deduplicating Tables")
             unique_tables = {}
             for table in tables:
                 file_path = table.get("file_path", table["table_name"])
                 if file_path not in unique_tables:
                     unique_tables[file_path] = table
-            
             tables = list(unique_tables.values())
-            if debug:
-                logger.info(f"\nUnique tables after deduplication: {len(tables)}")
+            logger.info(f"Reduced to {len(tables)} unique tables")
             
-            # Log GPU availability
+            # Step 5: GPU Check
+            logger.info("\nSTEP 5: Checking GPU Availability")
             gpu_available = _has_gpu()
             logger.info(f"GPU acceleration: {'enabled' if gpu_available else 'disabled'}")
             
-            # Process tables in parallel
+            # Step 6: Batch Creation
+            logger.info("\nSTEP 6: Creating Processing Batches")
+            if max_workers is None:
+                max_workers = max(1, multiprocessing.cpu_count() - 1)
+            batches = [tables[i:i + batch_size] for i in range(0, len(tables), batch_size)]
+            logger.info(f"Created {len(batches)} batches of size {batch_size}")
+            logger.info(f"Using {max_workers} worker processes")
+            
+            # Step 7: Process Batches
+            logger.info("\nSTEP 7: Processing Batches")
             start_time = time.time()
             all_results = []
             
-            # Create batches
-            batches = [tables[i:i + batch_size] for i in range(0, len(tables), batch_size)]
-            
             for batch_num, batch in enumerate(batches, 1):
                 batch_start = time.time()
+                logger.info(f"\nProcessing Batch {batch_num}/{len(batches)}")
                 results = []
-                
-                if debug:
-                    logger.info(f"\nProcessing batch {batch_num}/{len(batches)}")
                 
                 with ProcessPoolExecutor(max_workers=max_workers) as executor:
                     future_to_table = {
@@ -1394,61 +1408,68 @@ class MemoryRetrieval:
                         try:
                             df = future.result()
                             if not df.empty:
-                                if debug:
-                                    logger.info(f"Found {len(df)} results in {table['table_name']}")
+                                logger.info(f"  ✓ Found {len(df)} results in {table['table_name']}")
                                 results.append(df)
-                            elif debug:
-                                logger.info(f"No results in {table['table_name']}")
+                            else:
+                                logger.info(f"  ✗ No results in {table['table_name']}")
                         except Exception as e:
-                            logger.error(f"Error processing {table['table_name']}: {e}")
+                            logger.error(f"  ! Error processing {table['table_name']}: {e}")
                 
+                # Combine batch results
                 if results:
                     if gpu_available:
                         try:
                             batch_df = cudf.concat(results, ignore_index=True)
                             all_results.append(batch_df)
+                            logger.info(f"  Batch {batch_num} results combined using GPU")
                         except Exception as e:
-                            logger.warning(f"GPU concatenation failed: {e}")
+                            logger.warning(f"  GPU concatenation failed, using CPU: {e}")
                             cpu_results = [df.to_pandas() if isinstance(df, cudf.DataFrame) else df 
                                          for df in results]
                             all_results.append(pd.concat(cpu_results, ignore_index=True))
                     else:
                         all_results.append(pd.concat(results, ignore_index=True))
                 
-                if debug:
-                    batch_time = time.time() - batch_start
-                    logger.info(f"Batch {batch_num} took {batch_time:.2f}s")
+                batch_time = time.time() - batch_start
+                logger.info(f"  Batch {batch_num} completed in {batch_time:.2f}s")
             
-            # Combine final results
+            # Step 8: Final Results
+            logger.info("\nSTEP 8: Combining Final Results")
             final_results = pd.DataFrame()
             if all_results:
                 if gpu_available:
                     try:
                         final_results = cudf.concat(all_results, ignore_index=True).to_pandas()
+                        logger.info("Final results combined using GPU")
                     except Exception as e:
-                        logger.warning(f"Final GPU concatenation failed: {e}")
+                        logger.warning(f"Final GPU concatenation failed, using CPU: {e}")
                         cpu_results = [df.to_pandas() if isinstance(df, cudf.DataFrame) else df 
                                      for df in all_results]
                         final_results = pd.concat(cpu_results, ignore_index=True)
                 else:
                     final_results = pd.concat(all_results, ignore_index=True)
             
-            if debug:
-                total_time = time.time() - start_time
-                logger.info("\nFinal Results:")
-                logger.info(f"Total processing time: {total_time:.2f}s")
-                logger.info(f"Total results found: {len(final_results)}")
-                if not final_results.empty:
-                    logger.info(f"Columns in results: {list(final_results.columns)}")
-                    logger.info("\nSample of results:")
-                    logger.info(final_results.head())
-                else:
-                    logger.info("No results found in any table")
+            # Step 9: Summary
+            total_time = time.time() - start_time
+            logger.info("\nSTEP 9: Search Summary")
+            logger.info("="*80)
+            logger.info(f"Total processing time: {total_time:.2f}s")
+            logger.info(f"Tables processed: {len(tables)}")
+            logger.info(f"Results found: {len(final_results)}")
+            if not final_results.empty:
+                logger.info(f"Columns in results: {list(final_results.columns)}")
+                logger.info("\nSample of results:")
+                logger.info(final_results.head())
+            else:
+                logger.info("No results found in any table")
+            logger.info("="*80)
             
             return final_results
             
         except Exception as e:
-            logger.error(f"Error in search_geospatial_data_in_bbox: {e}")
-            if debug:
-                logger.exception("Full error traceback:")
+            logger.error("\nERROR in search_geospatial_data_in_bbox")
+            logger.error("="*80)
+            logger.error(f"Error message: {str(e)}")
+            logger.exception("Full traceback:")
+            logger.error("="*80)
             return pd.DataFrame() 

@@ -409,25 +409,31 @@ class MemoryQuery:
             # Initialize memory_retrieval if not already done
             if self.memory_retrieval is None:
                 from memories.core.memory_retrieval import MemoryRetrieval
-                self.memory_retrieval = MemoryRetrieval()  # No arguments needed
+                self.memory_retrieval = MemoryRetrieval()
 
-            # Convert bbox list to tuple
-            bbox_tuple = tuple(bbox)
+            # Convert bbox list to tuple of floats
+            bbox_tuple = tuple(float(x) for x in bbox)
             
-            # Call search function
+            # Call search function with debug enabled
             results = self.memory_retrieval.search_geospatial_data_in_bbox(
                 query_word=query_word,
                 bbox=bbox_tuple,
                 similarity_threshold=similarity_threshold,
-                
+                debug=True  # Enable detailed logging
             )
 
             # Convert results to dictionary format
-            return {
+            response = {
                 "status": "success" if not results.empty else "no_results",
                 "data": results.to_dict('records') if not results.empty else [],
                 "count": len(results) if not results.empty else 0
             }
+
+            # Include logs in response
+            if hasattr(self.memory_retrieval, 'last_logs'):
+                response["logs"] = self.memory_retrieval.last_logs
+
+            return response
         except Exception as e:
             logger.error(f"Error in search_geospatial_data_in_bbox: {e}")
             return {
