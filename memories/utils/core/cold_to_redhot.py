@@ -185,10 +185,66 @@ class ColdToRedHot:
     def transfer_all_schemas(self):
         """Transfer schema information for all files in cold_metadata to red-hot memory."""
         files = self.get_parquet_files()
-        logger.info(f"Found {len(files)} files in cold_metadata")
+        total_files = len(files)
+        logger.info(f"Found {total_files} files in cold_metadata")
+        
+        stats = {
+            'total_files': total_files,
+            'processed_files': 0,
+            'successful_transfers': 0,
+            'failed_transfers': 0,
+            'by_source_type': {
+                'base': 0,
+                'divisions': 0,
+                'transportation': 0,
+                'unknown': 0
+            }
+        }
         
         for file_path in files:
-            self.transfer_schema_to_redhot(file_path)
+            try:
+                self.transfer_schema_to_redhot(file_path)
+                stats['processed_files'] += 1
+                stats['successful_transfers'] += 1
+                
+                # Update source type stats
+                source_type = 'unknown'
+                if 'base' in file_path:
+                    source_type = 'base'
+                elif 'divisions' in file_path:
+                    source_type = 'divisions'
+                elif 'transportation' in file_path:
+                    source_type = 'transportation'
+                stats['by_source_type'][source_type] += 1
+                
+                # Log progress periodically
+                if stats['processed_files'] % 100 == 0:
+                    self._log_progress(stats)
+                    
+            except Exception as e:
+                logger.error(f"Error transferring schema for {file_path}: {e}")
+                stats['failed_transfers'] += 1
+                stats['processed_files'] += 1
+        
+        # Log final statistics
+        self._log_final_stats(stats)
+        return stats
+
+    def _log_progress(self, stats):
+        """Log progress of the transfer process."""
+        progress = (stats['processed_files'] / stats['total_files']) * 100
+        logger.info(f"Progress: {progress:.2f}% ({stats['processed_files']}/{stats['total_files']} files)")
+        logger.info(f"Successful: {stats['successful_transfers']}, Failed: {stats['failed_transfers']}")
+
+    def _log_final_stats(self, stats):
+        """Log final statistics of the transfer process."""
+        logger.info("\n=== Transfer Complete ===")
+        logger.info(f"Total files processed: {stats['processed_files']}/{stats['total_files']}")
+        logger.info(f"Successful transfers: {stats['successful_transfers']}")
+        logger.info(f"Failed transfers: {stats['failed_transfers']}")
+        logger.info("\nBy source type:")
+        for source_type, count in stats['by_source_type'].items():
+            logger.info(f"  {source_type}: {count} files")
 
 def main():
     """Main function to run the transfer process."""
@@ -198,7 +254,17 @@ def main():
     )
     
     transfer = ColdToRedHot()
-    transfer.transfer_all_schemas()
+    stats = transfer.transfer_all_schemas()
+    
+    # Print final summary
+    print("\nTransfer Summary:")
+    print(f"Total files: {stats['total_files']}")
+    print(f"Successfully transferred: {stats['successful_transfers']}")
+    print(f"Failed transfers: {stats['failed_transfers']}")
+    print("\nBy source type:")
+    for source_type, count in stats['by_source_type'].items():
+        if count > 0:  # Only show non-zero counts
+            print(f"  {source_type}: {count} files")
 
 if __name__ == "__main__":
     main() 
