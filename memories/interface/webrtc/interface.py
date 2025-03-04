@@ -19,6 +19,7 @@ class SignalingServer:
         self.port = port
         self._sock = None
         self._running = False
+        self._client_sock = None
         logger.info(f"SignalingServer initialized with host={host}, port={port}")
         
     def start(self) -> None:
@@ -28,13 +29,32 @@ class SignalingServer:
             self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             
+            # Set socket timeout
+            self._sock.settimeout(30)  # 30 second timeout
+            
             logger.info(f"Binding to {self.host}:{self.port}...")
-            self._sock.bind((self.host, self.port))
+            try:
+                self._sock.bind((self.host, self.port))
+            except socket.error as e:
+                logger.error(f"❌ Bind failed: {e}")
+                raise
             
             logger.info("Starting to listen...")
-            self._sock.listen(1)
-            self._running = True
-            logger.info(f"✅ Signaling server listening on {self.host}:{self.port}")
+            try:
+                self._sock.listen(1)
+                logger.info(f"✅ Signaling server listening on {self.host}:{self.port}")
+                self._running = True
+                
+                # Accept one connection
+                logger.info("Waiting for client connection...")
+                self._client_sock, addr = self._sock.accept()
+                logger.info(f"Client connected from {addr}")
+                self._client_sock.settimeout(30)
+                
+            except socket.error as e:
+                logger.error(f"❌ Listen/Accept failed: {e}")
+                raise
+                
         except Exception as e:
             logger.error(f"❌ Failed to start signaling server: {e}")
             if self._sock:
@@ -44,14 +64,23 @@ class SignalingServer:
         
     def stop(self) -> None:
         """Stop the signaling server."""
+        logger.info("Stopping signaling server...")
         self._running = False
+        if self._client_sock:
+            try:
+                self._client_sock.close()
+                logger.info("Client socket closed")
+            except Exception as e:
+                logger.error(f"Error closing client socket: {e}")
         if self._sock:
             try:
                 self._sock.close()
+                logger.info("Server socket closed")
             except Exception as e:
-                logger.error(f"Error closing signaling server socket: {e}")
+                logger.error(f"Error closing server socket: {e}")
             finally:
                 self._sock = None
+                self._client_sock = None
 
 class WebRTCInterface:
     """A WebRTC interface that allows exposing Python functions through WebRTC data channels."""
@@ -208,19 +237,14 @@ class WebRTCClient:
     """Client for connecting to a WebRTC interface."""
     
     def __init__(self, host: str = "localhost", port: int = 8765):
-        """
-        Initialize the WebRTC client.
-        
-        Args:
-            host: The host of the signaling server
-            port: The port of the signaling server
-        """
+        """Initialize the WebRTC client."""
         self.host = host
         self.port = port
         self.pc = None
         self.signaling = None
         self.data_channel = None
         self._pending_requests: Dict[str, asyncio.Future] = {}
+        logger.info(f"WebRTCClient initialized for {host}:{port}")
         
     async def connect(self) -> None:
         """Connect to the WebRTC server."""
@@ -228,24 +252,115 @@ class WebRTCClient:
             # Create a custom signaling class that doesn't try to bind
             class ClientSignaling(TcpSocketSignaling):
                 def __init__(self, host, port):
-                    super().__init__(host, port)
                     self.host = host
                     self.port = port
+                    self._sock = None
+                    self._recv_queue = None
+                    self._send_queue = None
+                    self._runner = None
+                    logger.info(f"ClientSignaling initialized for {host}:{port}")
                     
                 async def connect(self):
-                    self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    await asyncio.get_event_loop().sock_connect(self._sock, (self.host, self.port))
-                    self._recv_queue = asyncio.Queue()
-                    self._send_queue = asyncio.Queue()
-                    self._runner = asyncio.ensure_future(self._run())
+                    logger.info(f"Attempting to connect to {self.host}:{self.port}...")
+                    try:
+                        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        self._sock.settimeout(30)  # 30 second timeout
+                        await asyncio.get_event_loop().sock_connect(self._sock, (self.host, self.port))
+                        logger.info("Socket connection established")
+                        self._recv_queue = asyncio.Queue()
+                        self._send_queue = asyncio.Queue()
+                        self._runner = asyncio.ensure_future(self._run())
+                    except Exception as e:
+                        logger.error(f"Failed to connect to signaling server: {e}")
+                        if self._sock:
+                            self._sock.close()
+                        raise
+                            
+                async def _run(self):
+                    try:
+                        while True:
+                            # Handle receiving
+                            try:
+                                data = await self._recv()
+                                if data:
+                                    logger.info(f"Received data: {len(data)} bytes")
+                                    await self._recv_queue.put(data)
+                            except asyncio.TimeoutError:
+                                logger.error("Receive timeout")
+                                break
+                            except Exception as e:
+                                logger.error(f"Error receiving data: {e}")
+                                break
+                                
+                            # Handle sending
+                            try:
+                                if not self._send_queue.empty():
+                                    data = await self._send_queue.get()
+                                    await self._send(data)
+                                    logger.info(f"Sent data: {len(data)} bytes")
+                            except Exception as e:
+                                logger.error(f"Error sending data: {e}")
+                                break
+                            
+                            # Small delay to prevent busy loop
+                            await asyncio.sleep(0.1)
+                            
+                    except Exception as e:
+                        logger.error(f"Error in signaling loop: {e}")
+                    finally:
+                        if self._sock:
+                            self._sock.close()
+                            
+                async def _send(self, data):
+                    """Send data on the socket."""
+                    if not self._sock:
+                        raise ConnectionError("Not connected")
+                    await asyncio.get_event_loop().sock_sendall(self._sock, data)
                     
+                async def _recv(self):
+                    """Receive data from the socket."""
+                    if not self._sock:
+                        raise ConnectionError("Not connected")
+                    try:
+                        data = await asyncio.wait_for(
+                            asyncio.get_event_loop().sock_recv(self._sock, 65536),
+                            timeout=30
+                        )
+                        if not data:
+                            raise ConnectionError("Connection closed by remote peer")
+                        return data
+                    except asyncio.TimeoutError:
+                        logger.error("Receive operation timed out")
+                        raise
+                    
+                async def send(self, descr):
+                    """Send a description."""
+                    data = json.dumps({"type": descr.type, "sdp": descr.sdp}).encode()
+                    await self._send_queue.put(data + b"\n")
+                    
+                async def receive(self):
+                    """Receive a description."""
+                    try:
+                        data = await asyncio.wait_for(self._recv_queue.get(), timeout=30)
+                        data = json.loads(data.decode())
+                        return RTCSessionDescription(type=data["type"], sdp=data["sdp"])
+                    except asyncio.TimeoutError:
+                        logger.error("Timeout waiting for description")
+                        raise
+            
             # Initialize signaling with the remote server
+            logger.info(f"Creating signaling connection to {self.host}:{self.port}")
             self.signaling = ClientSignaling(self.host, self.port)
             await self.signaling.connect()
             
+            logger.info("Creating RTCPeerConnection")
             self.pc = RTCPeerConnection()
             self.data_channel = self.pc.createDataChannel("data")
             
+            @self.data_channel.on("open")
+            def on_open():
+                logger.info("Data channel opened")
+                
             @self.data_channel.on("message")
             async def on_message(message: Union[str, bytes]) -> None:
                 if isinstance(message, bytes):
@@ -266,18 +381,22 @@ class WebRTCClient:
                     logger.error(f"Error handling response: {e}")
                     
             # Create offer
+            logger.info("Creating connection offer")
             offer = await self.pc.createOffer()
             await self.pc.setLocalDescription(offer)
             
             # Send offer and get answer
+            logger.info("Sending offer to server")
             await self.signaling.send(self.pc.localDescription)
+            logger.info("Waiting for server answer")
             answer = await self.signaling.receive()
             
+            logger.info("Setting remote description")
             await self.pc.setRemoteDescription(answer)
-            logger.info("Connected to WebRTC server")
+            logger.info("✅ Connected to WebRTC server")
             
         except Exception as e:
-            logger.error(f"Error connecting to WebRTC server: {e}")
+            logger.error(f"❌ Error connecting to WebRTC server: {e}")
             if self.signaling:
                 await self.signaling.close()
             await self.close()
@@ -314,7 +433,9 @@ class WebRTCClient:
         
     async def close(self) -> None:
         """Close the WebRTC connection."""
+        logger.info("Closing WebRTC connection...")
         if self.pc:
             await self.pc.close()
         if self.signaling:
-            self.signaling.close() 
+            await self.signaling.close()
+        logger.info("Connection closed") 

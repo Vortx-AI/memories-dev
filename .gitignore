@@ -103,3 +103,5 @@ check_geojson.py
 test_chat_completion.py
 test_overture_query.py
 batch_import_parquet.py
+
+deployments/memory-webrtc.service
