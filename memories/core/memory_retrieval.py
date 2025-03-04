@@ -12,6 +12,7 @@ from memories.core.cold import Config
 import json
 import glob
 import time
+from memories.core.red_hot import RedHotMemory
 
 logger = logging.getLogger(__name__)
 
@@ -1185,4 +1186,17 @@ class MemoryRetrieval:
             
         except Exception as e:
             logger.error(f"Error executing spatial query: {e}")
-            raise 
+            raise
+
+    def get_red_hot_stats(self) -> dict:
+        """Get statistics about the data in red-hot storage."""
+        try:
+            red_hot = RedHotMemory()
+            stats = red_hot.get_storage_stats()
+            
+            logger.info(f"Red-hot storage stats: {stats}")
+            return stats
+            
+        except Exception as e:
+            logger.error(f"Error getting red-hot stats: {e}")
+            return {} 

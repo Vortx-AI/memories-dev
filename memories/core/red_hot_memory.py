@@ -343,4 +343,35 @@ class RedHotMemory:
         self.vectors.clear()
         self.last_access.clear()
         self.index = self._create_index()
-        self.current_id = 0 
+        self.current_id = 0
+
+    def get_storage_stats(self) -> dict:
+        """Get statistics about the data stored in red-hot memory."""
+        try:
+            file_count = self.con.execute("""
+                SELECT COUNT(*) FROM file_metadata
+            """).fetchone()[0]
+            
+            column_count = self.con.execute("""
+                SELECT COUNT(*) FROM column_metadata
+            """).fetchone()[0]
+            
+            source_type_stats = self.con.execute("""
+                SELECT 
+                    source_type,
+                    COUNT(*) as file_count,
+                    SUM(row_count) as total_rows,
+                    SUM(size_bytes) as total_size
+                FROM file_metadata
+                GROUP BY source_type
+            """).df()
+            
+            return {
+                'total_files': file_count,
+                'total_columns': column_count,
+                'source_type_stats': source_type_stats.to_dict('records')
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting storage stats: {e}")
+            return {} 
