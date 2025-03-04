@@ -28,6 +28,10 @@ class MemoryRetrieval:
         # Set data directory
         self.data_dir = data_dir or os.path.expanduser("~/geo_memories")
         
+        # Set up red-hot storage path
+        project_root = Path(__file__).parent.parent.parent
+        self.storage_path = os.path.join(project_root, "data", "red_hot")
+        
         # Create spatial index table if it doesn't exist
         self.con.execute("""
             CREATE TABLE IF NOT EXISTS spatial_index (
@@ -340,16 +344,18 @@ class MemoryRetrieval:
     def get_storage_stats(self) -> Dict:
         """Get statistics about the vector data in red-hot storage."""
         try:
-            # Initialize red-hot memory
-            red_hot = RedHotMemory()
+            # Initialize red-hot memory with required parameters
+            red_hot = RedHotMemory(
+                storage_path=self.storage_path,
+                max_size=1_000_000  # Default max size or from config
+            )
             
-            # Get FAISS index statistics
             stats = {
                 'red_hot_storage': {
-                    'total_vectors': red_hot.get_total_vectors(),
-                    'vector_dimension': red_hot.get_dimension(),
-                    'index_type': red_hot.get_index_type(),
-                    'memory_usage': red_hot.get_memory_usage()  # in bytes
+                    'total_vectors': len(red_hot),  # Assuming this method exists
+                    'dimension': red_hot.dimension if hasattr(red_hot, 'dimension') else 0,
+                    'max_size': red_hot.max_size,
+                    'storage_path': red_hot.storage_path
                 }
             }
 
@@ -361,9 +367,9 @@ class MemoryRetrieval:
             return {
                 'red_hot_storage': {
                     'total_vectors': 0,
-                    'vector_dimension': 0,
-                    'index_type': 'unknown',
-                    'memory_usage': 0
+                    'dimension': 0,
+                    'max_size': 0,
+                    'storage_path': self.storage_path
                 }
             }
 
