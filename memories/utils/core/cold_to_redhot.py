@@ -38,171 +38,65 @@ class ColdToRedHot:
         logger.info(f"Data directory: {self.data_dir}")
         logger.info(f"FAISS storage location: {self.faiss_dir}")
 
-    def get_file_schema(self, file_path: str) -> List[Tuple[str, str]]:
+    def get_schema_info(self, file_path: str):
         """Get schema information from a parquet file."""
         try:
-            parquet_file = pq.ParquetFile(file_path)
-            schema = parquet_file.schema_arrow  # Use arrow schema instead
-            return [(field.name, field.type) for field in schema]
-        except Exception as e:
-            logger.error(f"Error reading schema from {file_path}: {e}")
-            return []
-
-    def get_column_statistics(self, file_path: str) -> Dict:
-        """Get basic statistics for columns in a parquet file."""
-        try:
-            parquet_file = pq.ParquetFile(file_path)
-            stats = {}
+            # Read parquet file schema using pandas directly
+            df = pd.read_parquet(file_path)
             
-            # Get statistics from parquet metadata
-            metadata = parquet_file.metadata
-            for i in range(metadata.num_row_groups):
-                row_group = metadata.row_group(i)
-                for j in range(row_group.num_columns):
-                    column = row_group.column(j)
-                    col_name = column.path_in_schema
-                    if col_name not in stats:
-                        stats[col_name] = {}
-                    
-                    column_stats = column.statistics
-                    if column_stats:
-                        stats[col_name].update({
-                            'null_count': column_stats.null_count,
-                            'distinct_count': column_stats.distinct_count,
-                            'min_value': str(column_stats.min) if column_stats.min is not None else None,
-                            'max_value': str(column_stats.max) if column_stats.max is not None else None
-                        })
-            
-            return stats
-        except Exception as e:
-            logger.error(f"Error getting column statistics from {file_path}: {e}")
-            return {}
-
-    def transfer_schema_to_redhot(self, file_path: str):
-        """Transfer schema information from a cold storage file to red-hot memory."""
-        try:
-            # Get schema
-            schema = self.get_file_schema(file_path)
-            if not schema:
-                return
-            
-            # Get metadata from cold_metadata
-            cold_metadata = self.get_file_metadata_from_cold(file_path)
-            
-            # Convert timestamp to string to avoid conversion issues
-            if cold_metadata.get('created_at'):
-                cold_metadata['created_at'] = str(cold_metadata['created_at'])
-            
-            # Get additional information
-            parquet_file = pq.ParquetFile(file_path)
-            additional_info = {
-                'row_count': cold_metadata.get('row_count', parquet_file.metadata.num_rows),
-                'column_stats': self.get_column_statistics(file_path),
-                'source_type': cold_metadata.get('source_type'),
-                'created_at': cold_metadata.get('created_at')
+            # Get schema information
+            schema_info = {
+                'file_path': file_path,
+                'columns': list(df.columns),
+                'dtypes': {col: str(dtype) for col, dtype in df.dtypes.items()},
+                'type': 'schema'
             }
             
             # Create text representation for embedding
-            column_text = " ".join([f"{col}: {dtype}" for col, dtype in schema])
+            column_text = " ".join(schema_info['columns'])
+            
+            return schema_info, column_text
+            
+        except Exception as e:
+            logger.error(f"Error reading schema from {file_path}: {e}")
+            raise
+
+    def transfer_schema_to_redhot(self, file_path: str):
+        """Transfer schema information from a parquet file to red-hot memory."""
+        try:
+            # Get schema information and text for embedding
+            schema_info, column_text = self.get_schema_info(file_path)
             
             # Create embedding from column names
             embedding = self.model.encode([column_text])[0]
             
             # Add to red-hot memory
-            self.red_hot.add_vector(embedding, metadata=additional_info)
-            logger.info(f"Transferred schema for {file_path} to red-hot memory")
+            self.red_hot.add_vector(embedding, metadata=schema_info)
+            
+            logger.debug(f"Transferred schema for {file_path}")
             
         except Exception as e:
             logger.error(f"Error transferring schema for {file_path}: {e}")
-
-    def get_file_metadata_from_cold(self, file_path: str) -> Dict:
-        """Get file metadata from cold_metadata table."""
-        try:
-            query = """
-                SELECT 
-                    file_path,
-                    created_at,
-                    source_type
-                FROM cold_metadata 
-                WHERE file_path = ?
-                LIMIT 1
-            """
-            result = self.con.execute(query, [file_path]).fetchone()
-            if result:
-                return {
-                    'file_path': result[0],
-                    'created_at': result[1],
-                    'source_type': result[2]
-                }
-            return {}
-        except Exception as e:
-            logger.error(f"Error getting metadata for {file_path}: {e}")
-            return {}
-
-    def _initialize_cold_metadata(self):
-        """Initialize cold_metadata table from parquet files."""
-        try:
-            # Create cold_metadata table
-            self.con.execute("""
-                CREATE TABLE IF NOT EXISTS cold_metadata (
-                    file_path VARCHAR,
-                    created_at TIMESTAMP,
-                    source_type VARCHAR
-                )
-            """)
-
-            # Find all parquet files
-            parquet_files = []
-            for pattern in ["**/*.parquet", "**/*.zstd.parquet"]:
-                parquet_files.extend(
-                    glob.glob(os.path.join(self.data_dir, pattern), recursive=True)
-                )
-
-            # Insert file information
-            for file_path in parquet_files:
-                file_stat = os.stat(file_path)
-                source_type = 'unknown'
-                if 'base' in file_path:
-                    source_type = 'base'
-                elif 'divisions' in file_path:
-                    source_type = 'divisions'
-                elif 'transportation' in file_path:
-                    source_type = 'transportation'
-
-                self.con.execute("""
-                    INSERT INTO cold_metadata (file_path, created_at, source_type)
-                    VALUES (?, ?, ?)
-                """, [
-                    file_path,
-                    pd.Timestamp.fromtimestamp(file_stat.st_mtime),
-                    source_type
-                ])
-
-            logger.info(f"Initialized cold_metadata with {len(parquet_files)} files")
-
-        except Exception as e:
-            logger.error(f"Error initializing cold_metadata: {e}")
             raise
 
-    def get_parquet_files(self) -> List[str]:
-        """Get all parquet files from cold_metadata."""
-        try:
-            query = """
-                SELECT DISTINCT file_path 
-                FROM cold_metadata 
-                ORDER BY file_path
-            """
-            result = self.con.execute(query).fetchall()
-            return [row[0] for row in result]
-        except Exception as e:
-            logger.error(f"Error querying cold_metadata: {e}")
-            return []
-
     def transfer_all_schemas(self):
-        """Transfer schema information for all files in cold_metadata to red-hot memory."""
-        files = self.get_parquet_files()
-        total_files = len(files)
-        logger.info(f"Found {total_files} files in cold_metadata")
+        """Transfer schema information for all files in cold storage to red-hot memory."""
+        # Find all parquet files
+        patterns = [
+            "base/**/*.parquet",
+            "divisions/**/*.parquet",
+            "transportation/**/*.parquet"
+        ]
+        
+        all_files = []
+        for pattern in patterns:
+            full_pattern = os.path.join(self.data_dir, pattern)
+            found_files = glob.glob(full_pattern, recursive=True)
+            logger.info(f"Found {len(found_files)} files matching {pattern}")
+            all_files.extend(found_files)
+        
+        total_files = len(all_files)
+        logger.info(f"Found total {total_files} parquet files")
         
         stats = {
             'total_files': total_files,
@@ -217,7 +111,7 @@ class ColdToRedHot:
             }
         }
         
-        for file_path in files:
+        for file_path in all_files:
             try:
                 self.transfer_schema_to_redhot(file_path)
                 stats['processed_files'] += 1
@@ -254,7 +148,7 @@ class ColdToRedHot:
 
     def _log_progress(self, stats):
         """Log progress of the transfer process."""
-        progress = (stats['processed_files'] / stats['total_files']) * 100
+        progress = (stats['processed_files'] / stats['total_files']) * 100 if stats['total_files'] > 0 else 0
         logger.info(f"Progress: {progress:.2f}% ({stats['processed_files']}/{stats['total_files']} files)")
         logger.info(f"Successful: {stats['successful_transfers']}, Failed: {stats['failed_transfers']}")
 
@@ -266,7 +160,8 @@ class ColdToRedHot:
         logger.info(f"Failed transfers: {stats['failed_transfers']}")
         logger.info("\nBy source type:")
         for source_type, count in stats['by_source_type'].items():
-            logger.info(f"  {source_type}: {count} files")
+            if count > 0:  # Only show non-zero counts
+                logger.info(f"  {source_type}: {count} files")
 
 def main():
     """Main function to run the transfer process."""
@@ -274,6 +169,12 @@ def main():
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
+    
+    # Add project root to Python path
+    project_root = str(Path(__file__).parent.parent.parent.parent)
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+        print(f"Added {project_root} to Python path")
     
     transfer = ColdToRedHot()
     stats = transfer.transfer_all_schemas()
@@ -289,4 +190,5 @@ def main():
             print(f"  {source_type}: {count} files")
 
 if __name__ == "__main__":
+    import sys
     main() 
