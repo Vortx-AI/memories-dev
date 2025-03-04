@@ -4,7 +4,7 @@ import pandas as pd
 import duckdb
 import os
 from typing import Dict, List, Tuple, Optional
-from memories.core.red_hot_memory import RedHotMemory
+from memories.core.red_hot import RedHotMemory
 import pyarrow.parquet as pq
 import glob
 from sentence_transformers import SentenceTransformer
@@ -18,23 +18,15 @@ class ColdToRedHot:
         # Set up data directory
         self.data_dir = os.path.expanduser("~/geo_memories")
         
-        # Set up red-hot storage path
-        project_root = Path(__file__).parent.parent.parent.parent
-        self.storage_path = os.path.join(project_root, "data", "red_hot")
-        
         # Initialize components
-        self.red_hot = RedHotMemory(
-            storage_path=self.storage_path,
-            max_size=1_000_000
-        )
+        self.red_hot = RedHotMemory()
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
         
         # Initialize cold metadata
         self._initialize_cold_metadata()
         
-        logger.info(f"Initialized ColdToRedHot with:")
-        logger.info(f"  Data directory: {self.data_dir}")
-        logger.info(f"  FAISS storage: {self.storage_path}")
+        logger.info(f"Initialized ColdToRedHot")
+        logger.info(f"Data directory: {self.data_dir}")
 
     def get_file_schema(self, file_path: str) -> List[Tuple[str, str]]:
         """Get schema information from a parquet file."""
@@ -172,10 +164,6 @@ class ColdToRedHot:
 
     def transfer_all_schemas(self):
         """Transfer schema information for all files in cold_metadata to red-hot memory."""
-        # Print FAISS storage location
-        print(f"\nFAISS storage location: {self.red_hot.storage_path}")
-        print(f"Data directory: {self.data_dir}")
-        
         files = self.get_parquet_files()
         total_files = len(files)
         logger.info(f"Found {total_files} files in cold_metadata")
