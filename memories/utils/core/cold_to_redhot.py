@@ -6,6 +6,7 @@ import os
 from typing import Dict, List, Tuple, Optional
 from memories.core.red_hot import RedHotMemory
 from memories.core.cold import ColdMemory
+from memories.core.memory_manager import MemoryManager
 import pyarrow.parquet as pq
 import glob
 from sentence_transformers import SentenceTransformer
@@ -23,8 +24,11 @@ class ColdToRedHot:
         self.data_dir = os.path.join(project_root, "data")
         self.faiss_dir = os.path.join(self.data_dir, "red_hot")
         
-        # Initialize components
-        self.cold = ColdMemory()
+        # Get memory manager instance and its connection
+        self.memory_manager = MemoryManager()
+        
+        # Initialize components using existing connection
+        self.cold = ColdMemory(self.memory_manager.con)
         self.red_hot = RedHotMemory()
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
         
