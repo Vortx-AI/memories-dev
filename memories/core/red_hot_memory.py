@@ -46,8 +46,8 @@ class RedHotMemory:
         """Initialize tables for storing schema information."""
         self.con.execute("""
             CREATE TABLE IF NOT EXISTS file_metadata (
-                file_id INTEGER PRIMARY KEY,
-                file_path VARCHAR,
+                file_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                file_path VARCHAR UNIQUE,
                 file_name VARCHAR,
                 file_type VARCHAR,
                 last_modified TIMESTAMP,
@@ -60,7 +60,7 @@ class RedHotMemory:
         
         self.con.execute("""
             CREATE TABLE IF NOT EXISTS column_metadata (
-                column_id INTEGER PRIMARY KEY,
+                column_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 file_id INTEGER,
                 column_name VARCHAR,
                 data_type VARCHAR,
@@ -92,7 +92,7 @@ class RedHotMemory:
             
             # Insert file metadata
             self.con.execute("""
-                INSERT INTO file_metadata (
+                INSERT OR REPLACE INTO file_metadata (
                     file_path, file_name, file_type, last_modified, 
                     size_bytes, row_count, source_type, created_at
                 )
@@ -113,6 +113,9 @@ class RedHotMemory:
                 SELECT file_id FROM file_metadata 
                 WHERE file_path = ?
             """, [file_path]).fetchone()[0]
+            
+            # Delete existing column metadata for this file
+            self.con.execute("DELETE FROM column_metadata WHERE file_id = ?", [file_id])
             
             # Insert column metadata
             for col_name, col_type in schema:
