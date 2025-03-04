@@ -1301,17 +1301,20 @@ class MemoryRetrieval:
             metadata = red_hot.get_metadata(str(int(idx)))
             column_name = metadata.get('column_name')
             file_path = metadata.get('file_path')
+            geom_col = metadata.get('geometry_column')  # Get geometry column from metadata
             
-            if not column_name or not file_path:
+            if not column_name or not file_path or not geom_col:
                 continue
             
             try:
-                # Construct DuckDB query with spatial filter
+                # Use the stored geometry column name directly
                 query = f"""
                 SELECT DISTINCT {column_name}
                 FROM parquet_scan('{file_path}')
-                WHERE x BETWEEN {min_x} AND {max_x}
-                  AND y BETWEEN {min_y} AND {max_y}
+                WHERE ST_Intersects(
+                    {geom_col},
+                    ST_MakeEnvelope({min_x}, {min_y}, {max_x}, {max_y})
+                )
                 LIMIT 100
                 """
                 
@@ -1323,6 +1326,7 @@ class MemoryRetrieval:
                         'column_name': column_name,
                         'file_path': file_path,
                         'dtype': metadata.get('dtype', 'unknown'),
+                        'geometry_column': geom_col,  # Include in results
                         'values': result_df[column_name].tolist()
                     }
                     

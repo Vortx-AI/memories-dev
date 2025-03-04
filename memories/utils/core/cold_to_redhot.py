@@ -117,18 +117,29 @@ class ColdToRedHot:
             try:
                 # Create embeddings for each column name individually
                 columns = schema.get('columns', [])
+                file_path = schema.get('file_path', '')
+                dtypes = schema.get('dtypes', {})
+                
+                # Determine geometry column
+                geom_col = None
+                for possible_name in ['geom', 'geometry', 'c', 'the_geom']:
+                    if possible_name in columns:
+                        geom_col = possible_name
+                        break
+                
                 for column in columns:
-                    # Create embedding for single column
+                    # Create embedding for single column name
                     embedding = self.model.encode([column])[0]
                     
-                    # Add to red-hot memory with column-specific metadata
+                    # Add to red-hot memory with complete metadata
                     self.red_hot.add_vector(
                         embedding,
                         metadata={
-                            'file_path': schema.get('file_path', ''),
+                            'file_path': file_path,
                             'column_name': column,
-                            'dtype': schema.get('dtypes', {}).get(column, 'unknown'),
+                            'dtype': dtypes.get(column, 'unknown'),
                             'all_columns': columns,  # Include full schema context
+                            'geometry_column': geom_col,  # Add geometry column name
                             'type': 'column'
                         }
                     )
@@ -138,7 +149,6 @@ class ColdToRedHot:
                 
                 # Update source type stats
                 source_type = 'unknown'
-                file_path = schema.get('file_path', '')
                 if 'base' in file_path:
                     source_type = 'base'
                 elif 'divisions' in file_path:
