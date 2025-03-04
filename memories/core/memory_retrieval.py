@@ -1181,6 +1181,7 @@ class MemoryRetrieval:
         for i, (distance, idx) in enumerate(zip(D[0], I[0])):
             similarity = 1 / (1 + float(distance))
             metadata = red_hot.get_metadata(str(int(idx)))
+            logger.info(f"metadata #{metadata}:")
             file_name = os.path.basename(metadata.get('file_path', ''))
             column = metadata.get('column_name', '')
             dtype = metadata.get('dtype', 'unknown')
