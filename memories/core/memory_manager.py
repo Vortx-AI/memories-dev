@@ -17,6 +17,7 @@ from .warm import WarmMemory
 from .cold import ColdMemory
 from .glacier import GlacierMemory
 
+# Initialize logger
 logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG = {
@@ -115,6 +116,9 @@ class MemoryManager:
             enable_*: Flags to enable/disable different memory tiers
             custom_config: Optional dictionary to override specific config values
         """
+        # Initialize logger
+        self.logger = logger
+        
         # Load configuration
         self.config = Config(config_path)
         
