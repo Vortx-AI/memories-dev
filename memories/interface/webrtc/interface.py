@@ -29,8 +29,8 @@ class SignalingServer:
             self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             
-            # Set socket timeout
-            self._sock.settimeout(30)  # 30 second timeout
+            # Set socket timeout to 5 minutes
+            self._sock.settimeout(300)  # 300 second timeout
             
             logger.info(f"Binding to {self.host}:{self.port}...")
             try:
@@ -49,7 +49,7 @@ class SignalingServer:
                 logger.info("Waiting for client connection...")
                 self._client_sock, addr = self._sock.accept()
                 logger.info(f"Client connected from {addr}")
-                self._client_sock.settimeout(30)
+                self._client_sock.settimeout(300)  # Also set client socket timeout to 5 minutes
                 
             except socket.error as e:
                 logger.error(f"❌ Listen/Accept failed: {e}")
@@ -264,7 +264,7 @@ class WebRTCClient:
                     logger.info(f"Attempting to connect to {self.host}:{self.port}...")
                     try:
                         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                        self._sock.settimeout(30)  # 30 second timeout
+                        self._sock.settimeout(300)  # 300 second timeout
                         await asyncio.get_event_loop().sock_connect(self._sock, (self.host, self.port))
                         logger.info("Socket connection established")
                         self._recv_queue = asyncio.Queue()
@@ -324,7 +324,7 @@ class WebRTCClient:
                     try:
                         data = await asyncio.wait_for(
                             asyncio.get_event_loop().sock_recv(self._sock, 65536),
-                            timeout=30
+                            timeout=300
                         )
                         if not data:
                             raise ConnectionError("Connection closed by remote peer")
@@ -341,7 +341,7 @@ class WebRTCClient:
                 async def receive(self):
                     """Receive a description."""
                     try:
-                        data = await asyncio.wait_for(self._recv_queue.get(), timeout=30)
+                        data = await asyncio.wait_for(self._recv_queue.get(), timeout=300)
                         data = json.loads(data.decode())
                         return RTCSessionDescription(type=data["type"], sdp=data["sdp"])
                     except asyncio.TimeoutError:
