@@ -6,6 +6,9 @@ import yaml
 import os
 from pathlib import Path
 import logging
+import duckdb
+import json
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +36,165 @@ class RedHotMemory:
         self.last_access: Dict[int, float] = {}
         self.current_id = 0
         
+        # Initialize DuckDB connection for schema storage
+        self.con = duckdb.connect(database=':memory:')
+        self._initialize_schema_storage()
+        
         logger.info(f"Initialized RedHotMemory with dim={self.vector_dim}, max_size={self.max_size}")
+
+    def _initialize_schema_storage(self):
+        """Initialize tables for storing schema information."""
+        self.con.execute("""
+            CREATE TABLE IF NOT EXISTS file_metadata (
+                file_id INTEGER PRIMARY KEY,
+                file_path VARCHAR,
+                file_name VARCHAR,
+                file_type VARCHAR,
+                last_modified TIMESTAMP,
+                size_bytes BIGINT,
+                row_count BIGINT,
+                source_type VARCHAR,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        self.con.execute("""
+            CREATE TABLE IF NOT EXISTS column_metadata (
+                column_id INTEGER PRIMARY KEY,
+                file_id INTEGER,
+                column_name VARCHAR,
+                data_type VARCHAR,
+                is_nullable BOOLEAN,
+                description TEXT,
+                statistics JSON,
+                FOREIGN KEY (file_id) REFERENCES file_metadata(file_id)
+            )
+        """)
+        
+        # Create indexes for faster querying
+        self.con.execute("CREATE INDEX IF NOT EXISTS idx_file_path ON file_metadata(file_path)")
+        self.con.execute("CREATE INDEX IF NOT EXISTS idx_column_name ON column_metadata(column_name)")
+
+    def add_file_schema(self, file_path: str, schema: List[Tuple[str, Any]], additional_info: Dict = None):
+        """
+        Add file schema information to red-hot memory.
+        
+        Args:
+            file_path: Path to the parquet file
+            schema: List of (name, type) tuples describing the schema
+            additional_info: Additional file metadata (row count, stats, etc.)
+        """
+        try:
+            # Get file metadata
+            file_info = {
+                'file_path': file_path,
+                'file_name': os.path.basename(file_path),
+                'file_type': os.path.splitext(file_path)[1],
+                'last_modified': os.path.getmtime(file_path),
+                'size_bytes': os.path.getsize(file_path),
+                'row_count': additional_info.get('row_count') if additional_info else None,
+                'source_type': additional_info.get('source_type') if additional_info else 'unknown',
+                'created_at': additional_info.get('created_at')
+            }
+            
+            # Insert file metadata
+            self.con.execute("""
+                INSERT INTO file_metadata (
+                    file_path, file_name, file_type, last_modified, 
+                    size_bytes, row_count, source_type, created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, [
+                file_info['file_path'],
+                file_info['file_name'],
+                file_info['file_type'],
+                file_info['last_modified'],
+                file_info['size_bytes'],
+                file_info['row_count'],
+                file_info['source_type'],
+                file_info['created_at']
+            ])
+            
+            # Get the file_id
+            file_id = self.con.execute("""
+                SELECT file_id FROM file_metadata 
+                WHERE file_path = ?
+            """, [file_path]).fetchone()[0]
+            
+            # Insert column metadata
+            for col_name, col_type in schema:
+                stats = {}
+                if additional_info and 'column_stats' in additional_info:
+                    stats = additional_info['column_stats'].get(str(col_name), {})
+                
+                self.con.execute("""
+                    INSERT INTO column_metadata (
+                        file_id, column_name, data_type, is_nullable, 
+                        description, statistics
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, [
+                    file_id,
+                    str(col_name),
+                    str(col_type),
+                    True,  # is_nullable default
+                    None,  # description default
+                    json.dumps(stats)
+                ])
+                
+            logger.info(f"Added schema information for {file_path}")
+            
+        except Exception as e:
+            logger.error(f"Error adding schema information for {file_path}: {e}")
+
+    def get_file_schema(self, file_path: str) -> pd.DataFrame:
+        """Get schema information for a specific file."""
+        return self.con.execute("""
+            SELECT 
+                cm.column_name,
+                cm.data_type,
+                cm.is_nullable,
+                cm.description,
+                cm.statistics
+            FROM column_metadata cm
+            JOIN file_metadata fm ON cm.file_id = fm.file_id
+            WHERE fm.file_path = ?
+            ORDER BY cm.column_id
+        """, [file_path]).df()
+
+    def search_columns(self, pattern: str) -> pd.DataFrame:
+        """Search for columns matching a pattern across all files."""
+        return self.con.execute("""
+            SELECT 
+                fm.file_path,
+                fm.file_name,
+                cm.column_name,
+                cm.data_type,
+                cm.description
+            FROM column_metadata cm
+            JOIN file_metadata fm ON cm.file_id = fm.file_id
+            WHERE cm.column_name LIKE ?
+            ORDER BY fm.file_path, cm.column_name
+        """, [f"%{pattern}%"]).df()
+
+    def get_file_metadata(self, pattern: str = None) -> pd.DataFrame:
+        """Get metadata for all files or files matching a pattern."""
+        query = """
+            SELECT 
+                file_path,
+                file_name,
+                file_type,
+                last_modified,
+                size_bytes,
+                row_count,
+                source_type,
+                created_at
+            FROM file_metadata
+        """
+        if pattern:
+            query += " WHERE file_path LIKE ?"
+            return self.con.execute(query, [f"%{pattern}%"]).df()
+        return self.con.execute(query).df()
 
     def _load_config(self, config_path: Optional[str] = None) -> dict:
         """Load configuration from db_config.yml."""
