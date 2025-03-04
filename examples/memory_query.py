@@ -7,12 +7,14 @@ import logging
 import os
 import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, date
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from enum import Enum
+import numpy as np
+import pandas as pd
 
 from memories.models.load_model import LoadModel
 from memories.utils.text.context_utils import classify_query
@@ -289,6 +291,27 @@ class MemoryQuery:
                 "data": []
             }
 
+    def serialize_result(self, obj):
+        """Helper function to make results JSON serializable."""
+        if isinstance(obj, bytearray):
+            return obj.hex()  # Convert bytearray to hex string
+        elif isinstance(obj, bytes):
+            return obj.hex()
+        elif isinstance(obj, pd.DataFrame):
+            return obj.to_dict('records')
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        elif isinstance(obj, (int, float, str, bool, type(None))):
+            return obj
+        elif isinstance(obj, (list, tuple)):
+            return [self.serialize_result(item) for item in obj]
+        elif isinstance(obj, dict):
+            return {k: self.serialize_result(v) for k, v in obj.items()}
+        else:
+            return str(obj)  # Convert any other type to string
+
     def process_query(self, query: str) -> Dict[str, Any]:
         """
         Process a query by classifying it and generating appropriate response.
@@ -317,64 +340,85 @@ class MemoryQuery:
                 }
             elif query_type == "L1_2":
                 # For L1_2, use chat completion with loaded functions
-                messages = [{"role": "user", "content": query}]
+                system_message = {
+                    "role": "system",
+                    "content": """You are an intelligent assistant that helps with location-based queries.
+                    Based on the query, decide what information you need and which functions to call.
+                    
+                    You have access to these functions:
+                    - get_bounding_box: Convert a text address into a geographic bounding box
+                    - expand_bbox_with_radius: Expand a bounding box by radius or create box around point
+                    - get_bounding_box_from_coords: Convert coordinates into a geographic bounding box
+                    - get_address_from_coords: Get address details from coordinates using reverse geocoding
+                    - get_coords_from_address: Get coordinates from an address using forward geocoding
+                    - search_geospatial_data_in_bbox: Search for geospatial features within a bounding box
+                    - download_theme_type: Download data for a specific theme and type within a bounding box
+                    - execute_code: Execute custom Python code with pandas and numpy
+                    
+                    You can:
+                    1. Use any combination of functions in any order
+                    2. Make multiple calls if needed
+                    3. Decide based on the available data
+                    4. Skip unnecessary steps
+                    
+                    Always explain your reasoning before making function calls."""
+                }
+                
+                messages = [
+                    system_message,
+                    {"role": "user", "content": query}
+                ]
                 results = []
                 
-                # Continue processing until no more function calls are needed
                 while True:
-                    try:
-                        # Use chat_completion from LoadModel with loaded tools
-                        response = self.model.chat_completion(
-                            messages=messages,
-                            tools=self.tools,
-                            tool_choice="auto"
-                        )
-                        
-                        if response.get("error"):
-                            return {
-                                "classification": "L1_2",
-                                "response": f"Error in chat completion: {response['error']}",
-                                "status": "error"
-                            }
-                        
-                        assistant_message = response.get("message", {})
-                        tool_calls = response.get("tool_calls", [])
-                        
-                        # If no tool calls and we have a message, we're done
-                        if not tool_calls and assistant_message.get("content"):
-                            return {
-                                "classification": "L1_2",
-                                "response": assistant_message.get("content"),
-                                "status": "success",
-                                "results": results
-                            }
-                        
-                        # Process each tool call
+                    response = self.model.chat_completion(
+                        messages=messages,
+                        tools=self.tools,
+                        tool_choice="auto"
+                    )
+                    
+                    if response.get("error"):
+                        return {
+                            "classification": query_type,
+                            "response": f"Error in chat completion: {response['error']}",
+                            "status": "error"
+                        }
+                    
+                    assistant_message = response.get("message", {})
+                    tool_calls = response.get("tool_calls", [])
+                    
+                    if not tool_calls and assistant_message.get("content"):
+                        return {
+                            "classification": query_type,
+                            "response": assistant_message.get("content"),
+                            "status": "success",
+                            "results": results
+                        }
+                    
+                    if tool_calls:
                         for tool_call in tool_calls:
                             function_name = tool_call.get("function", {}).get("name")
                             
                             try:
-                                # Parse the arguments
                                 args = json.loads(tool_call["function"]["arguments"])
                                 
-                                # Get the corresponding function from the mapping
                                 if function_name in self.function_mapping:
                                     function_result = self.function_mapping[function_name](**args)
+                                    # Serialize the result before storing
+                                    serialized_result = self.serialize_result(function_result)
                                 else:
                                     return {
-                                        "classification": "L1_2",
+                                        "classification": query_type,
                                         "response": f"Unknown function: {function_name}",
                                         "status": "error"
                                     }
                                 
-                                # Store the result
                                 results.append({
                                     "function_name": function_name,
                                     "args": args,
-                                    "result": function_result
+                                    "result": serialized_result
                                 })
                                 
-                                # Add the function call and result to messages
                                 messages.append({
                                     "role": "assistant",
                                     "content": None,
@@ -386,37 +430,23 @@ class MemoryQuery:
                                 messages.append({
                                     "role": "function",
                                     "name": function_name,
-                                    "content": json.dumps(function_result)
+                                    "content": json.dumps(serialized_result)
                                 })
                                 
                             except Exception as e:
-                                logger.error(f"Error in function call {function_name}: {e}")
+                                logger.error(f"Error processing tool call: {e}")
                                 return {
-                                    "classification": "L1_2",
-                                    "response": f"Error in function {function_name}: {str(e)}",
+                                    "classification": query_type,
+                                    "response": f"Error: {str(e)}",
                                     "status": "error"
                                 }
                         
-                        # If no message content, continue the conversation
-                        if not assistant_message.get("content"):
-                            continue
+                        messages.append({
+                            "role": "system",
+                            "content": "Based on these results, decide if you need more information or can provide a final answer."
+                        })
+                        continue
                         
-                        # If we have both results and a final message, we're done
-                        return {
-                            "classification": "L1_2",
-                            "response": assistant_message.get("content"),
-                            "status": "success",
-                            "results": results
-                        }
-                        
-                    except Exception as e:
-                        logger.error(f"Error in chat completion loop: {e}")
-                        return {
-                            "classification": "L1_2",
-                            "response": f"Error processing query: {str(e)}",
-                            "status": "error"
-                        }
-            
             else:
                 return {
                     "classification": "unknown",
