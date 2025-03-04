@@ -17,7 +17,7 @@ class ColdToRedHot:
         project_root = Path(__file__).parent.parent.parent.parent
         
         # Set data directory
-        self.data_dir = data_dir or os.path.expanduser("~/geo_memories")
+        self.data_dir = data_dir 
         self.red_hot = RedHotMemory(config_path)
         
         # Use in-memory database
@@ -184,6 +184,9 @@ class ColdToRedHot:
 
     def transfer_all_schemas(self):
         """Transfer schema information for all files in cold_metadata to red-hot memory."""
+        # Print FAISS storage location
+        print(f"\nFAISS storage location: {self.red_hot.storage_path}")
+        
         files = self.get_parquet_files()
         total_files = len(files)
         logger.info(f"Found {total_files} files in cold_metadata")
@@ -228,6 +231,11 @@ class ColdToRedHot:
         
         # Log final statistics
         self._log_final_stats(stats)
+        
+        # Print final FAISS index size
+        print(f"\nFinal FAISS index size: {self.red_hot.index.ntotal} vectors")
+        print(f"FAISS index dimension: {self.red_hot.dimension}")
+        
         return stats
 
     def _log_progress(self, stats):
