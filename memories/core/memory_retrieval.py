@@ -1254,6 +1254,7 @@ class MemoryRetrieval:
     ) -> pd.DataFrame:
         """
         Search for data that matches semantically and falls within a bounding box.
+        Returns a DataFrame without geometry columns.
         """
         logger.info(f"\n{'='*80}")
         logger.info("SPATIAL SEMANTIC SEARCH")
@@ -1285,7 +1286,7 @@ class MemoryRetrieval:
         min_lon, min_lat, max_lon, max_lat = bbox
         results = pd.DataFrame()
         
-        for file_path, info in unique_files.items():
+        for i, (file_path, info) in enumerate(unique_files.items(), 1):
             try:
                 # Get schema info directly from parquet file
                 schema_query = f"DESCRIBE SELECT * FROM parquet_scan('{file_path}')"
@@ -1343,6 +1344,8 @@ class MemoryRetrieval:
                 logger.info(f"Found {len(df)} results")
                 
                 if not df.empty:
+                    # Drop geometry column before concatenating
+                    df = df.drop(columns=[info['geometry_column']])
                     results = pd.concat([results, df], ignore_index=True)
                 
             except Exception as e:
@@ -1351,4 +1354,11 @@ class MemoryRetrieval:
                 continue
         
         logger.info(f"\nTotal results found: {len(results)}")
+        
+        # Drop any remaining geometry columns (in case they have different names)
+        geometry_columns = [col for col in results.columns if 
+                           any(geom in col.lower() for geom in ['geom', 'geometry', 'the_geom'])]
+        if geometry_columns:
+            results = results.drop(columns=geometry_columns)
+        
         return results 
