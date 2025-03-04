@@ -90,29 +90,59 @@ class RedHotMemory:
                 'created_at': pd.Timestamp(additional_info.get('created_at')) if additional_info and additional_info.get('created_at') else None
             }
             
-            # Insert file metadata
-            self.con.execute("""
-                INSERT OR REPLACE INTO file_metadata (
-                    file_path, file_name, file_type, last_modified, 
-                    size_bytes, row_count, source_type, created_at
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, [
-                file_info['file_path'],
-                file_info['file_name'],
-                file_info['file_type'],
-                file_info['last_modified'],
-                file_info['size_bytes'],
-                file_info['row_count'],
-                file_info['source_type'],
-                file_info['created_at']
-            ])
-            
-            # Get the file_id
-            file_id = self.con.execute("""
+            # First try to get existing file_id
+            existing = self.con.execute("""
                 SELECT file_id FROM file_metadata 
                 WHERE file_path = ?
-            """, [file_path]).fetchone()[0]
+            """, [file_path]).fetchone()
+
+            if existing:
+                # Update existing record
+                self.con.execute("""
+                    UPDATE file_metadata 
+                    SET 
+                        file_name = ?,
+                        file_type = ?,
+                        last_modified = ?,
+                        size_bytes = ?,
+                        row_count = ?,
+                        source_type = ?,
+                        created_at = ?
+                    WHERE file_path = ?
+                """, [
+                    file_info['file_name'],
+                    file_info['file_type'],
+                    file_info['last_modified'],
+                    file_info['size_bytes'],
+                    file_info['row_count'],
+                    file_info['source_type'],
+                    file_info['created_at'],
+                    file_path
+                ])
+                file_id = existing[0]
+            else:
+                # Insert new record
+                self.con.execute("""
+                    INSERT INTO file_metadata (
+                        file_path, file_name, file_type, last_modified, 
+                        size_bytes, row_count, source_type, created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, [
+                    file_info['file_path'],
+                    file_info['file_name'],
+                    file_info['file_type'],
+                    file_info['last_modified'],
+                    file_info['size_bytes'],
+                    file_info['row_count'],
+                    file_info['source_type'],
+                    file_info['created_at']
+                ])
+                
+                file_id = self.con.execute("""
+                    SELECT file_id FROM file_metadata 
+                    WHERE file_path = ?
+                """, [file_path]).fetchone()[0]
             
             # Delete existing column metadata for this file
             self.con.execute("DELETE FROM column_metadata WHERE file_id = ?", [file_id])
