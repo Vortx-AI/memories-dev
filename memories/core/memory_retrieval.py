@@ -18,8 +18,8 @@ class MemoryRetrieval:
     def __init__(self):
         """Initialize memory retrieval using the existing MemoryManager instance."""
         memory_manager = MemoryManager()
-        self.con = memory_manager.con
-        self.config = memory_manager.config  # Use the same config as MemoryManager
+        self.con = memory_manager.cold_memory.con  # Get connection from cold_memory
+        self.config = memory_manager.config
         self.logger = logging.getLogger(__name__)
 
     def get_storage_path(self) -> str:
