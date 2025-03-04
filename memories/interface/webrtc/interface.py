@@ -29,8 +29,8 @@ class SignalingServer:
             self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             
-            # Set socket timeout to 5 minutes
-            self._sock.settimeout(300)  # 300 second timeout
+            # Server socket should not timeout since it's in a background thread
+            self._sock.settimeout(None)
             
             logger.info(f"Binding to {self.host}:{self.port}...")
             try:
@@ -45,11 +45,39 @@ class SignalingServer:
                 logger.info(f"✅ Signaling server listening on {self.host}:{self.port}")
                 self._running = True
                 
-                # Accept one connection
-                logger.info("Waiting for client connection...")
-                self._client_sock, addr = self._sock.accept()
-                logger.info(f"Client connected from {addr}")
-                self._client_sock.settimeout(300)  # Also set client socket timeout to 5 minutes
+                while self._running:
+                    try:
+                        # Accept one connection
+                        logger.info("Waiting for client connection...")
+                        self._client_sock, addr = self._sock.accept()
+                        logger.info(f"Client connected from {addr}")
+                        
+                        # Only set timeout for client operations
+                        self._client_sock.settimeout(300)  # 5 minute timeout for client operations
+                        
+                        # Handle the client connection
+                        # TODO: Add proper client handling here
+                        # For now, just keep the connection open
+                        while self._running:
+                            try:
+                                data = self._client_sock.recv(1024)
+                                if not data:
+                                    break
+                            except socket.timeout:
+                                continue
+                            except Exception as e:
+                                logger.error(f"Error handling client: {e}")
+                                break
+                                
+                        # Close client socket when done
+                        self._client_sock.close()
+                        self._client_sock = None
+                        
+                    except Exception as e:
+                        logger.error(f"Error accepting client: {e}")
+                        if self._client_sock:
+                            self._client_sock.close()
+                            self._client_sock = None
                 
             except socket.error as e:
                 logger.error(f"❌ Listen/Accept failed: {e}")
