@@ -19,12 +19,13 @@ class MemoryRetrieval:
         """Initialize memory retrieval."""
         # Get the project root (memories-dev directory)
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        self.project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
         
-        # Connect to the metadata database in project root
-        self.db_path = os.path.join(self.project_root, 'memories-dev', 'memories.db')
-        print(f"Looking for DuckDB at: {self.db_path}")
+        # Use the same config path as MemoryManager
+        config_path = os.path.join(project_root, 'memories-dev', 'config', 'db_config.yml')
         
+        # Initialize DuckDB connection
+        self.db_path = os.path.join(project_root, 'memories-dev', 'memories.db')
         if not os.path.exists(self.db_path):
             raise FileNotFoundError(f"Database file not found at: {self.db_path}")
             
@@ -34,6 +35,133 @@ class MemoryRetrieval:
         # Load spatial extension
         self.con.execute("INSTALL spatial;")
         self.con.execute("LOAD spatial;")
+
+    def get_table_schema(self) -> List[str]:
+        """Get the schema of the parquet files."""
+        try:
+            # Get first parquet file
+            file_query = """
+                SELECT path 
+                FROM cold_metadata 
+                WHERE data_type = 'parquet' 
+                LIMIT 1
+            """
+            first_file = self.con.execute(file_query).fetchone()
+            
+            if not first_file:
+                return []
+                
+            # Get schema
+            schema = self.con.execute(f"""
+                SELECT column_name 
+                FROM parquet_schema('{first_file[0]}')
+            """).fetchall()
+            
+            return [col[0] for col in schema]
+            
+        except Exception as e:
+            self.logger.error(f"Error getting schema: {e}")
+            return []
+
+    def query_by_bbox(self, min_lon: float, min_lat: float, max_lon: float, max_lat: float) -> pd.DataFrame:
+        """
+        Query places within a bounding box.
+        
+        Args:
+            min_lon: Minimum longitude (west)
+            min_lat: Minimum latitude (south)
+            max_lon: Maximum longitude (east)
+            max_lat: Maximum latitude (north)
+            
+        Returns:
+            pandas.DataFrame with places in the bounding box
+        """
+        try:
+            # Get all registered parquet files
+            files_query = """
+                SELECT path 
+                FROM cold_metadata 
+                WHERE data_type = 'parquet'
+            """
+            files = self.con.execute(files_query).fetchall()
+            
+            if not files:
+                self.logger.warning("No parquet files registered in the database")
+                return pd.DataFrame()
+
+            # Create a view combining all parquet files
+            file_paths = [f[0] for f in files]
+            files_list = ", ".join(f"'{path}'" for path in file_paths)
+            
+            # First, let's check the schema
+            schema = self.get_table_schema()
+            self.logger.info(f"Available columns: {schema}")
+            
+            # Create view with spatial data
+            create_view = f"""
+                CREATE OR REPLACE VIEW files AS 
+                SELECT * 
+                FROM read_parquet([{files_list}])
+            """
+            self.con.execute(create_view)
+            
+            # Query within bounding box
+            query = f"""
+                SELECT *
+                FROM files
+                WHERE ST_Intersects(
+                    ST_GeomFromWKB(way),  -- Assuming 'way' is the geometry column
+                    ST_MakeEnvelope({min_lon}, {min_lat}, {max_lon}, {max_lat}, 4326)
+                )
+            """
+            
+            result = self.con.execute(query).df()
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error executing spatial query: {e}")
+            raise
+
+    def query_files(self, sql_query: str) -> pd.DataFrame:
+        """
+        Query across all registered parquet files.
+        
+        Args:
+            sql_query: SQL query string. Use 'files.*' to query all columns.
+        
+        Returns:
+            pandas.DataFrame with query results
+        """
+        try:
+            # Get all registered parquet files
+            files_query = """
+                SELECT path 
+                FROM cold_metadata 
+                WHERE data_type = 'parquet'
+            """
+            files = self.con.execute(files_query).fetchall()
+            
+            if not files:
+                self.logger.warning("No parquet files registered in the database")
+                return pd.DataFrame()
+
+            # Create a view combining all parquet files
+            file_paths = [f[0] for f in files]
+            files_list = ", ".join(f"'{path}'" for path in file_paths)
+            
+            create_view = f"""
+                CREATE OR REPLACE VIEW files AS 
+                SELECT * FROM read_parquet([{files_list}])
+            """
+            self.con.execute(create_view)
+            
+            # Execute the actual query
+            result = self.con.execute(sql_query).df()
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error executing query: {e}")
+            raise
 
     def get_storage_stats(self) -> Dict[str, Any]:
         """Get statistics about registered files from metadata."""
@@ -50,10 +178,10 @@ class MemoryRetrieval:
                     'total_files': 0,
                     'total_size_mb': 0,
                     'file_types': {},
-                    'storage_path': os.path.join(self.project_root, 'memories-dev')
+                    'storage_path': os.path.dirname(self.db_path)
                 }
             
-            # Query the metadata table for registered files
+            # Query the metadata table
             query = """
                 SELECT 
                     COUNT(*) as total_files,
@@ -70,7 +198,7 @@ class MemoryRetrieval:
                 'total_files': results['total_files'].sum() if not results.empty else 0,
                 'total_size_mb': round(results['total_size'].sum() / (1024 * 1024), 2) if not results.empty else 0,
                 'file_types': dict(zip(results['data_type'], results['type_count'])) if not results.empty else {},
-                'storage_path': os.path.join(self.project_root, 'memories-dev')
+                'storage_path': os.path.dirname(self.db_path)
             }
             
             return stats
@@ -81,7 +209,7 @@ class MemoryRetrieval:
                 'total_files': 0,
                 'total_size_mb': 0,
                 'file_types': {},
-                'storage_path': os.path.join(self.project_root, 'memories-dev')
+                'storage_path': os.path.dirname(self.db_path)
             }
 
     def list_registered_files(self) -> List[Dict]:
@@ -834,11 +962,14 @@ class MemoryRetrieval:
             file_paths = [f[0] for f in files]
             files_list = ", ".join(f"'{path}'" for path in file_paths)
             
+            # First, let's check the schema
+            schema = self.get_table_schema()
+            self.logger.info(f"Available columns: {schema}")
+            
             # Create view with spatial data
             create_view = f"""
                 CREATE OR REPLACE VIEW files AS 
-                SELECT *, 
-                    ST_GeomFromWKB(geometry) as geom
+                SELECT * 
                 FROM read_parquet([{files_list}])
             """
             self.con.execute(create_view)
@@ -848,7 +979,7 @@ class MemoryRetrieval:
                 SELECT *
                 FROM files
                 WHERE ST_Intersects(
-                    geom,
+                    ST_GeomFromWKB(way),  -- Assuming 'way' is the geometry column
                     ST_MakeEnvelope({min_lon}, {min_lat}, {max_lon}, {max_lat}, 4326)
                 )
             """
