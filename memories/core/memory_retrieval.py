@@ -5,10 +5,8 @@ Memory retrieval functionality for querying cold memory storage.
 import logging
 from typing import Dict, Any, Optional, List, Union
 import pandas as pd
-from pathlib import Path
-from memories.core.cold import Config
-from memories.core.memory_manager import MemoryManager
 import os
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -16,20 +14,24 @@ class MemoryRetrieval:
     """Memory retrieval class for querying cold memory storage."""
     
     def __init__(self):
-        """Initialize memory retrieval using configuration."""
-        self.config = Config()
+        """Initialize memory retrieval."""
+        # Get the project root (where memories-dev is located)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        self.project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+        
+        # Default storage path is 'data' in the project root
+        self.storage_path = os.path.join(self.project_root, 'data')
         self.logger = logging.getLogger(__name__)
 
     def get_storage_stats(self) -> Dict[str, Any]:
         """Get statistics about the storage."""
         try:
-            storage_path = self.config.config['storage']['path']
             total_size = 0
             file_count = 0
             file_types = {}
             
             # Walk through the storage directory
-            for root, _, files in os.walk(storage_path):
+            for root, _, files in os.walk(self.storage_path):
                 for file in files:
                     if file.endswith('.parquet'):
                         file_path = Path(root) / file
@@ -42,7 +44,7 @@ class MemoryRetrieval:
                 'total_files': file_count,
                 'total_size_mb': round(total_size / (1024 * 1024), 2),
                 'file_types': file_types,
-                'storage_path': storage_path
+                'storage_path': self.storage_path
             }
             
             return stats
@@ -53,7 +55,7 @@ class MemoryRetrieval:
                 'total_files': 0,
                 'total_size_mb': 0,
                 'file_types': {},
-                'storage_path': self.config.config['storage']['path']
+                'storage_path': self.storage_path
             }
 
     def list_available_data(self) -> List[Dict[str, Any]]:
