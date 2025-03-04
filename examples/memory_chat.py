@@ -229,171 +229,137 @@ class MemoryQuery:
 
     def process_query(self, query: str) -> Dict[str, Any]:
         """
-        Process a query by classifying it and generating appropriate response.
+        Process a query by letting the model decide the approach and function sequence.
         
         Args:
             query (str): The user's query
             
         Returns:
-            Dict containing classification and response
+            Dict containing response and results
         """
         try:
-            # First classify the query
-            classification_result = classify_query(query, self.model)
-            query_type = classification_result.get("classification", "N")
-            
-            logger.info(f"Query classified as: {query_type}")
-            
-            if query_type == "L1_2":
-                system_message = {
-                    "role": "system",
-                    "content": """You are a helpful assistant that MUST use the available functions to completely answer location-based queries.
-                    For queries about buildings, roads, or other features, you MUST:
-                    1. Use get_bounding_box to get the area coordinates
-                    2. IMMEDIATELY use search_geospatial_data_in_bbox with those coordinates to find the features
-                    3. Summarize the results
-                    
-                    DO NOT stop after getting the bounding box - you must search for the features!
-                    DO NOT just describe what you will do - actually do it!
-                    
-                    Example flow:
-                    1. get_bounding_box -> gets coordinates
-                    2. search_geospatial_data_in_bbox with "building" as query_word -> finds buildings
-                    3. Summarize what was found."""
-                }
+            system_message = {
+                "role": "system",
+                "content": """You are an intelligent assistant that helps with location-based queries.
+                Based on the query, decide what information you need and which functions to call.
                 
-                messages = [
-                    system_message,
-                    {"role": "user", "content": query}
-                ]
-                results = []
+                You have access to these functions:
+                - get_bounding_box: Get coordinates for a location name
+                - get_coords_from_address: Get specific coordinates for an address
+                - search_geospatial_data_in_bbox: Search for features in an area
+                - get_data_by_bbox: Get all data in an area
+                - get_data_by_fuzzy_search: Search data using fuzzy matching
                 
-                while True:
-                    response = self.model.chat_completion(
-                        messages=messages,
-                        tools=self.tools,
-                        tool_choice="auto"
-                    )
-                    
-                    if response.get("error"):
-                        return {
-                            "classification": "L1_2",
-                            "response": f"Error in chat completion: {response['error']}",
-                            "status": "error"
-                        }
-                    
-                    assistant_message = response.get("message", {})
-                    tool_calls = response.get("tool_calls", [])
-                    
-                    # Process tool calls
-                    if tool_calls:
-                        for tool_call in tool_calls:
-                            function_name = tool_call.get("function", {}).get("name")
+                You can:
+                1. Use any combination of functions in any order
+                2. Make multiple calls if needed
+                3. Decide based on the available data
+                4. Skip unnecessary steps
+                
+                Always explain your reasoning before making function calls."""
+            }
+            
+            messages = [
+                system_message,
+                {"role": "user", "content": query}
+            ]
+            results = []
+            
+            while True:
+                response = self.model.chat_completion(
+                    messages=messages,
+                    tools=self.tools,
+                    tool_choice="auto"
+                )
+                
+                if response.get("error"):
+                    return {
+                        "response": f"Error in chat completion: {response['error']}",
+                        "status": "error"
+                    }
+                
+                assistant_message = response.get("message", {})
+                tool_calls = response.get("tool_calls", [])
+                
+                # If no tool calls but has content, we're done
+                if not tool_calls and assistant_message.get("content"):
+                    return {
+                        "response": assistant_message.get("content"),
+                        "status": "success",
+                        "results": results
+                    }
+                
+                # Process tool calls
+                if tool_calls:
+                    for tool_call in tool_calls:
+                        function_name = tool_call.get("function", {}).get("name")
+                        
+                        try:
+                            # Parse arguments
+                            args = json.loads(tool_call["function"]["arguments"])
                             
-                            try:
-                                # Parse the arguments
-                                args = json.loads(tool_call["function"]["arguments"])
-                                
-                                # Get the corresponding function from the mapping
-                                if function_name in self.function_mapping:
-                                    function_result = self.function_mapping[function_name](**args)
-                                else:
-                                    return {
-                                        "classification": "L1_2",
-                                        "response": f"Unknown function: {function_name}",
-                                        "status": "error"
-                                    }
-                                
-                                # Check if request was successful
-                                if isinstance(function_result, dict) and function_result.get("status") == "error":
-                                    error_msg = function_result.get("message", f"Unknown error in {function_name}")
-                                    return {
-                                        "classification": "L1_2",
-                                        "response": f"Error in {function_name}: {error_msg}",
-                                        "status": "error"
-                                    }
-                                
-                                # Store the result
-                                results.append({
-                                    "function_name": function_name,
-                                    "args": args,
-                                    "result": function_result
-                                })
-                                
-                                # Add the function result to messages
-                                messages.append({
-                                    "role": "assistant",
-                                    "content": None,
-                                    "function_call": {
-                                        "name": function_name,
-                                        "arguments": json.dumps(args)
-                                    }
-                                })
-                                messages.append({
-                                    "role": "function",
-                                    "name": function_name,
-                                    "content": json.dumps(function_result)
-                                })
-                                
-                            except json.JSONDecodeError as e:
-                                logger.error(f"Error parsing tool arguments: {e}")
+                            # Get and execute function
+                            if function_name in self.function_mapping:
+                                function_result = self.function_mapping[function_name](**args)
+                            else:
                                 return {
-                                    "classification": "L1_2",
-                                    "response": "Error parsing location request",
+                                    "response": f"Unknown function: {function_name}",
                                     "status": "error"
                                 }
-                            except Exception as e:
-                                logger.error(f"Error processing tool call: {e}")
+                            
+                            # Check result
+                            if isinstance(function_result, dict) and function_result.get("status") == "error":
+                                error_msg = function_result.get("message", f"Unknown error in {function_name}")
                                 return {
-                                    "classification": "L1_2",
-                                    "response": f"Error processing location: {str(e)}",
+                                    "response": f"Error in {function_name}: {error_msg}",
                                     "status": "error"
                                 }
-                        
-                        # Force continuation if only get_bounding_box was called
-                        if len(results) == 1 and results[0]["function_name"] == "get_bounding_box":
-                            messages.append({
-                                "role": "system",
-                                "content": "You MUST now use search_geospatial_data_in_bbox to find the features in this area. Do not stop here!"
+                            
+                            # Store result
+                            results.append({
+                                "function_name": function_name,
+                                "args": args,
+                                "result": function_result
                             })
-                            continue
+                            
+                            # Add to conversation
+                            messages.append({
+                                "role": "assistant",
+                                "content": None,
+                                "function_call": {
+                                    "name": function_name,
+                                    "arguments": json.dumps(args)
+                                }
+                            })
+                            messages.append({
+                                "role": "function",
+                                "name": function_name,
+                                "content": json.dumps(function_result)
+                            })
+                            
+                        except json.JSONDecodeError as e:
+                            logger.error(f"Error parsing arguments: {e}")
+                            return {
+                                "response": "Error parsing request",
+                                "status": "error"
+                            }
+                        except Exception as e:
+                            logger.error(f"Error processing tool call: {e}")
+                            return {
+                                "response": f"Error: {str(e)}",
+                                "status": "error"
+                            }
                     
-                    # Only return if we have both get_bounding_box and search_geospatial_data_in_bbox results
-                    if len(results) >= 2:
-                        return {
-                            "classification": "L1_2",
-                            "response": assistant_message.get("content", ""),
-                            "status": "success",
-                            "results": results
-                        }
-                        
-                    # If we only have get_bounding_box, force continuation
-                    if len(results) == 1:
-                        messages.append({
-                            "role": "system",
-                            "content": "Continue with search_geospatial_data_in_bbox to find the features!"
-                        })
-                        continue
-                    
-            elif query_type in ["N", "L0"]:
-                # For N and L0, get direct response from model
-                response = self.model.get_response(query)
-                return {
-                    "classification": query_type,
-                    "response": response,
-                    "status": "success"
-                }
-            else:
-                return {
-                    "classification": "unknown",
-                    "response": "Unsupported query type",
-                    "status": "error"
-                }
+                    # Let model decide next step
+                    messages.append({
+                        "role": "system",
+                        "content": "Based on these results, decide if you need more information or can provide a final answer."
+                    })
+                    continue
                 
         except Exception as e:
             logger.error(f"Error processing query: {e}")
             return {
-                "classification": "error",
                 "response": f"Error processing query: {str(e)}",
                 "status": "error"
             }
