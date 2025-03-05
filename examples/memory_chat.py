@@ -95,10 +95,7 @@ class MemoryQuery:
             
             # Initialize memory retrieval with GPU support flags
             self.memory_retrieval = MemoryRetrieval(
-                self.memory_manager.cold_memory,
-                has_gpu_support=HAS_GPU_SUPPORT,
-                has_cudf=HAS_CUDF,
-                has_cuspatial=HAS_CUSPATIAL
+                self.memory_manager.cold_memory
             )
             
             # Initialize code execution
@@ -416,13 +413,12 @@ class MemoryQuery:
     ) -> Dict[str, Any]:
         """Wrapper for search_geospatial_data_in_bbox to handle initialization and return format."""
         try:
-            # Call search_geospatial_data_in_bbox with GPU support
+            # Call search_geospatial_data_in_bbox
             results = self.memory_retrieval.search_geospatial_data_in_bbox(
                 query_word=query_word,
                 bbox=bbox,
                 similarity_threshold=similarity_threshold,
                 max_workers=max_workers,
-                use_gpu=self.use_gpu,
                 batch_size=batch_size
             )
 
@@ -430,16 +426,14 @@ class MemoryQuery:
             return {
                 "status": "success" if not results.empty else "no_results",
                 "data": results.to_dict('records') if not results.empty else [],
-                "count": len(results) if not results.empty else 0,
-                "gpu_used": self.use_gpu
+                "count": len(results) if not results.empty else 0
             }
         except Exception as e:
             logger.error(f"Error in search_geospatial_data_in_bbox: {e}")
             return {
                 "status": "error",
                 "message": str(e),
-                "data": [],
-                "gpu_used": self.use_gpu
+                "data": []
             }
 
 def main():
