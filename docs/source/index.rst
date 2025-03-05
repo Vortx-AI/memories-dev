@@ -1,4 +1,4 @@
-.. memories-dev documentation master file, version 2.0.4
+.. memories-dev documentation master file, version 2.0.5
 
 ==================================================
 Memory Codex: Earth-Grounded AI Memory Systems
@@ -8,7 +8,7 @@ Memory Codex: Earth-Grounded AI Memory Systems
 
    <div class="hero-banner">
      <div class="hero-content">
-       <h1>memories-dev 2.0.4</h1>
+       <h1>memories-dev 2.0.5</h1>
        <p class="tagline">The Future of Earth-Grounded AI Memory</p>
      </div>
    </div>
@@ -22,7 +22,7 @@ Memory Codex: Earth-Grounded AI Memory Systems
 
    <div class="version-banner">
      <div class="version-info">
-       <span class="version-number">v2.0.4</span>
+       <span class="version-number">v2.0.5</span>
        <span class="version-date">Released: February 28, 2025</span>
      </div>
      <div class="version-badges">
@@ -433,15 +433,15 @@ Indices and tables
      <div class="installation-options">
        <div class="installation-option">
          <h4>Using pip</h4>
-         <pre><code>pip install memories-dev==2.0.4</code></pre>
+         <pre><code>pip install memories-dev==2.0.5</code></pre>
        </div>
        <div class="installation-option">
          <h4>Using conda</h4>
-         <pre><code>conda install -c conda-forge memories-dev=2.0.4</code></pre>
+         <pre><code>conda install -c conda-forge memories-dev=2.0.5</code></pre>
        </div>
        <div class="installation-option">
          <h4>Using Docker</h4>
-         <pre><code>docker pull vortxai/memories-dev:2.0.4</code></pre>
+         <pre><code>docker pull vortxai/memories-dev:2.0.5</code></pre>
        </div>
      </div>
    </div>

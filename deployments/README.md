@@ -2,7 +2,7 @@
 
 This document outlines the deployment architecture for the Memories application, detailing three distinct deployment patterns: Standalone, Consensus, and Swarmed.
 
-## What's New in Version 2.0.4 (Scheduled for March 3, 2025)
+## What's New in Version 2.0.5 (Scheduled for March 3, 2025)
 
 Since our initial release (v1.0.0 on February 14, 2025), we've made significant improvements to our deployment architecture:
 
@@ -169,7 +169,7 @@ deployments/
 
 ## Configuration Examples
 
-### Standalone on GCP (New in 2.0.4)
+### Standalone on GCP (New in 2.0.5)
 
 ```yaml
 deployment:
@@ -189,7 +189,7 @@ hardware:
     size: 100GB
     
 software:
-  container_image: memories/standalone:2.0.4
+  container_image: memories/standalone:2.0.5
   environment:
     MODEL_PROVIDER: deepseek-ai
     MODEL_NAME: deepseek-coder-small
@@ -204,7 +204,7 @@ networking:
     allow_https: true
 ```
 
-### Consensus on AWS (New in 2.0.4)
+### Consensus on AWS (New in 2.0.5)
 
 ```yaml
 deployment:
@@ -248,7 +248,7 @@ load_balancer:
       certificate_arn: arn:aws:acm:us-west-2:123456789012:certificate/abcdef
 ```
 
-### Swarmed on Azure (New in 2.0.4)
+### Swarmed on Azure (New in 2.0.5)
 
 ```yaml
 deployment:
@@ -284,75 +284,7 @@ scaling:
 
 ## Migration Guide from Previous Versions
 
-If you're upgrading from v1.0.0 (February 14, 2025) to v2.0.4 (March 3, 2025), please note the following changes:
+If you're upgrading from v1.0.0 (February 14, 2025) to v2.0.5 (March 3, 2025), please note the following changes:
 
 ### Configuration Updates
-- The `model_provider` field now supports additional values: `deepseek-ai`, `mistral-ai`, and `cohere`
-- The `hardware` section now includes GPU configuration options
-- The `networking` section has been expanded with additional security options
-
-### Hardware Requirements
-- Minimum RAM increased from 8GB to 16GB for optimal performance
-- GPU support now includes NVIDIA T4, A100, and AMD MI100
-- Storage requirements increased from 50GB to 100GB
-
-### API Changes
-- The deployment API now uses v2 endpoints
-- Authentication now requires OAuth 2.0 tokens
-- New endpoints for monitoring and scaling operations
-
-## Deployment Selection Guide
-
-Use this guide to select the appropriate deployment pattern based on your needs:
-
-| Requirement | Standalone | Consensus | Swarmed |
-|-------------|------------|-----------|---------|
-| Simplicity | ✅ | ⚠️ | ❌ |
-| Cost | ✅ | ⚠️ | ❌ |
-| Scalability | ❌ | ⚠️ | ✅ |
-| High Availability | ❌ | ✅ | ✅ |
-| Fault Tolerance | ❌ | ✅ | ✅ |
-| Data Consistency | ⚠️ | ✅ | ⚠️ |
-| Dynamic Workloads | ❌ | ⚠️ | ✅ |
-| Resource Efficiency | ✅ | ⚠️ | ✅ |
-
-## Getting Started
-
-To deploy the Memories application:
-
-1. Choose a deployment pattern based on your requirements
-2. Select a cloud provider (AWS, Azure, or GCP)
-3. Configure the deployment using the provided templates
-4. Run the deployment script:
-
-```bash
-cd deployments/<pattern>/<provider>
-./deploy.sh --config config.yaml
-```
-
-## Coming in Version 2.1.0 (March 2025)
-
-- **Maxar Integration**: Access to Maxar's high-resolution satellite imagery
-- **Sentinel-3 Support**: Integration with Sentinel-3 OLCI and SLSTR instruments
-- **Kubernetes Support**: Native Kubernetes deployment configurations
-- **Multi-region Deployment**: Support for deploying across multiple regions
-- **Hybrid Cloud**: Support for deploying across multiple cloud providers
-
-## Troubleshooting
-
-### Standalone Deployment Issues
-- **Connection Refused**: Check that the server is running and the firewall allows connections
-- **Out of Memory**: Increase the instance size or enable swap
-- **Slow Performance**: Enable GPU support or increase CPU allocation
-
-### Consensus Deployment Issues
-- **Split Brain**: Ensure quorum size is set correctly (n/2 + 1)
-- **Node Failure**: Check network connectivity and instance health
-- **Consensus Timeout**: Adjust timeout settings in the configuration
-
-### Swarmed Deployment Issues
-- **Container Crashes**: Check logs for error messages
-- **Scaling Issues**: Verify autoscaling configuration
-- **Network Connectivity**: Ensure all nodes can communicate with each other
-
-<p align="center">Built with 💜 by the memories-dev team</p>
+- The `model_provider`

@@ -134,7 +134,7 @@ install_requires = get_core_deps() + get_version_specific_deps()
 
 setup(
     name="memories-dev",
-    version="2.0.4",
+    version="2.0.5",
     packages=find_packages(),
     install_requires=install_requires,
     extras_require={

@@ -8,8 +8,8 @@ sys.path.insert(0, os.path.abspath('../..'))
 project = 'Memory Codex'
 copyright = '2025, memories-dev'
 author = 'memories-dev Team'
-version = '2.0.4'
-release = '2.0.4'
+version = '2.0.5'
+release = '2.0.5'
 
 # The master toctree document
 master_doc = 'index'

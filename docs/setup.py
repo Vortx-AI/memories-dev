@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="memories-dev-docs",
-    version="2.0.4",
+    version="2.0.5",
     description="Documentation for memories-dev",
     author="Memories-dev",
     author_email="hello@memories.dev",
