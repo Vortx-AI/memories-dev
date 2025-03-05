@@ -1561,8 +1561,20 @@ class MemoryRetrieval:
         if current_tokens <= max_tokens:
             return df
             
-        # Second Pass: Remove duplicates
-        df = df.drop_duplicates()
+        # Second Pass: Handle numpy arrays and remove duplicates
+        # Create a copy of the DataFrame for deduplication
+        dedup_df = df.copy()
+        
+        # Convert numpy arrays to strings for deduplication
+        for col in dedup_df.columns:
+            if dedup_df[col].apply(lambda x: isinstance(x, np.ndarray)).any():
+                dedup_df[col] = dedup_df[col].apply(lambda x: str(x) if isinstance(x, np.ndarray) else x)
+        
+        # Get unique indices using the modified DataFrame
+        unique_indices = ~dedup_df.duplicated()
+        
+        # Apply the unique indices to the original DataFrame
+        df = df[unique_indices]
         
         current_tokens = self.estimate_tokens(df)
         if current_tokens <= max_tokens:
@@ -1631,7 +1643,7 @@ class MemoryRetrieval:
                 if col in simplified_numeric.index:
                     summary_df.loc[col] = simplified_numeric.loc[col]
         
-        return summary_df 
+        return summary_df
 
     def analyze_geospatial_data(
         self,
