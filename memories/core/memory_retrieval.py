@@ -1263,7 +1263,7 @@ class MemoryRetrieval:
             similarity_threshold: Initial similarity threshold (will decrease if no results found)
         
         Returns:
-            DataFrame containing matching features within the bounding box
+            DataFrame containing matching features within the bounding box (excluding geometry columns)
         """
         logger.info(f"\n{'='*80}")
         logger.info("GEOSPATIAL FEATURE SEARCH")
@@ -1308,7 +1308,8 @@ class MemoryRetrieval:
                         schema_query = f"DESCRIBE SELECT * FROM parquet_scan('{file_path}')"
                         schema_df = self.con.execute(schema_query).fetchdf()
                         
-                        # Look for geometry column
+                        # Look for geometry column and non-geometry columns
+                        non_geom_columns = []
                         for _, row in schema_df.iterrows():
                             col_name = row['column_name']
                             col_type = str(row['column_type']).lower()
@@ -1318,7 +1319,8 @@ class MemoryRetrieval:
                                 col_name.lower() in ['geom', 'geometry', 'the_geom']):
                                 info['geometry_column'] = col_name
                                 info['geometry_type'] = col_type
-                                break
+                            else:
+                                non_geom_columns.append(f'"{col_name}"')
                         
                         # Skip if no geometry column found
                         if not info['geometry_column']:
@@ -1336,9 +1338,15 @@ class MemoryRetrieval:
                         else:
                             geom_expr = f'"{geom_col}"'
                         
-                        # Query all columns from the file
+                        # Add centroid coordinates to output
+                        columns_str = ', '.join(non_geom_columns + [
+                            f'ST_X(ST_Centroid({geom_expr})) as longitude',
+                            f'ST_Y(ST_Centroid({geom_expr})) as latitude'
+                        ])
+                        
+                        # Query all non-geometry columns plus centroid coordinates
                         query = f"""
-                        SELECT *
+                        SELECT {columns_str}
                         FROM parquet_scan('{file_path}')
                         WHERE ST_Intersects(
                             {geom_expr},
@@ -1350,6 +1358,9 @@ class MemoryRetrieval:
                         df = self.con.execute(query).fetchdf()
                         
                         if not df.empty:
+                            # Add source information
+                            df['source_file'] = os.path.basename(file_path)
+                            df['source_type'] = os.path.basename(os.path.dirname(os.path.dirname(file_path)))
                             results = pd.concat([results, df], ignore_index=True)
                         
                     except Exception as e:
