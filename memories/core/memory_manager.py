@@ -199,7 +199,7 @@ class MemoryManager:
         """Initialize warm memory tier."""
         config = self.config['memory']['warm']
         self.warm = WarmMemory(
-            duckdb_config=config['duckdb']
+            duckdb_connection=self.con
         )
         logger.info("Initialized warm memory tier")
 

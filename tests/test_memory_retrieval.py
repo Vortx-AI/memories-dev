@@ -114,26 +114,6 @@ def memory_manager(tmp_path):
     print("Initializing memory manager...")
     manager = MemoryManager()
     
-    # Configure the memory tiers
-    manager.configure_tiers(
-        cold_config={
-            'path': str(tmp_path / 'cold'),
-            'max_size': 1073741824,  # 1GB
-            'duckdb': {
-                'memory_limit': '1GB',
-                'threads': 2
-            }
-        },
-        warm_config={
-            'path': str(tmp_path / 'warm'),
-            'max_size': 104857600,  # 100MB
-            'duckdb': {
-                'memory_limit': '512MB',
-                'threads': 2
-            }
-        }
-    )
-    
     # Initialize cold memory with test connection
     manager.cold = ColdMemory(
         connection=con,
@@ -155,8 +135,6 @@ def memory_manager(tmp_path):
         db_path.unlink()
     if (tmp_path / 'cold').exists():
         shutil.rmtree(tmp_path / 'cold')
-    if (tmp_path / 'warm').exists():
-        shutil.rmtree(tmp_path / 'warm')
 
 @pytest.fixture
 def memory_retrieval(memory_manager):
