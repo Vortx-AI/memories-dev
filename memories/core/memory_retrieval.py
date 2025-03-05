@@ -1289,20 +1289,15 @@ class MemoryRetrieval:
         if similar_columns:
             logger.info(f"Found {len(similar_columns)} similar columns at threshold {similarity_threshold}")
             
-            # Deduplicate file paths and group columns
+            # Process similar columns by file
             unique_files = {}
             for match in similar_columns:
                 file_path = match['full_path']
                 if file_path not in unique_files:
                     unique_files[file_path] = {
-                        'columns': set(),
-                        'geometry_column': None
+                        'geometry_column': None,
+                        'similarity': match['similarity']
                     }
-                # Convert column to string, handling numpy arrays properly
-                column = match['column']
-                if isinstance(column, np.ndarray):
-                    column = column.item() if column.size == 1 else str(column)
-                unique_files[file_path]['columns'].add(str(column))
             
             logger.info(f"\nFound {len(unique_files)} unique files to process")
             
