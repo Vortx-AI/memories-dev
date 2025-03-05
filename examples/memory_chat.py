@@ -4,6 +4,7 @@ Memory query implementation for handling different types of queries.
 
 from typing import Dict, Any, Union, Optional
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import json
 from pathlib import Path
@@ -27,9 +28,47 @@ from memories.core.memory_retrieval import MemoryRetrieval
 from memories.utils.code.code_execution import CodeExecution
 from memories.data_acquisition.sources.osm_api import OSMDataAPI
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Configure logging with both file and console handlers
+def setup_logging():
+    """Set up logging configuration with both file and console output."""
+    # Create logs directory if it doesn't exist
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+    
+    # Create a logger
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    
+    # Create formatters
+    file_formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    console_formatter = logging.Formatter(
+        '%(message)s'  # Simpler format for console
+    )
+    
+    # File handler with rotation
+    file_handler = RotatingFileHandler(
+        log_dir / "memory_chat.log",
+        maxBytes=10*1024*1024,  # 10MB
+        backupCount=5
+    )
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(file_formatter)
+    
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(console_formatter)
+    
+    # Add handlers to logger
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+    
+    return logger
+
+# Set up logging
+logger = setup_logging()
 
 # Load environment variables
 env_path = Path(__file__).parent.parent / '.env'
@@ -80,6 +119,7 @@ class MemoryQuery:
             functions_file (str): Path to the JSON file containing function definitions
             use_gpu (bool): Whether to use GPU acceleration if available
         """
+        logger.info("Initializing MemoryQuery...")
         try:
             self.model = LoadModel(
                 model_provider=model_provider,
@@ -92,10 +132,12 @@ class MemoryQuery:
             # Initialize memory manager
             from memories.core.memory_manager import MemoryManager
             self.memory_manager = MemoryManager()
+            logger.info("Memory manager initialized")
             
             # Initialize memory retrieval
             self.memory_retrieval = MemoryRetrieval()
             self.memory_retrieval.cold = self.memory_manager.cold_memory
+            
             # Set GPU support flags
             self.memory_retrieval.HAS_GPU_SUPPORT = HAS_GPU_SUPPORT
             self.memory_retrieval.HAS_CUDF = HAS_CUDF
@@ -143,7 +185,7 @@ class MemoryQuery:
                 self.tools = []
                 
         except Exception as e:
-            logger.error(f"Failed to initialize LoadModel: {e}")
+            logger.error(f"Failed to initialize MemoryQuery: {e}", exc_info=True)
             raise
 
     def get_data_by_bbox_wrapper(self, min_lon: float, min_lat: float, max_lon: float, max_lat: float, 
@@ -261,6 +303,7 @@ class MemoryQuery:
         Returns:
             Dict containing response and results
         """
+        logger.info(f"Processing query: {query}")
         try:
             system_message = {
                 "role": "system",
@@ -339,7 +382,7 @@ class MemoryQuery:
                 if tool_calls:
                     for tool_call in tool_calls:
                         function_name = tool_call.get("function", {}).get("name")
-                        
+                        logger.info(f"Executing function: {function_name}")
                         try:
                             args = json.loads(tool_call["function"]["arguments"])
                             
@@ -380,6 +423,7 @@ class MemoryQuery:
                                 "content": json.dumps(serialized_result)
                             })
                             
+                            logger.info(f"Successfully executed {function_name}")
                         except json.JSONDecodeError as e:
                             logger.error(f"Error parsing arguments: {e}")
                             return {
@@ -387,7 +431,7 @@ class MemoryQuery:
                                 "status": "error"
                             }
                         except Exception as e:
-                            logger.error(f"Error processing tool call: {e}")
+                            logger.error(f"Error processing tool call: {e}", exc_info=True)
                             return {
                                 "response": f"Error: {str(e)}",
                                 "status": "error"
@@ -400,7 +444,7 @@ class MemoryQuery:
                     continue
                 
         except Exception as e:
-            logger.error(f"Error processing query: {e}")
+            logger.error(f"Error processing query: {e}", exc_info=True)
             return {
                 "response": f"Error processing query: {str(e)}",
                 "status": "error"
@@ -448,14 +492,16 @@ def main():
             logger.error("OPENAI_API_KEY environment variable not set")
             return
 
-        logger.info("Initializing MemoryQuery...")
+        logger.info("=" * 80)
+        logger.info("Starting Memory Chat")
+        logger.info("=" * 80)
+        
         memory_query = MemoryQuery(
             model_provider="openai",
             deployment_type="api",
             model_name="gpt-4",
             api_key=api_key
         )
-        logger.info("MemoryQuery initialized successfully")
         
         # Check if query was provided
         if len(sys.argv) < 2:
@@ -464,49 +510,48 @@ def main():
             
         # Join all arguments after the script name to form the complete query
         query = ' '.join(sys.argv[1:])
-        logger.info("-" * 50)
+        logger.info("-" * 80)
         logger.info(f"Processing query: {query}")
-        logger.info("-" * 50)
+        logger.info("-" * 80)
         
         result = memory_query.process_query(query)
         
-        # Print the result in a formatted way
-        print("\nQuery Result:")
-        print("=" * 80)
-        print(f"Classification: {result.get('classification', 'unknown')}")
-        print(f"Status: {result.get('status', 'unknown')}")
+        # Log and print the results
+        logger.info("\nQuery Result:")
+        logger.info("=" * 80)
+        logger.info(f"Status: {result.get('status', 'unknown')}")
         
-        # If there are function calls, show them first
+        # Log function calls
         if 'results' in result and result['results']:
-            print("\nFunction Call Sequence:")
-            print("-" * 80)
+            logger.info("\nFunction Call Sequence:")
+            logger.info("-" * 80)
             for i, r in enumerate(result['results'], 1):
-                print(f"\n{i}. Function: {r.get('function_name')}")
-                print(f"   Arguments: {json.dumps(r.get('args'), indent=2)}")
+                logger.info(f"\n{i}. Function: {r.get('function_name')}")
+                logger.info(f"   Arguments: {json.dumps(r.get('args'), indent=2)}")
                 
                 # Format the result based on its type
                 result_data = r.get('result', {})
                 if isinstance(result_data, dict):
                     if 'data' in result_data and isinstance(result_data['data'], list):
-                        print(f"   Results: Found {len(result_data['data'])} items")
+                        logger.info(f"   Results: Found {len(result_data['data'])} items")
                         if result_data['data']:
-                            print("   Sample data:")
-                            print(json.dumps(result_data['data'][0], indent=2))
+                            logger.info("   Sample data:")
+                            logger.info(json.dumps(result_data['data'][0], indent=2))
                     else:
-                        print(f"   Result: {json.dumps(result_data, indent=2)}")
+                        logger.info(f"   Result: {json.dumps(result_data, indent=2)}")
                 else:
-                    print(f"   Result: {result_data}")
-                print("   " + "-" * 70)
+                    logger.info(f"   Result: {result_data}")
+                logger.info("   " + "-" * 70)
         
-        # Show the final response
-        print("\nFinal Response:")
-        print("-" * 80)
+        # Log final response
+        logger.info("\nFinal Response:")
+        logger.info("-" * 80)
         if isinstance(result.get('response'), dict):
-            print(json.dumps(result['response'], indent=2))
+            logger.info(json.dumps(result['response'], indent=2))
         else:
-            print(result.get('response', 'No response generated'))
+            logger.info(result.get('response', 'No response generated'))
         
-        print("=" * 80)
+        logger.info("=" * 80)
         
     except Exception as e:
         logger.error(f"Error in main: {str(e)}", exc_info=True)
