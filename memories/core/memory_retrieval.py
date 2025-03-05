@@ -17,6 +17,23 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 from memories.core.memory_manager import MemoryManager
 
+# Initialize GPU support flags
+HAS_CUDF = False
+HAS_CUSPATIAL = False
+cudf = None
+cuspatial = None
+
+# Try importing GPU libraries
+try:
+    import cudf
+    import cuspatial
+    import cupy
+    # Try to get CUDA device to confirm GPU is actually available
+    cupy.cuda.Device(0).compute_capability
+    HAS_CUDF = True
+    HAS_CUSPATIAL = True
+except (ImportError, AttributeError, Exception):
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -63,15 +80,7 @@ class MemoryRetrieval:
         Returns:
             bool: True if both cudf and cuspatial are available and a CUDA device is present
         """
-        try:
-            import cudf
-            import cuspatial
-            import cupy
-            # Try to get CUDA device to confirm GPU is actually available
-            cupy.cuda.Device(0).compute_capability
-            return True
-        except (ImportError, AttributeError, cupy.cuda.runtime.CUDARuntimeError):
-            return False
+        return HAS_CUDF and HAS_CUSPATIAL
 
     def get_table_schema(self) -> List[str]:
         """Get the schema of the parquet files."""
@@ -1416,9 +1425,10 @@ class MemoryRetrieval:
         logger.warning(f"No results found")
         return pd.DataFrame()
 
-    def _process_table_gpu(args: Tuple) -> Union[pd.DataFrame, cudf.DataFrame]:
+    def _process_table_gpu(args: Tuple) -> pd.DataFrame:
         """Helper function to process a single table using GPU if available."""
         table, bbox, cold = args
+        
         try:
             table_name = table["table_name"]
             schema = table["schema"]
@@ -1435,7 +1445,7 @@ class MemoryRetrieval:
                     break
             
             if not geom_col:
-                return pd.DataFrame() if not MemoryRetrieval._has_gpu() else cudf.DataFrame()
+                return pd.DataFrame()
             
             # Build and execute spatial query
             geom_type = schema[geom_col].lower()
@@ -1461,17 +1471,17 @@ class MemoryRetrieval:
             """
             
             # Use GPU acceleration if available
-            if MemoryRetrieval._has_gpu():
+            if HAS_CUDF and HAS_CUSPATIAL:
                 try:
                     df = cudf.from_pandas(cold.query(query))
                     if not df.empty:
                         df['source_table'] = table_name
                         df['source_file'] = table.get("file_path", "")
-                    return df
+                    return df.to_pandas()  # Convert back to pandas for consistency
                 except Exception as e:
                     logger.warning(f"GPU processing failed for {table_name}, falling back to CPU: {e}")
                 
-            # Fall back to CPU processing
+            # CPU processing
             df = cold.query(query)
             if not df.empty:
                 df['source_table'] = table_name
@@ -1480,7 +1490,7 @@ class MemoryRetrieval:
             
         except Exception as e:
             logger.error(f"Error processing table {table.get('table_name', 'unknown')}: {e}")
-            return pd.DataFrame() if not MemoryRetrieval._has_gpu() else cudf.DataFrame()
+            return pd.DataFrame()
 
     def estimate_tokens(self, df: pd.DataFrame) -> int:
         """
