@@ -93,8 +93,15 @@ def process_file_for_search(args):
             import cudf
             import cuspatial
             
-            # Read parquet file into GPU DataFrame with string columns (not dictionary-encoded)
-            gdf = cudf.read_parquet(file_path, strings_to_categorical=False)
+            # Read parquet file into GPU DataFrame
+            gdf = cudf.read_parquet(file_path)
+            
+            # Convert all string columns to plain strings (not dictionary encoded)
+            for col in gdf.columns:
+                if gdf[col].dtype == 'object' or str(gdf[col].dtype).startswith('string'):
+                    gdf[col] = gdf[col].astype('string')
+                elif str(gdf[col].dtype).startswith('category'):
+                    gdf[col] = gdf[col].astype('string')
             
             # Convert WKB geometry to cuspatial geometry
             if 'blob' in geom_type or 'binary' in geom_type:
@@ -129,22 +136,27 @@ def process_file_for_search(args):
             # Filter DataFrame
             result = gdf.iloc[points_in_bbox]
             
-            # Convert back to pandas and ensure string columns are strings (not dictionary-encoded)
+            # Convert back to pandas
             df = result.to_pandas()
             
-            # Convert any dictionary-encoded columns to strings
-            for col in df.select_dtypes(include=['category']).columns:
+            # Ensure all object/string columns are string type
+            for col in df.select_dtypes(include=['object', 'category', 'string']).columns:
                 df[col] = df[col].astype(str)
             
         else:
-            # CPU-based processing in batches
-            # Add CAST to ensure string columns are returned as strings, not dictionary-encoded
+            # CPU-based processing with explicit type casting
             columns = [col for col in schema_df['column_name']]
             cast_columns = []
             for col in columns:
                 col_type = schema_df[schema_df['column_name'] == col]['column_type'].iloc[0].lower()
-                if 'varchar' in col_type or 'string' in col_type or 'text' in col_type:
+                if ('varchar' in col_type or 'string' in col_type or 'text' in col_type or 
+                    'dictionary' in col_type or 'category' in col_type):
                     cast_columns.append(f'CAST("{col}" AS VARCHAR) as "{col}"')
+                elif 'blob' in col_type or 'binary' in col_type:
+                    if col == geometry_column:
+                        cast_columns.append(f'{geom_expr} as "{col}"')
+                    else:
+                        cast_columns.append(f'"{col}"')
                 else:
                     cast_columns.append(f'"{col}"')
             
@@ -160,6 +172,10 @@ def process_file_for_search(args):
             )
             """
             df = con.execute(query).fetchdf()
+            
+            # Additional type conversion for pandas DataFrame
+            for col in df.select_dtypes(include=['object', 'category', 'string']).columns:
+                df[col] = df[col].astype(str)
         
         if not df.empty:
             df['source_file'] = file_path
