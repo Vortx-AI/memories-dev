@@ -13,6 +13,7 @@ import sys
 import pandas as pd
 import numpy as np
 
+
 from memories.models.load_model import LoadModel
 from memories.utils.text.context_utils import classify_query
 from memories.utils.earth.location_utils import (
@@ -143,8 +144,8 @@ class MemoryQuery:
         try:
             # Initialize memory_retrieval if not already done
             if self.memory_retrieval is None:
-                from memories.core.cold import ColdMemory
-                cold_memory = ColdMemory(storage_path=Path('data'))
+                
+                
                 self.memory_retrieval = MemoryRetrieval(cold_memory)
 
             # Call get_data_by_bbox
@@ -190,9 +191,8 @@ class MemoryQuery:
         try:
             # Initialize memory_retrieval if not already done
             if self.memory_retrieval is None:
-                from memories.core.cold import ColdMemory
-                cold_memory = ColdMemory(storage_path=Path('data'))
-                self.memory_retrieval = MemoryRetrieval(cold_memory)
+                
+                self.memory_retrieval = MemoryRetrieval()
 
             # Call get_data_by_bbox_and_value
             results = self.memory_retrieval.get_data_by_bbox_and_value(
@@ -233,9 +233,8 @@ class MemoryQuery:
         try:
             # Initialize memory_retrieval if not already done
             if self.memory_retrieval is None:
-                from memories.core.cold import ColdMemory
-                cold_memory = ColdMemory(storage_path=Path('data'))
-                self.memory_retrieval = MemoryRetrieval(cold_memory)
+                
+                self.memory_retrieval = MemoryRetrieval()
 
             # Call get_data_by_fuzzy_search
             results = self.memory_retrieval.get_data_by_fuzzy_search(
@@ -426,9 +425,8 @@ class MemoryQuery:
         try:
             # Initialize memory_retrieval if not already done
             if self.memory_retrieval is None:
-                from memories.core.cold import ColdMemory
-                cold_memory = ColdMemory(storage_path=Path('data'))
-                self.memory_retrieval = MemoryRetrieval(cold_memory)
+                
+                self.memory_retrieval = MemoryRetrieval()
 
             # Call search_geospatial_data_in_bbox with GPU support
             results = self.memory_retrieval.search_geospatial_data_in_bbox(
