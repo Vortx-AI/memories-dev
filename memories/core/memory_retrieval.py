@@ -20,6 +20,27 @@ import cudf
 
 logger = logging.getLogger(__name__)
 
+# Initialize GPU support flags
+HAS_GPU_SUPPORT = False
+HAS_CUDF = False
+HAS_CUSPATIAL = False
+
+try:
+    import cudf
+    HAS_CUDF = True
+except ImportError:
+    print("cudf not available. GPU acceleration for dataframes will be disabled.")
+
+try:
+    import cuspatial
+    HAS_CUSPATIAL = True
+except ImportError:
+    print("cuspatial not available. GPU acceleration for spatial operations will be disabled.")
+
+if HAS_CUDF and HAS_CUSPATIAL:
+    HAS_GPU_SUPPORT = True
+    print("GPU support enabled with cudf and cuspatial.")
+
 class MemoryRetrieval:
     """Memory retrieval class for querying cold memory storage."""
     
