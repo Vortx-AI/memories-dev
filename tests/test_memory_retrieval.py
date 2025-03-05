@@ -7,10 +7,10 @@ import duckdb
 from dotenv import load_dotenv
 from memories.core.memory_manager import MemoryManager
 from memories.core.memory_retrieval import MemoryRetrieval
+from memories.core.cold import ColdMemory
 import shutil
 import pandas as pd
 import yaml
-from memories.core.cold_memory import ColdMemory
 
 # Load environment variables from .env file
 load_dotenv()

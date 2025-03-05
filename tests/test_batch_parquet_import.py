@@ -6,11 +6,11 @@ from pathlib import Path
 import duckdb
 from dotenv import load_dotenv
 from memories.core.memory_manager import MemoryManager
+from memories.core.cold import ColdMemory
 from memories.utils.text.embeddings import get_encoder
 import shutil
 import tempfile
 import yaml
-from memories.core.cold_memory import ColdMemory
 
 # Load environment variables from .env file
 load_dotenv()
