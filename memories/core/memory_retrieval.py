@@ -1298,8 +1298,11 @@ class MemoryRetrieval:
                         'columns': set(),
                         'geometry_column': None
                     }
-                # Convert column to string before adding to set
-                unique_files[file_path]['columns'].add(str(match['column']))
+                # Convert column to string, handling numpy arrays properly
+                column = match['column']
+                if isinstance(column, np.ndarray):
+                    column = column.item() if column.size == 1 else str(column)
+                unique_files[file_path]['columns'].add(str(column))
             
             logger.info(f"\nFound {len(unique_files)} unique files to process")
             
