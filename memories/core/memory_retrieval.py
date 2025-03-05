@@ -1296,8 +1296,10 @@ class MemoryRetrieval:
                 if file_path not in unique_files:
                     unique_files[file_path] = {
                         'geometry_column': None,
-                        'similarity': match['similarity']
+                        'similarity': match['similarity'],
+                        'columns': set()
                     }
+                unique_files[file_path]['columns'].add(match['column'])
             
             logger.info(f"\nFound {len(unique_files)} unique files to process")
             
