@@ -1403,7 +1403,6 @@ class MemoryRetrieval:
         logger.info("SEMANTIC SEARCH")
         logger.info(f"{'='*80}")
         logger.info(f"Query word: '{query_word}'")
-        logger.info(f"Similarity threshold: {similarity_threshold}")
         
         # Initialize components
         red_hot = RedHotMemory()
@@ -1414,44 +1413,54 @@ class MemoryRetrieval:
         query_embedding = model.encode([query_word])[0]
         logger.info(f"Embedding shape: {query_embedding.shape}")
         
-        # Search in FAISS index - use a larger k initially to filter by threshold
-        logger.info("\nSearching FAISS index...")
-        k = min(100, red_hot.index.ntotal)  # Search more to filter by threshold
-        D, I = red_hot.index.search(query_embedding.reshape(1, -1), k)
+        # Search in FAISS index with decreasing similarity thresholds
+        thresholds = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.3]
         
-        # Display similarity results
-        logger.info("\nSimilarity Results:")
-        logger.info("-" * 40)
-        similar_columns = []
-        
-        for i, (distance, idx) in enumerate(zip(D[0], I[0])):
-            similarity = 1 / (1 + float(distance))
+        for threshold in thresholds:
+            logger.info(f"\nTrying similarity threshold: {threshold}")
             
-            # Only process if above threshold
-            if similarity >= similarity_threshold:
-                metadata = red_hot.get_metadata(str(int(idx)))
-                file_name = os.path.basename(metadata.get('file_path', ''))
-                column = metadata.get('column_name', '')
-                dtype = metadata.get('dtype', 'unknown')
+            # Search with current threshold
+            k = min(100, red_hot.index.ntotal)  # Search more to filter by threshold
+            D, I = red_hot.index.search(query_embedding.reshape(1, -1), k)
+            
+            # Process results for current threshold
+            similar_columns = []
+            
+            for i, (distance, idx) in enumerate(zip(D[0], I[0])):
+                similarity = 1 / (1 + float(distance))
                 
-                result = {
-                    'column': column,
-                    'file': file_name,
-                    'full_path': metadata.get('file_path', ''),
-                    'similarity': similarity,
-                    'dtype': dtype
-                }
-                similar_columns.append(result)
-                
-                logger.info(f"Match #{len(similar_columns)}:")
-                logger.info(f"  Column: {column}")
-                logger.info(f"  File: {file_name}")
-                logger.info(f"  Type: {dtype}")
-                logger.info(f"  Similarity Score: {similarity:.4f}")
-                logger.info("-" * 40)
+                # Only process if above current threshold
+                if similarity >= threshold:
+                    metadata = red_hot.get_metadata(str(int(idx)))
+                    file_name = os.path.basename(metadata.get('file_path', ''))
+                    column = metadata.get('column_name', '')
+                    dtype = metadata.get('dtype', 'unknown')
+                    
+                    result = {
+                        'column': column,
+                        'file': file_name,
+                        'full_path': metadata.get('file_path', ''),
+                        'similarity': similarity,
+                        'dtype': dtype
+                    }
+                    similar_columns.append(result)
+                    
+                    logger.info(f"Match #{len(similar_columns)}:")
+                    logger.info(f"  Column: {column}")
+                    logger.info(f"  File: {file_name}")
+                    logger.info(f"  Type: {dtype}")
+                    logger.info(f"  Similarity Score: {similarity:.4f}")
+                    logger.info("-" * 40)
+            
+            # If we found any matches at this threshold, return them
+            if similar_columns:
+                logger.info(f"\nFound {len(similar_columns)} matches at threshold {threshold}")
+                return similar_columns
+            
+            logger.info(f"No matches found at threshold {threshold}, trying lower threshold...")
         
-        logger.info(f"\nFound {len(similar_columns)} matches above threshold {similarity_threshold}")
-        return similar_columns
+        logger.info("\nNo matches found at any threshold")
+        return []
 
     def format_spatial_results(self, results):
         """Format spatial query results for display."""
@@ -1599,3 +1608,33 @@ class MemoryRetrieval:
                 return final_results
         
         return pd.DataFrame() 
+
+def search_geospatial_data_in_bbox_wrapper(
+    self,
+    query_word: str,
+    bbox: tuple,
+    similarity_threshold: float = 0.7,
+    max_workers: int = 4,
+    batch_size: int = 1000000
+) -> Dict[str, Any]:
+    try:
+        results = self.memory_retrieval.search_geospatial_data_in_bbox(
+            query_word=query_word,
+            bbox=bbox,
+            similarity_threshold=similarity_threshold,
+            max_workers=max_workers,
+            batch_size=batch_size
+        )
+
+        return {
+            "status": "success" if not results.empty else "no_results",
+            "data": results.to_dict('records') if not results.empty else [],
+            "count": len(results) if not results.empty else 0
+        }
+    except Exception as e:
+        logger.error(f"Error in search_geospatial_data_in_bbox: {e}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "data": []
+        } 
