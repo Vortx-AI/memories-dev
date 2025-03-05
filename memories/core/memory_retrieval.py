@@ -17,467 +17,8 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 from memories.core.memory_manager import MemoryManager
 import cudf
-from concurrent.futures import ProcessPoolExecutor, as_completed
-import multiprocessing as mp
 
 logger = logging.getLogger(__name__)
-
-# Initialize GPU support flags
-HAS_GPU_SUPPORT = False
-HAS_CUDF = False
-HAS_CUSPATIAL = False
-
-try:
-    import cudf
-    HAS_CUDF = True
-except ImportError:
-    print("cudf not available. GPU acceleration for dataframes will be disabled.")
-
-try:
-    import cuspatial
-    HAS_CUSPATIAL = True
-except ImportError:
-    print("cuspatial not available. GPU acceleration for spatial operations will be disabled.")
-
-if HAS_CUDF and HAS_CUSPATIAL:
-    HAS_GPU_SUPPORT = True
-    print("GPU support enabled with cudf and cuspatial.")
-
-def process_file_for_search(args):
-    """
-    Process a single file for geospatial search.
-    This function needs to be at module level for multiprocessing.
-    """
-    file_path, info, bbox, use_gpu = args
-    try:
-        # Create a new DuckDB connection in the worker process
-        import duckdb
-        con = duckdb.connect(database=':memory:')
-        
-        # Install and load spatial extension with proper error handling
-        try:
-            con.execute("INSTALL spatial;")
-            con.execute("LOAD spatial;")
-        except Exception as e:
-            logger.error(f"Error loading spatial extension: {e}")
-            use_gpu = False
-        
-        # First check if this file's bounds intersect with the query bbox
-        min_lon, min_lat, max_lon, max_lat = bbox
-        bounds_check = f"""
-            SELECT 1 FROM spatial_index 
-            WHERE file_path = '{file_path}'
-            AND max_lon >= {min_lon} 
-            AND min_lon <= {max_lon}
-            AND max_lat >= {min_lat} 
-            AND min_lat <= {max_lat}
-        """
-        
-        if not con.execute(bounds_check).fetchone():
-            logger.debug(f"File {file_path} does not intersect query bbox, skipping")
-            return pd.DataFrame()
-        
-        # First read the parquet file using pandas to analyze column types
-        import pandas as pd
-        pdf = pd.read_parquet(file_path, engine='pyarrow')
-        
-        # Look for geometry column
-        geometry_column = None
-        for col in pdf.columns:
-            if ('geom' in col.lower() or 
-                col.lower() in ['geom', 'geometry', 'the_geom'] or
-                str(pdf[col].dtype) == 'geometry'):
-                geometry_column = col
-                break
-        
-        if not geometry_column:
-            logger.warning(f"No geometry column found in {file_path}, skipping")
-            return pd.DataFrame()
-        
-        # Build spatial query
-        min_lon, min_lat, max_lon, max_lat = bbox
-        
-        # Process data using GPU if available
-        if use_gpu:
-            import cudf
-            import cuspatial
-            
-            try:
-                # First convert geometry to WKB format directly from pandas
-                # This avoids using ST_AsBinary which might not be available
-                query = f"""
-                SELECT 
-                    *
-                FROM parquet_scan('{file_path}')
-                """
-                temp_df = con.execute(query).fetchdf()
-                
-                # Create dtype dictionary for consistent type handling
-                dtype_dict = {}
-                for col in temp_df.columns:
-                    if col == geometry_column:
-                        continue
-                    elif pd.api.types.is_categorical_dtype(temp_df[col]):
-                        temp_df[col] = temp_df[col].astype(str)
-                        dtype_dict[col] = 'string[pyarrow]'
-                    elif pd.api.types.is_string_dtype(temp_df[col]) or str(temp_df[col].dtype).startswith('object'):
-                        temp_df[col] = temp_df[col].fillna('').astype(str)
-                        dtype_dict[col] = 'string[pyarrow]'
-                
-                # Convert to cuDF DataFrame with explicit dtypes
-                gdf = cudf.DataFrame.from_pandas(temp_df)
-                
-                # Ensure all string-like columns are consistently typed
-                for col in gdf.columns:
-                    if col == geometry_column:
-                        continue
-                    if isinstance(gdf[col].dtype, cudf.core.dtypes.CategoricalDtype):
-                        gdf[col] = gdf[col].astype('string[pyarrow]')
-                    elif str(gdf[col].dtype).startswith('object'):
-                        gdf[col] = gdf[col].astype('string[pyarrow]')
-                
-                # Convert geometry to cuspatial points
-                try:
-                    # Convert geometry column directly to points
-                    points = cuspatial.from_wkb(gdf[geometry_column])
-                    gdf['geometry_x'] = points.x
-                    gdf['geometry_y'] = points.y
-                    
-                    # Create spatial index
-                    spatial_index = cuspatial.quadtree(
-                        gdf['geometry_x'],
-                        gdf['geometry_y'],
-                        min_lon, min_lat, max_lon, max_lat
-                    )
-                    
-                    # Query using spatial index
-                    points_in_bbox = cuspatial.points_in_spatial_window(
-                        spatial_index,
-                        gdf['geometry_x'],
-                        gdf['geometry_y'],
-                        min_lon, min_lat, max_lon, max_lat
-                    )
-                    
-                    # Filter DataFrame
-                    result = gdf.iloc[points_in_bbox]
-                    
-                    # Drop temporary columns
-                    result = result.drop(['geometry_x', 'geometry_y'], axis=1)
-                    
-                    # Convert back to pandas
-                    df = result.to_pandas()
-                    
-                    # Ensure consistent string types in final DataFrame
-                    for col in df.columns:
-                        if col == geometry_column:
-                            continue
-                        if pd.api.types.is_categorical_dtype(df[col]) or pd.api.types.is_object_dtype(df[col]):
-                            df[col] = df[col].astype(str).astype('string[pyarrow]')
-                    
-                except Exception as geom_e:
-                    logger.error(f"Error processing geometry in {file_path}: {geom_e}")
-                    raise
-                
-            except Exception as gpu_e:
-                logger.error(f"GPU processing failed for {file_path}: {gpu_e}")
-                raise
-            
-        else:
-            # CPU-based processing
-            # Build SQL query with explicit type casting
-            columns = []
-            for col in pdf.columns:
-                if col == geometry_column:
-                    columns.append(f'"{col}" as geometry')
-                else:
-                    # Cast all non-geometry columns to strings
-                    columns.append(f'CAST("{col}" AS VARCHAR) as "{col}"')
-            
-            select_clause = ', '.join(columns)
-            
-            query = f"""
-            SELECT {select_clause}
-            FROM parquet_scan('{file_path}')
-            WHERE ST_Intersects(
-                ST_GeomFromWKB("{geometry_column}"),
-                ST_MakeEnvelope({min_lon}, {min_lat}, {max_lon}, {max_lat})
-            )
-            """
-            
-            df = con.execute(query).fetchdf()
-            
-            # Convert all non-geometry columns to PyArrow string type
-            for col in df.columns:
-                if col != geometry_column:
-                    df[col] = df[col].astype(str).astype('string[pyarrow]')
-        
-        if not df.empty:
-            # Add source file information
-            df['source_file'] = pd.Series([str(file_path)], dtype='string[pyarrow]').iloc[0]
-            
-            return df
-        
-        return pd.DataFrame()
-        
-    except Exception as e:
-        logger.error(f"Error processing {file_path}: {e}")
-        return pd.DataFrame()
-    finally:
-        if 'con' in locals():
-            con.close()
-
-class SpatialIndexBuilder:
-    """Class for building and maintaining spatial index for geospatial data."""
-    
-    def __init__(self, data_dir: Optional[str] = None):
-        """Initialize the spatial index builder."""
-        # Initialize memory manager to get the correct connection
-        self.memory_manager = MemoryManager()
-        self.con = self.memory_manager.con
-        
-        # Install and load spatial extension
-        self.con.execute("INSTALL spatial;")
-        self.con.execute("LOAD spatial;")
-        
-        logger.info("Initialized SpatialIndexBuilder with MemoryManager connection")
-
-    def get_parquet_files(self) -> List[str]:
-        """Get all parquet files in the data directory."""
-        parquet_files = []
-        for pattern in ["**/*.parquet", "**/*.zstd.parquet"]:
-            parquet_files.extend(
-                glob.glob(os.path.join(self.memory_manager.cold.storage_path, pattern), 
-                         recursive=True)
-            )
-        return parquet_files
-
-    def get_parquet_schema(self, file_path: str) -> List[Tuple]:
-        """Get schema for a specific parquet file."""
-        try:
-            self.con.execute(f"""
-                CREATE OR REPLACE VIEW temp_view AS 
-                SELECT * FROM read_parquet('{file_path}')
-            """)
-            schema = self.con.execute("DESCRIBE temp_view").fetchall()
-            
-            # Print schema details for debugging
-            logger.debug(f"Schema for {file_path}:")
-            for col in schema:
-                logger.debug(f"Column: {col[0]}, Type: {col[1]}")
-                
-            return schema
-        except Exception as e:
-            logger.error(f"Error getting schema for {file_path}: {e}")
-            return []
-            
-    def find_geometry_column(self, schema: List[Tuple]) -> Tuple[Optional[str], Optional[str]]:
-        """Find the geometry column and its type in the schema."""
-        geometry_names = ['geom', 'geometry', 'the_geom', 'wkb_geometry']
-        for col in schema:
-            col_name = col[0].lower()
-            if col_name in geometry_names:
-                return col[0], col[1]
-        return None, None
-        
-    def get_geometry_expression(self, column: str, col_type: str) -> str:
-        """Get the appropriate geometry expression based on column type."""
-        if 'BLOB' in col_type.upper():
-            return f"ST_GeomFromWKB(CAST({column} AS BLOB))"
-        elif 'GEOMETRY' in col_type.upper():
-            return column
-        else:
-            raise ValueError(f"Unsupported geometry type: {col_type}")
-            
-    def get_geometry_bounds(self, geom_expr: str) -> str:
-        """Get the bounds of a geometry using ST_Envelope."""
-        return f"""
-            SELECT 
-                MIN(ST_XMin(ST_Envelope({geom_expr}))) as min_lon,
-                MIN(ST_YMin(ST_Envelope({geom_expr}))) as min_lat,
-                MAX(ST_XMax(ST_Envelope({geom_expr}))) as max_lon,
-                MAX(ST_YMax(ST_Envelope({geom_expr}))) as max_lat
-        """
-        
-    def create_index_table(self):
-        """Create the spatial index table and necessary indexes."""
-        try:
-            self.con.execute("""
-                CREATE TABLE IF NOT EXISTS spatial_index (
-                    file_path VARCHAR,
-                    min_lon DOUBLE,
-                    min_lat DOUBLE,
-                    max_lon DOUBLE,
-                    max_lat DOUBLE,
-                    geometry_column VARCHAR,
-                    last_modified TIMESTAMP,
-                    PRIMARY KEY (file_path)
-                );
-                
-                -- Create spatial index on bounds
-                CREATE INDEX IF NOT EXISTS idx_spatial_bounds 
-                ON spatial_index(min_lon, min_lat, max_lon, max_lat);
-                
-                -- Create index on file path for faster lookups
-                CREATE INDEX IF NOT EXISTS idx_spatial_path 
-                ON spatial_index(file_path);
-            """)
-            logger.info("Created spatial index table and indexes")
-        except Exception as e:
-            logger.error(f"Error creating index table: {e}")
-            raise
-            
-    def build_index(self, force_rebuild: bool = False):
-        """Build and maintain spatial index for parquet files."""
-        logger.info("Building spatial index...")
-        
-        try:
-            # Create spatial index table if it doesn't exist
-            self.create_index_table()
-            
-            # Get registered parquet files
-            files = self.con.execute("""
-                SELECT path, timestamp as last_modified
-                FROM cold_metadata 
-                WHERE data_type = 'parquet'
-            """).fetchall()
-            
-            if not files:
-                logger.info("No parquet files found in cold_metadata")
-                return
-                
-            # Track statistics
-            total_files = len(files)
-            processed_files = 0
-            indexed_files = 0
-            skipped_files = 0
-            error_files = 0
-            
-            # Process each registered file
-            for file_path, db_last_modified in files:
-                try:
-                    processed_files += 1
-                    logger.info(f"Processing file {processed_files}/{total_files}: {file_path}")
-                    
-                    # Check if file is already indexed and up to date
-                    if not force_rebuild:
-                        indexed = self.con.execute("""
-                            SELECT last_modified 
-                            FROM spatial_index 
-                            WHERE file_path = ?
-                        """, [file_path]).fetchone()
-                        
-                        if indexed and pd.Timestamp(indexed[0]) >= pd.Timestamp(db_last_modified):
-                            logger.debug(f"Index up to date for {file_path}")
-                            skipped_files += 1
-                            continue
-                    
-                    # Get schema and geometry column
-                    schema = self.get_parquet_schema(file_path)
-                    geom_column, geom_type = self.find_geometry_column(schema)
-                    
-                    if not geom_column:
-                        logger.warning(f"No geometry column found in {file_path}")
-                        error_files += 1
-                        continue
-                        
-                    logger.info(f"Indexing {file_path} with geometry column {geom_column}")
-                    
-                    # Get geometry expression
-                    geom_expr = self.get_geometry_expression(geom_column, geom_type)
-                    
-                    # Calculate bounds for this file
-                    bounds_query = f"""
-                        {self.get_geometry_bounds(geom_expr)}
-                        FROM read_parquet('{file_path}')
-                    """
-                    bounds = self.con.execute(bounds_query).fetchone()
-                    
-                    if bounds and None not in bounds:
-                        # Update or insert into spatial index
-                        self.con.execute("""
-                            INSERT OR REPLACE INTO spatial_index 
-                            (file_path, min_lon, min_lat, max_lon, max_lat, geometry_column, last_modified)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """, [file_path, *bounds, geom_column, db_last_modified])
-                        logger.info(f"Indexed {file_path} with bounds: {bounds}")
-                        indexed_files += 1
-                    else:
-                        logger.warning(f"Could not calculate bounds for {file_path}")
-                        error_files += 1
-                        
-                except Exception as e:
-                    logger.error(f"Error indexing {file_path}: {e}")
-                    error_files += 1
-                    continue
-                
-            # Analyze the index for better query planning
-            self.con.execute("ANALYZE spatial_index")
-            
-            # Log final statistics
-            count = self.con.execute("SELECT COUNT(*) FROM spatial_index").fetchone()[0]
-            logger.info(f"\nIndexing completed:")
-            logger.info(f"Total files processed: {total_files}")
-            logger.info(f"Successfully indexed: {indexed_files}")
-            logger.info(f"Skipped (up to date): {skipped_files}")
-            logger.info(f"Errors: {error_files}")
-            logger.info(f"Total entries in spatial index: {count}")
-            
-        except Exception as e:
-            logger.error(f"Error building spatial index: {e}")
-            raise
-            
-    def get_index_stats(self) -> Dict[str, Any]:
-        """Get statistics about the spatial index."""
-        try:
-            stats = {}
-            
-            # Get total number of indexed files
-            count = self.con.execute("SELECT COUNT(*) FROM spatial_index").fetchone()[0]
-            stats['total_entries'] = count
-            
-            # Get bounding box of all indexed data
-            bounds = self.con.execute("""
-                SELECT 
-                    MIN(min_lon) as total_min_lon,
-                    MIN(min_lat) as total_min_lat,
-                    MAX(max_lon) as total_max_lon,
-                    MAX(max_lat) as total_max_lat
-                FROM spatial_index
-            """).fetchone()
-            
-            if bounds:
-                stats['total_bounds'] = {
-                    'min_lon': bounds[0],
-                    'min_lat': bounds[1],
-                    'max_lon': bounds[2],
-                    'max_lat': bounds[3]
-                }
-                
-            # Get count of unique geometry columns
-            geom_cols = self.con.execute("""
-                SELECT geometry_column, COUNT(*) as count
-                FROM spatial_index
-                GROUP BY geometry_column
-            """).fetchall()
-            
-            stats['geometry_columns'] = {
-                col: count for col, count in geom_cols
-            }
-            
-            return stats
-            
-        except Exception as e:
-            logger.error(f"Error getting index stats: {e}")
-            return {}
-            
-    def cleanup(self):
-        """Clean up resources."""
-        try:
-            if self.con:
-                self.con.close()
-                logger.info("Closed database connection")
-        except Exception as e:
-            logger.error(f"Error during cleanup: {e}")
 
 class MemoryRetrieval:
     """Memory retrieval class for querying cold memory storage."""
@@ -644,58 +185,22 @@ class MemoryRetrieval:
         return parquet_files
 
     def build_spatial_index(self):
-        """Build and maintain spatial index for parquet files registered in DuckDB metadata."""
+        """Build spatial index for all parquet files."""
         try:
-            # Create spatial index table if it doesn't exist
-            self.con.execute("""
-                CREATE TABLE IF NOT EXISTS spatial_index (
-                    file_path VARCHAR,
-                    min_lon DOUBLE,
-                    min_lat DOUBLE,
-                    max_lon DOUBLE,
-                    max_lat DOUBLE,
-                    geometry_column VARCHAR,
-                    last_modified TIMESTAMP,
-                    PRIMARY KEY (file_path)
-                );
-                
-                -- Create spatial index on bounds
-                CREATE INDEX IF NOT EXISTS idx_spatial_bounds 
-                ON spatial_index(min_lon, min_lat, max_lon, max_lat);
-                
-                -- Create index on file path for faster lookups
-                CREATE INDEX IF NOT EXISTS idx_spatial_path 
-                ON spatial_index(file_path);
-            """)
-            
-            # Get all registered parquet files from cold_metadata
-            files_query = """
-                SELECT path, timestamp as last_modified 
-                FROM cold_metadata 
-                WHERE data_type = 'parquet'
-            """
-            files = self.con.execute(files_query).fetchall()
+            # Get all parquet files
+            files = self.get_parquet_files()
             
             if not files:
-                logger.warning("No parquet files registered in cold_metadata")
+                logger.warning(f"No parquet files found in {self.data_dir}")
                 return
+                
+            logger.info(f"Found {len(files)} parquet files")
             
-            logger.info(f"Found {len(files)} registered parquet files to index")
+            # Clear existing index
+            self.con.execute("DELETE FROM spatial_index")
             
-            # Process each registered file
-            for file_path, db_last_modified in files:
+            for file_path in files:
                 try:
-                    # Check if file is already indexed and up to date
-                    indexed = self.con.execute("""
-                        SELECT last_modified 
-                        FROM spatial_index 
-                        WHERE file_path = ?
-                    """, [file_path]).fetchone()
-                    
-                    if indexed and pd.Timestamp(indexed[0]) >= pd.Timestamp(db_last_modified):
-                        logger.debug(f"Index up to date for {file_path}")
-                        continue
-                    
                     # Get schema and geometry column
                     schema = self.get_parquet_schema(file_path)
                     geom_column, geom_type = self.find_geometry_column(schema)
@@ -715,21 +220,20 @@ class MemoryRetrieval:
                     """
                     bounds = self.con.execute(bounds_query).fetchone()
                     
+                    # Insert into spatial index
                     if bounds and None not in bounds:
-                        # Update or insert into spatial index
                         self.con.execute("""
-                            INSERT OR REPLACE INTO spatial_index 
-                            (file_path, min_lon, min_lat, max_lon, max_lat, geometry_column, last_modified)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """, [file_path, *bounds, geom_column, db_last_modified])
+                            INSERT INTO spatial_index 
+                            VALUES (?, ?, ?, ?, ?)
+                        """, (file_path, *bounds))
                         logger.info(f"Indexed {file_path} with bounds: {bounds}")
                         
                 except Exception as e:
                     logger.error(f"Error indexing {file_path}: {e}")
                     continue
-                
-            # Analyze the index for better query planning
-            self.con.execute("ANALYZE spatial_index")
+                    
+            # Create index on bounds
+            self.con.execute("CREATE INDEX IF NOT EXISTS idx_spatial ON spatial_index(min_lon, min_lat, max_lon, max_lat)")
             
             # Log index statistics
             count = self.con.execute("SELECT COUNT(*) FROM spatial_index").fetchone()[0]
@@ -1070,6 +574,7 @@ class MemoryRetrieval:
             # Get tables with matching theme
             tables = self.cold.list_tables()
             theme_tables = [t["table_name"] for t in tables if t["theme"] == theme]
+            
             if not theme_tables:
                 logger.warning(f"No tables found with theme: {theme}")
                 return pd.DataFrame()
@@ -1655,6 +1160,7 @@ class MemoryRetrieval:
         logger.info("SEMANTIC SEARCH")
         logger.info(f"{'='*80}")
         logger.info(f"Query word: '{query_word}'")
+        logger.info(f"Similarity threshold: {similarity_threshold}")
         
         # Initialize components
         red_hot = RedHotMemory()
@@ -1665,54 +1171,44 @@ class MemoryRetrieval:
         query_embedding = model.encode([query_word])[0]
         logger.info(f"Embedding shape: {query_embedding.shape}")
         
-        # Search in FAISS index with decreasing similarity thresholds
-        thresholds = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.3]
+        # Search in FAISS index - use a larger k initially to filter by threshold
+        logger.info("\nSearching FAISS index...")
+        k = min(100, red_hot.index.ntotal)  # Search more to filter by threshold
+        D, I = red_hot.index.search(query_embedding.reshape(1, -1), k)
         
-        for threshold in thresholds:
-            logger.info(f"\nTrying similarity threshold: {threshold}")
+        # Display similarity results
+        logger.info("\nSimilarity Results:")
+        logger.info("-" * 40)
+        similar_columns = []
+        
+        for i, (distance, idx) in enumerate(zip(D[0], I[0])):
+            similarity = 1 / (1 + float(distance))
             
-            # Search with current threshold
-            k = min(100, red_hot.index.ntotal)  # Search more to filter by threshold
-            D, I = red_hot.index.search(query_embedding.reshape(1, -1), k)
-            
-            # Process results for current threshold
-            similar_columns = []
-            
-            for i, (distance, idx) in enumerate(zip(D[0], I[0])):
-                similarity = 1 / (1 + float(distance))
+            # Only process if above threshold
+            if similarity >= similarity_threshold:
+                metadata = red_hot.get_metadata(str(int(idx)))
+                file_name = os.path.basename(metadata.get('file_path', ''))
+                column = metadata.get('column_name', '')
+                dtype = metadata.get('dtype', 'unknown')
                 
-                # Only process if above current threshold
-                if similarity >= threshold:
-                    metadata = red_hot.get_metadata(str(int(idx)))
-                    file_name = os.path.basename(metadata.get('file_path', ''))
-                    column = metadata.get('column_name', '')
-                    dtype = metadata.get('dtype', 'unknown')
-                    
-                    result = {
-                        'column': column,
-                        'file': file_name,
-                        'full_path': metadata.get('file_path', ''),
-                        'similarity': similarity,
-                        'dtype': dtype
-                    }
-                    similar_columns.append(result)
-                    
-                    logger.info(f"Match #{len(similar_columns)}:")
-                    logger.info(f"  Column: {column}")
-                    logger.info(f"  File: {file_name}")
-                    logger.info(f"  Type: {dtype}")
-                    logger.info(f"  Similarity Score: {similarity:.4f}")
-                    logger.info("-" * 40)
-            
-            # If we found any matches at this threshold, return them
-            if similar_columns:
-                logger.info(f"\nFound {len(similar_columns)} matches at threshold {threshold}")
-                return similar_columns
-            
-            logger.info(f"No matches found at threshold {threshold}, trying lower threshold...")
+                result = {
+                    'column': column,
+                    'file': file_name,
+                    'full_path': metadata.get('file_path', ''),
+                    'similarity': similarity,
+                    'dtype': dtype
+                }
+                similar_columns.append(result)
+                
+                logger.info(f"Match #{len(similar_columns)}:")
+                logger.info(f"  Column: {column}")
+                logger.info(f"  File: {file_name}")
+                logger.info(f"  Type: {dtype}")
+                logger.info(f"  Similarity Score: {similarity:.4f}")
+                logger.info("-" * 40)
         
-        logger.info("\nNo matches found at any threshold")
-        return []
+        logger.info(f"\nFound {len(similar_columns)} matches above threshold {similarity_threshold}")
+        return similar_columns
 
     def format_spatial_results(self, results):
         """Format spatial query results for display."""
@@ -1755,61 +1251,187 @@ class MemoryRetrieval:
         self,
         query_word: str,
         bbox: tuple,
-        similarity_threshold: float = 0.7,
-        max_workers: int = 4,
-        use_gpu: bool = True,
-        batch_size: int = 1000000
+        similarity_threshold: float = 0.7
     ) -> pd.DataFrame:
-        """Search for geospatial features within a geographic bounding box."""
+        """
+        Search for geospatial features (like roads, buildings, landuse, etc.) within a geographic bounding box.
+        Uses semantic search to find relevant data based on the query word.
+        
+        Args:
+            query_word: Search term (e.g., 'road', 'building', 'park', 'landuse', 'water')
+            bbox: Geographic bounding box as (min_lon, min_lat, max_lon, max_lat)
+            similarity_threshold: Initial similarity threshold (will decrease if no results found)
+        
+        Returns:
+            DataFrame containing matching features within the bounding box
+        """
         logger.info(f"\n{'='*80}")
         logger.info("GEOSPATIAL FEATURE SEARCH")
         logger.info(f"{'='*80}")
+        logger.info(f"Search term: '{query_word}'")
+        logger.info(f"Bounding box: {bbox}")
         
-        min_lon, min_lat, max_lon, max_lat = bbox
+        # Start with highest threshold and gradually decrease until matches are found
+        current_threshold = 1.0
+        min_threshold = 0.3
+        step = 0.1
         
-        # Get all parquet files from cold storage
-        logger.info("Querying parquet files from cold storage...")
-        intersecting_files = self.query_files("""
-            SELECT path as file_path, NULL as geometry_column
-            FROM cold_metadata 
-            WHERE data_type = 'parquet'
-        """).values.tolist()
+        while current_threshold >= min_threshold:
+            logger.info(f"\nTrying similarity threshold: {current_threshold:.1f}")
+            
+            # Get semantically similar columns with current threshold
+            similar_columns = self.get_similar_columns(query_word, current_threshold)
+            
+            if similar_columns:
+                logger.info(f"Found {len(similar_columns)} similar columns at threshold {current_threshold:.1f}")
+                
+                # Deduplicate file paths and group columns
+                unique_files = {}
+                for match in similar_columns:
+                    file_path = match['full_path']
+                    if file_path not in unique_files:
+                        unique_files[file_path] = {
+                            'columns': set(),
+                            'geometry_column': None
+                        }
+                    unique_files[file_path]['columns'].add(match['column'])
+                
+                logger.info(f"\nFound {len(unique_files)} unique files to process")
+                
+                # Process each unique file
+                min_lon, min_lat, max_lon, max_lat = bbox
+                results = pd.DataFrame()
+                
+                for i, (file_path, info) in enumerate(unique_files.items(), 1):
+                    try:
+                        # Get schema info directly from parquet file
+                        schema_query = f"DESCRIBE SELECT * FROM parquet_scan('{file_path}')"
+                        schema_df = self.con.execute(schema_query).fetchdf()
+                        
+                        # Look for geometry column
+                        for _, row in schema_df.iterrows():
+                            col_name = row['column_name']
+                            col_type = str(row['column_type']).lower()
+                            if ('geometry' in col_type or 
+                                'binary' in col_type or 
+                                'blob' in col_type or
+                                col_name.lower() in ['geom', 'geometry', 'the_geom']):
+                                info['geometry_column'] = col_name
+                                info['geometry_type'] = col_type
+                                break
+                        
+                        # Skip if no geometry column found
+                        if not info['geometry_column']:
+                            logger.warning(f"No geometry column found in {file_path}, skipping")
+                            continue
+                        
+                        # Build and execute spatial query
+                        geom_col = info["geometry_column"]
+                        geom_type = info["geometry_type"].lower()
+                        
+                        if 'blob' in geom_type:
+                            geom_expr = f'ST_GeomFromWKB(CAST("{geom_col}" AS BLOB))'
+                        elif 'binary' in geom_type:
+                            geom_expr = f'ST_GeomFromWKB("{geom_col}")'
+                        else:
+                            geom_expr = f'"{geom_col}"'
+                        
+                        # Query all columns from the file
+                        query = f"""
+                        SELECT *
+                        FROM parquet_scan('{file_path}')
+                        WHERE ST_Intersects(
+                            {geom_expr},
+                            ST_GeomFromText('POLYGON(({min_lon} {min_lat}, {min_lon} {max_lat}, 
+                            {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))')
+                        )
+                        """
+                        
+                        df = self.con.execute(query).fetchdf()
+                        
+                        if not df.empty:
+                            results = pd.concat([results, df], ignore_index=True)
+                        
+                    except Exception as e:
+                        logger.error(f"Error processing {file_path}: {e}")
+                        continue
+                
+                if not results.empty:
+                    logger.info(f"Found {len(results)} matching records at threshold {current_threshold:.1f}")
+                    return results
+                
+                logger.info("No matching records found in the bounding box, trying lower threshold")
+            else:
+                logger.info(f"No similar columns found at threshold {current_threshold:.1f}")
+            
+            # Decrease threshold and try again
+            current_threshold -= step
         
-        if not intersecting_files:
-            logger.info("No files found to process")
-            return pd.DataFrame()
-        
-        # Get semantically similar columns
-        similar_columns = self.get_similar_columns(query_word, similarity_threshold)
-        
-        # Rest of the existing processing logic...
+        logger.warning(f"No results found with any threshold down to {min_threshold}")
+        return pd.DataFrame()
 
-def search_geospatial_data_in_bbox_wrapper(
-    self,
-    query_word: str,
-    bbox: tuple,
-    similarity_threshold: float = 0.7,
-    max_workers: int = 4,
-    batch_size: int = 1000000
-) -> Dict[str, Any]:
-    try:
-        results = self.memory_retrieval.search_geospatial_data_in_bbox(
-            query_word=query_word,
-            bbox=bbox,
-            similarity_threshold=similarity_threshold,
-            max_workers=max_workers,
-            batch_size=batch_size
-        )
-
-        return {
-            "status": "success" if not results.empty else "no_results",
-            "data": results.to_dict('records') if not results.empty else [],
-            "count": len(results) if not results.empty else 0
-        }
-    except Exception as e:
-        logger.error(f"Error in search_geospatial_data_in_bbox: {e}")
-        return {
-            "status": "error",
-            "message": str(e),
-            "data": []
-        } 
+    def _process_table_gpu(args: Tuple) -> Union[pd.DataFrame, cudf.DataFrame]:
+        """Helper function to process a single table using GPU if available."""
+        table, bbox, cold = args
+        try:
+            table_name = table["table_name"]
+            schema = table["schema"]
+            min_lon, min_lat, max_lon, max_lat = bbox
+            
+            # Look for geometry column
+            geom_col = None
+            for col_name, col_type in schema.items():
+                if ('geometry' in col_type.lower() or 
+                    'binary' in col_type.lower() or 
+                    'blob' in col_type.lower() or
+                    col_name.lower() in ['geom', 'geometry', 'the_geom']):
+                    geom_col = col_name
+                    break
+            
+            if not geom_col:
+                return pd.DataFrame() if not _has_gpu() else cudf.DataFrame()
+            
+            # Build and execute spatial query
+            geom_type = schema[geom_col].lower()
+            if 'blob' in geom_type:
+                geom_expr = f'ST_GeomFromWKB(CAST("{geom_col}" AS BLOB))'
+            elif 'binary' in geom_type:
+                geom_expr = f'ST_GeomFromWKB("{geom_col}")'
+            else:
+                geom_expr = f'"{geom_col}"'
+            
+            # Select all columns except geometry
+            columns = [col for col in schema.keys() if col != geom_col]
+            columns_str = ', '.join([f'"{col}"' for col in columns])
+            
+            query = f"""
+            SELECT {columns_str}
+            FROM {table_name}
+            WHERE ST_Intersects(
+                {geom_expr},
+                ST_GeomFromText('POLYGON(({min_lon} {min_lat}, {min_lon} {max_lat}, 
+                {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))')
+            )
+            """
+            
+            # Use GPU acceleration if available
+            if _has_gpu():
+                try:
+                    df = cudf.from_pandas(cold.query(query))
+                    if not df.empty:
+                        df['source_table'] = table_name
+                        df['source_file'] = table.get("file_path", "")
+                    return df
+                except Exception as e:
+                    logger.warning(f"GPU processing failed for {table_name}, falling back to CPU: {e}")
+                
+            # Fall back to CPU processing
+            df = cold.query(query)
+            if not df.empty:
+                df['source_table'] = table_name
+                df['source_file'] = table.get("file_path", "")
+            return df
+            
+        except Exception as e:
+            logger.error(f"Error processing table {table.get('table_name', 'unknown')}: {e}")
+            return pd.DataFrame() if not _has_gpu() else cudf.DataFrame() 
