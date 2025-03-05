@@ -133,57 +133,52 @@ def run_import():
         print(f"\nError during import: {str(e)}")
         raise
 
-@pytest.fixture
-def memory_manager(tmp_path, db_config_path):
-    """Initialize memory manager with cold storage enabled."""
-    # Create test directory
-    test_cold_dir = tmp_path / "test_cold"
-    test_cold_dir.mkdir(exist_ok=True)
-    
-    # Create and configure DuckDB database
-    db_path = test_cold_dir / 'cold.db'
-    if db_path.exists():
-        db_path.unlink()
-        
+@pytest.fixture(scope="function")
+def memory_manager(tmp_path):
+    """Create a memory manager instance for testing."""
     print("Creating DuckDB connection for tests...")
-    # Create connection with external access enabled
-    db_conn = duckdb.connect(str(db_path), config={'enable_external_access': True})
-    db_conn.execute("SET memory_limit='8GB'")
-    db_conn.execute("SET threads=4")
     
-    # Initialize memory manager
+    # Create test database in temporary directory
+    db_path = tmp_path / 'test.db'
+    con = duckdb.connect(str(db_path))
+    
     print("Initializing memory manager...")
     manager = MemoryManager()
     
-    # Load config from file
-    with open(db_config_path) as f:
-        config = yaml.safe_load(f)
-    
-    # Update config with test-specific settings
-    config['memory'] = {
-        'base_path': test_cold_dir,
-        'cold': {
-            'max_size': int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),  # 10GB default
-            'path': test_cold_dir,  # Set the cold storage path in config
+    # Configure the memory tiers
+    manager.configure_tiers(
+        cold_config={
+            'path': str(tmp_path / 'cold'),
+            'max_size': 1073741824,  # 1GB
             'duckdb': {
-                'db_conn': db_conn,  # Pass the pre-configured connection
-                'config': {
-                    'enable_external_access': True  # This setting is already applied at connection time
-                }
+                'memory_limit': '1GB',
+                'threads': 2
+            }
+        },
+        warm_config={
+            'path': str(tmp_path / 'warm'),
+            'max_size': 104857600,  # 100MB
+            'duckdb': {
+                'memory_limit': '512MB',
+                'threads': 2
             }
         }
-    }
+    )
     
-    # Set the config
-    manager.config = config
+    # Initialize cold memory with test connection
+    manager.cold = manager.cold_memory
+    manager.warm = manager.warm_memory
     
     yield manager
     
     # Cleanup
-    db_conn.close()
-    manager.cleanup()
-    if test_cold_dir.exists():
-        shutil.rmtree(test_cold_dir)
+    con.close()
+    if db_path.exists():
+        db_path.unlink()
+    if (tmp_path / 'cold').exists():
+        shutil.rmtree(tmp_path / 'cold')
+    if (tmp_path / 'warm').exists():
+        shutil.rmtree(tmp_path / 'warm')
 
 @pytest.mark.skipif(not GEO_MEMORIES_PATH.exists(), 
                     reason="Geo memories directory not found")

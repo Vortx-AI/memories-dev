@@ -40,17 +40,27 @@ logger = logging.getLogger(__name__)
 class MemoryRetrieval:
     """Memory retrieval class for querying cold memory storage."""
     
-    def __init__(self):
-        """Initialize memory retrieval with DuckDB connection."""
+    def __init__(self, memory_manager: Optional[MemoryManager] = None):
+        """Initialize memory retrieval with DuckDB connection.
+        
+        Args:
+            memory_manager: Optional MemoryManager instance to use for retrieval.
+                          If not provided, a new instance will be created.
+        """
         # Get project root directory
         project_root = Path(__file__).parent.parent.parent
         
         # Set up data directories
         self.data_dir = os.path.join(project_root, "data")
         
-        # Get memory manager instance and its connection
-        self.memory_manager = MemoryManager()
+        # Use provided memory manager or create new one
+        self.memory_manager = memory_manager or MemoryManager()
+        
+        # Initialize DuckDB connection from memory manager
         self.con = self.memory_manager.con
+        
+        # Set up GPU support
+        self.has_gpu = self._has_gpu()
         
         # Install and load spatial extension
         try:
@@ -65,9 +75,6 @@ class MemoryRetrieval:
         
         # Initialize sentence transformer model
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
-        
-        # Check GPU availability
-        self.has_gpu = self._has_gpu()
         
         logger.info(f"Initialized MemoryRetrieval")
         logger.info(f"Data directory: {self.data_dir}")
