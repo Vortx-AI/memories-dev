@@ -9,6 +9,7 @@ from memories.core.memory_manager import MemoryManager
 from memories.core.memory_retrieval import MemoryRetrieval
 import shutil
 import pandas as pd
+import yaml
 
 # Load environment variables from .env file
 load_dotenv()
@@ -120,24 +121,29 @@ def memory_retrieval(tmp_path, db_config_path):
     
     # Initialize memory manager
     print("Initializing memory manager...")
-    manager = MemoryManager(config_path=db_config_path)
+    manager = MemoryManager()
     
-    # Configure the manager
-    manager.config = {
-        'memory': {
-            'base_path': test_cold_dir,
-            'cold': {
-                'max_size': int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),  # 10GB default
-                'path': test_cold_dir,  # Set the cold storage path in config
-                'duckdb': {
-                    'db_conn': db_conn,  # Pass the pre-configured connection
-                    'config': {
-                        'enable_external_access': True  # This setting is already applied at connection time
-                    }
+    # Load config from file
+    with open(db_config_path) as f:
+        config = yaml.safe_load(f)
+    
+    # Update config with test-specific settings
+    config['memory'] = {
+        'base_path': test_cold_dir,
+        'cold': {
+            'max_size': int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),  # 10GB default
+            'path': test_cold_dir,  # Set the cold storage path in config
+            'duckdb': {
+                'db_conn': db_conn,  # Pass the pre-configured connection
+                'config': {
+                    'enable_external_access': True  # This setting is already applied at connection time
                 }
             }
         }
     }
+    
+    # Set the config
+    manager.config = config
     
     # Initialize memory retrieval
     retrieval = MemoryRetrieval(manager)
