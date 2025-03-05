@@ -150,18 +150,35 @@ class Config:
 logger = logging.getLogger(__name__)
 
 class ColdMemory:
-    """Cold memory storage for infrequently accessed data using DuckDB."""
+    """Cold memory tier using DuckDB for efficient on-device storage."""
     
-    def __init__(self, con):
-        """Initialize cold memory storage."""
-        self.config = Config()
-        self.con = con  # Use the connection passed from MemoryManager
-        self.logger = logging.getLogger(__name__)
+    def __init__(
+        self,
+        connection: 'duckdb.DuckDBPyConnection',
+        config: Optional[Dict[str, Any]] = None
+    ):
+        """Initialize cold memory tier.
         
-        # Set up storage path in project root
-        project_root = os.getenv("PROJECT_ROOT", os.path.expanduser("~"))
-        self.storage_path = Path(project_root)
+        Args:
+            connection: DuckDB connection
+            config: Optional configuration dictionary
+        """
+        self.con = connection
+        self.config = config or {}
+        
+        # Configure DuckDB connection if needed
+        duckdb_config = self.config.get('duckdb', {})
+        if duckdb_config:
+            if 'memory_limit' in duckdb_config:
+                self.con.execute(f"SET memory_limit='{duckdb_config['memory_limit']}'")
+            if 'threads' in duckdb_config:
+                self.con.execute(f"SET threads={duckdb_config['threads']}")
+        
+        # Initialize storage path
+        self.storage_path = Path(self.config.get('path', 'data/cold'))
         self.storage_path.mkdir(parents=True, exist_ok=True)
+        
+        logger.info(f"Initialized cold memory at {self.storage_path}")
 
     def register_external_file(self, file_path: str) -> None:
         """Register an external file in the cold storage metadata."""

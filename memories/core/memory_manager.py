@@ -104,11 +104,11 @@ class MemoryManager:
             cls._instance._initialized = False
         return cls._instance
     
-    def __init__(self):
+    def __init__(self, config_path: Optional[str] = None):
         if self._initialized:
             return
             
-        self.config = Config()
+        self.config = Config(config_path)
         
         # Get project root from Config
         project_root = os.getenv("PROJECT_ROOT", os.path.expanduser("~"))
@@ -121,8 +121,11 @@ class MemoryManager:
         self.red_hot = None  # Will be initialized on demand
         self.hot = None      # Will be initialized on demand
         self.warm = None     # Will be initialized on demand
-        self.cold = ColdMemory(self.con)
+        self.cold = None     # Will be initialized with proper config
         self.glacier = None  # Will be initialized on demand
+        
+        # Initialize cold memory with default configuration
+        self._init_cold_memory()
         
         self._initialized = True
         logger.info(f"Initialized MemoryManager with database at: {db_path}")
@@ -201,12 +204,25 @@ class MemoryManager:
         logger.info("Initialized warm memory tier")
 
     def _init_cold_memory(self) -> None:
-        """Initialize cold memory tier."""
-        config = self.config['memory']['cold']
-        self.cold = ColdMemory(
-            self.con,
-            duckdb_config=config.get('duckdb', {})
-        )
+        """Initialize cold memory with current configuration."""
+        if 'cold' in self.config['memory']:
+            cold_config = self.config['memory']['cold']
+            duckdb_config = cold_config.get('duckdb', {})
+            
+            # Configure DuckDB connection
+            if 'memory_limit' in duckdb_config:
+                self.con.execute(f"SET memory_limit='{duckdb_config['memory_limit']}'")
+            if 'threads' in duckdb_config:
+                self.con.execute(f"SET threads={duckdb_config['threads']}")
+            
+            # Initialize cold memory with configuration
+            self.cold = ColdMemory(
+                connection=self.con,
+                config=cold_config
+            )
+        else:
+            # Initialize with default configuration
+            self.cold = ColdMemory(connection=self.con)
         logger.info("Initialized cold memory tier")
 
     def _init_glacier_memory(self) -> None:
@@ -405,85 +421,39 @@ class MemoryManager:
         glacier_config: Optional[Dict[str, Any]] = None,
         reinitialize: bool = True
     ) -> None:
-        """Configure memory tiers with custom values and paths.
+        """Configure memory tiers with provided configurations.
         
         Args:
             red_hot_config: Configuration for red hot memory tier
-                Example: {
-                    'path': 'custom/red_hot',
-                    'max_size': 2000000,
-                    'vector_dim': 512,
-                    'gpu_id': 1,
-                    'force_cpu': True,
-                    'index_type': 'Flat'
-                }
             hot_config: Configuration for hot memory tier
-                Example: {
-                    'path': 'custom/hot',
-                    'max_size': 209715200,  # 200MB
-                    'redis_url': 'redis://custom:6379',
-                    'redis_db': 1
-                }
             warm_config: Configuration for warm memory tier
-                Example: {
-                    'path': 'custom/warm',
-                    'max_size': 2147483648,  # 2GB
-                    'duckdb': {
-                        'memory_limit': '16GB',
-                        'threads': 8
-                    }
-                }
             cold_config: Configuration for cold memory tier
-                Example: {
-                    'path': 'custom/cold',
-                    'max_size': 21474836480,  # 20GB
-                    'duckdb': {
-                        'db_file': 'custom.duckdb',
-                        'memory_limit': '8GB',
-                        'threads': 8,
-                        'parquet': {
-                            'compression': 'zstd',
-                            'row_group_size': 200000
-                        }
-                    }
-                }
             glacier_config: Configuration for glacier memory tier
-                Example: {
-                    'path': 'custom/glacier',
-                    'max_size': 214748364800,  # 200GB
-                    'remote_storage': {
-                        'type': 's3',
-                        'bucket': 'custom-bucket',
-                        'prefix': 'custom/data/',
-                        'region': 'us-east-1'
-                    }
-                }
-            reinitialize: Whether to reinitialize the memory tiers with new config
+            reinitialize: Whether to reinitialize the tiers with new config
         """
         # Update configurations
         if red_hot_config:
             self._deep_update(self.config['memory']['red_hot'], red_hot_config)
-            if reinitialize:
-                self._init_red_hot_memory()
-
         if hot_config:
             self._deep_update(self.config['memory']['hot'], hot_config)
-            if reinitialize:
-                self._init_hot_memory()
-
         if warm_config:
             self._deep_update(self.config['memory']['warm'], warm_config)
-            if reinitialize:
-                self._init_warm_memory()
-
         if cold_config:
             self._deep_update(self.config['memory']['cold'], cold_config)
-            if reinitialize:
-                self._init_cold_memory()
-
         if glacier_config:
             self._deep_update(self.config['memory']['glacier'], glacier_config)
-            if reinitialize:
+            
+        # Reinitialize tiers if requested
+        if reinitialize:
+            if red_hot_config:
+                self._init_red_hot_memory()
+            if hot_config:
+                self._init_hot_memory()
+            if warm_config:
+                self._init_warm_memory()
+            if cold_config:
+                self._init_cold_memory()
+            if glacier_config:
                 self._init_glacier_memory()
         
         self.logger.info("Memory tiers configuration updated")

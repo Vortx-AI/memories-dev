@@ -10,6 +10,7 @@ from memories.utils.text.embeddings import get_encoder
 import shutil
 import tempfile
 import yaml
+from memories.core.cold_memory import ColdMemory
 
 # Load environment variables from .env file
 load_dotenv()
@@ -166,8 +167,17 @@ def memory_manager(tmp_path):
     )
     
     # Initialize cold memory with test connection
-    manager.cold = manager.cold_memory
-    manager.warm = manager.warm_memory
+    manager.cold = ColdMemory(
+        connection=con,
+        config={
+            'path': str(tmp_path / 'cold'),
+            'max_size': 1073741824,  # 1GB
+            'duckdb': {
+                'memory_limit': '1GB',
+                'threads': 2
+            }
+        }
+    )
     
     yield manager
     
