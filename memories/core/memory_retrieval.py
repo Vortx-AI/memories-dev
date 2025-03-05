@@ -93,15 +93,14 @@ def process_file_for_search(args):
             import cudf
             import cuspatial
             
-            # Read parquet file into GPU DataFrame
-            gdf = cudf.read_parquet(file_path)
+            # Read parquet file with string columns as plain strings
+            gdf = cudf.read_parquet(file_path, strings_to_categorical=False)
             
-            # Convert all string columns to plain strings (not dictionary encoded)
+            # Convert any remaining dictionary/category columns to strings
             for col in gdf.columns:
-                if gdf[col].dtype == 'object' or str(gdf[col].dtype).startswith('string'):
-                    gdf[col] = gdf[col].astype('string')
-                elif str(gdf[col].dtype).startswith('category'):
-                    gdf[col] = gdf[col].astype('string')
+                if isinstance(gdf[col].dtype, cudf.core.dtypes.CategoricalDtype) or \
+                   str(gdf[col].dtype).startswith('dictionary'):
+                    gdf[col] = gdf[col].astype('string[pyarrow]')
             
             # Convert WKB geometry to cuspatial geometry
             if 'blob' in geom_type or 'binary' in geom_type:
@@ -117,15 +116,6 @@ def process_file_for_search(args):
             )
             
             # Query using spatial index
-            bbox_poly = cuspatial.Polygon([
-                (min_lon, min_lat),
-                (min_lon, max_lat),
-                (max_lon, max_lat),
-                (max_lon, min_lat),
-                (min_lon, min_lat)
-            ])
-            
-            # Get points within bbox
             points_in_bbox = cuspatial.points_in_spatial_window(
                 spatial_index,
                 gdf['geometry'].x,
@@ -136,12 +126,15 @@ def process_file_for_search(args):
             # Filter DataFrame
             result = gdf.iloc[points_in_bbox]
             
-            # Convert back to pandas
+            # Convert back to pandas with consistent string types
             df = result.to_pandas()
             
-            # Ensure all object/string columns are string type
-            for col in df.select_dtypes(include=['object', 'category', 'string']).columns:
-                df[col] = df[col].astype(str)
+            # Ensure all string-like columns are plain strings
+            for col in df.columns:
+                if df[col].dtype == 'object' or \
+                   isinstance(df[col].dtype, pd.CategoricalDtype) or \
+                   str(df[col].dtype).startswith('string'):
+                    df[col] = df[col].astype('string[pyarrow]')
             
         else:
             # CPU-based processing with explicit type casting
@@ -173,9 +166,12 @@ def process_file_for_search(args):
             """
             df = con.execute(query).fetchdf()
             
-            # Additional type conversion for pandas DataFrame
-            for col in df.select_dtypes(include=['object', 'category', 'string']).columns:
-                df[col] = df[col].astype(str)
+            # Convert all string-like columns to plain strings using pyarrow string type
+            for col in df.columns:
+                if df[col].dtype == 'object' or \
+                   isinstance(df[col].dtype, pd.CategoricalDtype) or \
+                   str(df[col].dtype).startswith('string'):
+                    df[col] = df[col].astype('string[pyarrow]')
         
         if not df.empty:
             df['source_file'] = file_path
