@@ -3,11 +3,12 @@ Memory manager implementation for managing different memory tiers.
 """
 
 import logging
+import os
+import sys
 from typing import Dict, Any, Optional, List, Union
 from pathlib import Path
 from datetime import datetime
 import yaml
-import os
 import duckdb
 import numpy as np
 
@@ -108,7 +109,11 @@ class MemoryManager:
         if self._initialized:
             return
             
-        self.config = Config(config_path)
+        # Initialize logger
+        self.logger = logging.getLogger(__name__)
+        
+        # Load configuration
+        self.config = self._load_and_merge_config(config_path)
         
         # Get project root from Config
         project_root = os.getenv("PROJECT_ROOT", os.path.expanduser("~"))
@@ -128,7 +133,7 @@ class MemoryManager:
         self._init_cold_memory()
         
         self._initialized = True
-        logger.info(f"Initialized MemoryManager with database at: {db_path}")
+        self.logger.info(f"Initialized MemoryManager with database at: {db_path}")
 
     def _load_and_merge_config(
         self,

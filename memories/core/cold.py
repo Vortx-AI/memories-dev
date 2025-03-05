@@ -425,5 +425,116 @@ class ColdMemory:
             logger.error(f"Error getting file paths from cold storage: {e}")
             return []
 
+    def batch_import_parquet(
+        self,
+        folder_path: Union[str, Path],
+        theme: Optional[str] = None,
+        tag: Optional[str] = None,
+        recursive: bool = True,
+        pattern: str = "*.parquet"
+    ) -> Dict[str, Any]:
+        """Import multiple parquet files into cold storage.
+        
+        Args:
+            folder_path: Path to folder containing parquet files
+            theme: Optional theme tag for the data
+            tag: Optional additional tag for the data
+            recursive: Whether to search subdirectories
+            pattern: File pattern to match
+            
+        Returns:
+            Dict containing:
+                files_processed: Number of files processed
+                records_imported: Total number of records imported
+                total_size: Total size of imported data in bytes
+                errors: List of files that had errors
+        """
+        folder_path = Path(folder_path)
+        if not folder_path.exists():
+            raise FileNotFoundError(f"Folder not found: {folder_path}")
+            
+        results = {
+            'files_processed': 0,
+            'records_imported': 0,
+            'total_size': 0,
+            'errors': []
+        }
+        
+        try:
+            # Find all parquet files
+            if recursive:
+                parquet_files = list(folder_path.rglob(pattern))
+            else:
+                parquet_files = list(folder_path.glob(pattern))
+                
+            for file_path in parquet_files:
+                try:
+                    # Read parquet file
+                    self.con.execute(f"""
+                        CREATE TABLE IF NOT EXISTS temp_import AS
+                        SELECT * FROM read_parquet(?)
+                    """, [str(file_path)])
+                    
+                    # Get row count and schema
+                    row_count = self.con.execute("SELECT COUNT(*) FROM temp_import").fetchone()[0]
+                    schema = self.con.execute("DESCRIBE temp_import").fetchall()
+                    
+                    # Create metadata entry
+                    metadata = {
+                        'file_path': str(file_path),
+                        'theme': theme,
+                        'tag': tag,
+                        'num_rows': row_count,
+                        'num_columns': len(schema),
+                        'schema': {col[0]: col[1] for col in schema},
+                        'imported_at': datetime.now().isoformat()
+                    }
+                    
+                    # Create metadata table if not exists
+                    self.con.execute("""
+                        CREATE TABLE IF NOT EXISTS cold_metadata (
+                            file_path VARCHAR PRIMARY KEY,
+                            theme VARCHAR,
+                            tag VARCHAR,
+                            num_rows INTEGER,
+                            num_columns INTEGER,
+                            schema JSON,
+                            imported_at TIMESTAMP
+                        )
+                    """)
+                    
+                    # Insert metadata
+                    self.con.execute("""
+                        INSERT INTO cold_metadata
+                        (file_path, theme, tag, num_rows, num_columns, schema, imported_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, [
+                        metadata['file_path'],
+                        metadata['theme'],
+                        metadata['tag'],
+                        metadata['num_rows'],
+                        metadata['num_columns'],
+                        json.dumps(metadata['schema']),
+                        metadata['imported_at']
+                    ])
+                    
+                    # Update results
+                    results['files_processed'] += 1
+                    results['records_imported'] += row_count
+                    results['total_size'] += file_path.stat().st_size
+                    
+                except Exception as e:
+                    logger.error(f"Error importing {file_path}: {e}")
+                    results['errors'].append(str(file_path))
+                finally:
+                    # Clean up temporary table
+                    self.con.execute("DROP TABLE IF EXISTS temp_import")
+                    
+        except Exception as e:
+            logger.error(f"Error during batch import: {e}")
+            raise
+            
+        return results
+
 
 
