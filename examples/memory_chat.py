@@ -91,29 +91,11 @@ class MemoryQuery:
             
             # Initialize memory manager
             from memories.core.memory_manager import MemoryManager
-            self.memory_manager = MemoryManager(
-                enable_red_hot=False,
-                enable_hot=False,
-                enable_cold=True,
-                enable_warm=False,
-                enable_glacier=False,
-                custom_config={
-                    'cold': {
-                        'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
-                        'duckdb': {
-                            'memory_limit': '8GB',
-                            'threads': 4,
-                            'config': {
-                                'enable_external_access': True
-                            }
-                        }
-                    }
-                }
-            )
+            self.memory_manager = MemoryManager()
             
             # Initialize memory retrieval with GPU support flags
             self.memory_retrieval = MemoryRetrieval(
-                self.memory_manager.cold,
+                self.memory_manager.cold_memory,
                 has_gpu_support=HAS_GPU_SUPPORT,
                 has_cudf=HAS_CUDF,
                 has_cuspatial=HAS_CUSPATIAL
