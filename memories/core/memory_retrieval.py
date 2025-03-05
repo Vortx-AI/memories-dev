@@ -1456,4 +1456,111 @@ class MemoryRetrieval:
             
         except Exception as e:
             logger.error(f"Error processing table {table.get('table_name', 'unknown')}: {e}")
-            return pd.DataFrame() if not _has_gpu() else cudf.DataFrame() 
+            return pd.DataFrame() if not _has_gpu() else cudf.DataFrame()
+
+    def estimate_tokens(self, df: pd.DataFrame) -> int:
+        """
+        Estimate the number of tokens in a DataFrame.
+        
+        Args:
+            df: Input DataFrame
+            
+        Returns:
+            Estimated number of tokens
+        """
+        if df.empty:
+            return 0
+            
+        # Estimate tokens for column names (each word is roughly a token)
+        column_tokens = sum(len(str(col).split()) for col in df.columns)
+        
+        # Estimate tokens for data values
+        data_tokens = 0
+        for _, row in df.iterrows():
+            # Count tokens in non-null values
+            # For numeric values, estimate based on string length
+            # For string values, count words and punctuation
+            for val in row:
+                if pd.isna(val):
+                    continue
+                    
+                str_val = str(val)
+                if isinstance(val, (int, float)):
+                    # Numeric values typically use 1 token unless very long
+                    data_tokens += max(1, len(str_val) // 4)
+                else:
+                    # For strings, count words and special characters
+                    words = str_val.split()
+                    # Add tokens for words
+                    data_tokens += len(words)
+                    # Add extra tokens for special characters and punctuation
+                    data_tokens += sum(1 for c in str_val if not c.isalnum() and not c.isspace()) // 2
+            
+        total_tokens = column_tokens + data_tokens
+        return total_tokens
+
+    def optimize_dataframe(self, df: pd.DataFrame, max_tokens: int) -> pd.DataFrame:
+        """
+        Optimize DataFrame to stay under token limit while preserving essential data.
+        
+        Args:
+            df: Input DataFrame
+            max_tokens: Maximum number of tokens allowed
+            
+        Returns:
+            Optimized DataFrame
+        """
+        if df.empty:
+            return df
+            
+        # Make a copy to avoid modifying original
+        df = df.copy()
+        
+        # First pass: Remove obviously unnecessary columns
+        # 1. Remove ID columns (usually contain non-semantic numeric IDs)
+        id_columns = [col for col in df.columns if col.lower().endswith('_id') or col.lower() == 'id']
+        if id_columns:
+            df = df.drop(columns=id_columns)
+        
+        # 2. Remove boolean columns (low information value, high token cost)
+        bool_columns = df.select_dtypes(include=['bool']).columns
+        if not bool_columns.empty:
+            df = df.drop(columns=bool_columns)
+        
+        # 3. Drop rows with all null values
+        df = df.dropna(how='all')
+        
+        # Check token count
+        current_tokens = self.estimate_tokens(df)
+        if current_tokens <= max_tokens:
+            return df
+            
+        # Second pass: Remove duplicate values
+        # Keep only unique combinations of values
+        df = df.drop_duplicates()
+        
+        # Check token count again
+        current_tokens = self.estimate_tokens(df)
+        if current_tokens <= max_tokens:
+            return df
+            
+        # Third pass: Progressive column removal
+        # Keep essential columns (longitude, latitude, name) and matched columns
+        essential_columns = ['longitude', 'latitude', 'name', 'type', 'matched_column']
+        other_columns = [col for col in df.columns if col not in essential_columns]
+        
+        # Remove non-essential columns one by one until under token limit
+        for col in other_columns:
+            if current_tokens <= max_tokens:
+                break
+            df = df.drop(columns=[col])
+            current_tokens = self.estimate_tokens(df)
+        
+        # Final pass: If still over limit, reduce rows
+        while current_tokens > max_tokens and len(df) > 1:
+            # Remove 10% of rows at a time
+            rows_to_keep = int(len(df) * 0.9)
+            df = df.iloc[:rows_to_keep]
+            current_tokens = self.estimate_tokens(df)
+        
+        return df 
