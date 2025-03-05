@@ -93,8 +93,8 @@ def process_file_for_search(args):
             import cudf
             import cuspatial
             
-            # Read parquet file into GPU DataFrame
-            gdf = cudf.read_parquet(file_path)
+            # Read parquet file into GPU DataFrame with string columns (not dictionary-encoded)
+            gdf = cudf.read_parquet(file_path, strings_to_categorical=False)
             
             # Convert WKB geometry to cuspatial geometry
             if 'blob' in geom_type or 'binary' in geom_type:
@@ -129,13 +129,29 @@ def process_file_for_search(args):
             # Filter DataFrame
             result = gdf.iloc[points_in_bbox]
             
-            # Convert back to pandas
+            # Convert back to pandas and ensure string columns are strings (not dictionary-encoded)
             df = result.to_pandas()
+            
+            # Convert any dictionary-encoded columns to strings
+            for col in df.select_dtypes(include=['category']).columns:
+                df[col] = df[col].astype(str)
             
         else:
             # CPU-based processing in batches
+            # Add CAST to ensure string columns are returned as strings, not dictionary-encoded
+            columns = [col for col in schema_df['column_name']]
+            cast_columns = []
+            for col in columns:
+                col_type = schema_df[schema_df['column_name'] == col]['column_type'].iloc[0].lower()
+                if 'varchar' in col_type or 'string' in col_type or 'text' in col_type:
+                    cast_columns.append(f'CAST("{col}" AS VARCHAR) as "{col}"')
+                else:
+                    cast_columns.append(f'"{col}"')
+            
+            select_clause = ', '.join(cast_columns)
+            
             query = f"""
-            SELECT *
+            SELECT {select_clause}
             FROM parquet_scan('{file_path}')
             WHERE ST_Intersects(
                 {geom_expr},
