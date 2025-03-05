@@ -41,6 +41,114 @@ if HAS_CUDF and HAS_CUSPATIAL:
     HAS_GPU_SUPPORT = True
     print("GPU support enabled with cudf and cuspatial.")
 
+def process_file_for_search(args):
+    """
+    Process a single file for geospatial search.
+    This function needs to be at module level for multiprocessing.
+    """
+    file_path, info, bbox, use_gpu, con = args
+    try:
+        # Get schema info directly from parquet file
+        schema_query = f"DESCRIBE SELECT * FROM parquet_scan('{file_path}')"
+        schema_df = con.execute(schema_query).fetchdf()
+        
+        # Look for geometry column
+        geometry_column = None
+        geometry_type = None
+        for _, row in schema_df.iterrows():
+            col_name = row['column_name']
+            col_type = str(row['column_type']).lower()
+            if ('geometry' in col_type or 
+                'binary' in col_type or 
+                'blob' in col_type or
+                col_name.lower() in ['geom', 'geometry', 'the_geom']):
+                geometry_column = col_name
+                geometry_type = col_type
+                break
+        
+        if not geometry_column:
+            logger.warning(f"No geometry column found in {file_path}, skipping")
+            return pd.DataFrame()
+        
+        # Build spatial query
+        min_lon, min_lat, max_lon, max_lat = bbox
+        geom_col = geometry_column
+        geom_type = geometry_type.lower()
+        
+        if 'blob' in geom_type:
+            geom_expr = f'ST_GeomFromWKB(CAST("{geom_col}" AS BLOB))'
+        elif 'binary' in geom_type:
+            geom_expr = f'ST_GeomFromWKB("{geom_col}")'
+        else:
+            geom_expr = f'"{geom_col}"'
+        
+        # Process data in batches using GPU if available
+        if use_gpu:
+            import cudf
+            import cuspatial
+            
+            # Read parquet file into GPU DataFrame
+            gdf = cudf.read_parquet(file_path)
+            
+            # Convert WKB geometry to cuspatial geometry
+            if 'blob' in geom_type or 'binary' in geom_type:
+                gdf['geometry'] = cuspatial.from_wkb(gdf[geom_col])
+            else:
+                gdf['geometry'] = gdf[geom_col]
+            
+            # Create spatial index
+            spatial_index = cuspatial.quadtree(
+                gdf['geometry'].x,
+                gdf['geometry'].y,
+                min_lon, min_lat, max_lon, max_lat
+            )
+            
+            # Query using spatial index
+            bbox_poly = cuspatial.Polygon([
+                (min_lon, min_lat),
+                (min_lon, max_lat),
+                (max_lon, max_lat),
+                (max_lon, min_lat),
+                (min_lon, min_lat)
+            ])
+            
+            # Get points within bbox
+            points_in_bbox = cuspatial.points_in_spatial_window(
+                spatial_index,
+                gdf['geometry'].x,
+                gdf['geometry'].y,
+                min_lon, min_lat, max_lon, max_lat
+            )
+            
+            # Filter DataFrame
+            result = gdf.iloc[points_in_bbox]
+            
+            # Convert back to pandas
+            df = result.to_pandas()
+            
+        else:
+            # CPU-based processing in batches
+            query = f"""
+            SELECT *
+            FROM parquet_scan('{file_path}')
+            WHERE ST_Intersects(
+                {geom_expr},
+                ST_GeomFromText('POLYGON(({min_lon} {min_lat}, {min_lon} {max_lat}, 
+                {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))')
+            )
+            """
+            df = con.execute(query).fetchdf()
+        
+        if not df.empty:
+            df['source_file'] = file_path
+            return df
+        
+        return pd.DataFrame()
+        
+    except Exception as e:
+        logger.error(f"Error processing {file_path}: {e}")
+        return pd.DataFrame()
+
 class MemoryRetrieval:
     """Memory retrieval class for querying cold memory storage."""
     
@@ -1275,21 +1383,10 @@ class MemoryRetrieval:
         similarity_threshold: float = 0.7,
         max_workers: int = 4,
         use_gpu: bool = True,
-        batch_size: int = 1000000  # Process 1M rows at a time
+        batch_size: int = 1000000
     ) -> pd.DataFrame:
         """
         Search for geospatial features within a geographic bounding box using parallel GPU-accelerated processing.
-        
-        Args:
-            query_word: Search term (e.g., 'road', 'building', 'park', 'landuse', 'water')
-            bbox: Geographic bounding box as (min_lon, min_lat, max_lon, max_lat)
-            similarity_threshold: Minimum similarity threshold for semantic search
-            max_workers: Maximum number of parallel workers
-            use_gpu: Whether to use GPU acceleration if available
-            batch_size: Number of rows to process in each batch
-            
-        Returns:
-            DataFrame containing matching features within the bounding box
         """
         from concurrent.futures import ProcessPoolExecutor, as_completed
         import multiprocessing as mp
@@ -1332,118 +1429,16 @@ class MemoryRetrieval:
                 
                 logger.info(f"\nFound {len(unique_files)} unique files to process")
                 
-                # Process each unique file in parallel with GPU acceleration
-                def process_file(file_info):
-                    file_path, info = file_info
-                    try:
-                        # Get schema info directly from parquet file
-                        schema_query = f"DESCRIBE SELECT * FROM parquet_scan('{file_path}')"
-                        schema_df = self.con.execute(schema_query).fetchdf()
-                        
-                        # Look for geometry column
-                        for _, row in schema_df.iterrows():
-                            col_name = row['column_name']
-                            col_type = str(row['column_type']).lower()
-                            if ('geometry' in col_type or 
-                                'binary' in col_type or 
-                                'blob' in col_type or
-                                col_name.lower() in ['geom', 'geometry', 'the_geom']):
-                                info['geometry_column'] = col_name
-                                info['geometry_type'] = col_type
-                                break
-                        
-                        if not info['geometry_column']:
-                            logger.warning(f"No geometry column found in {file_path}, skipping")
-                            return pd.DataFrame()
-                        
-                        # Build spatial query
-                        min_lon, min_lat, max_lon, max_lat = bbox
-                        geom_col = info["geometry_column"]
-                        geom_type = info["geometry_type"].lower()
-                        
-                        if 'blob' in geom_type:
-                            geom_expr = f'ST_GeomFromWKB(CAST("{geom_col}" AS BLOB))'
-                        elif 'binary' in geom_type:
-                            geom_expr = f'ST_GeomFromWKB("{geom_col}")'
-                        else:
-                            geom_expr = f'"{geom_col}"'
-                        
-                        # Process data in batches using GPU if available
-                        if use_gpu:
-                            import cudf
-                            import cuspatial
-                            
-                            # Read parquet file into GPU DataFrame
-                            gdf = cudf.read_parquet(file_path)
-                            
-                            # Convert WKB geometry to cuspatial geometry
-                            if 'blob' in geom_type or 'binary' in geom_type:
-                                gdf['geometry'] = cuspatial.from_wkb(gdf[geom_col])
-                            else:
-                                gdf['geometry'] = gdf[geom_col]
-                            
-                            # Create spatial index
-                            spatial_index = cuspatial.quadtree(
-                                gdf['geometry'].x,
-                                gdf['geometry'].y,
-                                min_lon, min_lat, max_lon, max_lat
-                            )
-                            
-                            # Query using spatial index
-                            bbox_poly = cuspatial.Polygon([
-                                (min_lon, min_lat),
-                                (min_lon, max_lat),
-                                (max_lon, max_lat),
-                                (max_lon, min_lat),
-                                (min_lon, min_lat)
-                            ])
-                            
-                            # Get points within bbox
-                            points_in_bbox = cuspatial.points_in_spatial_window(
-                                spatial_index,
-                                gdf['geometry'].x,
-                                gdf['geometry'].y,
-                                min_lon, min_lat, max_lon, max_lat
-                            )
-                            
-                            # Filter DataFrame
-                            result = gdf.iloc[points_in_bbox]
-                            
-                            # Convert back to pandas
-                            df = result.to_pandas()
-                            
-                        else:
-                            # CPU-based processing in batches
-                            query = f"""
-                            SELECT *
-                            FROM parquet_scan('{file_path}')
-                            WHERE ST_Intersects(
-                                {geom_expr},
-                                ST_GeomFromText('POLYGON(({min_lon} {min_lat}, {min_lon} {max_lat}, 
-                                {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))')
-                            )
-                            """
-                            df = self.con.execute(query).fetchdf()
-                        
-                        if not df.empty:
-                            df['source_file'] = file_path
-                            return df
-                        
-                        return pd.DataFrame()
-                        
-                    except Exception as e:
-                        logger.error(f"Error processing {file_path}: {e}")
-                        return pd.DataFrame()
-                
                 # Use ProcessPoolExecutor for parallel processing
                 num_workers = min(max_workers, len(unique_files), mp.cpu_count())
                 logger.info(f"Using {num_workers} workers for parallel processing")
                 
                 results_list = []
                 with ProcessPoolExecutor(max_workers=num_workers) as executor:
-                    # Submit all file processing tasks
+                    # Submit all file processing tasks with necessary arguments
                     future_to_file = {
-                        executor.submit(process_file, (file_path, info)): file_path 
+                        executor.submit(process_file_for_search, 
+                                      (file_path, info, bbox, use_gpu, self.con)): file_path 
                         for file_path, info in unique_files.items()
                     }
                     
