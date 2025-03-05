@@ -89,8 +89,35 @@ class MemoryQuery:
             )
             logger.info(f"Successfully initialized LoadModel with {model_name}")
             
-            # Initialize memory retrieval if needed for spatial queries
-            self.memory_retrieval = None
+            # Initialize memory manager
+            from memories.core.memory_manager import MemoryManager
+            self.memory_manager = MemoryManager(
+                enable_red_hot=False,
+                enable_hot=False,
+                enable_cold=True,
+                enable_warm=False,
+                enable_glacier=False,
+                custom_config={
+                    'cold': {
+                        'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
+                        'duckdb': {
+                            'memory_limit': '8GB',
+                            'threads': 4,
+                            'config': {
+                                'enable_external_access': True
+                            }
+                        }
+                    }
+                }
+            )
+            
+            # Initialize memory retrieval with GPU support flags
+            self.memory_retrieval = MemoryRetrieval(
+                self.memory_manager.cold,
+                has_gpu_support=HAS_GPU_SUPPORT,
+                has_cudf=HAS_CUDF,
+                has_cuspatial=HAS_CUSPATIAL
+            )
             
             # Initialize code execution
             self.code_execution = CodeExecution()
@@ -142,12 +169,6 @@ class MemoryQuery:
                                 geom_column: str = "geometry", limit: int = 1000) -> Dict[str, Any]:
         """Wrapper for get_data_by_bbox to handle initialization and return format."""
         try:
-            # Initialize memory_retrieval if not already done
-            if self.memory_retrieval is None:
-                
-                
-                self.memory_retrieval = MemoryRetrieval(cold_memory)
-
             # Call get_data_by_bbox
             results = self.memory_retrieval.get_data_by_bbox(
                 min_lon=min_lon,
@@ -189,11 +210,6 @@ class MemoryQuery:
     ) -> Dict[str, Any]:
         """Wrapper for get_data_by_bbox_and_value to handle initialization and return format."""
         try:
-            # Initialize memory_retrieval if not already done
-            if self.memory_retrieval is None:
-                
-                self.memory_retrieval = MemoryRetrieval()
-
             # Call get_data_by_bbox_and_value
             results = self.memory_retrieval.get_data_by_bbox_and_value(
                 min_lon=min_lon,
@@ -231,11 +247,6 @@ class MemoryQuery:
     ) -> Dict[str, Any]:
         """Wrapper for get_data_by_fuzzy_search to handle initialization and return format."""
         try:
-            # Initialize memory_retrieval if not already done
-            if self.memory_retrieval is None:
-                
-                self.memory_retrieval = MemoryRetrieval()
-
             # Call get_data_by_fuzzy_search
             results = self.memory_retrieval.get_data_by_fuzzy_search(
                 search_term=search_term,
@@ -423,11 +434,6 @@ class MemoryQuery:
     ) -> Dict[str, Any]:
         """Wrapper for search_geospatial_data_in_bbox to handle initialization and return format."""
         try:
-            # Initialize memory_retrieval if not already done
-            if self.memory_retrieval is None:
-                
-                self.memory_retrieval = MemoryRetrieval()
-
             # Call search_geospatial_data_in_bbox with GPU support
             results = self.memory_retrieval.search_geospatial_data_in_bbox(
                 query_word=query_word,
