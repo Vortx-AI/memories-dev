@@ -1375,9 +1375,6 @@ class MemoryRetrieval:
                     df = self.con.execute(query).fetchdf()
                     
                     if not df.empty:
-                        # Add source information
-                        df['source_file'] = os.path.basename(file_path)
-                        df['source_type'] = os.path.basename(os.path.dirname(os.path.dirname(file_path)))
                         results = pd.concat([results, df], ignore_index=True)
                     
                 except Exception as e:
