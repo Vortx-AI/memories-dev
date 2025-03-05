@@ -1358,16 +1358,15 @@ class MemoryRetrieval:
                     continue
                     
                 select_clause = self.build_select_clause(schema, geom_col, geom_type)
-                geom_bounds = self.get_geometry_bounds(f"{geom_col}")
                 
+                # Build the query with proper geometry handling
                 query = f"""
                 SELECT {select_clause}
                 FROM read_parquet('{file_path}')
-                WHERE {geom_bounds} AND
-                ST_Intersects({geom_col}, 
+                WHERE ST_Intersects(
+                    {geom_col}, 
                     ST_GeomFromText('POLYGON(({bbox[0]} {bbox[1]}, {bbox[0]} {bbox[3]}, 
-                    {bbox[2]} {bbox[3]}, {bbox[2]} {bbox[1]}, {bbox[0]} {bbox[1]}))')
-                )
+                    {bbox[2]} {bbox[3]}, {bbox[2]} {bbox[1]}, {bbox[0]} {bbox[1]}))'))
                 """
                 
                 df = self.con.execute(query).fetchdf()
