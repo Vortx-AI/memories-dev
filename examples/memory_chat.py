@@ -35,6 +35,27 @@ env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(env_path)
 logger.info(f"Loading environment from {env_path}")
 
+# Initialize GPU support flags
+HAS_GPU_SUPPORT = False
+HAS_CUDF = False
+HAS_CUSPATIAL = False
+
+try:
+    import cudf
+    HAS_CUDF = True
+except ImportError:
+    logging.warning("cudf not available. GPU acceleration for dataframes will be disabled.")
+
+try:
+    import cuspatial
+    HAS_CUSPATIAL = True
+except ImportError:
+    logging.warning("cuspatial not available. GPU acceleration for spatial operations will be disabled.")
+
+if HAS_CUDF and HAS_CUSPATIAL:
+    HAS_GPU_SUPPORT = True
+    logging.info("GPU support enabled with cudf and cuspatial.")
+
 class MemoryQuery:
     """Memory query handler for processing different types of queries."""
     
@@ -44,7 +65,8 @@ class MemoryQuery:
         deployment_type: str = "api",
         model_name: str = "gpt-4",
         api_key: Optional[str] = None,
-        functions_file: str = "function_definitions.json"
+        functions_file: str = "function_definitions.json",
+        use_gpu: bool = True
     ):
         """
         Initialize the memory query handler with LoadModel.
@@ -55,6 +77,7 @@ class MemoryQuery:
             model_name (str): Name of the model to use
             api_key (Optional[str]): API key for the model provider
             functions_file (str): Path to the JSON file containing function definitions
+            use_gpu (bool): Whether to use GPU acceleration if available
         """
         try:
             self.model = LoadModel(
@@ -75,6 +98,13 @@ class MemoryQuery:
             from memories.data_acquisition.sources.overture_api import OvertureAPI
             self.overture_api = OvertureAPI(data_dir="data/overture")
             self.osm_api = OSMDataAPI(cache_dir="data/osm")
+            
+            # Check GPU availability
+            self.use_gpu = use_gpu and HAS_GPU_SUPPORT
+            if use_gpu and not HAS_GPU_SUPPORT:
+                logger.warning("GPU acceleration requested but not available. Using CPU instead.")
+            elif self.use_gpu:
+                logger.info("GPU acceleration enabled for spatial operations.")
             
             # Load function definitions
             self.function_mapping = {
@@ -387,45 +417,43 @@ class MemoryQuery:
     def search_geospatial_data_in_bbox_wrapper(
         self,
         query_word: str,
-        bbox: list,
-        similarity_threshold: float = 0.5
+        bbox: tuple,
+        similarity_threshold: float = 0.7,
+        max_workers: int = 4,
+        batch_size: int = 1000000
     ) -> Dict[str, Any]:
         """Wrapper for search_geospatial_data_in_bbox to handle initialization and return format."""
         try:
             # Initialize memory_retrieval if not already done
             if self.memory_retrieval is None:
-                from memories.core.memory_retrieval import MemoryRetrieval
-                self.memory_retrieval = MemoryRetrieval()
+                from memories.core.cold import ColdMemory
+                cold_memory = ColdMemory(storage_path=Path('data'))
+                self.memory_retrieval = MemoryRetrieval(cold_memory)
 
-            # Convert bbox list to tuple of floats
-            bbox_tuple = tuple(float(x) for x in bbox)
-            
-            # Call search function with debug enabled
+            # Call search_geospatial_data_in_bbox with GPU support
             results = self.memory_retrieval.search_geospatial_data_in_bbox(
                 query_word=query_word,
-                bbox=bbox_tuple,
+                bbox=bbox,
                 similarity_threshold=similarity_threshold,
-                #debug=True  # Enable detailed logging
+                max_workers=max_workers,
+                use_gpu=self.use_gpu,
+                batch_size=batch_size
             )
 
             # Convert results to dictionary format
-            response = {
+            return {
                 "status": "success" if not results.empty else "no_results",
                 "data": results.to_dict('records') if not results.empty else [],
-                "count": len(results) if not results.empty else 0
+                "count": len(results) if not results.empty else 0,
+                "gpu_used": self.use_gpu
             }
-
-            # Include logs in response
-            if hasattr(self.memory_retrieval, 'last_logs'):
-                response["logs"] = self.memory_retrieval.last_logs
-
-            return response
         except Exception as e:
             logger.error(f"Error in search_geospatial_data_in_bbox: {e}")
             return {
                 "status": "error",
                 "message": str(e),
-                "data": []
+                "data": [],
+                "gpu_used": self.use_gpu
             }
 
 def main():
