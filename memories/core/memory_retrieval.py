@@ -1436,13 +1436,14 @@ class MemoryRetrieval:
         batch_size: int = 1000000
     ) -> pd.DataFrame:
         """
-        Search for geospatial features within a geographic bounding box using parallel GPU-accelerated processing.
+        Search for geospatial features within a geographic bounding box using GPU-accelerated processing.
+        Falls back to CPU processing if GPU processing fails.
         """
         from concurrent.futures import ProcessPoolExecutor, as_completed
         import multiprocessing as mp
         
         logger.info(f"\n{'='*80}")
-        logger.info("GEOSPATIAL FEATURE SEARCH (GPU-ACCELERATED)")
+        logger.info("GEOSPATIAL FEATURE SEARCH")
         logger.info(f"{'='*80}")
         logger.info(f"Search term: '{query_word}'")
         logger.info(f"Bounding box: {bbox}")
@@ -1460,61 +1461,99 @@ class MemoryRetrieval:
         while current_threshold >= min_threshold:
             logger.info(f"\nTrying similarity threshold: {current_threshold:.1f}")
             
-            # Get semantically similar columns with current threshold
-            similar_columns = self.get_similar_columns(query_word, current_threshold)
-            
-            if similar_columns:
-                logger.info(f"Found {len(similar_columns)} similar columns at threshold {current_threshold:.1f}")
+            try:
+                # Get semantically similar columns with current threshold
+                similar_columns = self.get_similar_columns(query_word, current_threshold)
                 
-                # Deduplicate file paths and group columns
-                unique_files = {}
-                for match in similar_columns:
-                    file_path = match['full_path']
-                    if file_path not in unique_files:
-                        unique_files[file_path] = {
-                            'columns': set(),
-                            'geometry_column': None
-                        }
-                    unique_files[file_path]['columns'].add(match['column'])
-                
-                logger.info(f"\nFound {len(unique_files)} unique files to process")
-                
-                # Use ProcessPoolExecutor for parallel processing
-                num_workers = min(max_workers, len(unique_files), mp.cpu_count())
-                logger.info(f"Using {num_workers} workers for parallel processing")
-                
-                results_list = []
-                with ProcessPoolExecutor(max_workers=num_workers) as executor:
-                    # Submit all file processing tasks with necessary arguments
-                    future_to_file = {
-                        executor.submit(process_file_for_search, 
-                                      (file_path, info, bbox, use_gpu)): file_path 
-                        for file_path, info in unique_files.items()
-                    }
+                if similar_columns:
+                    logger.info(f"Found {len(similar_columns)} similar columns at threshold {current_threshold:.1f}")
                     
-                    # Collect results as they complete
-                    for future in as_completed(future_to_file):
-                        file_path = future_to_file[future]
+                    # Deduplicate file paths and group columns
+                    unique_files = {}
+                    for match in similar_columns:
+                        file_path = match['full_path']
+                        if file_path not in unique_files:
+                            unique_files[file_path] = {
+                                'columns': set(),
+                                'geometry_column': None
+                            }
+                        unique_files[file_path]['columns'].add(match['column'])
+                    
+                    logger.info(f"\nFound {len(unique_files)} unique files to process")
+                    results_list = []
+                    
+                    if use_gpu:
+                        # Process files sequentially when using GPU to avoid context conflicts
+                        logger.info("Using GPU processing (sequential)")
+                        for file_path, info in unique_files.items():
+                            try:
+                                df = process_file_for_search((file_path, info, bbox, True))
+                                if not df.empty:
+                                    results_list.append(df)
+                                    logger.info(f"Successfully processed {file_path}")
+                            except Exception as e:
+                                logger.error(f"GPU processing failed for {file_path}: {e}")
+                                # Try CPU fallback for this file
+                                try:
+                                    logger.info(f"Attempting CPU fallback for {file_path}")
+                                    df = process_file_for_search((file_path, info, bbox, False))
+                                    if not df.empty:
+                                        results_list.append(df)
+                                        logger.info(f"CPU fallback successful for {file_path}")
+                                except Exception as cpu_e:
+                                    logger.error(f"CPU fallback also failed for {file_path}: {cpu_e}")
+                    else:
+                        # Use ProcessPoolExecutor for parallel CPU processing
+                        num_workers = min(max_workers, len(unique_files), mp.cpu_count())
+                        logger.info(f"Using CPU processing with {num_workers} workers")
+                        
+                        with ProcessPoolExecutor(max_workers=num_workers) as executor:
+                            # Submit all file processing tasks
+                            future_to_file = {
+                                executor.submit(process_file_for_search, 
+                                              (file_path, info, bbox, False)): file_path 
+                                for file_path, info in unique_files.items()
+                            }
+                            
+                            # Collect results as they complete
+                            for future in as_completed(future_to_file):
+                                file_path = future_to_file[future]
+                                try:
+                                    df = future.result()
+                                    if not df.empty:
+                                        results_list.append(df)
+                                        logger.info(f"Successfully processed {file_path}")
+                                except Exception as e:
+                                    logger.error(f"Error processing {file_path}: {e}")
+                    
+                    # Combine all results
+                    if results_list:
                         try:
-                            df = future.result()
-                            if not df.empty:
-                                results_list.append(df)
-                                logger.info(f"Successfully processed {file_path}")
+                            results = pd.concat(results_list, ignore_index=True)
+                            logger.info(f"Found {len(results)} matching records at threshold {current_threshold:.1f}")
+                            return results
                         except Exception as e:
-                            logger.error(f"Error processing {file_path}: {e}")
+                            logger.error(f"Error combining results: {e}")
+                            # If concatenation fails, try processing one by one
+                            final_results = pd.DataFrame()
+                            for df in results_list:
+                                try:
+                                    final_results = pd.concat([final_results, df], ignore_index=True)
+                                except Exception as concat_e:
+                                    logger.error(f"Error concatenating individual result: {concat_e}")
+                            if not final_results.empty:
+                                return final_results
+                    
+                    logger.info("No matching records found in the bounding box, trying lower threshold")
+                else:
+                    logger.info(f"No similar columns found at threshold {current_threshold:.1f}")
                 
-                # Combine all results
-                if results_list:
-                    results = pd.concat(results_list, ignore_index=True)
-                    logger.info(f"Found {len(results)} matching records at threshold {current_threshold:.1f}")
-                    return results
+                # Decrease threshold and try again
+                current_threshold -= step
                 
-                logger.info("No matching records found in the bounding box, trying lower threshold")
-            else:
-                logger.info(f"No similar columns found at threshold {current_threshold:.1f}")
-            
-            # Decrease threshold and try again
-            current_threshold -= step
+            except Exception as e:
+                logger.error(f"Error during search at threshold {current_threshold}: {e}")
+                current_threshold -= step
         
         logger.warning(f"No results found with any threshold down to {min_threshold}")
         return pd.DataFrame() 
