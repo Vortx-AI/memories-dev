@@ -417,7 +417,7 @@ class MemoryRetrieval:
             
             # Get all registered parquet files from cold_metadata
             files_query = """
-                SELECT path, last_modified 
+                SELECT path, timestamp as last_modified 
                 FROM cold_metadata 
                 WHERE data_type = 'parquet'
             """
