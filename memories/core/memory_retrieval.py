@@ -1249,25 +1249,16 @@ class MemoryRetrieval:
 
     def compact_serialize_results(self, df: pd.DataFrame) -> Dict[str, Any]:
         """
-        Create a compact serialized format optimized for model understanding.
+        Create a compact serialized format of DataFrame results.
         
         Args:
             df: Input DataFrame
             
         Returns:
-            Dictionary with model-friendly compact representation
+            Dictionary with compact representation
         """
         if df.empty:
-            return {
-                "columns": [],
-                "data": [],
-                "metadata": {
-                    "row_count": 0,
-                    "col_count": 0,
-                    "is_empty": True
-                },
-                "schema": {}
-            }
+            return {"columns": [], "data": [], "metadata": {}}
         
         # Round floating point numbers to reduce size
         float_cols = df.select_dtypes(include=['float64', 'float32']).columns
@@ -1276,39 +1267,14 @@ class MemoryRetrieval:
         # Remove null values
         df = df.dropna(how='all')
         
-        # Get schema information
-        schema = {}
-        for col in df.columns:
-            dtype = str(df[col].dtype)
-            if 'float' in dtype:
-                schema[col] = 'number'
-            elif 'int' in dtype:
-                schema[col] = 'integer'
-            elif 'bool' in dtype:
-                schema[col] = 'boolean'
-            elif 'datetime' in dtype:
-                schema[col] = 'datetime'
-            else:
-                schema[col] = 'string'
-        
-        # Get sample values for each column
-        samples = {}
-        for col in df.columns:
-            unique_vals = df[col].dropna().unique()
-            samples[col] = list(unique_vals[:3]) if len(unique_vals) > 0 else []
-        
-        # Convert to compact format with enhanced metadata
+        # Convert to compact format
         return {
             "columns": list(df.columns),
             "data": [list(row) for row in df.values],
             "metadata": {
                 "row_count": len(df),
-                "col_count": len(df.columns),
-                "is_empty": False,
-                "has_nulls": df.isnull().any().any(),
-                "sample_values": samples
-            },
-            "schema": schema
+                "col_count": len(df.columns)
+            }
         }
 
     def search_geospatial_data_in_bbox(
@@ -1346,10 +1312,9 @@ class MemoryRetrieval:
             logger.info(f"No columns found matching '{query_word}'")
             return self.compact_serialize_results(pd.DataFrame())
         
-        # Process each matched column
-        for match in matched_columns:
+        # Process each file
+        for file_path, columns in matched_columns.items():
             try:
-                file_path = match['full_path']
                 # Build and execute query
                 schema = self.get_parquet_schema(file_path)
                 geom_col, geom_type = self.find_geometry_column(schema)
@@ -1358,15 +1323,16 @@ class MemoryRetrieval:
                     continue
                     
                 select_clause = self.build_select_clause(schema, geom_col, geom_type)
+                geom_bounds = self.get_geometry_bounds(f"{geom_col}")
                 
-                # Build the query with proper geometry handling
                 query = f"""
                 SELECT {select_clause}
                 FROM read_parquet('{file_path}')
-                WHERE ST_Intersects(
-                    {geom_col}, 
+                WHERE {geom_bounds} AND
+                ST_Intersects({geom_col}, 
                     ST_GeomFromText('POLYGON(({bbox[0]} {bbox[1]}, {bbox[0]} {bbox[3]}, 
-                    {bbox[2]} {bbox[3]}, {bbox[2]} {bbox[1]}, {bbox[0]} {bbox[1]}))'))
+                    {bbox[2]} {bbox[3]}, {bbox[2]} {bbox[1]}, {bbox[0]} {bbox[1]}))')
+                )
                 """
                 
                 df = self.con.execute(query).fetchdf()
@@ -1379,78 +1345,10 @@ class MemoryRetrieval:
         
         if not results.empty:
             # Optimize results to stay under token limit
-            results = self.optimize_dataframe(results, max_tokens)
+            results = optimize_dataframe(results, max_tokens)
             
             # Log the final token count
-            final_tokens = self.estimate_tokens(results)
+            final_tokens = estimate_tokens(results)
             logger.info(f"Final output: {len(results)} rows, {len(results.columns)} columns, ~{final_tokens} tokens")
             
-        return self.compact_serialize_results(results)
-
-    def estimate_tokens(self, df: pd.DataFrame) -> int:
-        """
-        Estimate the number of tokens in a DataFrame.
-        
-        Args:
-            df: Input DataFrame
-            
-        Returns:
-            Estimated number of tokens
-        """
-        if df.empty:
-            return 0
-            
-        # Estimate tokens for column names
-        column_tokens = sum(len(str(col).split()) for col in df.columns)
-        
-        # Estimate tokens for data values
-        data_tokens = 0
-        for _, row in df.iterrows():
-            # Count tokens in non-null values
-            row_tokens = sum(len(str(val).split()) for val in row if pd.notnull(val))
-            data_tokens += row_tokens
-            
-        total_tokens = column_tokens + data_tokens
-        return total_tokens
-
-    def optimize_dataframe(self, df: pd.DataFrame, max_tokens: int) -> pd.DataFrame:
-        """
-        Optimize DataFrame to stay under token limit while preserving essential data.
-        
-        Args:
-            df: Input DataFrame
-            max_tokens: Maximum number of tokens allowed
-            
-        Returns:
-            Optimized DataFrame
-        """
-        if df.empty or self.estimate_tokens(df) <= max_tokens:
-            return df
-            
-        # Make a copy to avoid modifying original
-        result = df.copy()
-        
-        # 1. Remove ID columns first
-        id_columns = [col for col in result.columns if 'id' in col.lower()]
-        if id_columns:
-            result = result.drop(columns=id_columns)
-            if self.estimate_tokens(result) <= max_tokens:
-                return result
-        
-        # 2. Remove boolean columns next
-        bool_columns = result.select_dtypes(include=['bool']).columns
-        if not bool_columns.empty:
-            result = result.drop(columns=bool_columns)
-            if self.estimate_tokens(result) <= max_tokens:
-                return result
-        
-        # 3. Drop rows with all null values
-        result = result.dropna(how='all')
-        if self.estimate_tokens(result) <= max_tokens:
-            return result
-        
-        # 4. Keep reducing rows until under token limit
-        while len(result) > 1 and self.estimate_tokens(result) > max_tokens:
-            result = result.iloc[:-1]
-        
-        return result 
+        return self.compact_serialize_results(results) 
