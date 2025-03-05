@@ -1346,9 +1346,10 @@ class MemoryRetrieval:
             logger.info(f"No columns found matching '{query_word}'")
             return self.compact_serialize_results(pd.DataFrame())
         
-        # Process each file
-        for file_path, columns in matched_columns.items():
+        # Process each matched column
+        for match in matched_columns:
             try:
+                file_path = match['full_path']
                 # Build and execute query
                 schema = self.get_parquet_schema(file_path)
                 geom_col, geom_type = self.find_geometry_column(schema)
