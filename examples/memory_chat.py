@@ -96,6 +96,10 @@ class MemoryQuery:
             # Initialize memory retrieval
             self.memory_retrieval = MemoryRetrieval()
             self.memory_retrieval.cold = self.memory_manager.cold_memory
+            # Set GPU support flags
+            self.memory_retrieval.HAS_GPU_SUPPORT = HAS_GPU_SUPPORT
+            self.memory_retrieval.HAS_CUDF = HAS_CUDF
+            self.memory_retrieval.HAS_CUSPATIAL = HAS_CUSPATIAL
             
             # Initialize code execution
             self.code_execution = CodeExecution()
