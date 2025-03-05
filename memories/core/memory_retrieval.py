@@ -391,7 +391,7 @@ class MemoryRetrieval:
         return parquet_files
 
     def build_spatial_index(self):
-        """Build and maintain spatial index for all parquet files."""
+        """Build and maintain spatial index for parquet files registered in DuckDB metadata."""
         try:
             # Create spatial index table if it doesn't exist
             self.con.execute("""
@@ -415,29 +415,31 @@ class MemoryRetrieval:
                 ON spatial_index(file_path);
             """)
             
-            # Get all parquet files
-            files = self.get_parquet_files()
+            # Get all registered parquet files from cold_metadata
+            files_query = """
+                SELECT path, last_modified 
+                FROM cold_metadata 
+                WHERE data_type = 'parquet'
+            """
+            files = self.con.execute(files_query).fetchall()
             
             if not files:
-                logger.warning(f"No parquet files found in {self.data_dir}")
+                logger.warning("No parquet files registered in cold_metadata")
                 return
             
-            logger.info(f"Found {len(files)} parquet files to index")
+            logger.info(f"Found {len(files)} registered parquet files to index")
             
-            # Process each file
-            for file_path in files:
+            # Process each registered file
+            for file_path, db_last_modified in files:
                 try:
                     # Check if file is already indexed and up to date
-                    file_stat = os.stat(file_path)
-                    last_modified = pd.Timestamp(file_stat.st_mtime, unit='s')
-                    
                     indexed = self.con.execute("""
                         SELECT last_modified 
                         FROM spatial_index 
                         WHERE file_path = ?
                     """, [file_path]).fetchone()
                     
-                    if indexed and pd.Timestamp(indexed[0]) >= last_modified:
+                    if indexed and pd.Timestamp(indexed[0]) >= pd.Timestamp(db_last_modified):
                         logger.debug(f"Index up to date for {file_path}")
                         continue
                     
@@ -466,13 +468,13 @@ class MemoryRetrieval:
                             INSERT OR REPLACE INTO spatial_index 
                             (file_path, min_lon, min_lat, max_lon, max_lat, geometry_column, last_modified)
                             VALUES (?, ?, ?, ?, ?, ?, ?)
-                        """, [file_path, *bounds, geom_column, last_modified])
+                        """, [file_path, *bounds, geom_column, db_last_modified])
                         logger.info(f"Indexed {file_path} with bounds: {bounds}")
                         
                 except Exception as e:
                     logger.error(f"Error indexing {file_path}: {e}")
                     continue
-            
+                
             # Analyze the index for better query planning
             self.con.execute("ANALYZE spatial_index")
             
@@ -1507,12 +1509,14 @@ class MemoryRetrieval:
         
         min_lon, min_lat, max_lon, max_lat = bbox
         
-        # First get potentially intersecting files using spatial index
+        # Get potentially intersecting files using spatial index and cold_metadata join
         intersecting_files = self.con.execute("""
-            SELECT file_path, geometry_column
-            FROM spatial_index 
-            WHERE max_lon >= ? AND min_lon <= ?
-            AND max_lat >= ? AND min_lat <= ?
+            SELECT si.file_path, si.geometry_column
+            FROM spatial_index si
+            JOIN cold_metadata cm ON si.file_path = cm.path
+            WHERE si.max_lon >= ? AND si.min_lon <= ?
+            AND si.max_lat >= ? AND si.min_lat <= ?
+            AND cm.data_type = 'parquet'
         """, [min_lon, max_lon, min_lat, max_lat]).fetchall()
         
         if not intersecting_files:
