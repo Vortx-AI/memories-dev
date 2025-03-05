@@ -93,10 +93,9 @@ class MemoryQuery:
             from memories.core.memory_manager import MemoryManager
             self.memory_manager = MemoryManager()
             
-            # Initialize memory retrieval with GPU support flags
-            self.memory_retrieval = MemoryRetrieval(
-                self.memory_manager.cold_memory
-            )
+            # Initialize memory retrieval
+            self.memory_retrieval = MemoryRetrieval()
+            self.memory_retrieval.cold = self.memory_manager.cold_memory
             
             # Initialize code execution
             self.code_execution = CodeExecution()
