@@ -117,8 +117,12 @@ class MemoryManager:
         db_path = Path(project_root) / 'memories.db'
         self.con = duckdb.connect(str(db_path))
         
-        # Initialize cold memory with the connection
-        self.cold_memory = ColdMemory(self.con)
+        # Initialize all memory tiers
+        self.red_hot = None  # Will be initialized on demand
+        self.hot = None      # Will be initialized on demand
+        self.warm = None     # Will be initialized on demand
+        self.cold = ColdMemory(self.con)
+        self.glacier = None  # Will be initialized on demand
         
         self._initialized = True
         logger.info(f"Initialized MemoryManager with database at: {db_path}")
@@ -170,74 +174,48 @@ class MemoryManager:
 
     def _init_red_hot_memory(self) -> None:
         """Initialize red hot memory tier."""
-        try:
-            red_hot_config = self.config['memory'].get('red_hot', {})
-            red_hot_path = self.config['memory']['base_path'] / red_hot_config.get('path', 'red_hot')
-            red_hot_path.mkdir(parents=True, exist_ok=True)
-            
-            self.red_hot = RedHotMemory(
-                storage_path=red_hot_path,
-                max_size=red_hot_config.get('max_size', 1000000),
-                vector_dim=red_hot_config.get('vector_dim', 384),
-                gpu_id=red_hot_config.get('gpu_id', 0),
-                force_cpu=red_hot_config.get('force_cpu', True),
-                index_type=red_hot_config.get('index_type', 'Flat')
-            )
-            self.logger.info("Initialized red hot memory")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize red hot memory: {e}")
-            self.red_hot = None
+        config = self.config['memory']['red_hot']
+        self.red_hot = RedHotMemory(
+            vector_dim=config['vector_dim'],
+            gpu_id=config['gpu_id'],
+            force_cpu=config['force_cpu'],
+            index_type=config['index_type']
+        )
+        logger.info("Initialized red hot memory tier")
 
     def _init_hot_memory(self) -> None:
         """Initialize hot memory tier."""
-        try:
-            hot_config = self.config['memory'].get('hot', {})
-            self.hot = HotMemory(
-                redis_url=hot_config.get('redis_url', 'redis://localhost:6379'),
-                redis_db=hot_config.get('redis_db', 0),
-                max_size=hot_config.get('max_size', 100*1024*1024)
-            )
-            self.logger.info("Initialized hot memory")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize hot memory: {e}")
-            self.hot = None
+        config = self.config['memory']['hot']
+        self.hot = HotMemory(
+            redis_url=config['redis_url'],
+            redis_db=config['redis_db']
+        )
+        logger.info("Initialized hot memory tier")
 
     def _init_warm_memory(self) -> None:
         """Initialize warm memory tier."""
-        try:
-            self.warm = WarmMemory(
-                duckdb_connection=self.db_connection
-            )
-            self.logger.info("Initialized warm memory")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize warm memory: {e}")
-            self.warm = None
+        config = self.config['memory']['warm']
+        self.warm = WarmMemory(
+            duckdb_config=config['duckdb']
+        )
+        logger.info("Initialized warm memory tier")
 
     def _init_cold_memory(self) -> None:
         """Initialize cold memory tier."""
-        try:
-            self.cold = ColdMemory(
-                duckdb_connection=self.db_connection
-            )
-            self.logger.info("Initialized cold memory")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize cold memory: {e}")
-            self.cold = None
+        config = self.config['memory']['cold']
+        self.cold = ColdMemory(
+            self.con,
+            duckdb_config=config.get('duckdb', {})
+        )
+        logger.info("Initialized cold memory tier")
 
     def _init_glacier_memory(self) -> None:
         """Initialize glacier memory tier."""
-        try:
-            glacier_config = self.config['memory'].get('glacier', {})
-            glacier_path = self.config['memory']['base_path'] / glacier_config.get('path', 'glacier')
-            glacier_path.mkdir(parents=True, exist_ok=True)
-            self.glacier = GlacierMemory(
-                storage_path=glacier_path,
-                max_size=glacier_config.get('max_size', 100*1024*1024*1024)
-            )
-            self.logger.info("Initialized glacier memory")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize glacier memory: {e}")
-            self.glacier = None
+        config = self.config['memory']['glacier']
+        self.glacier = GlacierMemory(
+            remote_storage=config.get('remote_storage', {})
+        )
+        logger.info("Initialized glacier memory tier")
 
     def get_memory_path(self, memory_type: str) -> Optional[Path]:
         """Get path for specific memory type"""
@@ -485,27 +463,27 @@ class MemoryManager:
         # Update configurations
         if red_hot_config:
             self._deep_update(self.config['memory']['red_hot'], red_hot_config)
-            if reinitialize and self.red_hot is not None:
+            if reinitialize:
                 self._init_red_hot_memory()
-        
+
         if hot_config:
             self._deep_update(self.config['memory']['hot'], hot_config)
-            if reinitialize and self.hot is not None:
+            if reinitialize:
                 self._init_hot_memory()
-        
+
         if warm_config:
             self._deep_update(self.config['memory']['warm'], warm_config)
-            if reinitialize and self.warm is not None:
+            if reinitialize:
                 self._init_warm_memory()
-        
+
         if cold_config:
             self._deep_update(self.config['memory']['cold'], cold_config)
-            if reinitialize and self.cold is not None:
+            if reinitialize:
                 self._init_cold_memory()
-        
+
         if glacier_config:
             self._deep_update(self.config['memory']['glacier'], glacier_config)
-            if reinitialize and self.glacier is not None:
+            if reinitialize:
                 self._init_glacier_memory()
         
         self.logger.info("Memory tiers configuration updated")

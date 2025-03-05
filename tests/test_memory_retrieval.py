@@ -284,9 +284,6 @@ if __name__ == "__main__":
     if "--test" in sys.argv:
         # Run pytest if --test flag is provided
         pytest.main([__file__, "-v"])
-    elif "--spatial" in sys.argv:
-        # Run spatial queries test
-        test_spatial_queries()
     else:
         # Run direct table listing
         main() 
