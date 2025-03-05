@@ -1260,7 +1260,7 @@ class MemoryRetrieval:
         Args:
             query_word: Search term (e.g., 'road', 'building', 'park', 'landuse', 'water')
             bbox: Geographic bounding box as (min_lon, min_lat, max_lon, max_lat)
-            similarity_threshold: Minimum semantic similarity score (0-1) for matching columns
+            similarity_threshold: Initial similarity threshold (will decrease if no results found)
         
         Returns:
             DataFrame containing matching features within the bounding box
@@ -1271,85 +1271,104 @@ class MemoryRetrieval:
         logger.info(f"Search term: '{query_word}'")
         logger.info(f"Bounding box: {bbox}")
         
-        # First get semantically similar columns
-        similar_columns = self.get_similar_columns(query_word, similarity_threshold)
+        # Start with highest threshold and gradually decrease until matches are found
+        current_threshold = 1.0
+        min_threshold = 0.3
+        step = 0.1
         
-        if not similar_columns:
-            logger.warning("No similar columns found")
-            return pd.DataFrame()
+        while current_threshold >= min_threshold:
+            logger.info(f"\nTrying similarity threshold: {current_threshold:.1f}")
+            
+            # Get semantically similar columns with current threshold
+            similar_columns = self.get_similar_columns(query_word, current_threshold)
+            
+            if similar_columns:
+                logger.info(f"Found {len(similar_columns)} similar columns at threshold {current_threshold:.1f}")
+                
+                # Deduplicate file paths and group columns
+                unique_files = {}
+                for match in similar_columns:
+                    file_path = match['full_path']
+                    if file_path not in unique_files:
+                        unique_files[file_path] = {
+                            'columns': set(),
+                            'geometry_column': None
+                        }
+                    unique_files[file_path]['columns'].add(match['column'])
+                
+                logger.info(f"\nFound {len(unique_files)} unique files to process")
+                
+                # Process each unique file
+                min_lon, min_lat, max_lon, max_lat = bbox
+                results = pd.DataFrame()
+                
+                for i, (file_path, info) in enumerate(unique_files.items(), 1):
+                    try:
+                        # Get schema info directly from parquet file
+                        schema_query = f"DESCRIBE SELECT * FROM parquet_scan('{file_path}')"
+                        schema_df = self.con.execute(schema_query).fetchdf()
+                        
+                        # Look for geometry column
+                        for _, row in schema_df.iterrows():
+                            col_name = row['column_name']
+                            col_type = str(row['column_type']).lower()
+                            if ('geometry' in col_type or 
+                                'binary' in col_type or 
+                                'blob' in col_type or
+                                col_name.lower() in ['geom', 'geometry', 'the_geom']):
+                                info['geometry_column'] = col_name
+                                info['geometry_type'] = col_type
+                                break
+                        
+                        # Skip if no geometry column found
+                        if not info['geometry_column']:
+                            logger.warning(f"No geometry column found in {file_path}, skipping")
+                            continue
+                        
+                        # Build and execute spatial query
+                        geom_col = info["geometry_column"]
+                        geom_type = info["geometry_type"].lower()
+                        
+                        if 'blob' in geom_type:
+                            geom_expr = f'ST_GeomFromWKB(CAST("{geom_col}" AS BLOB))'
+                        elif 'binary' in geom_type:
+                            geom_expr = f'ST_GeomFromWKB("{geom_col}")'
+                        else:
+                            geom_expr = f'"{geom_col}"'
+                        
+                        # Query all columns from the file
+                        query = f"""
+                        SELECT *
+                        FROM parquet_scan('{file_path}')
+                        WHERE ST_Intersects(
+                            {geom_expr},
+                            ST_GeomFromText('POLYGON(({min_lon} {min_lat}, {min_lon} {max_lat}, 
+                            {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))')
+                        )
+                        """
+                        
+                        df = self.con.execute(query).fetchdf()
+                        
+                        if not df.empty:
+                            results = pd.concat([results, df], ignore_index=True)
+                        
+                    except Exception as e:
+                        logger.error(f"Error processing {file_path}: {e}")
+                        continue
+                
+                if not results.empty:
+                    logger.info(f"Found {len(results)} matching records at threshold {current_threshold:.1f}")
+                    return results
+                
+                logger.info("No matching records found in the bounding box, trying lower threshold")
+            else:
+                logger.info(f"No similar columns found at threshold {current_threshold:.1f}")
+            
+            # Decrease threshold and try again
+            current_threshold -= step
         
-        # Deduplicate file paths and group columns
-        unique_files = {}
-        for match in similar_columns:
-            file_path = match['full_path']
-            if file_path not in unique_files:
-                unique_files[file_path] = {
-                    'columns': set(),
-                    'geometry_column': None
-                }
-            unique_files[file_path]['columns'].add(match['column'])
-        
-        logger.info(f"\nFound {len(unique_files)} unique files to process")
-        
-        # Process each unique file
-        min_lon, min_lat, max_lon, max_lat = bbox
-        results = pd.DataFrame()
-        
-        for i, (file_path, info) in enumerate(unique_files.items(), 1):
-            try:
-                # Get schema info directly from parquet file
-                schema_query = f"DESCRIBE SELECT * FROM parquet_scan('{file_path}')"
-                schema_df = self.con.execute(schema_query).fetchdf()
-                
-                # Look for geometry column
-                for _, row in schema_df.iterrows():
-                    col_name = row['column_name']
-                    col_type = str(row['column_type']).lower()
-                    if ('geometry' in col_type or 
-                        'binary' in col_type or 
-                        'blob' in col_type or
-                        col_name.lower() in ['geom', 'geometry', 'the_geom']):
-                        info['geometry_column'] = col_name
-                        info['geometry_type'] = col_type
-                        break
-                
-                # Skip if no geometry column found
-                if not info['geometry_column']:
-                    logger.warning(f"No geometry column found in {file_path}, skipping")
-                    continue
-                
-                # Build and execute spatial query
-                geom_col = info["geometry_column"]
-                geom_type = info["geometry_type"].lower()
-                
-                if 'blob' in geom_type:
-                    geom_expr = f'ST_GeomFromWKB(CAST("{geom_col}" AS BLOB))'
-                elif 'binary' in geom_type:
-                    geom_expr = f'ST_GeomFromWKB("{geom_col}")'
-                else:
-                    geom_expr = f'"{geom_col}"'
-                
-                # Query all columns from the file
-                query = f"""
-                SELECT *
-                FROM parquet_scan('{file_path}')
-                WHERE ST_Intersects(
-                    {geom_expr},
-                    ST_GeomFromText('POLYGON(({min_lon} {min_lat}, {min_lon} {max_lat}, 
-                    {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))')
-                )
-                """
-                
-                df = self.con.execute(query).fetchdf()
-                
-                if not df.empty:
-                    results = pd.concat([results, df], ignore_index=True)
-                
-            except Exception as e:
-                logger.error(f"Error processing {file_path}: {e}")
-                continue
-        
-        return results 
+        logger.warning(f"No results found with any threshold down to {min_threshold}")
+        return pd.DataFrame()
 
     def _process_table_gpu(args: Tuple) -> Union[pd.DataFrame, cudf.DataFrame]:
         """Helper function to process a single table using GPU if available."""
