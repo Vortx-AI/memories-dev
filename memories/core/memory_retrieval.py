@@ -1767,37 +1767,13 @@ class MemoryRetrieval:
         
         min_lon, min_lat, max_lon, max_lat = bbox
         
-        # Try to use spatial index if available
-        try:
-            logger.info("Attempting to use spatial index...")
-            intersecting_files = self.con.execute("""
-                SELECT si.file_path, si.geometry_column
-                FROM spatial_index si
-                JOIN cold_metadata cm ON si.file_path = cm.path
-                WHERE si.max_lon >= ? AND si.min_lon <= ?
-                AND si.max_lat >= ? AND si.min_lat <= ?
-                AND cm.data_type = 'parquet'
-            """, [min_lon, max_lon, min_lat, max_lat]).fetchall()
-            
-            if intersecting_files:
-                logger.info(f"Found {len(intersecting_files)} potentially intersecting files using spatial index")
-            else:
-                logger.info("No files found using spatial index, falling back to full scan")
-                raise Exception("No indexed files found")
-                
-        except Exception as e:
-            logger.info(f"Spatial index not available or empty ({str(e)}), falling back to full scan")
-            # Fallback: get all parquet files from cold_metadata
-            try:
-                intersecting_files = self.con.execute("""
-                    SELECT path as file_path, NULL as geometry_column
-                    FROM cold_metadata
-                    WHERE data_type = 'parquet'
-                """).fetchall()
-                logger.info(f"Found {len(intersecting_files)} total files to scan")
-            except Exception as e2:
-                logger.error(f"Error accessing cold_metadata: {str(e2)}")
-                return pd.DataFrame()
+        # Get all parquet files from cold storage
+        logger.info("Querying parquet files from cold storage...")
+        intersecting_files = self.query_files("""
+            SELECT path as file_path, NULL as geometry_column
+            FROM cold_metadata 
+            WHERE data_type = 'parquet'
+        """).values.tolist()
         
         if not intersecting_files:
             logger.info("No files found to process")

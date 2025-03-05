@@ -460,6 +460,109 @@ def test_spatial_queries():
         if 'db_conn' in locals():
             db_conn.close()
 
+def test_search_geospatial_data_in_bbox(memory_retrieval, tmp_path):
+    """Test searching for geospatial features within a bounding box."""
+    
+    # Create test data with geometry
+    memory_retrieval.con.execute("INSTALL spatial;")
+    memory_retrieval.con.execute("LOAD spatial;")
+    
+    # Create test points using DuckDB spatial functions
+    points_query = """
+        SELECT 
+            row_id as id,
+            name,
+            type,
+            ST_AsBinary(ST_Point(lon, lat)) as geometry
+        FROM (
+            VALUES
+                (1, 'Point A', 'park', -73.95, 40.75),
+                (2, 'Point B', 'building', -73.90, 40.80),
+                (3, 'Point C', 'park', -73.85, 40.85),
+                (4, 'Point D', 'building', -74.10, 41.00),
+                (5, 'Point E', 'park', -74.20, 41.10)
+        ) AS t(row_id, name, type, lon, lat)
+    """
+    test_df = memory_retrieval.con.execute(points_query).fetchdf()
+    
+    # Save test data to parquet files
+    test_file1 = tmp_path / "test_geom1.parquet"
+    test_file2 = tmp_path / "test_geom2.parquet"
+    
+    # Split data into two files
+    test_df.iloc[:3].to_parquet(test_file1)
+    test_df.iloc[3:].to_parquet(test_file2)
+    
+    # Import test files
+    memory_retrieval.cold.batch_import_parquet(
+        folder_path=tmp_path,
+        theme="test",
+        tag="spatial_test",
+        recursive=True,
+        pattern="*.parquet"
+    )
+    
+    # Test bounding box search with spatial index
+    # First build the spatial index
+    memory_retrieval.build_spatial_index()
+    
+    # Define test bounding box (should contain some points)
+    bbox = (-74.0, 40.7, -73.8, 40.9)  # min_lon, min_lat, max_lon, max_lat
+    
+    # Test search with spatial index
+    results_with_index = memory_retrieval.search_geospatial_data_in_bbox(
+        query_word="park",
+        bbox=bbox,
+        similarity_threshold=0.7,
+        max_workers=1,
+        use_gpu=False
+    )
+    
+    # Verify results with spatial index
+    assert not results_with_index.empty, "Should find results with spatial index"
+    assert len(results_with_index) >= 2, "Should find at least 2 parks within bbox"
+    assert all(results_with_index['type'] == 'park'), "All results should be parks"
+    
+    # Drop spatial index table to test without it
+    memory_retrieval.con.execute("DROP TABLE IF EXISTS spatial_index")
+    
+    # Test search without spatial index
+    results_without_index = memory_retrieval.search_geospatial_data_in_bbox(
+        query_word="park",
+        bbox=bbox,
+        similarity_threshold=0.7,
+        max_workers=1,
+        use_gpu=False
+    )
+    
+    # Verify results without spatial index
+    assert not results_without_index.empty, "Should find results without spatial index"
+    assert len(results_without_index) >= 2, "Should find at least 2 parks within bbox"
+    assert all(results_without_index['type'] == 'park'), "All results should be parks"
+    
+    # Test with empty bounding box
+    empty_bbox = (0.0, 0.0, 1.0, 1.0)  # Area with no data
+    empty_results = memory_retrieval.search_geospatial_data_in_bbox(
+        query_word="park",
+        bbox=empty_bbox,
+        similarity_threshold=0.7,
+        max_workers=1,
+        use_gpu=False
+    )
+    
+    assert empty_results.empty, "Should return empty DataFrame for bbox with no data"
+
+    # Test with invalid query word
+    invalid_results = memory_retrieval.search_geospatial_data_in_bbox(
+        query_word="nonexistent_feature_type",
+        bbox=bbox,
+        similarity_threshold=0.7,
+        max_workers=1,
+        use_gpu=False
+    )
+    
+    assert invalid_results.empty, "Should return empty DataFrame for invalid query word"
+
 def main():
     """List tables in cold memory."""
     print("\n=== Listing Tables in Cold Memory ===\n")
