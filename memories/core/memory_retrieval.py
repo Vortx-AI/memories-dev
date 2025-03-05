@@ -93,14 +93,23 @@ def process_file_for_search(args):
             import cudf
             import cuspatial
             
-            # Read parquet file with string columns as plain strings
-            gdf = cudf.read_parquet(file_path, strings_to_categorical=False)
+            # First, read the parquet schema to identify string and dictionary columns
+            pdf = pd.read_parquet(file_path, columns=None)
+            string_columns = [col for col in pdf.columns if 
+                            pd.api.types.is_string_dtype(pdf[col]) or 
+                            pd.api.types.is_categorical_dtype(pdf[col])]
             
-            # Convert any remaining dictionary/category columns to strings
+            # Create dtype dictionary for reading parquet
+            dtype_dict = {col: 'str' for col in string_columns}
+            
+            # Read parquet file with explicit string dtypes
+            gdf = cudf.read_parquet(file_path, dtype=dtype_dict)
+            
+            # Convert any remaining dictionary columns to strings
             for col in gdf.columns:
                 if isinstance(gdf[col].dtype, cudf.core.dtypes.CategoricalDtype) or \
                    str(gdf[col].dtype).startswith('dictionary'):
-                    gdf[col] = gdf[col].astype('string[pyarrow]')
+                    gdf[col] = gdf[col].astype('str')
             
             # Convert WKB geometry to cuspatial geometry
             if 'blob' in geom_type or 'binary' in geom_type:
@@ -129,12 +138,12 @@ def process_file_for_search(args):
             # Convert back to pandas with consistent string types
             df = result.to_pandas()
             
-            # Ensure all string-like columns are plain strings
+            # Ensure all object/string columns are string type
             for col in df.columns:
-                if df[col].dtype == 'object' or \
-                   isinstance(df[col].dtype, pd.CategoricalDtype) or \
-                   str(df[col].dtype).startswith('string'):
-                    df[col] = df[col].astype('string[pyarrow]')
+                if pd.api.types.is_object_dtype(df[col]) or \
+                   pd.api.types.is_string_dtype(df[col]) or \
+                   pd.api.types.is_categorical_dtype(df[col]):
+                    df[col] = df[col].astype(str)
             
         else:
             # CPU-based processing with explicit type casting
@@ -166,15 +175,15 @@ def process_file_for_search(args):
             """
             df = con.execute(query).fetchdf()
             
-            # Convert all string-like columns to plain strings using pyarrow string type
+            # Convert all string-like columns to plain strings
             for col in df.columns:
-                if df[col].dtype == 'object' or \
-                   isinstance(df[col].dtype, pd.CategoricalDtype) or \
-                   str(df[col].dtype).startswith('string'):
-                    df[col] = df[col].astype('string[pyarrow]')
+                if pd.api.types.is_object_dtype(df[col]) or \
+                   pd.api.types.is_string_dtype(df[col]) or \
+                   pd.api.types.is_categorical_dtype(df[col]):
+                    df[col] = df[col].astype(str)
         
         if not df.empty:
-            df['source_file'] = file_path
+            df['source_file'] = str(file_path)
             return df
         
         return pd.DataFrame()
