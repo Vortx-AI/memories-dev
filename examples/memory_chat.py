@@ -464,9 +464,7 @@ class MemoryQuery:
             results = self.memory_retrieval.search_geospatial_data_in_bbox(
                 query_word=query_word,
                 bbox=bbox,
-                similarity_threshold=similarity_threshold,
-                max_workers=max_workers,
-                batch_size=batch_size
+                
             )
 
             # Convert results to dictionary format
