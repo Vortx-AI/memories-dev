@@ -100,10 +100,13 @@ def process_file_for_search(args):
                 # Create dtype dictionary for reading parquet with consistent string types
                 dtype_dict = {}
                 for col in pdf.columns:
-                    if pd.api.types.is_string_dtype(pdf[col]) or \
-                       pd.api.types.is_categorical_dtype(pdf[col]) or \
-                       str(pdf[col].dtype).startswith('object') or \
-                       str(pdf[col].dtype).startswith('dictionary'):
+                    if col == geometry_column:
+                        # Skip type conversion for geometry column
+                        continue
+                    elif pd.api.types.is_string_dtype(pdf[col]) or \
+                         pd.api.types.is_categorical_dtype(pdf[col]) or \
+                         str(pdf[col].dtype).startswith('object') or \
+                         str(pdf[col].dtype).startswith('dictionary'):
                         try:
                             # Handle encoding issues by replacing invalid characters
                             if pd.api.types.is_string_dtype(pdf[col]):
@@ -119,8 +122,10 @@ def process_file_for_search(args):
                 # Read parquet file with explicit string dtypes using cuDF
                 gdf = cudf.read_parquet(file_path, dtype=dtype_dict)
                 
-                # Convert any remaining dictionary/category columns to strings
+                # Convert any remaining dictionary/category columns to strings (except geometry)
                 for col in gdf.columns:
+                    if col == geometry_column:
+                        continue
                     if isinstance(gdf[col].dtype, cudf.core.dtypes.CategoricalDtype) or \
                        str(gdf[col].dtype).startswith('dictionary'):
                         try:
@@ -157,8 +162,10 @@ def process_file_for_search(args):
                 # Convert back to pandas with consistent string types
                 df = result.to_pandas()
                 
-                # Ensure all string-like columns use PyArrow string type
+                # Ensure all string-like columns use PyArrow string type (except geometry)
                 for col in df.columns:
+                    if col == geometry_column:
+                        continue
                     if pd.api.types.is_string_dtype(df[col]) or \
                        pd.api.types.is_categorical_dtype(df[col]) or \
                        pd.api.types.is_object_dtype(df[col]) or \
@@ -183,17 +190,15 @@ def process_file_for_search(args):
             cast_columns = []
             for col in columns:
                 col_type = schema_df[schema_df['column_name'] == col]['column_type'].iloc[0].lower()
-                if ('varchar' in col_type or 'string' in col_type or 'text' in col_type or 
-                    'dictionary' in col_type or 'category' in col_type):
+                if col == geometry_column:
+                    # Keep geometry column as is
+                    cast_columns.append(f'{geom_expr} as "{col}"')
+                elif ('varchar' in col_type or 'string' in col_type or 'text' in col_type or 
+                      'dictionary' in col_type or 'category' in col_type):
                     # Triple cast to handle encoding issues and ensure string type consistency
                     cast_columns.append(
                         f'CAST(CAST(CAST("{col}" AS VARCHAR) AS BLOB) AS STRING) as "{col}"'
                     )
-                elif 'blob' in col_type or 'binary' in col_type:
-                    if col == geometry_column:
-                        cast_columns.append(f'{geom_expr} as "{col}"')
-                    else:
-                        cast_columns.append(f'"{col}"')
                 else:
                     cast_columns.append(f'"{col}"')
             
@@ -210,8 +215,10 @@ def process_file_for_search(args):
             """
             df = con.execute(query).fetchdf()
             
-            # Convert all string-like columns to PyArrow string type with encoding handling
+            # Convert all string-like columns to PyArrow string type with encoding handling (except geometry)
             for col in df.columns:
+                if col == geometry_column:
+                    continue
                 if pd.api.types.is_string_dtype(df[col]) or \
                    pd.api.types.is_categorical_dtype(df[col]) or \
                    pd.api.types.is_object_dtype(df[col]) or \
