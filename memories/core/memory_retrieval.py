@@ -93,74 +93,102 @@ def process_file_for_search(args):
             import cudf
             import cuspatial
             
-            # First read the parquet file using pandas to identify column types
-            pdf = pd.read_parquet(file_path)
-            
-            # Create dtype dictionary for reading parquet with consistent string types
-            dtype_dict = {}
-            for col in pdf.columns:
-                if pd.api.types.is_string_dtype(pdf[col]) or \
-                   pd.api.types.is_categorical_dtype(pdf[col]) or \
-                   str(pdf[col].dtype).startswith('object') or \
-                   str(pdf[col].dtype).startswith('dictionary'):
-                    # Convert all string-like columns to plain strings
-                    pdf[col] = pdf[col].astype(str).astype('string[pyarrow]')
-                    dtype_dict[col] = 'string[pyarrow]'
-            
-            # Read parquet file with explicit string dtypes using cuDF
-            gdf = cudf.read_parquet(file_path, dtype=dtype_dict)
-            
-            # Convert any remaining dictionary/category columns to strings
-            for col in gdf.columns:
-                if isinstance(gdf[col].dtype, cudf.core.dtypes.CategoricalDtype) or \
-                   str(gdf[col].dtype).startswith('dictionary'):
-                    gdf[col] = gdf[col].astype(str).astype('string[pyarrow]')
-            
-            # Convert WKB geometry to cuspatial geometry
-            if 'blob' in geom_type or 'binary' in geom_type:
-                gdf['geometry'] = cuspatial.from_wkb(gdf[geom_col])
-            else:
-                gdf['geometry'] = gdf[geom_col]
-            
-            # Create spatial index
-            spatial_index = cuspatial.quadtree(
-                gdf['geometry'].x,
-                gdf['geometry'].y,
-                min_lon, min_lat, max_lon, max_lat
-            )
-            
-            # Query using spatial index
-            points_in_bbox = cuspatial.points_in_spatial_window(
-                spatial_index,
-                gdf['geometry'].x,
-                gdf['geometry'].y,
-                min_lon, min_lat, max_lon, max_lat
-            )
-            
-            # Filter DataFrame
-            result = gdf.iloc[points_in_bbox]
-            
-            # Convert back to pandas with consistent string types
-            df = result.to_pandas()
-            
-            # Ensure all string-like columns use PyArrow string type
-            for col in df.columns:
-                if pd.api.types.is_string_dtype(df[col]) or \
-                   pd.api.types.is_categorical_dtype(df[col]) or \
-                   pd.api.types.is_object_dtype(df[col]) or \
-                   str(df[col].dtype).startswith('dictionary'):
-                    df[col] = df[col].astype(str).astype('string[pyarrow]')
+            try:
+                # First read the parquet file using pandas with robust encoding handling
+                pdf = pd.read_parquet(file_path, engine='pyarrow')
+                
+                # Create dtype dictionary for reading parquet with consistent string types
+                dtype_dict = {}
+                for col in pdf.columns:
+                    if pd.api.types.is_string_dtype(pdf[col]) or \
+                       pd.api.types.is_categorical_dtype(pdf[col]) or \
+                       str(pdf[col].dtype).startswith('object') or \
+                       str(pdf[col].dtype).startswith('dictionary'):
+                        try:
+                            # Handle encoding issues by replacing invalid characters
+                            if pd.api.types.is_string_dtype(pdf[col]):
+                                pdf[col] = pdf[col].fillna('').astype(str).str.encode('utf-8', errors='replace').str.decode('utf-8')
+                            # Convert all string-like columns to plain strings
+                            pdf[col] = pdf[col].astype(str).astype('string[pyarrow]')
+                            dtype_dict[col] = 'string[pyarrow]'
+                        except Exception as e:
+                            logger.warning(f"Error converting column {col} in {file_path}: {e}")
+                            # Use object dtype as fallback
+                            dtype_dict[col] = 'object'
+                
+                # Read parquet file with explicit string dtypes using cuDF
+                gdf = cudf.read_parquet(file_path, dtype=dtype_dict)
+                
+                # Convert any remaining dictionary/category columns to strings
+                for col in gdf.columns:
+                    if isinstance(gdf[col].dtype, cudf.core.dtypes.CategoricalDtype) or \
+                       str(gdf[col].dtype).startswith('dictionary'):
+                        try:
+                            gdf[col] = gdf[col].astype(str).astype('string[pyarrow]')
+                        except Exception as e:
+                            logger.warning(f"Error converting column {col} in GPU DataFrame: {e}")
+                            # Keep original dtype if conversion fails
+                            pass
+                
+                # Convert WKB geometry to cuspatial geometry
+                if 'blob' in geom_type or 'binary' in geom_type:
+                    gdf['geometry'] = cuspatial.from_wkb(gdf[geom_col])
+                else:
+                    gdf['geometry'] = gdf[geom_col]
+                
+                # Create spatial index
+                spatial_index = cuspatial.quadtree(
+                    gdf['geometry'].x,
+                    gdf['geometry'].y,
+                    min_lon, min_lat, max_lon, max_lat
+                )
+                
+                # Query using spatial index
+                points_in_bbox = cuspatial.points_in_spatial_window(
+                    spatial_index,
+                    gdf['geometry'].x,
+                    gdf['geometry'].y,
+                    min_lon, min_lat, max_lon, max_lat
+                )
+                
+                # Filter DataFrame
+                result = gdf.iloc[points_in_bbox]
+                
+                # Convert back to pandas with consistent string types
+                df = result.to_pandas()
+                
+                # Ensure all string-like columns use PyArrow string type
+                for col in df.columns:
+                    if pd.api.types.is_string_dtype(df[col]) or \
+                       pd.api.types.is_categorical_dtype(df[col]) or \
+                       pd.api.types.is_object_dtype(df[col]) or \
+                       str(df[col].dtype).startswith('dictionary'):
+                        try:
+                            # Handle encoding issues
+                            if pd.api.types.is_string_dtype(df[col]):
+                                df[col] = df[col].fillna('').astype(str).str.encode('utf-8', errors='replace').str.decode('utf-8')
+                            df[col] = df[col].astype(str).astype('string[pyarrow]')
+                        except Exception as e:
+                            logger.warning(f"Error converting column {col} in final DataFrame: {e}")
+                            # Keep original dtype if conversion fails
+                            pass
+                
+            except Exception as gpu_e:
+                logger.error(f"GPU processing failed for {file_path}: {gpu_e}")
+                raise
             
         else:
-            # CPU-based processing with explicit type casting
+            # CPU-based processing with explicit type casting and encoding handling
             columns = [col for col in schema_df['column_name']]
             cast_columns = []
             for col in columns:
                 col_type = schema_df[schema_df['column_name'] == col]['column_type'].iloc[0].lower()
                 if ('varchar' in col_type or 'string' in col_type or 'text' in col_type or 
                     'dictionary' in col_type or 'category' in col_type):
-                    # Double cast to ensure string type consistency
-                    cast_columns.append(f'CAST(CAST("{col}" AS VARCHAR) AS STRING) as "{col}"')
+                    # Triple cast to handle encoding issues and ensure string type consistency
+                    cast_columns.append(
+                        f'CAST(CAST(CAST("{col}" AS VARCHAR) AS BLOB) AS STRING) as "{col}"'
+                    )
                 elif 'blob' in col_type or 'binary' in col_type:
                     if col == geometry_column:
                         cast_columns.append(f'{geom_expr} as "{col}"')
@@ -182,17 +210,31 @@ def process_file_for_search(args):
             """
             df = con.execute(query).fetchdf()
             
-            # Convert all string-like columns to PyArrow string type
+            # Convert all string-like columns to PyArrow string type with encoding handling
             for col in df.columns:
                 if pd.api.types.is_string_dtype(df[col]) or \
                    pd.api.types.is_categorical_dtype(df[col]) or \
                    pd.api.types.is_object_dtype(df[col]) or \
                    str(df[col].dtype).startswith('dictionary'):
-                    df[col] = df[col].astype(str).astype('string[pyarrow]')
+                    try:
+                        # Handle encoding issues
+                        if pd.api.types.is_string_dtype(df[col]):
+                            df[col] = df[col].fillna('').astype(str).str.encode('utf-8', errors='replace').str.decode('utf-8')
+                        df[col] = df[col].astype(str).astype('string[pyarrow]')
+                    except Exception as e:
+                        logger.warning(f"Error converting column {col} in CPU DataFrame: {e}")
+                        # Keep original dtype if conversion fails
+                        pass
         
         if not df.empty:
-            # Ensure source_file is also string[pyarrow] type
-            df['source_file'] = pd.Series([str(file_path)], dtype='string[pyarrow]').iloc[0]
+            # Ensure source_file is also string[pyarrow] type with proper encoding
+            try:
+                source_file = str(file_path).encode('utf-8', errors='replace').decode('utf-8')
+                df['source_file'] = pd.Series([source_file], dtype='string[pyarrow]').iloc[0]
+            except Exception as e:
+                logger.warning(f"Error setting source_file: {e}")
+                df['source_file'] = str(file_path)
+            
             return df
         
         return pd.DataFrame()
