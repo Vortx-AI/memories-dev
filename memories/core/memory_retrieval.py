@@ -226,6 +226,270 @@ def process_file_for_search(args):
         if 'con' in locals():
             con.close()
 
+class SpatialIndexBuilder:
+    """Class for building and maintaining spatial index for geospatial data."""
+    
+    def __init__(self, data_dir: Optional[str] = None):
+        """Initialize spatial index builder.
+        
+        Args:
+            data_dir: Optional path to data directory. If not provided, uses default.
+        """
+        # Get project root directory if data_dir not provided
+        if not data_dir:
+            project_root = Path(__file__).parent.parent.parent
+            self.data_dir = os.path.join(project_root, "data")
+        else:
+            self.data_dir = data_dir
+            
+        # Initialize DuckDB connection
+        self.con = duckdb.connect(database=':memory:')
+        
+        # Install and load spatial extension
+        try:
+            self.con.execute("INSTALL spatial;")
+            self.con.execute("LOAD spatial;")
+            logger.info("Spatial extension installed and loaded successfully")
+        except Exception as e:
+            logger.error(f"Error setting up spatial extension: {e}")
+            raise
+            
+        logger.info(f"Initialized SpatialIndexBuilder")
+        logger.info(f"Data directory: {self.data_dir}")
+        
+    def get_parquet_schema(self, file_path: str) -> List[Tuple]:
+        """Get schema for a specific parquet file."""
+        try:
+            self.con.execute(f"""
+                CREATE OR REPLACE VIEW temp_view AS 
+                SELECT * FROM read_parquet('{file_path}')
+            """)
+            schema = self.con.execute("DESCRIBE temp_view").fetchall()
+            
+            # Print schema details for debugging
+            logger.debug(f"Schema for {file_path}:")
+            for col in schema:
+                logger.debug(f"Column: {col[0]}, Type: {col[1]}")
+                
+            return schema
+        except Exception as e:
+            logger.error(f"Error getting schema for {file_path}: {e}")
+            return []
+            
+    def find_geometry_column(self, schema: List[Tuple]) -> Tuple[Optional[str], Optional[str]]:
+        """Find the geometry column and its type in the schema."""
+        geometry_names = ['geom', 'geometry', 'the_geom', 'wkb_geometry']
+        for col in schema:
+            col_name = col[0].lower()
+            if col_name in geometry_names:
+                return col[0], col[1]
+        return None, None
+        
+    def get_geometry_expression(self, column: str, col_type: str) -> str:
+        """Get the appropriate geometry expression based on column type."""
+        if 'BLOB' in col_type.upper():
+            return f"ST_GeomFromWKB(CAST({column} AS BLOB))"
+        elif 'GEOMETRY' in col_type.upper():
+            return column
+        else:
+            raise ValueError(f"Unsupported geometry type: {col_type}")
+            
+    def get_geometry_bounds(self, geom_expr: str) -> str:
+        """Get the bounds of a geometry using ST_Envelope."""
+        return f"""
+            SELECT 
+                MIN(ST_XMin(ST_Envelope({geom_expr}))) as min_lon,
+                MIN(ST_YMin(ST_Envelope({geom_expr}))) as min_lat,
+                MAX(ST_XMax(ST_Envelope({geom_expr}))) as max_lon,
+                MAX(ST_YMax(ST_Envelope({geom_expr}))) as max_lat
+        """
+        
+    def create_index_table(self):
+        """Create the spatial index table and necessary indexes."""
+        try:
+            self.con.execute("""
+                CREATE TABLE IF NOT EXISTS spatial_index (
+                    file_path VARCHAR,
+                    min_lon DOUBLE,
+                    min_lat DOUBLE,
+                    max_lon DOUBLE,
+                    max_lat DOUBLE,
+                    geometry_column VARCHAR,
+                    last_modified TIMESTAMP,
+                    PRIMARY KEY (file_path)
+                );
+                
+                -- Create spatial index on bounds
+                CREATE INDEX IF NOT EXISTS idx_spatial_bounds 
+                ON spatial_index(min_lon, min_lat, max_lon, max_lat);
+                
+                -- Create index on file path for faster lookups
+                CREATE INDEX IF NOT EXISTS idx_spatial_path 
+                ON spatial_index(file_path);
+            """)
+            logger.info("Created spatial index table and indexes")
+        except Exception as e:
+            logger.error(f"Error creating index table: {e}")
+            raise
+            
+    def build_index(self, force_rebuild: bool = False):
+        """Build and maintain spatial index for parquet files.
+        
+        Args:
+            force_rebuild: If True, rebuilds index for all files regardless of modification time.
+        """
+        try:
+            # Create index table if it doesn't exist
+            self.create_index_table()
+            
+            # Get all registered parquet files from cold_metadata
+            files_query = """
+                SELECT path, timestamp as last_modified 
+                FROM cold_metadata 
+                WHERE data_type = 'parquet'
+            """
+            files = self.con.execute(files_query).fetchall()
+            
+            if not files:
+                logger.warning("No parquet files registered in cold_metadata")
+                return
+            
+            logger.info(f"Found {len(files)} registered parquet files to index")
+            
+            # Track statistics
+            total_files = len(files)
+            processed_files = 0
+            indexed_files = 0
+            skipped_files = 0
+            error_files = 0
+            
+            # Process each registered file
+            for file_path, db_last_modified in files:
+                try:
+                    processed_files += 1
+                    logger.info(f"Processing file {processed_files}/{total_files}: {file_path}")
+                    
+                    # Check if file is already indexed and up to date
+                    if not force_rebuild:
+                        indexed = self.con.execute("""
+                            SELECT last_modified 
+                            FROM spatial_index 
+                            WHERE file_path = ?
+                        """, [file_path]).fetchone()
+                        
+                        if indexed and pd.Timestamp(indexed[0]) >= pd.Timestamp(db_last_modified):
+                            logger.debug(f"Index up to date for {file_path}")
+                            skipped_files += 1
+                            continue
+                    
+                    # Get schema and geometry column
+                    schema = self.get_parquet_schema(file_path)
+                    geom_column, geom_type = self.find_geometry_column(schema)
+                    
+                    if not geom_column:
+                        logger.warning(f"No geometry column found in {file_path}")
+                        error_files += 1
+                        continue
+                        
+                    logger.info(f"Indexing {file_path} with geometry column {geom_column}")
+                    
+                    # Get geometry expression
+                    geom_expr = self.get_geometry_expression(geom_column, geom_type)
+                    
+                    # Calculate bounds for this file
+                    bounds_query = f"""
+                        {self.get_geometry_bounds(geom_expr)}
+                        FROM read_parquet('{file_path}')
+                    """
+                    bounds = self.con.execute(bounds_query).fetchone()
+                    
+                    if bounds and None not in bounds:
+                        # Update or insert into spatial index
+                        self.con.execute("""
+                            INSERT OR REPLACE INTO spatial_index 
+                            (file_path, min_lon, min_lat, max_lon, max_lat, geometry_column, last_modified)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """, [file_path, *bounds, geom_column, db_last_modified])
+                        logger.info(f"Indexed {file_path} with bounds: {bounds}")
+                        indexed_files += 1
+                    else:
+                        logger.warning(f"Could not calculate bounds for {file_path}")
+                        error_files += 1
+                        
+                except Exception as e:
+                    logger.error(f"Error indexing {file_path}: {e}")
+                    error_files += 1
+                    continue
+                
+            # Analyze the index for better query planning
+            self.con.execute("ANALYZE spatial_index")
+            
+            # Log final statistics
+            count = self.con.execute("SELECT COUNT(*) FROM spatial_index").fetchone()[0]
+            logger.info(f"\nIndexing completed:")
+            logger.info(f"Total files processed: {total_files}")
+            logger.info(f"Successfully indexed: {indexed_files}")
+            logger.info(f"Skipped (up to date): {skipped_files}")
+            logger.info(f"Errors: {error_files}")
+            logger.info(f"Total entries in spatial index: {count}")
+            
+        except Exception as e:
+            logger.error(f"Error building spatial index: {e}")
+            raise
+            
+    def get_index_stats(self) -> Dict[str, Any]:
+        """Get statistics about the spatial index."""
+        try:
+            stats = {}
+            
+            # Get total number of indexed files
+            count = self.con.execute("SELECT COUNT(*) FROM spatial_index").fetchone()[0]
+            stats['total_entries'] = count
+            
+            # Get bounding box of all indexed data
+            bounds = self.con.execute("""
+                SELECT 
+                    MIN(min_lon) as total_min_lon,
+                    MIN(min_lat) as total_min_lat,
+                    MAX(max_lon) as total_max_lon,
+                    MAX(max_lat) as total_max_lat
+                FROM spatial_index
+            """).fetchone()
+            
+            if bounds:
+                stats['total_bounds'] = {
+                    'min_lon': bounds[0],
+                    'min_lat': bounds[1],
+                    'max_lon': bounds[2],
+                    'max_lat': bounds[3]
+                }
+                
+            # Get count of unique geometry columns
+            geom_cols = self.con.execute("""
+                SELECT geometry_column, COUNT(*) as count
+                FROM spatial_index
+                GROUP BY geometry_column
+            """).fetchall()
+            
+            stats['geometry_columns'] = {
+                col: count for col, count in geom_cols
+            }
+            
+            return stats
+            
+        except Exception as e:
+            logger.error(f"Error getting index stats: {e}")
+            return {}
+            
+    def cleanup(self):
+        """Clean up resources."""
+        try:
+            if self.con:
+                self.con.close()
+                logger.info("Closed database connection")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+
 class MemoryRetrieval:
     """Memory retrieval class for querying cold memory storage."""
     
@@ -1513,9 +1777,6 @@ class MemoryRetrieval:
         logger.info("GEOSPATIAL FEATURE SEARCH")
         logger.info(f"{'='*80}")
         
-        # Ensure spatial index is up to date
-        self.build_spatial_index()
-        
         min_lon, min_lat, max_lon, max_lat = bbox
         
         # Get potentially intersecting files using spatial index and cold_metadata join
@@ -1607,7 +1868,7 @@ class MemoryRetrieval:
                         logger.error(f"Error concatenating result: {concat_e}")
                 return final_results
         
-        return pd.DataFrame() 
+        return pd.DataFrame()
 
 def search_geospatial_data_in_bbox_wrapper(
     self,
