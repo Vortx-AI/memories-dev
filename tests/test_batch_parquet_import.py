@@ -133,7 +133,7 @@ def run_import():
         raise
 
 @pytest.fixture
-def memory_manager(tmp_path):
+def memory_manager(tmp_path, db_config_path):
     """Initialize memory manager with cold storage enabled."""
     # Create test directory
     test_cold_dir = tmp_path / "test_cold"
@@ -152,7 +152,7 @@ def memory_manager(tmp_path):
     
     # Initialize memory manager
     print("Initializing memory manager...")
-    manager = MemoryManager()
+    manager = MemoryManager(config_path=db_config_path)
     
     # Configure the manager
     manager.config = {

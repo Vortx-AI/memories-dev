@@ -101,9 +101,8 @@ def list_cold_tables():
             memory_manager.cleanup()
 
 @pytest.fixture
-def memory_retrieval(tmp_path):
-    """Initialize memory retrieval with cold storage enabled."""
-    
+def memory_retrieval(tmp_path, db_config_path):
+    """Initialize memory retrieval with test configuration."""
     # Create test directory
     test_cold_dir = tmp_path / "test_cold"
     test_cold_dir.mkdir(exist_ok=True)
@@ -113,30 +112,35 @@ def memory_retrieval(tmp_path):
     if db_path.exists():
         db_path.unlink()
         
-    # Create DuckDB connection
-    db_conn = duckdb.connect(str(db_path))
+    print("Creating DuckDB connection for tests...")
+    # Create connection with external access enabled
+    db_conn = duckdb.connect(str(db_path), config={'enable_external_access': True})
     db_conn.execute("SET memory_limit='8GB'")
     db_conn.execute("SET threads=4")
     
     # Initialize memory manager
-    manager = MemoryManager()
+    print("Initializing memory manager...")
+    manager = MemoryManager(config_path=db_config_path)
     
     # Configure the manager
     manager.config = {
         'memory': {
             'base_path': test_cold_dir,
             'cold': {
-                'max_size': int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),
-                'path': test_cold_dir,
+                'max_size': int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),  # 10GB default
+                'path': test_cold_dir,  # Set the cold storage path in config
                 'duckdb': {
-                    'db_conn': db_conn
+                    'db_conn': db_conn,  # Pass the pre-configured connection
+                    'config': {
+                        'enable_external_access': True  # This setting is already applied at connection time
+                    }
                 }
             }
         }
     }
     
-    # Create memory retrieval instance
-    retrieval = MemoryRetrieval(manager.cold)
+    # Initialize memory retrieval
+    retrieval = MemoryRetrieval(manager)
     
     yield retrieval
     

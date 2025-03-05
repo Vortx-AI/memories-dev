@@ -3,6 +3,7 @@ import os
 import sys
 from typing import Dict, Any
 from dotenv import load_dotenv
+from pathlib import Path
 
 # Add the project root to the Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -92,4 +93,14 @@ def temp_test_dir(tmp_path) -> str:
 @pytest.fixture(scope="session")
 def test_data_dir() -> str:
     """Fixture for test data directory"""
-    return os.path.join(os.path.dirname(__file__), "test_data") 
+    return os.path.join(os.path.dirname(__file__), "test_data")
+
+@pytest.fixture
+def config_path():
+    """Return the path to the config directory."""
+    return Path(os.path.dirname(os.path.dirname(__file__))) / 'config'
+
+@pytest.fixture
+def db_config_path(config_path):
+    """Return the path to the database config file."""
+    return config_path / 'db_config.yml' 
