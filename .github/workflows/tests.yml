@@ -26,9 +26,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e ".[test]"
         
-    - name: Create config directory
+    - name: Create config directory and copy config file
       run: |
-        mkdir -p config
+        mkdir -p /home/runner/work/memories-dev/config
         cp config/db_config.yml /home/runner/work/memories-dev/config/
         
     - name: Run tests
