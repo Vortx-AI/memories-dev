@@ -1,5 +1,5 @@
 """
-Memories - A package for daily synthesis of Earth Memories
+Memories - A hierarchical memory management system for AI applications.
 """
 
 import logging
@@ -13,11 +13,12 @@ from memories.core.config import Config
 from memories.models.load_model import LoadModel
 from memories.utils.core.duckdb_utils import query_multiple_parquet
 from memories.utils.core.system import system_check, SystemStatus
+from memories.core.memory_manager import MemoryManager
 
 
 logger = logging.getLogger(__name__)
 
-__version__ = "2.0.4"  # Match version in pyproject.toml
+__version__ = "2.0.5"  # Match version in pyproject.toml
 
 __all__ = [
     # Core components
@@ -39,4 +40,7 @@ __all__ = [
     
     # Version
     "__version__",
+    
+    # New components
+    "MemoryManager",
 ]

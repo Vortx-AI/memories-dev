@@ -1,25 +1,17 @@
 """
-Core functionality for the memories package.
+Core components of the memories system.
 """
 
-from memories.core.config import Config
-from memories.core.database import DuckDBHandler
-from memories.core.memories_index import HeaderMemory
+from memories.core.memory_manager import MemoryManager
 from memories.core.hot import HotMemory
-from memories.core.red_hot import RedHotMemory
 from memories.core.warm import WarmMemory
 from memories.core.cold import ColdMemory
 from memories.core.glacier import GlacierMemory
-from memories.core.memory_retrieval import MemoryRetrieval
 
 __all__ = [
-    "Config",
-    "DuckDBHandler",
-    "HeaderMemory",
+    "MemoryManager",
     "HotMemory",
-    "RedHotMemory",
-    "WarmMemory",
+    "WarmMemory", 
     "ColdMemory",
-    "GlacierMemory",
-    "MemoryRetrieval",
+    "GlacierMemory"
 ]

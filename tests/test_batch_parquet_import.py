@@ -34,13 +34,12 @@ def cleanup_cold_memory():
             db_conn = duckdb.connect(str(db_path))
             
             # Initialize memory manager
-            memory_manager = MemoryManager(
-                enable_red_hot=False,
-                enable_hot=False,
-                enable_cold=True,
-                enable_warm=False,
-                enable_glacier=False,
-                custom_config={
+            memory_manager = MemoryManager()
+            
+            # Configure the manager
+            memory_manager.config = {
+                'memory': {
+                    'base_path': storage_dir,
                     'cold': {
                         'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
                         'path': storage_dir / 'cold',
@@ -49,7 +48,7 @@ def cleanup_cold_memory():
                         }
                     }
                 }
-            )
+            }
             
             # Use the new cleanup method
             memory_manager.cleanup_cold_memory(remove_storage=True)
@@ -86,25 +85,24 @@ def run_import():
         db_conn.execute("SET threads=4")
         
         print("Initializing memory manager...")
-        memory_manager = MemoryManager(
-            enable_red_hot=False,  # Disable vector storage
-            enable_hot=False,      # Disable Redis
-            enable_cold=True,      # Enable cold storage for parquet files
-            enable_warm=False,     # Disable warm storage
-            enable_glacier=False,  # Disable glacier storage
-            custom_config={
+        memory_manager = MemoryManager()
+        
+        # Configure the manager
+        memory_manager.config = {
+            'memory': {
+                'base_path': storage_dir,
                 'cold': {
-                    'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),  # 10GB
+                    'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
                     'path': cold_dir,
                     'duckdb': {
-                        'db_conn': db_conn,  # Pass the pre-configured connection
+                        'db_conn': db_conn,
                         'config': {
-                            'enable_external_access': True  # This setting is already applied at connection time
+                            'enable_external_access': True
                         }
                     }
                 }
             }
-        )
+        }
         
         print("\nStarting parquet file import...")
         print(f"Looking for parquet files in: {GEO_MEMORIES_PATH}")
@@ -154,17 +152,16 @@ def memory_manager(tmp_path):
     
     # Initialize memory manager
     print("Initializing memory manager...")
-    manager = MemoryManager(
-        enable_red_hot=False,  # Disable vector storage
-        enable_hot=False,      # Disable Redis
-        enable_cold=True,      # Enable cold storage for parquet files
-        enable_warm=False,     # Disable warm storage
-        enable_glacier=False,  # Disable glacier storage
-        custom_config={
-            "cold": {
-                "max_size": int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),  # 10GB default
-                "path": test_cold_dir,  # Set the cold storage path in config
-                "duckdb": {
+    manager = MemoryManager()
+    
+    # Configure the manager
+    manager.config = {
+        'memory': {
+            'base_path': test_cold_dir,
+            'cold': {
+                'max_size': int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),  # 10GB default
+                'path': test_cold_dir,  # Set the cold storage path in config
+                'duckdb': {
                     'db_conn': db_conn,  # Pass the pre-configured connection
                     'config': {
                         'enable_external_access': True  # This setting is already applied at connection time
@@ -172,7 +169,7 @@ def memory_manager(tmp_path):
                 }
             }
         }
-    )
+    }
     
     yield manager
     

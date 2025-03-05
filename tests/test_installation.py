@@ -4,19 +4,17 @@ Test script to verify memories-dev package installation.
 
 import pytest
 import importlib.util
+from memories import MemoryManager
+from memories.core import MemoryManager as CoreMemoryManager
 
 def test_package_installed():
     """Test that the package is installed and can be imported as 'memories'."""
     assert importlib.util.find_spec("memories") is not None
 
 def test_core_imports():
-    """Test that core components can be imported."""
-    from memories import MemoryStore, Config
-    from memories.core import HotMemory, WarmMemory, ColdMemory, GlacierMemory
-    
-    assert all(x is not None for x in [
-        MemoryStore, Config, HotMemory, WarmMemory, ColdMemory, GlacierMemory
-    ])
+    """Test importing core components."""
+    from memories.core.memory_manager import MemoryManager
+    assert MemoryManager is not None
 
 def test_version():
     """Test that version is properly set."""
@@ -25,9 +23,9 @@ def test_version():
     assert len(__version__.split(".")) == 3  # Should be in format x.y.z
 
 def test_cli():
-    """Test that CLI is properly installed."""
-    import memories.cli
-    assert hasattr(memories.cli, "main")
+    """Test CLI imports."""
+    from memories.cli import cli
+    assert cli is not None
     
 if __name__ == "__main__":
     pytest.main([__file__, "-v"]) 

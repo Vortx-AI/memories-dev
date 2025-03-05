@@ -41,26 +41,23 @@ def list_cold_tables():
         print("Connecting to existing DuckDB database...")
         db_conn = duckdb.connect(str(db_path))
         
-        print("Initializing memory retrieval...")
         # Initialize memory manager with existing connection
-        memory_manager = MemoryManager(
-            vector_encoder=None,  # Not needed for listing
-            enable_red_hot=False,
-            enable_hot=False,
-            enable_cold=True,
-            enable_warm=False,
-            enable_glacier=False,
-            custom_config={
+        memory_manager = MemoryManager()
+        
+        # Configure the manager
+        memory_manager.config = {
+            'memory': {
+                'base_path': storage_dir,
                 'cold': {
                     'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
-                    'path': cold_dir,  # Set the cold storage path in config
+                    'path': cold_dir,
                     'duckdb': {
                         'db_conn': db_conn,
-                        'enable_external_access': True  # Enable external access for parquet files
+                        'enable_external_access': True
                     }
                 }
             }
-        )
+        }
         
         # Initialize memory retrieval
         memory_retrieval = MemoryRetrieval(memory_manager.cold)
@@ -122,23 +119,21 @@ def memory_retrieval(tmp_path):
     db_conn.execute("SET threads=4")
     
     # Initialize memory manager
-    manager = MemoryManager(
-        vector_encoder=None,  # Not needed for this test
-        enable_red_hot=False,
-        enable_hot=False,
-        enable_cold=True,
-        enable_warm=False,
-        enable_glacier=False,
-        custom_config={
-            "cold": {
-                "max_size": int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),
-                "path": test_cold_dir,  # Set the cold storage path in config
-                "duckdb": {
+    manager = MemoryManager()
+    
+    # Configure the manager
+    manager.config = {
+        'memory': {
+            'base_path': test_cold_dir,
+            'cold': {
+                'max_size': int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),
+                'path': test_cold_dir,
+                'duckdb': {
                     'db_conn': db_conn
                 }
             }
         }
-    )
+    }
     
     # Create memory retrieval instance
     retrieval = MemoryRetrieval(manager.cold)
@@ -397,14 +392,12 @@ def test_spatial_queries():
         db_conn.execute("LOAD spatial;")
         
         print("Initializing memory manager...")
-        memory_manager = MemoryManager(
-            vector_encoder=None,
-            enable_red_hot=False,
-            enable_hot=False,
-            enable_cold=True,
-            enable_warm=False,
-            enable_glacier=False,
-            custom_config={
+        memory_manager = MemoryManager()
+        
+        # Configure the manager
+        memory_manager.config = {
+            'memory': {
+                'base_path': storage_dir,
                 'cold': {
                     'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
                     'duckdb': {
@@ -412,7 +405,7 @@ def test_spatial_queries():
                     }
                 }
             }
-        )
+        }
         
         # Initialize memory retrieval
         memory_retrieval = MemoryRetrieval(memory_manager.cold)
@@ -585,14 +578,12 @@ def main():
         db_conn.execute("SET threads=4")
         
         # Initialize memory manager
-        memory_manager = MemoryManager(
-            vector_encoder=None,  # Not needed for listing
-            enable_red_hot=False,
-            enable_hot=False,
-            enable_cold=True,
-            enable_warm=False,
-            enable_glacier=False,
-            custom_config={
+        memory_manager = MemoryManager()
+        
+        # Configure the manager
+        memory_manager.config = {
+            'memory': {
+                'base_path': storage_dir,
                 'cold': {
                     'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
                     'duckdb': {
@@ -603,7 +594,7 @@ def main():
                     }
                 }
             }
-        )
+        }
         
         # List available tables
         tables = memory_manager.cold.list_tables()
