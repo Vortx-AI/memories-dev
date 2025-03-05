@@ -96,13 +96,16 @@ def process_file_for_search(args):
             # First read the parquet file using pandas to identify column types
             pdf = pd.read_parquet(file_path)
             
-            # Create dtype dictionary for reading parquet
+            # Create dtype dictionary for reading parquet with consistent string types
             dtype_dict = {}
             for col in pdf.columns:
                 if pd.api.types.is_string_dtype(pdf[col]) or \
                    pd.api.types.is_categorical_dtype(pdf[col]) or \
-                   str(pdf[col].dtype).startswith('object'):
-                    dtype_dict[col] = 'string[pyarrow]'  # Use PyArrow string type
+                   str(pdf[col].dtype).startswith('object') or \
+                   str(pdf[col].dtype).startswith('dictionary'):
+                    # Convert all string-like columns to plain strings
+                    pdf[col] = pdf[col].astype(str).astype('string[pyarrow]')
+                    dtype_dict[col] = 'string[pyarrow]'
             
             # Read parquet file with explicit string dtypes using cuDF
             gdf = cudf.read_parquet(file_path, dtype=dtype_dict)
@@ -111,7 +114,7 @@ def process_file_for_search(args):
             for col in gdf.columns:
                 if isinstance(gdf[col].dtype, cudf.core.dtypes.CategoricalDtype) or \
                    str(gdf[col].dtype).startswith('dictionary'):
-                    gdf[col] = gdf[col].astype('string[pyarrow]')
+                    gdf[col] = gdf[col].astype(str).astype('string[pyarrow]')
             
             # Convert WKB geometry to cuspatial geometry
             if 'blob' in geom_type or 'binary' in geom_type:
@@ -144,8 +147,9 @@ def process_file_for_search(args):
             for col in df.columns:
                 if pd.api.types.is_string_dtype(df[col]) or \
                    pd.api.types.is_categorical_dtype(df[col]) or \
-                   pd.api.types.is_object_dtype(df[col]):
-                    df[col] = df[col].astype('string[pyarrow]')
+                   pd.api.types.is_object_dtype(df[col]) or \
+                   str(df[col].dtype).startswith('dictionary'):
+                    df[col] = df[col].astype(str).astype('string[pyarrow]')
             
         else:
             # CPU-based processing with explicit type casting
@@ -155,7 +159,7 @@ def process_file_for_search(args):
                 col_type = schema_df[schema_df['column_name'] == col]['column_type'].iloc[0].lower()
                 if ('varchar' in col_type or 'string' in col_type or 'text' in col_type or 
                     'dictionary' in col_type or 'category' in col_type):
-                    # Cast to VARCHAR and then to string[pyarrow] type
+                    # Double cast to ensure string type consistency
                     cast_columns.append(f'CAST(CAST("{col}" AS VARCHAR) AS STRING) as "{col}"')
                 elif 'blob' in col_type or 'binary' in col_type:
                     if col == geometry_column:
@@ -182,12 +186,13 @@ def process_file_for_search(args):
             for col in df.columns:
                 if pd.api.types.is_string_dtype(df[col]) or \
                    pd.api.types.is_categorical_dtype(df[col]) or \
-                   pd.api.types.is_object_dtype(df[col]):
-                    df[col] = df[col].astype('string[pyarrow]')
+                   pd.api.types.is_object_dtype(df[col]) or \
+                   str(df[col].dtype).startswith('dictionary'):
+                    df[col] = df[col].astype(str).astype('string[pyarrow]')
         
         if not df.empty:
             # Ensure source_file is also string[pyarrow] type
-            df['source_file'] = pd.Series([str(file_path)], dtype='string[pyarrow]')
+            df['source_file'] = pd.Series([str(file_path)], dtype='string[pyarrow]').iloc[0]
             return df
         
         return pd.DataFrame()
