@@ -1298,7 +1298,8 @@ class MemoryRetrieval:
                         'columns': set(),
                         'geometry_column': None
                     }
-                unique_files[file_path]['columns'].add(match['column'])
+                # Convert column to string before adding to set
+                unique_files[file_path]['columns'].add(str(match['column']))
             
             logger.info(f"\nFound {len(unique_files)} unique files to process")
             
