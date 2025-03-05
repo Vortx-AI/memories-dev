@@ -105,34 +105,44 @@ def list_cold_tables():
 @pytest.fixture(scope="function")
 def memory_manager(tmp_path):
     """Create a memory manager instance for testing."""
-    print("Creating DuckDB connection for tests...")
-    
-    # Create test database in temporary directory
+    # Create test database
     db_path = tmp_path / 'test.db'
     con = duckdb.connect(str(db_path))
     
-    print("Initializing memory manager...")
-    manager = MemoryManager()
+    # Create spatial index table
+    con.execute("""
+        CREATE TABLE spatial_index (
+            id INTEGER PRIMARY KEY,
+            min_lat DOUBLE,
+            max_lat DOUBLE,
+            min_lon DOUBLE,
+            max_lon DOUBLE,
+            data_source VARCHAR,
+            metadata JSON
+        )
+    """)
     
-    # Initialize cold memory with test connection
-    manager.cold = ColdMemory(
-        connection=con,
-        config={
+    # Initialize memory manager
+    manager = MemoryManager()
+    manager.con = con
+    
+    # Configure cold memory
+    manager.configure_tiers(
+        cold_config={
             'path': str(tmp_path / 'cold'),
             'max_size': 1073741824,  # 1GB
             'duckdb': {
                 'memory_limit': '1GB',
-                'threads': 2
+                'threads': 4
             }
-        }
+        },
+        reinitialize=True
     )
     
     yield manager
     
     # Cleanup
     con.close()
-    if db_path.exists():
-        db_path.unlink()
     if (tmp_path / 'cold').exists():
         shutil.rmtree(tmp_path / 'cold')
 
@@ -195,13 +205,31 @@ def test_invalid_column_names(memory_retrieval):
 
 def test_search_geospatial_data_in_bbox(memory_retrieval):
     """Test searching geospatial data in bbox."""
+    # Insert test data into spatial_index
+    memory_retrieval.con.execute("""
+        INSERT INTO spatial_index (id, min_lat, max_lat, min_lon, max_lon, data_source, metadata)
+        VALUES 
+        (1, 10, 20, 30, 40, 'test_source', '{"text": "test data point 1"}'),
+        (2, -10, 0, -20, 0, 'test_source', '{"text": "test data point 2"}')
+    """)
+    
+    # Test with bbox that should include first point
     df = memory_retrieval.search_geospatial_data_in_bbox(
         query_word="test",
-        bbox=(-180, -90, 180, 90),
+        bbox=(25, 5, 45, 25),  # Should include first point
         similarity_threshold=0.7
     )
     assert isinstance(df, pd.DataFrame)
-    assert len(df) == 0  # Empty since no data loaded
+    assert len(df) == 1  # Should find one point
+    
+    # Test with bbox that includes no points
+    df = memory_retrieval.search_geospatial_data_in_bbox(
+        query_word="test",
+        bbox=(50, 50, 60, 60),
+        similarity_threshold=0.7
+    )
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 0  # Should find no points
 
 def main():
     """List tables in cold memory."""
