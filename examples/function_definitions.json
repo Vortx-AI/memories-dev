@@ -199,65 +199,90 @@
                 }
             }
         },
+       
         {
-            "type": "function",
-            "function": {
-                "name": "download_theme_type",
-                "description": "Download data for a specific theme and type within a geographic bounding box.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "theme": {
-                            "type": "string",
-                            "description": "Theme name from Overture Maps",
-                            "enum": ["buildings", "places", "transportation", "base", "divisions", "addresses"]
-                        },
-                        "tag": {
-                            "type": "string",
-                            "description": "Type/tag name within the theme",
-                            "enum": [
-                                "building", "building_part",
-                                "place",
-                                "segment", "connector",
-                                "water", "land", "land_cover", "land_use", "infrastructure",
-                                "division_area", "division_boundary",
-                                "address"
-                            ]
-                        },
-                        "bbox": {
-                            "type": "object",
-                            "description": "Bounding box coordinates",
-                            "properties": {
-                                "xmin": {
-                                    "type": "number",
-                                    "description": "Minimum longitude (-180 to 180)"
-                                },
-                                "ymin": {
-                                    "type": "number",
-                                    "description": "Minimum latitude (-90 to 90)"
-                                },
-                                "xmax": {
-                                    "type": "number",
-                                    "description": "Maximum longitude (-180 to 180)"
-                                },
-                                "ymax": {
-                                    "type": "number",
-                                    "description": "Maximum latitude (-90 to 90)"
-                                }
-                            },
-                            "required": ["xmin", "ymin", "xmax", "ymax"]
-                        },
-                        "storage_path": {
-                            "type": "string",
-                            "description": "Optional path for storing downloaded data"
-                        },
-                        "max_size": {
-                            "type": "integer",
-                            "description": "Optional maximum file size in bytes"
-                        }
+            "name": "analyze_geospatial_data",
+            "description": "Analyze geospatial features within a bounding box based on specified action",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query_word": {
+                        "type": "string",
+                        "description": "Search term (e.g., 'road', 'building', 'park', 'landuse', 'water',etc)"
                     },
-                    "required": ["theme", "tag", "bbox"]
-                }
+                    "bbox": {
+                        "type": "array",
+                        "items": {
+                            "type": "number"
+                        },
+                        "minItems": 4,
+                        "maxItems": 4,
+                        "description": "Geographic bounding box as [min_lon, min_lat, max_lon, max_lat]"
+                    },
+                    "analysis_action": {
+                        "type": "string",
+                        "enum": ["summary", "count", "names", "types", "density", "stats", "categories", "all"],
+                        "description": "Type of analysis to perform",
+                        "default": "summary"
+                    },
+                    "similarity_threshold": {
+                        "type": "number",
+                        "minimum": 0.3,
+                        "maximum": 1.0,
+                        "description": "Minimum similarity threshold for matching columns",
+                        "default": 0.7
+                    },
+                    "max_tokens": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "Maximum number of tokens allowed in the output",
+                        "default": 15000
+                    }
+                },
+                "required": ["query_word", "bbox"]
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": ["success", "error", "no_data"],
+                        "description": "Status of the analysis"
+                    },
+                    "summary": {
+                        "type": "object",
+                        "description": "General summary statistics (when action is 'summary' or 'all')"
+                    },
+                    "count": {
+                        "type": "object",
+                        "description": "Feature count statistics (when action is 'count' or 'all')"
+                    },
+                    "names": {
+                        "type": "object",
+                        "description": "Feature names analysis (when action is 'names' or 'all')"
+                    },
+                    "types": {
+                        "type": "object",
+                        "description": "Feature types distribution (when action is 'types' or 'all')"
+                    },
+                    "density": {
+                        "type": "object",
+                        "description": "Feature density analysis (when action is 'density' or 'all')"
+                    },
+                    "stats": {
+                        "type": "object",
+                        "description": "Statistical analysis of numeric columns (when action is 'stats' or 'all')"
+                    },
+                    "categories": {
+                        "type": "object",
+                        "description": "Distribution of categorical values (when action is 'categories' or 'all')"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error or status message when applicable"
+                    }
+                },
+                "required": ["status"]
             }
         }
     ]

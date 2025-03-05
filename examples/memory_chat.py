@@ -170,7 +170,8 @@ class MemoryQuery:
                 "get_data_by_bbox": self.get_data_by_bbox_wrapper,
                 "get_data_by_bbox_and_value": self.get_data_by_bbox_and_value_wrapper,
                 "get_data_by_fuzzy_search": self.get_data_by_fuzzy_search_wrapper,
-                "execute_code": self.code_execution.execute_code
+                "execute_code": self.code_execution.execute_code,
+                "analyze_geospatial_data": self.analyze_geospatial_data_wrapper
             }
             
             # Load functions from JSON file
@@ -479,6 +480,37 @@ class MemoryQuery:
                 "status": "error",
                 "message": str(e),
                 "data": []
+            }
+
+    def analyze_geospatial_data_wrapper(
+        self,
+        query_word: str,
+        bbox: list,
+        analysis_action: str = "summary",
+        similarity_threshold: float = 0.7,
+        max_tokens: int = 15000
+    ) -> Dict[str, Any]:
+        """Wrapper for analyze_geospatial_data to handle initialization and return format."""
+        try:
+            # Convert bbox list to tuple
+            bbox_tuple = tuple(bbox)
+            
+            # Call analyze_geospatial_data
+            results = self.memory_retrieval.analyze_geospatial_data(
+                query_word=query_word,
+                bbox=bbox_tuple,
+                analysis_action=analysis_action,
+                similarity_threshold=similarity_threshold,
+                max_tokens=max_tokens
+            )
+
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error in analyze_geospatial_data: {e}")
+            return {
+                "status": "error",
+                "message": str(e)
             }
 
 def main():
