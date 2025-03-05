@@ -80,7 +80,6 @@ scipy-openblas32>=0.3.23
 
 # FAISS CPU version (GPU version available for Python <3.12)
 faiss-cpu>=1.7.4
-
 # Documentation dependencies
 sphinx>=7.2.0
 sphinx-rtd-theme>=2.0.0
