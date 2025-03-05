@@ -138,82 +138,97 @@ class OpenAIConnector(APIConnector):
         messages: List[Dict[str, str]],
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: str = "auto",
-        max_tokens: int = 30000,
         **kwargs
     ) -> Dict[str, Any]:
         """
-        Get chat completion from OpenAI API.
+        Generate a chat completion using the OpenAI API.
         
         Args:
-            messages: List of message dictionaries
-            tools: Optional list of tool definitions
-            tool_choice: Optional tool choice ("auto" or "none")
-            max_tokens: Maximum tokens allowed for the request
+            messages: List of message dictionaries with 'role' and 'content' keys
+            tools: Optional list of tools/functions the model can use
+            tool_choice: How to handle tool selection ("auto", "none", or specific)
             **kwargs: Additional parameters for the API call
             
         Returns:
-            API response as dictionary
+            Dict containing the response message, tool calls, and metadata
         """
+        if self.client is None:
+            raise RuntimeError("OpenAI client is not initialized")
+            
         try:
-            # Estimate input tokens
-            input_tokens = self.estimate_tokens(messages)
+            logger.info(f"Preparing OpenAI chat completion request")
+            logger.debug(f"Messages: {messages}")
+            logger.debug(f"Tools: {tools}")
             
-            if input_tokens > max_tokens:
-                # Try to reduce message content
-                messages = self.truncate_messages(messages, max_tokens)
-                input_tokens = self.estimate_tokens(messages)
-                
-                if input_tokens > max_tokens:
-                    return {
-                        "error": f"Input too large ({input_tokens} tokens) even after truncation. Maximum is {max_tokens} tokens."
-                    }
+            # Get model configuration
+            config = self.model_config.get("config", {})
             
+            # Prepare parameters
             params = {
+                "model": kwargs.pop("model", self.model_config.get("name", "gpt-4-turbo-preview")),
                 "messages": messages,
-                "model": self.model_config.get("name", "gpt-4-turbo-preview"),
-                "max_tokens": min(4096, max_tokens - input_tokens),  # Leave room for response
-                **kwargs
+                "temperature": kwargs.pop("temperature", config.get("temperature", 0.7)),
+                "max_tokens": kwargs.pop("max_tokens", config.get("max_length", 1000)),
+                "top_p": kwargs.pop("top_p", config.get("top_p", 0.95))
             }
             
+            # Add tools if provided
             if tools:
                 params["tools"] = tools
-            if tool_choice:
                 params["tool_choice"] = tool_choice
                 
+            # Add any remaining kwargs
+            params.update(kwargs)
+            
+            logger.info("Sending chat completion request to OpenAI API...")
+            start_time = datetime.now()
+            
+            # Make API call
             response = self.client.chat.completions.create(**params)
-            return self._process_response(response)
+            
+            end_time = datetime.now()
+            generation_time = (end_time - start_time).total_seconds()
+            logger.info("Response received from OpenAI API")
+            
+            # Process response
+            message = {
+                "role": "assistant",
+                "content": response.choices[0].message.content,
+            }
+            
+            # Extract tool calls if any
+            tool_calls = []
+            if hasattr(response.choices[0].message, "tool_calls") and response.choices[0].message.tool_calls:
+                tool_calls = [
+                    {
+                        "function": {
+                            "name": tool_call.function.name,
+                            "arguments": tool_call.function.arguments
+                        }
+                    }
+                    for tool_call in response.choices[0].message.tool_calls
+                ]
+                message["tool_calls"] = tool_calls
+            
+            # Prepare metadata
+            metadata = {
+                "model": response.model,
+                "total_tokens": response.usage.total_tokens,
+                "prompt_tokens": response.usage.prompt_tokens,
+                "completion_tokens": response.usage.completion_tokens,
+                "generation_time": generation_time,
+                "finish_reason": response.choices[0].finish_reason
+            }
+            
+            return {
+                "message": message,
+                "tool_calls": tool_calls,
+                "metadata": metadata
+            }
             
         except Exception as e:
-            logger.error(f"OpenAI chat completion error: {str(e)}")
-            return {"error": str(e)}
-            
-    def estimate_tokens(self, messages: List[Dict[str, str]]) -> int:
-        """Estimate the number of tokens in the messages."""
-        # Rough estimation: 1 token ≈ 4 characters for English text
-        total_chars = sum(len(str(msg.get("content", ""))) for msg in messages)
-        return total_chars // 4
-        
-    def truncate_messages(self, messages: List[Dict[str, str]], max_tokens: int) -> List[Dict[str, str]]:
-        """Truncate messages to fit within token limit."""
-        # Keep system message and last few user/assistant exchanges
-        truncated = []
-        total_chars = 0
-        
-        # Always keep system message if present
-        if messages and messages[0]["role"] == "system":
-            truncated.append(messages[0])
-            total_chars += len(str(messages[0].get("content", "")))
-            messages = messages[1:]
-        
-        # Keep most recent messages that fit within limit
-        for msg in reversed(messages):
-            msg_chars = len(str(msg.get("content", "")))
-            if (total_chars + msg_chars) * 4 > max_tokens:
-                break
-            truncated.insert(1, msg)  # Insert after system message
-            total_chars += msg_chars
-            
-        return truncated
+            logger.error(f"OpenAI chat completion error: {str(e)}", exc_info=True)
+            raise
 
 class DeepseekConnector(APIConnector):
     """Connector for Deepseek API."""

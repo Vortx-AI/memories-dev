@@ -1255,99 +1255,144 @@ class MemoryRetrieval:
         max_tokens: int = 15000
     ) -> pd.DataFrame:
         """
-        Search for geospatial features within a bounding box based on semantic similarity.
+        Search for geospatial features within a geographic bounding box.
+        Uses semantic search to find relevant data based on the query word.
         
         Args:
-            query_word: Search term
-            bbox: Bounding box (min_lon, min_lat, max_lon, max_lat)
-            similarity_threshold: Minimum similarity score (0-1)
-            max_tokens: Maximum number of tokens to return
-            
-        Returns:
-            DataFrame containing matching records
-        """
-        logger.info(f"Searching for '{query_word}' in bbox {bbox}")
+            query_word: Search term (e.g., 'road', 'building', 'park', 'landuse', 'water')
+            bbox: Geographic bounding box as (min_lon, min_lat, max_lon, max_lat)
+            similarity_threshold: Minimum similarity threshold for matching columns (0.3 to 1.0)
+            max_tokens: Maximum number of tokens allowed in the output (default: 15000)
         
-        # Get semantically similar columns
+        Returns:
+            DataFrame containing only matched columns, name columns, string columns, and lat/lon within the bounding box
+        """
+        logger.info(f"\n{'='*80}")
+        logger.info("GEOSPATIAL FEATURE SEARCH")
+        logger.info(f"{'='*80}")
+        logger.info(f"Search term: '{query_word}'")
+        logger.info(f"Bounding box: {bbox}")
+        
+        # Validate and adjust threshold if needed
+        if similarity_threshold < 0.3:
+            logger.warning(f"Similarity threshold {similarity_threshold} is too low, setting to 0.3")
+            similarity_threshold = 0.3
+        elif similarity_threshold > 1.0:
+            logger.warning(f"Similarity threshold {similarity_threshold} is too high, setting to 1.0")
+            similarity_threshold = 1.0
+            
+        logger.info(f"Using similarity threshold: {similarity_threshold}")
+        
+        # Get semantically similar columns with the specified threshold
         similar_columns = self.get_similar_columns(query_word, similarity_threshold)
         
         if similar_columns:
-            logger.info(f"Found {len(similar_columns)} similar columns")
+            logger.info(f"Found {len(similar_columns)} similar columns at threshold {similarity_threshold}")
             
-            # Group by file path to avoid redundant processing
+            # Process similar columns by file
             unique_files = {}
             for match in similar_columns:
-                file_path = match['file_path']
+                file_path = match['full_path']
                 if file_path not in unique_files:
                     unique_files[file_path] = {
                         'geometry_column': None,
-                        'similarity': match['similarity']
+                        'similarity': match['similarity'],
+                        'columns': set()
                     }
+                unique_files[file_path]['columns'].add(match['column'])
             
+            logger.info(f"\nFound {len(unique_files)} unique files to process")
+            
+            # Process each unique file
+            min_lon, min_lat, max_lon, max_lat = bbox
             results = pd.DataFrame()
-            total_tokens = 0
             
-            for file_path, info in unique_files.items():
+            for i, (file_path, info) in enumerate(unique_files.items(), 1):
                 try:
-                    # Get schema for the file
-                    schema = self.get_parquet_schema(file_path)
-                    if not schema:
-                        continue
+                    # Get schema info directly from parquet file
+                    schema_query = f"DESCRIBE SELECT * FROM parquet_scan('{file_path}')"
+                    schema_df = self.con.execute(schema_query).fetchdf()
                     
-                    # Find geometry column
-                    geom_col = None
-                    for col_name, col_type in schema:
-                        if ('geometry' in col_type.lower() or 
-                            'binary' in col_type.lower() or 
-                            'blob' in col_type.lower() or
+                    # Look for geometry column and collect relevant non-geometry columns
+                    non_geom_columns = []
+                    for _, row in schema_df.iterrows():
+                        col_name = row['column_name']
+                        col_type = str(row['column_type']).lower()
+                        
+                        # Check if it's a geometry column
+                        if ('geometry' in col_type or 
+                            'binary' in col_type or 
+                            'blob' in col_type or
                             col_name.lower() in ['geom', 'geometry', 'the_geom']):
-                            geom_col = col_name
-                            break
+                            info['geometry_column'] = col_name
+                            info['geometry_type'] = col_type
+                        # Include column if it matches any of our criteria:
+                        # 1. It's in the semantically matched columns
+                        # 2. It contains 'name' in its name
+                        # 3. It's a string/varchar/text type
+                        elif (col_name in info['columns'] or
+                              'name' in col_name.lower() or
+                              any(text_type in col_type for text_type in ['varchar', 'string', 'text', 'char'])):
+                            non_geom_columns.append(f'"{col_name}"')
                     
-                    if not geom_col:
+                    # Skip if no geometry column found
+                    if not info['geometry_column']:
+                        logger.warning(f"No geometry column found in {file_path}, skipping")
                         continue
-                        
-                    # Process the table
-                    table_results = self._process_table_gpu((
-                        {'table_name': os.path.basename(file_path), 
-                         'schema': dict(schema),
-                         'file_path': file_path}, 
-                        bbox,
-                        self.cold
-                    ))
                     
-                    if not table_results.empty:
-                        # Estimate tokens for this batch
-                        batch_tokens = self.estimate_tokens(table_results)
-                        
-                        # Check if adding this batch would exceed token limit
-                        if total_tokens + batch_tokens > max_tokens:
-                            # Optimize the batch to fit remaining tokens
-                            remaining_tokens = max_tokens - total_tokens
-                            if remaining_tokens > 1000:  # Only add if we have room for meaningful data
-                                table_results = self.optimize_dataframe(table_results, remaining_tokens)
-                                results = pd.concat([results, table_results], ignore_index=True)
-                            break
-                        
-                        total_tokens += batch_tokens
-                        results = pd.concat([results, table_results], ignore_index=True)
-                        
-                        # Break if we've hit the token limit
-                        if total_tokens >= max_tokens:
-                            break
-                            
+                    # Skip if no relevant columns found
+                    if not non_geom_columns:
+                        logger.warning(f"No relevant columns found in {file_path}, skipping")
+                        continue
+                    
+                    # Build and execute spatial query
+                    geom_col = info["geometry_column"]
+                    geom_type = info["geometry_type"].lower()
+                    
+                    if 'blob' in geom_type:
+                        geom_expr = f'ST_GeomFromWKB(CAST("{geom_col}" AS BLOB))'
+                    elif 'binary' in geom_type:
+                        geom_expr = f'ST_GeomFromWKB("{geom_col}")'
+                    else:
+                        geom_expr = f'"{geom_col}"'
+                    
+                    # Add centroid coordinates to output
+                    columns_str = ', '.join(non_geom_columns + [
+                        f'ST_X(ST_Centroid({geom_expr})) as longitude',
+                        f'ST_Y(ST_Centroid({geom_expr})) as latitude'
+                    ])
+                    
+                    # Query all selected columns plus centroid coordinates
+                    query = f"""
+                    SELECT {columns_str}
+                    FROM parquet_scan('{file_path}')
+                    WHERE ST_Intersects(
+                        {geom_expr},
+                        ST_GeomFromText('POLYGON(({min_lon} {min_lat}, {min_lon} {max_lat}, 
+                        {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))')
+                    )
+                    """
+                    
+                    df = self.con.execute(query).fetchdf()
+                    
+                    if not df.empty:
+                        results = pd.concat([results, df], ignore_index=True)
+                    
                 except Exception as e:
                     logger.error(f"Error processing {file_path}: {e}")
                     continue
             
             if not results.empty:
-                logger.info(f"Found {len(results)} matching records (estimated {total_tokens} tokens)")
+                logger.info(f"Found {len(results)} matching records")
+                # Optimize results to stay under token limit
+                results = self.optimize_dataframe(results, max_tokens)
                 return results
             
             logger.info("No matching records found in the bounding box")
         else:
             logger.info(f"No similar columns found at threshold {similarity_threshold}")
         
+        logger.warning(f"No results found")
         return pd.DataFrame()
 
     def _process_table_gpu(args: Tuple) -> Union[pd.DataFrame, cudf.DataFrame]:
@@ -1555,3 +1600,155 @@ class MemoryRetrieval:
                     summary_df.loc[col] = simplified_numeric.loc[col]
         
         return summary_df 
+
+    def analyze_geospatial_data(
+        self,
+        query_word: str,
+        bbox: tuple,
+        analysis_action: str = "summary",
+        similarity_threshold: float = 0.7,
+        max_tokens: int = 15000
+    ) -> Dict[str, Any]:
+        """
+        Analyze geospatial features within a bounding box based on specified action.
+        
+        Args:
+            query_word: Search term (e.g., 'road', 'building', 'park', 'landuse', 'water')
+            bbox: Geographic bounding box as (min_lon, min_lat, max_lon, max_lat)
+            analysis_action: Type of analysis to perform. Options:
+                - "summary": General summary statistics
+                - "count": Total count of features
+                - "names": List of feature names
+                - "types": Distribution of feature types
+                - "density": Feature density per area
+                - "stats": Detailed statistical analysis of numeric columns
+                - "categories": Distribution of categorical values
+                - "all": All available analyses
+            similarity_threshold: Minimum similarity threshold for matching columns (0.3 to 1.0)
+            max_tokens: Maximum number of tokens allowed in the output
+            
+        Returns:
+            Dictionary containing the analysis results based on the requested action
+        """
+        logger.info(f"\n{'='*80}")
+        logger.info("GEOSPATIAL DATA ANALYSIS")
+        logger.info(f"{'='*80}")
+        logger.info(f"Search term: '{query_word}'")
+        logger.info(f"Bounding box: {bbox}")
+        logger.info(f"Analysis action: {analysis_action}")
+        
+        # Get raw data using search_geospatial_data_in_bbox
+        raw_data = self.search_geospatial_data_in_bbox(
+            query_word=query_word,
+            bbox=bbox,
+            similarity_threshold=similarity_threshold,
+            max_tokens=max_tokens
+        )
+        
+        if raw_data.empty:
+            return {
+                "status": "no_data",
+                "message": f"No {query_word} features found in the specified bounding box"
+            }
+            
+        results = {"status": "success"}
+        
+        try:
+            # Calculate bounding box area in square kilometers
+            min_lon, min_lat, max_lon, max_lat = bbox
+            bbox_area = abs((max_lon - min_lon) * (max_lat - min_lat)) * 111  # Rough approximation
+            
+            if analysis_action in ["summary", "all"]:
+                results["summary"] = {
+                    "total_features": len(raw_data),
+                    "unique_features": len(raw_data.drop_duplicates()),
+                    "bbox_area_km2": round(bbox_area, 2),
+                    "feature_density": round(len(raw_data) / bbox_area, 2),
+                    "columns_found": list(raw_data.columns)
+                }
+            
+            if analysis_action in ["count", "all"]:
+                results["count"] = {
+                    "total": len(raw_data),
+                    "by_source": raw_data.groupby("source_file").size().to_dict() if "source_file" in raw_data.columns else {}
+                }
+            
+            if analysis_action in ["names", "all"]:
+                name_columns = [col for col in raw_data.columns if "name" in col.lower()]
+                if name_columns:
+                    results["names"] = {
+                        "unique_names": raw_data[name_columns[0]].unique().tolist(),
+                        "total_unique_names": raw_data[name_columns[0]].nunique()
+                    }
+                else:
+                    results["names"] = {"message": "No name columns found"}
+            
+            if analysis_action in ["types", "all"]:
+                type_columns = [col for col in raw_data.columns if "type" in col.lower()]
+                if type_columns:
+                    results["types"] = {
+                        "distribution": raw_data[type_columns[0]].value_counts().to_dict(),
+                        "total_types": raw_data[type_columns[0]].nunique()
+                    }
+                else:
+                    results["types"] = {"message": "No type columns found"}
+            
+            if analysis_action in ["density", "all"]:
+                results["density"] = {
+                    "features_per_km2": round(len(raw_data) / bbox_area, 2),
+                    "bbox_area_km2": round(bbox_area, 2)
+                }
+                
+                # Add quadrant analysis if we have coordinates
+                if "longitude" in raw_data.columns and "latitude" in raw_data.columns:
+                    mid_lon = (min_lon + max_lon) / 2
+                    mid_lat = (min_lat + max_lat) / 2
+                    
+                    quadrants = {
+                        "NE": ((raw_data["longitude"] >= mid_lon) & (raw_data["latitude"] >= mid_lat)).sum(),
+                        "NW": ((raw_data["longitude"] < mid_lon) & (raw_data["latitude"] >= mid_lat)).sum(),
+                        "SE": ((raw_data["longitude"] >= mid_lon) & (raw_data["latitude"] < mid_lat)).sum(),
+                        "SW": ((raw_data["longitude"] < mid_lon) & (raw_data["latitude"] < mid_lat)).sum()
+                    }
+                    results["density"]["quadrant_distribution"] = quadrants
+            
+            if analysis_action in ["stats", "all"]:
+                numeric_cols = raw_data.select_dtypes(include=["int64", "float64"]).columns
+                if len(numeric_cols) > 0:
+                    results["stats"] = {
+                        col: {
+                            "mean": float(raw_data[col].mean()),
+                            "median": float(raw_data[col].median()),
+                            "std": float(raw_data[col].std()),
+                            "min": float(raw_data[col].min()),
+                            "max": float(raw_data[col].max()),
+                            "q1": float(raw_data[col].quantile(0.25)),
+                            "q3": float(raw_data[col].quantile(0.75))
+                        }
+                        for col in numeric_cols
+                    }
+                else:
+                    results["stats"] = {"message": "No numeric columns found"}
+            
+            if analysis_action in ["categories", "all"]:
+                categorical_cols = raw_data.select_dtypes(include=["object", "category"]).columns
+                if len(categorical_cols) > 0:
+                    results["categories"] = {
+                        col: {
+                            "value_counts": raw_data[col].value_counts().head(10).to_dict(),
+                            "unique_count": raw_data[col].nunique(),
+                            "top_value": raw_data[col].mode().iloc[0] if not raw_data[col].mode().empty else None
+                        }
+                        for col in categorical_cols
+                    }
+                else:
+                    results["categories"] = {"message": "No categorical columns found"}
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error analyzing geospatial data: {e}")
+            return {
+                "status": "error",
+                "message": str(e)
+            } 
