@@ -1291,7 +1291,7 @@ class MemoryRetrieval:
         Returns:
             DataFrame containing matching features within the bounding box
         """
-        from concurrent.futures import ProcessPoolExecutor
+        from concurrent.futures import ProcessPoolExecutor, as_completed
         import multiprocessing as mp
         
         logger.info(f"\n{'='*80}")
