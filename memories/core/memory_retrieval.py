@@ -17,6 +17,8 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 from memories.core.memory_manager import MemoryManager
 import cudf
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import multiprocessing as mp
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +60,22 @@ def process_file_for_search(args):
             con.execute("LOAD spatial;")
         except Exception as e:
             logger.error(f"Error loading spatial extension: {e}")
-            # If we can't load the spatial extension, fall back to CPU processing
             use_gpu = False
+        
+        # First check if this file's bounds intersect with the query bbox
+        min_lon, min_lat, max_lon, max_lat = bbox
+        bounds_check = f"""
+            SELECT 1 FROM spatial_index 
+            WHERE file_path = '{file_path}'
+            AND max_lon >= {min_lon} 
+            AND min_lon <= {max_lon}
+            AND max_lat >= {min_lat} 
+            AND min_lat <= {max_lat}
+        """
+        
+        if not con.execute(bounds_check).fetchone():
+            logger.debug(f"File {file_path} does not intersect query bbox, skipping")
+            return pd.DataFrame()
         
         # First read the parquet file using pandas to analyze column types
         import pandas as pd
@@ -375,22 +391,56 @@ class MemoryRetrieval:
         return parquet_files
 
     def build_spatial_index(self):
-        """Build spatial index for all parquet files."""
+        """Build and maintain spatial index for all parquet files."""
         try:
+            # Create spatial index table if it doesn't exist
+            self.con.execute("""
+                CREATE TABLE IF NOT EXISTS spatial_index (
+                    file_path VARCHAR,
+                    min_lon DOUBLE,
+                    min_lat DOUBLE,
+                    max_lon DOUBLE,
+                    max_lat DOUBLE,
+                    geometry_column VARCHAR,
+                    last_modified TIMESTAMP,
+                    PRIMARY KEY (file_path)
+                );
+                
+                -- Create spatial index on bounds
+                CREATE INDEX IF NOT EXISTS idx_spatial_bounds 
+                ON spatial_index(min_lon, min_lat, max_lon, max_lat);
+                
+                -- Create index on file path for faster lookups
+                CREATE INDEX IF NOT EXISTS idx_spatial_path 
+                ON spatial_index(file_path);
+            """)
+            
             # Get all parquet files
             files = self.get_parquet_files()
             
             if not files:
                 logger.warning(f"No parquet files found in {self.data_dir}")
                 return
-                
-            logger.info(f"Found {len(files)} parquet files")
             
-            # Clear existing index
-            self.con.execute("DELETE FROM spatial_index")
+            logger.info(f"Found {len(files)} parquet files to index")
             
+            # Process each file
             for file_path in files:
                 try:
+                    # Check if file is already indexed and up to date
+                    file_stat = os.stat(file_path)
+                    last_modified = pd.Timestamp(file_stat.st_mtime, unit='s')
+                    
+                    indexed = self.con.execute("""
+                        SELECT last_modified 
+                        FROM spatial_index 
+                        WHERE file_path = ?
+                    """, [file_path]).fetchone()
+                    
+                    if indexed and pd.Timestamp(indexed[0]) >= last_modified:
+                        logger.debug(f"Index up to date for {file_path}")
+                        continue
+                    
                     # Get schema and geometry column
                     schema = self.get_parquet_schema(file_path)
                     geom_column, geom_type = self.find_geometry_column(schema)
@@ -410,20 +460,21 @@ class MemoryRetrieval:
                     """
                     bounds = self.con.execute(bounds_query).fetchone()
                     
-                    # Insert into spatial index
                     if bounds and None not in bounds:
+                        # Update or insert into spatial index
                         self.con.execute("""
-                            INSERT INTO spatial_index 
-                            VALUES (?, ?, ?, ?, ?)
-                        """, (file_path, *bounds))
+                            INSERT OR REPLACE INTO spatial_index 
+                            (file_path, min_lon, min_lat, max_lon, max_lat, geometry_column, last_modified)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """, [file_path, *bounds, geom_column, last_modified])
                         logger.info(f"Indexed {file_path} with bounds: {bounds}")
                         
                 except Exception as e:
                     logger.error(f"Error indexing {file_path}: {e}")
                     continue
-                    
-            # Create index on bounds
-            self.con.execute("CREATE INDEX IF NOT EXISTS idx_spatial ON spatial_index(min_lon, min_lat, max_lon, max_lat)")
+            
+            # Analyze the index for better query planning
+            self.con.execute("ANALYZE spatial_index")
             
             # Log index statistics
             count = self.con.execute("SELECT COUNT(*) FROM spatial_index").fetchone()[0]
@@ -1446,125 +1497,101 @@ class MemoryRetrieval:
         use_gpu: bool = True,
         batch_size: int = 1000000
     ) -> pd.DataFrame:
-        """
-        Search for geospatial features within a geographic bounding box using GPU-accelerated processing.
-        Falls back to CPU processing if GPU processing fails.
-        """
-        from concurrent.futures import ProcessPoolExecutor, as_completed
-        import multiprocessing as mp
-        
+        """Search for geospatial features within a geographic bounding box."""
         logger.info(f"\n{'='*80}")
         logger.info("GEOSPATIAL FEATURE SEARCH")
         logger.info(f"{'='*80}")
-        logger.info(f"Search term: '{query_word}'")
-        logger.info(f"Bounding box: {bbox}")
         
-        # Check GPU availability
-        if use_gpu and not (HAS_CUDF and HAS_CUSPATIAL):
-            logger.warning("GPU acceleration requested but not available. Falling back to CPU.")
-            use_gpu = False
+        # Ensure spatial index is up to date
+        self.build_spatial_index()
         
-        # Start with highest threshold and gradually decrease
-        current_threshold = 1.0
-        min_threshold = 0.3
-        step = 0.1
+        min_lon, min_lat, max_lon, max_lat = bbox
         
-        while current_threshold >= min_threshold:
-            logger.info(f"\nTrying similarity threshold: {current_threshold:.1f}")
-            
+        # First get potentially intersecting files using spatial index
+        intersecting_files = self.con.execute("""
+            SELECT file_path, geometry_column
+            FROM spatial_index 
+            WHERE max_lon >= ? AND min_lon <= ?
+            AND max_lat >= ? AND min_lat <= ?
+        """, [min_lon, max_lon, min_lat, max_lat]).fetchall()
+        
+        if not intersecting_files:
+            logger.info("No files intersect the query bbox")
+            return pd.DataFrame()
+        
+        logger.info(f"Found {len(intersecting_files)} potentially intersecting files")
+        
+        # Get semantically similar columns
+        similar_columns = self.get_similar_columns(query_word, similarity_threshold)
+        
+        if not similar_columns:
+            logger.info("No similar columns found")
+            return pd.DataFrame()
+        
+        # Filter files to only those with similar columns
+        similar_file_paths = {match['full_path'] for match in similar_columns}
+        files_to_process = {
+            file_path: {'geometry_column': geom_col}
+            for file_path, geom_col in intersecting_files
+            if file_path in similar_file_paths
+        }
+        
+        if not files_to_process:
+            logger.info("No files match both spatial and semantic criteria")
+            return pd.DataFrame()
+        
+        logger.info(f"Processing {len(files_to_process)} files")
+        
+        # Process the filtered files
+        results_list = []
+        
+        if use_gpu:
+            # Sequential processing for GPU
+            for file_path, info in files_to_process.items():
+                try:
+                    df = process_file_for_search((file_path, info, bbox, True))
+                    if not df.empty:
+                        results_list.append(df)
+                except Exception as e:
+                    logger.error(f"GPU processing failed for {file_path}: {e}")
+                    try:
+                        df = process_file_for_search((file_path, info, bbox, False))
+                        if not df.empty:
+                            results_list.append(df)
+                    except Exception as cpu_e:
+                        logger.error(f"CPU fallback also failed: {cpu_e}")
+        else:
+            # Parallel processing for CPU
+            with ProcessPoolExecutor(max_workers=max_workers) as executor:
+                future_to_file = {
+                    executor.submit(process_file_for_search, 
+                                  (file_path, info, bbox, False)): file_path 
+                    for file_path, info in files_to_process.items()
+                }
+                
+                for future in as_completed(future_to_file):
+                    try:
+                        df = future.result()
+                        if not df.empty:
+                            results_list.append(df)
+                    except Exception as e:
+                        logger.error(f"Error processing file: {e}")
+        
+        # Combine results
+        if results_list:
             try:
-                # Get semantically similar columns with current threshold
-                similar_columns = self.get_similar_columns(query_word, current_threshold)
-                
-                if similar_columns:
-                    logger.info(f"Found {len(similar_columns)} similar columns at threshold {current_threshold:.1f}")
-                    
-                    # Deduplicate file paths and group columns
-                    unique_files = {}
-                    for match in similar_columns:
-                        file_path = match['full_path']
-                        if file_path not in unique_files:
-                            unique_files[file_path] = {
-                                'columns': set(),
-                                'geometry_column': None
-                            }
-                        unique_files[file_path]['columns'].add(match['column'])
-                    
-                    logger.info(f"\nFound {len(unique_files)} unique files to process")
-                    results_list = []
-                    
-                    if use_gpu:
-                        # Process files sequentially when using GPU to avoid context conflicts
-                        logger.info("Using GPU processing (sequential)")
-                        for file_path, info in unique_files.items():
-                            try:
-                                df = process_file_for_search((file_path, info, bbox, True))
-                                if not df.empty:
-                                    results_list.append(df)
-                                    logger.info(f"Successfully processed {file_path}")
-                            except Exception as e:
-                                logger.error(f"GPU processing failed for {file_path}: {e}")
-                                # Try CPU fallback for this file
-                                try:
-                                    logger.info(f"Attempting CPU fallback for {file_path}")
-                                    df = process_file_for_search((file_path, info, bbox, False))
-                                    if not df.empty:
-                                        results_list.append(df)
-                                        logger.info(f"CPU fallback successful for {file_path}")
-                                except Exception as cpu_e:
-                                    logger.error(f"CPU fallback also failed for {file_path}: {cpu_e}")
-                    else:
-                        # Use ProcessPoolExecutor for parallel CPU processing
-                        num_workers = min(max_workers, len(unique_files), mp.cpu_count())
-                        logger.info(f"Using CPU processing with {num_workers} workers")
-                        
-                        with ProcessPoolExecutor(max_workers=num_workers) as executor:
-                            # Submit all file processing tasks
-                            future_to_file = {
-                                executor.submit(process_file_for_search, 
-                                              (file_path, info, bbox, False)): file_path 
-                                for file_path, info in unique_files.items()
-                            }
-                            
-                            # Collect results as they complete
-                            for future in as_completed(future_to_file):
-                                file_path = future_to_file[future]
-                                try:
-                                    df = future.result()
-                                    if not df.empty:
-                                        results_list.append(df)
-                                        logger.info(f"Successfully processed {file_path}")
-                                except Exception as e:
-                                    logger.error(f"Error processing {file_path}: {e}")
-                    
-                    # Combine all results
-                    if results_list:
-                        try:
-                            results = pd.concat(results_list, ignore_index=True)
-                            logger.info(f"Found {len(results)} matching records at threshold {current_threshold:.1f}")
-                            return results
-                        except Exception as e:
-                            logger.error(f"Error combining results: {e}")
-                            # If concatenation fails, try processing one by one
-                            final_results = pd.DataFrame()
-                            for df in results_list:
-                                try:
-                                    final_results = pd.concat([final_results, df], ignore_index=True)
-                                except Exception as concat_e:
-                                    logger.error(f"Error concatenating individual result: {concat_e}")
-                            if not final_results.empty:
-                                return final_results
-                    
-                    logger.info("No matching records found in the bounding box, trying lower threshold")
-                else:
-                    logger.info(f"No similar columns found at threshold {current_threshold:.1f}")
-                
-                # Decrease threshold and try again
-                current_threshold -= step
-                
+                results = pd.concat(results_list, ignore_index=True)
+                logger.info(f"Found {len(results)} matching records")
+                return results
             except Exception as e:
-                logger.error(f"Error during search at threshold {current_threshold}: {e}")
-                current_threshold -= step
+                logger.error(f"Error combining results: {e}")
+                # Try one by one concatenation
+                final_results = pd.DataFrame()
+                for df in results_list:
+                    try:
+                        final_results = pd.concat([final_results, df], ignore_index=True)
+                    except Exception as concat_e:
+                        logger.error(f"Error concatenating result: {concat_e}")
+                return final_results
         
-        logger.warning(f"No results found with any threshold down to {min_threshold}")
         return pd.DataFrame() 
