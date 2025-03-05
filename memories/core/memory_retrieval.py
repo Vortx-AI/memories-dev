@@ -46,8 +46,14 @@ def process_file_for_search(args):
     Process a single file for geospatial search.
     This function needs to be at module level for multiprocessing.
     """
-    file_path, info, bbox, use_gpu, con = args
+    file_path, info, bbox, use_gpu = args
     try:
+        # Create a new DuckDB connection in the worker process
+        import duckdb
+        con = duckdb.connect(database=':memory:')
+        con.execute("INSTALL spatial;")
+        con.execute("LOAD spatial;")
+        
         # Get schema info directly from parquet file
         schema_query = f"DESCRIBE SELECT * FROM parquet_scan('{file_path}')"
         schema_df = con.execute(schema_query).fetchdf()
@@ -148,6 +154,9 @@ def process_file_for_search(args):
     except Exception as e:
         logger.error(f"Error processing {file_path}: {e}")
         return pd.DataFrame()
+    finally:
+        if 'con' in locals():
+            con.close()
 
 class MemoryRetrieval:
     """Memory retrieval class for querying cold memory storage."""
@@ -1438,7 +1447,7 @@ class MemoryRetrieval:
                     # Submit all file processing tasks with necessary arguments
                     future_to_file = {
                         executor.submit(process_file_for_search, 
-                                      (file_path, info, bbox, use_gpu, self.con)): file_path 
+                                      (file_path, info, bbox, use_gpu)): file_path 
                         for file_path, info in unique_files.items()
                     }
                     
