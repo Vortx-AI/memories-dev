@@ -51,8 +51,15 @@ def process_file_for_search(args):
         # Create a new DuckDB connection in the worker process
         import duckdb
         con = duckdb.connect(database=':memory:')
-        con.execute("INSTALL spatial;")
-        con.execute("LOAD spatial;")
+        
+        # Install and load spatial extension with proper error handling
+        try:
+            con.execute("INSTALL spatial;")
+            con.execute("LOAD spatial;")
+        except Exception as e:
+            logger.error(f"Error loading spatial extension: {e}")
+            # If we can't load the spatial extension, fall back to CPU processing
+            use_gpu = False
         
         # First read the parquet file using pandas to analyze column types
         import pandas as pd
@@ -80,11 +87,11 @@ def process_file_for_search(args):
             import cuspatial
             
             try:
-                # First convert geometry to WKB in DuckDB
+                # First convert geometry to WKB format directly from pandas
+                # This avoids using ST_AsBinary which might not be available
                 query = f"""
                 SELECT 
-                    *,
-                    ST_AsBinary(ST_GeomFromWKB("{geometry_column}")) as geometry_wkb
+                    *
                 FROM parquet_scan('{file_path}')
                 """
                 temp_df = con.execute(query).fetchdf()
@@ -92,7 +99,7 @@ def process_file_for_search(args):
                 # Create dtype dictionary for consistent type handling
                 dtype_dict = {}
                 for col in temp_df.columns:
-                    if col == 'geometry_wkb':
+                    if col == geometry_column:
                         continue
                     elif pd.api.types.is_categorical_dtype(temp_df[col]):
                         temp_df[col] = temp_df[col].astype(str)
@@ -106,17 +113,17 @@ def process_file_for_search(args):
                 
                 # Ensure all string-like columns are consistently typed
                 for col in gdf.columns:
-                    if col == 'geometry_wkb':
+                    if col == geometry_column:
                         continue
                     if isinstance(gdf[col].dtype, cudf.core.dtypes.CategoricalDtype):
                         gdf[col] = gdf[col].astype('string[pyarrow]')
                     elif str(gdf[col].dtype).startswith('object'):
                         gdf[col] = gdf[col].astype('string[pyarrow]')
                 
-                # Convert WKB geometry to cuspatial geometry
+                # Convert geometry to cuspatial points
                 try:
-                    # Convert WKB to points for spatial indexing
-                    points = cuspatial.from_wkb(gdf['geometry_wkb'])
+                    # Convert geometry column directly to points
+                    points = cuspatial.from_wkb(gdf[geometry_column])
                     gdf['geometry_x'] = points.x
                     gdf['geometry_y'] = points.y
                     
@@ -139,7 +146,7 @@ def process_file_for_search(args):
                     result = gdf.iloc[points_in_bbox]
                     
                     # Drop temporary columns
-                    result = result.drop(['geometry_x', 'geometry_y', 'geometry_wkb'], axis=1)
+                    result = result.drop(['geometry_x', 'geometry_y'], axis=1)
                     
                     # Convert back to pandas
                     df = result.to_pandas()
