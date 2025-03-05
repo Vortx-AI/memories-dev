@@ -1251,25 +1251,78 @@ class MemoryRetrieval:
         self,
         query_word: str,
         bbox: tuple,
-        similarity_threshold: float = 0.7
+        similarity_threshold: float = 0.7,
+        max_tokens: int = 2900
     ) -> pd.DataFrame:
         """
         Search for geospatial features within a bounding box, returning minimal essential data.
+        Progressively removes columns to stay under token limit.
         
         Args:
             query_word: Search term (e.g., 'road', 'building', 'park')
             bbox: Geographic bounding box as (min_lon, min_lat, max_lon, max_lat)
             similarity_threshold: Minimum similarity threshold (0.3 to 1.0)
+            max_tokens: Maximum number of tokens allowed in output (default: 2900)
         
         Returns:
-            DataFrame with only the matched column and lat/lon coordinates
+            DataFrame with optimized columns under token limit
         """
+        def estimate_tokens(df: pd.DataFrame) -> int:
+            """Estimate number of tokens in DataFrame."""
+            token_count = 0
+            
+            # Count column names
+            token_count += sum(len(str(col)) // 3 for col in df.columns)
+            
+            # Count values
+            for column in df.columns:
+                # Convert to string and calculate approximate tokens
+                values = df[column].astype(str)
+                token_count += sum(len(val) // 3 for val in values if val not in ['None', 'nan', 'NaN', 'null'])
+            
+            return token_count
+
+        def optimize_dataframe(df: pd.DataFrame, max_tokens: int) -> pd.DataFrame:
+            """Progressively remove columns to get under token limit."""
+            if df.empty:
+                return df
+
+            # Always keep these columns
+            essential_cols = ['longitude', 'latitude']
+            
+            # Start with removing specific column types
+            current_df = df.copy()
+            
+            # 1. Remove ID columns first
+            id_columns = [col for col in current_df.columns 
+                        if col.lower().endswith('id') or col.lower().startswith('id_')]
+            current_df = current_df.drop(columns=id_columns, errors='ignore')
+            
+            # 2. Remove boolean columns
+            bool_columns = current_df.select_dtypes(include=['bool']).columns
+            current_df = current_df.drop(columns=bool_columns, errors='ignore')
+            
+            # 3. Remove null/none values
+            current_df = current_df.dropna(how='all')
+            
+            # If still over token limit, progressively remove non-essential columns
+            remaining_cols = [col for col in current_df.columns if col not in essential_cols]
+            
+            while estimate_tokens(current_df) > max_tokens and remaining_cols:
+                # Remove the column that contributes the most tokens
+                col_token_counts = {col: sum(len(str(val)) // 3 for val in current_df[col] if str(val) not in ['None', 'nan', 'NaN', 'null'])
+                                  for col in remaining_cols}
+                if not col_token_counts:
+                    break
+                col_to_remove = max(col_token_counts.items(), key=lambda x: x[1])[0]
+                current_df = current_df.drop(columns=[col_to_remove])
+                remaining_cols.remove(col_to_remove)
+            
+            return current_df
+
+        # Main function logic
         logger.info(f"Searching for '{query_word}' in bbox {bbox}")
-        
-        # Validate threshold
         similarity_threshold = max(0.3, min(1.0, similarity_threshold))
-        
-        # Get semantically similar columns
         similar_columns = self.get_similar_columns(query_word, similarity_threshold)
         
         if similar_columns:
@@ -1319,7 +1372,7 @@ class MemoryRetrieval:
                                else f'ST_GeomFromWKB("{geom_col}")' if 'binary' in geom_type
                                else f'"{geom_col}"')
                     
-                    # Query only matched columns and coordinates
+                    # Query matched columns and coordinates
                     columns_str = ', '.join(matched_columns + [
                         f'ST_X(ST_Centroid({geom_expr})) as longitude',
                         f'ST_Y(ST_Centroid({geom_expr})) as latitude'
@@ -1343,72 +1396,14 @@ class MemoryRetrieval:
                     logger.error(f"Error processing {file_path}: {e}")
                     continue
             
+            if not results.empty:
+                # Optimize results to stay under token limit
+                results = optimize_dataframe(results, max_tokens)
+                
+                # Log the final token count
+                final_tokens = estimate_tokens(results)
+                logger.info(f"Final output: {len(results)} rows, {len(results.columns)} columns, ~{final_tokens} tokens")
+                
             return results
         
-        return pd.DataFrame()
-
-    def _process_table_gpu(args: Tuple) -> Union[pd.DataFrame, cudf.DataFrame]:
-        """Helper function to process a single table using GPU if available."""
-        table, bbox, cold = args
-        try:
-            table_name = table["table_name"]
-            schema = table["schema"]
-            min_lon, min_lat, max_lon, max_lat = bbox
-            
-            # Look for geometry column
-            geom_col = None
-            for col_name, col_type in schema.items():
-                if ('geometry' in col_type.lower() or 
-                    'binary' in col_type.lower() or 
-                    'blob' in col_type.lower() or
-                    col_name.lower() in ['geom', 'geometry', 'the_geom']):
-                    geom_col = col_name
-                    break
-            
-            if not geom_col:
-                return pd.DataFrame() if not _has_gpu() else cudf.DataFrame()
-            
-            # Build and execute spatial query
-            geom_type = schema[geom_col].lower()
-            if 'blob' in geom_type:
-                geom_expr = f'ST_GeomFromWKB(CAST("{geom_col}" AS BLOB))'
-            elif 'binary' in geom_type:
-                geom_expr = f'ST_GeomFromWKB("{geom_col}")'
-            else:
-                geom_expr = f'"{geom_col}"'
-            
-            # Select all columns except geometry
-            columns = [col for col in schema.keys() if col != geom_col]
-            columns_str = ', '.join([f'"{col}"' for col in columns])
-            
-            query = f"""
-            SELECT {columns_str}
-            FROM {table_name}
-            WHERE ST_Intersects(
-                {geom_expr},
-                ST_GeomFromText('POLYGON(({min_lon} {min_lat}, {min_lon} {max_lat}, 
-                {max_lon} {max_lat}, {max_lon} {min_lat}, {min_lon} {min_lat}))')
-            )
-            """
-            
-            # Use GPU acceleration if available
-            if _has_gpu():
-                try:
-                    df = cudf.from_pandas(cold.query(query))
-                    if not df.empty:
-                        df['source_table'] = table_name
-                        df['source_file'] = table.get("file_path", "")
-                    return df
-                except Exception as e:
-                    logger.warning(f"GPU processing failed for {table_name}, falling back to CPU: {e}")
-                
-            # Fall back to CPU processing
-            df = cold.query(query)
-            if not df.empty:
-                df['source_table'] = table_name
-                df['source_file'] = table.get("file_path", "")
-            return df
-            
-        except Exception as e:
-            logger.error(f"Error processing table {table.get('table_name', 'unknown')}: {e}")
-            return pd.DataFrame() if not _has_gpu() else cudf.DataFrame() 
+        return pd.DataFrame() 
