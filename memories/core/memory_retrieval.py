@@ -1251,18 +1251,18 @@ class MemoryRetrieval:
         self,
         query_word: str,
         bbox: tuple,
-        similarity_threshold: float = 0.7
+        similarity_threshold: float = 0.7,
+        max_tokens: int = 15000
     ) -> pd.DataFrame:
         """
-        Search for geospatial features (like roads, buildings, landuse, etc.) within a geographic bounding box.
+        Search for geospatial features within a geographic bounding box.
         Uses semantic search to find relevant data based on the query word.
         
         Args:
             query_word: Search term (e.g., 'road', 'building', 'park', 'landuse', 'water')
             bbox: Geographic bounding box as (min_lon, min_lat, max_lon, max_lat)
-            similarity_threshold: Minimum similarity threshold for matching columns (0.3 to 1.0).
-                               Higher values (e.g. 0.9) mean stricter matching,
-                               Lower values (e.g. 0.4) mean more lenient matching.
+            similarity_threshold: Minimum similarity threshold for matching columns (0.3 to 1.0)
+            max_tokens: Maximum number of tokens allowed in the output (default: 15000)
         
         Returns:
             DataFrame containing only matched columns, name columns, string columns, and lat/lon within the bounding box
@@ -1383,6 +1383,8 @@ class MemoryRetrieval:
             
             if not results.empty:
                 logger.info(f"Found {len(results)} matching records")
+                # Optimize results to stay under token limit
+                results = self.optimize_dataframe(results, max_tokens)
                 return results
             
             logger.info("No matching records found in the bounding box")
@@ -1501,7 +1503,7 @@ class MemoryRetrieval:
 
     def optimize_dataframe(self, df: pd.DataFrame, max_tokens: int) -> pd.DataFrame:
         """
-        Optimize DataFrame to stay under token limit while preserving essential data.
+        Optimize DataFrame to stay under token limit while preserving information.
         
         Args:
             df: Input DataFrame
@@ -1513,21 +1515,12 @@ class MemoryRetrieval:
         if df.empty:
             return df
             
-        # Make a copy to avoid modifying original
-        df = df.copy()
-        
-        # First pass: Remove obviously unnecessary columns
-        # 1. Remove ID columns (usually contain non-semantic numeric IDs)
-        id_columns = [col for col in df.columns if col.lower().endswith('_id') or col.lower() == 'id']
-        if id_columns:
-            df = df.drop(columns=id_columns)
-        
-        # 2. Remove boolean columns (low information value, high token cost)
+        # First Pass: Remove unnecessary columns
+        id_columns = [col for col in df.columns if 'id' in col.lower()]
         bool_columns = df.select_dtypes(include=['bool']).columns
-        if not bool_columns.empty:
-            df = df.drop(columns=bool_columns)
+        df = df.drop(columns=id_columns + list(bool_columns))
         
-        # 3. Drop rows with all null values
+        # Drop rows with all null values
         df = df.dropna(how='all')
         
         # Check token count
@@ -1535,32 +1528,74 @@ class MemoryRetrieval:
         if current_tokens <= max_tokens:
             return df
             
-        # Second pass: Remove duplicate values
-        # Keep only unique combinations of values
+        # Second Pass: Remove duplicates
         df = df.drop_duplicates()
         
-        # Check token count again
         current_tokens = self.estimate_tokens(df)
         if current_tokens <= max_tokens:
             return df
             
-        # Third pass: Progressive column removal
-        # Keep essential columns (longitude, latitude, name) and matched columns
-        essential_columns = ['longitude', 'latitude', 'name', 'type', 'matched_column']
-        other_columns = [col for col in df.columns if col not in essential_columns]
+        # Third Pass: Progressive column removal (preserve essential columns)
+        essential_columns = ['longitude', 'latitude', 'name', 'type', 'matched_column', 'geometry']
+        non_essential = [col for col in df.columns if col not in essential_columns]
         
-        # Remove non-essential columns one by one until under token limit
-        for col in other_columns:
-            if current_tokens <= max_tokens:
-                break
+        for col in non_essential:
             df = df.drop(columns=[col])
             current_tokens = self.estimate_tokens(df)
+            if current_tokens <= max_tokens:
+                return df
+            
+        # Final Pass: Statistical Summarization
+        # Group numeric and categorical data differently
+        numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns
+        categorical_cols = df.select_dtypes(include=['object', 'category']).columns
         
-        # Final pass: If still over limit, reduce rows
-        while current_tokens > max_tokens and len(df) > 1:
-            # Remove 10% of rows at a time
-            rows_to_keep = int(len(df) * 0.9)
-            df = df.iloc[:rows_to_keep]
-            current_tokens = self.estimate_tokens(df)
+        summary_df = pd.DataFrame()
         
-        return df 
+        # Handle numeric columns with statistical measures
+        if len(numeric_cols) > 0:
+            numeric_summary = df[numeric_cols].agg([
+                'count', 'mean', 'std', 'min', 'max',
+                lambda x: x.quantile(0.25),
+                lambda x: x.quantile(0.75)
+            ]).round(6)
+            numeric_summary.index = ['count', 'mean', 'std', 'min', 'max', 'q1', 'q3']
+            
+            # Transpose to make it more readable
+            numeric_summary = numeric_summary.T
+            summary_df = pd.concat([summary_df, numeric_summary], axis=0)
+        
+        # Handle categorical columns with value counts and frequencies
+        for col in categorical_cols:
+            if col in essential_columns:  # Preserve essential categorical columns
+                summary_df[col] = df[col]
+            else:
+                # Get value counts and calculate frequencies
+                value_counts = df[col].value_counts()
+                top_values = value_counts.head(3)  # Keep top 3 most frequent values
+                
+                # Create summary string
+                summary = f"Top values: {', '.join([f'{k}({v})' for k, v in top_values.items()])}"
+                summary_df.loc[col, 'summary'] = summary
+                summary_df.loc[col, 'unique_count'] = df[col].nunique()
+        
+        # Preserve geometry column if present
+        if 'geometry' in df.columns:
+            summary_df['geometry'] = df['geometry']
+        
+        # Ensure we're under token limit
+        current_tokens = self.estimate_tokens(summary_df)
+        if current_tokens <= max_tokens:
+            return summary_df
+        
+        # If still over limit, simplify numeric summaries
+        if len(numeric_cols) > 0:
+            simplified_numeric = df[numeric_cols].agg(['mean', 'min', 'max']).round(6)
+            simplified_numeric = simplified_numeric.T
+            
+            # Replace existing numeric summaries with simplified ones
+            for col in numeric_cols:
+                if col in simplified_numeric.index:
+                    summary_df.loc[col] = simplified_numeric.loc[col]
+        
+        return summary_df 
