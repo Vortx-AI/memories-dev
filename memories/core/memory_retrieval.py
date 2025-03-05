@@ -49,8 +49,29 @@ class MemoryRetrieval:
         # Initialize sentence transformer model
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
         
+        # Check GPU availability
+        self.has_gpu = self._has_gpu()
+        
         logger.info(f"Initialized MemoryRetrieval")
         logger.info(f"Data directory: {self.data_dir}")
+        logger.info(f"GPU available: {self.has_gpu}")
+
+    @staticmethod
+    def _has_gpu() -> bool:
+        """Check if GPU acceleration is available.
+        
+        Returns:
+            bool: True if both cudf and cuspatial are available and a CUDA device is present
+        """
+        try:
+            import cudf
+            import cuspatial
+            import cupy
+            # Try to get CUDA device to confirm GPU is actually available
+            cupy.cuda.Device(0).compute_capability
+            return True
+        except (ImportError, AttributeError, cupy.cuda.runtime.CUDARuntimeError):
+            return False
 
     def get_table_schema(self) -> List[str]:
         """Get the schema of the parquet files."""
@@ -1186,7 +1207,7 @@ class MemoryRetrieval:
             
             # Only process if above threshold
             if similarity >= similarity_threshold:
-                metadata = red_hot.get_metadata(str(int(idx)))
+                metadata = red_hot.get_metadata(int(idx))
                 file_name = os.path.basename(metadata.get('file_path', ''))
                 column = metadata.get('column_name', '')
                 dtype = metadata.get('dtype', 'unknown')
@@ -1414,7 +1435,7 @@ class MemoryRetrieval:
                     break
             
             if not geom_col:
-                return pd.DataFrame() if not _has_gpu() else cudf.DataFrame()
+                return pd.DataFrame() if not MemoryRetrieval._has_gpu() else cudf.DataFrame()
             
             # Build and execute spatial query
             geom_type = schema[geom_col].lower()
@@ -1440,7 +1461,7 @@ class MemoryRetrieval:
             """
             
             # Use GPU acceleration if available
-            if _has_gpu():
+            if MemoryRetrieval._has_gpu():
                 try:
                     df = cudf.from_pandas(cold.query(query))
                     if not df.empty:
@@ -1459,7 +1480,7 @@ class MemoryRetrieval:
             
         except Exception as e:
             logger.error(f"Error processing table {table.get('table_name', 'unknown')}: {e}")
-            return pd.DataFrame() if not _has_gpu() else cudf.DataFrame()
+            return pd.DataFrame() if not MemoryRetrieval._has_gpu() else cudf.DataFrame()
 
     def estimate_tokens(self, df: pd.DataFrame) -> int:
         """
@@ -1484,7 +1505,18 @@ class MemoryRetrieval:
             # For numeric values, estimate based on string length
             # For string values, count words and punctuation
             for val in row:
-                if pd.isna(val):
+                # Handle array-like values
+                if isinstance(val, (list, np.ndarray)):
+                    # Convert array to string and count tokens
+                    str_val = str(val)
+                    words = str_val.split()
+                    data_tokens += len(words)
+                    # Add extra tokens for special characters and punctuation
+                    data_tokens += sum(1 for c in str_val if not c.isalnum() and not c.isspace()) // 2
+                    continue
+                
+                # Skip null values
+                if pd.isna(val) or val is None:
                     continue
                     
                 str_val = str(val)
