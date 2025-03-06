@@ -135,18 +135,7 @@ def memory_manager(tmp_path):
                 'redis_url': 'redis://localhost:6379',
                 'redis_db': 0
             },
-            'warm': {
-                'path': str(tmp_path / 'warm'),
-                'max_size': 1073741824,
-                'duckdb': {
-                    'memory_limit': '4GB',
-                    'threads': 4,
-                    'config': {
-                        'enable_progress_bar': True,
-                        'enable_object_cache': True
-                    }
-                }
-            },
+            
             'cold': {
                 'path': str(tmp_path / 'cold'),
                 'max_size': 10737418240,
