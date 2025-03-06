@@ -99,41 +99,34 @@ class MemoryManager:
     
     _instance = None
     
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
+        """Create a singleton instance of MemoryManager."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._initialized = False
         return cls._instance
     
-    def __init__(self, config_path: Optional[str] = None):
-        if self._initialized:
-            return
+    def __init__(self, config: Optional[Dict[str, Any]] = None, config_path: Optional[str] = None):
+        """Initialize memory manager.
+        
+        Args:
+            config: Optional dictionary containing configuration
+            config_path: Optional path to config file
+        """
+        if not self._initialized:
+            # Load and merge configuration
+            self.config = self._load_and_merge_config(config_path, config)
             
-        # Initialize logger
-        self.logger = logging.getLogger(__name__)
-        
-        # Load configuration
-        self.config = self._load_and_merge_config(config_path)
-        
-        # Get project root from Config
-        project_root = os.getenv("PROJECT_ROOT", os.path.expanduser("~"))
-        
-        # Initialize DuckDB connection in project root
-        db_path = Path(project_root) / 'memories.db'
-        self.con = duckdb.connect(str(db_path))
-        
-        # Initialize all memory tiers
-        self.red_hot = None  # Will be initialized on demand
-        self.hot = None      # Will be initialized on demand
-        self.warm = None     # Will be initialized on demand
-        self.cold = None     # Will be initialized with proper config
-        self.glacier = None  # Will be initialized on demand
-        
-        # Initialize cold memory with default configuration
-        self._init_cold_memory()
-        
-        self._initialized = True
-        self.logger.info(f"Initialized MemoryManager with database at: {db_path}")
+            # Initialize memory tiers
+            self._init_duckdb()
+            self._init_red_hot_memory()
+            self._init_hot_memory()
+            self._init_warm_memory()
+            self._init_cold_memory()
+            self._init_glacier_memory()
+            
+            self._initialized = True
+            logger.info("Memory manager initialized")
 
     def _load_and_merge_config(
         self,

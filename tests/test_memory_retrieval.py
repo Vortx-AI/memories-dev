@@ -117,19 +117,15 @@ def mock_sentence_transformer():
 def memory_manager(tmp_path, mock_sentence_transformer):
     """Create a memory manager instance for testing."""
     config = {
-        'cold': {
-            'path': tmp_path / 'cold',
-            'max_size': 1024 * 1024 * 1024  # 1GB
+        'memory': {
+            'cold': {
+                'path': str(tmp_path / 'cold'),
+                'max_size': 1024 * 1024 * 1024  # 1GB
+            }
         }
     }
     manager = MemoryManager(config=config)
-    yield manager
-    
-    # Cleanup
-    if (tmp_path / 'cold').exists():
-        for file in (tmp_path / 'cold').glob('*'):
-            file.unlink()
-        (tmp_path / 'cold').rmdir()
+    return manager
 
 @pytest.fixture
 def memory_retrieval(memory_manager, mock_sentence_transformer):

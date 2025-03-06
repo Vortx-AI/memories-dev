@@ -140,19 +140,19 @@ def run_import():
 def memory_manager(tmp_path):
     """Create a memory manager instance for testing."""
     config = {
-        'cold': {
-            'path': tmp_path / 'cold',
-            'max_size': 1024 * 1024 * 1024  # 1GB
+        'memory': {
+            'cold': {
+                'path': str(tmp_path / 'cold'),
+                'max_size': 1024 * 1024 * 1024,  # 1GB
+                'duckdb': {
+                    'memory_limit': '4GB',
+                    'threads': 4
+                }
+            }
         }
     }
     manager = MemoryManager(config=config)
-    yield manager
-    
-    # Cleanup
-    if (tmp_path / 'cold').exists():
-        for file in (tmp_path / 'cold').glob('*'):
-            file.unlink()
-        (tmp_path / 'cold').rmdir()
+    return manager
 
 def test_batch_parquet_import(memory_manager, tmp_path):
     """Test importing multiple parquet files."""
