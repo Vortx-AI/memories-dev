@@ -109,124 +109,130 @@ def mock_sentence_transformer():
     """Mock sentence transformer to avoid network calls."""
     with patch('sentence_transformers.SentenceTransformer') as mock:
         model = MagicMock()
-        model.encode.return_value = np.random.rand(384)  # Return random embeddings
+        model.encode.return_value = np.random.rand(384)  # Random embeddings
         mock.return_value = model
         yield mock
 
 @pytest.fixture
 def memory_manager(tmp_path, mock_sentence_transformer):
     """Create a memory manager instance for testing."""
-    # Create DuckDB connection for tests
-    db_path = tmp_path / 'test.db'
-    con = duckdb.connect(str(db_path))
-    
-    # Initialize memory manager
-    manager = MemoryManager()
-    
-    # Initialize cold memory with test connection
-    manager.cold = ColdMemory(
-        connection=con,
-        config={
-            'path': str(tmp_path / 'cold'),
-            'max_size': 1073741824,  # 1GB
-            'duckdb': {
-                'memory_limit': '1GB',
-                'threads': 2
-            }
+    config = {
+        'cold': {
+            'path': tmp_path / 'cold',
+            'max_size': 1024 * 1024 * 1024  # 1GB
         }
-    )
-    
+    }
+    manager = MemoryManager(config=config)
     yield manager
     
     # Cleanup
-    con.close()
-    if db_path.exists():
-        db_path.unlink()
     if (tmp_path / 'cold').exists():
-        shutil.rmtree(tmp_path / 'cold')
+        for file in (tmp_path / 'cold').glob('*'):
+            file.unlink()
+        (tmp_path / 'cold').rmdir()
 
 @pytest.fixture
 def memory_retrieval(memory_manager, mock_sentence_transformer):
     """Create a memory retrieval instance for testing."""
     return MemoryRetrieval(memory_manager)
 
-def test_list_tables(memory_retrieval):
-    """Test listing tables in cold memory."""
-    tables = memory_retrieval.list_registered_files()
-    assert isinstance(tables, list)
-
-def test_empty_tables(memory_retrieval):
-    """Test listing tables when none exist."""
-    tables = memory_retrieval.list_registered_files()
-    assert len(tables) == 0
-
-def test_bbox_query(memory_manager):
-    # Query within first location's bounding box
-    result = memory_manager.cold.query_by_bbox(9.5, 49.5, 10.5, 50.5)
-    assert len(result) == 1
-    assert result.iloc[0]['name'] == 'Test Location 1'
+def test_query_files(memory_manager, tmp_path):
+    """Test querying parquet files."""
+    # Create test data
+    df = pd.DataFrame({
+        'id': range(10),
+        'value': np.random.rand(10)
+    })
     
-    # Query within second location's bounding box
-    result = memory_manager.cold.query_by_bbox(19.5, 59.5, 20.5, 60.5)
-    assert len(result) == 1
-    assert result.iloc[0]['name'] == 'Test Location 2'
+    # Save as parquet
+    parquet_dir = tmp_path / "test_data"
+    parquet_dir.mkdir()
+    df.to_parquet(parquet_dir / "test.parquet")
     
-    # Query covering both locations
-    result = memory_manager.cold.query_by_bbox(8.0, 48.0, 22.0, 62.0)
-    assert len(result) == 2
-
-def test_polygon_query(memory_retrieval):
-    """Test querying data within a polygon."""
-    polygon = "POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))"
-    df = memory_retrieval.get_data_by_polygon(polygon)
-    assert isinstance(df, pd.DataFrame)
-    assert len(df) == 0  # Empty since no data loaded
-
-def test_empty_bbox_query(memory_manager):
-    # Query outside any location
-    result = memory_manager.cold.query_by_bbox(0.0, 0.0, 1.0, 1.0)
-    assert len(result) == 0
-
-def test_invalid_column_names(memory_retrieval):
-    """Test querying with invalid column names."""
-    df = memory_retrieval.get_data_by_bbox(
-        min_lon=0,
-        min_lat=0,
-        max_lon=1,
-        max_lat=1,
-        lon_column="invalid_lon",
-        lat_column="invalid_lat"
-    )
-    assert isinstance(df, pd.DataFrame)
-    assert len(df) == 0
-
-def test_search_geospatial_data_in_bbox(memory_retrieval):
-    """Test searching geospatial data in bbox."""
-    # Insert test data into spatial_index
-    memory_retrieval.con.execute("""
-        INSERT INTO spatial_index (id, min_lat, max_lat, min_lon, max_lon, data_source, metadata)
-        VALUES 
-        (1, 10, 20, 30, 40, 'test_source', '{"text": "test data point 1"}'),
-        (2, -10, 0, -20, 0, 'test_source', '{"text": "test data point 2"}')
-    """)
+    # Import into cold storage
+    memory_manager.cold.batch_import_parquet(parquet_dir)
     
-    # Test with bbox that should include first point
-    df = memory_retrieval.search_geospatial_data_in_bbox(
-        query_word="test",
-        bbox=(25, 5, 45, 25),  # Should include first point
-        similarity_threshold=0.7
-    )
-    assert isinstance(df, pd.DataFrame)
-    assert len(df) == 1  # Should find one point
+    # Create retrieval instance
+    retrieval = MemoryRetrieval(memory_manager)
     
-    # Test with bbox that includes no points
-    df = memory_retrieval.search_geospatial_data_in_bbox(
-        query_word="test",
-        bbox=(50, 50, 60, 60),
-        similarity_threshold=0.7
-    )
-    assert isinstance(df, pd.DataFrame)
-    assert len(df) == 0  # Should find no points
+    # Test simple query
+    result = retrieval.query_files("SELECT * FROM test")
+    assert len(result) == 10
+    assert 'id' in result.columns
+    assert 'value' in result.columns
+
+def test_get_similar_vectors(memory_manager):
+    """Test vector similarity search."""
+    # Create test vectors
+    query_vector = np.random.rand(384)
+    
+    # Create retrieval instance
+    retrieval = MemoryRetrieval(memory_manager)
+    
+    # Test similarity search
+    results = retrieval.get_similar_vectors(query_vector, k=5)
+    assert isinstance(results, list)
+
+def test_get_similar_words(memory_manager):
+    """Test word similarity search."""
+    # Create retrieval instance
+    retrieval = MemoryRetrieval(memory_manager)
+    
+    # Test word similarity search
+    results = retrieval.get_similar_words("test", k=5)
+    assert isinstance(results, list)
+
+def test_get_storage_stats(memory_manager, tmp_path):
+    """Test getting storage statistics."""
+    # Create test data
+    df = pd.DataFrame({
+        'id': range(10),
+        'value': np.random.rand(10)
+    })
+    
+    # Save as parquet
+    parquet_dir = tmp_path / "test_data"
+    parquet_dir.mkdir()
+    df.to_parquet(parquet_dir / "test.parquet")
+    
+    # Import into cold storage
+    memory_manager.cold.batch_import_parquet(parquet_dir)
+    
+    # Create retrieval instance
+    retrieval = MemoryRetrieval(memory_manager)
+    
+    # Test getting stats
+    stats = retrieval.get_storage_stats()
+    assert isinstance(stats, dict)
+    assert stats['total_files'] > 0
+    assert stats['total_rows'] > 0
+    assert stats['total_columns'] > 0
+
+def test_list_registered_files(memory_manager, tmp_path):
+    """Test listing registered files."""
+    # Create test data
+    df = pd.DataFrame({
+        'id': range(10),
+        'value': np.random.rand(10)
+    })
+    
+    # Save as parquet
+    parquet_dir = tmp_path / "test_data"
+    parquet_dir.mkdir()
+    df.to_parquet(parquet_dir / "test.parquet")
+    
+    # Import into cold storage
+    memory_manager.cold.batch_import_parquet(parquet_dir)
+    
+    # Create retrieval instance
+    retrieval = MemoryRetrieval(memory_manager)
+    
+    # Test listing files
+    files = retrieval.list_registered_files()
+    assert isinstance(files, list)
+    assert len(files) > 0
+    assert 'file_path' in files[0]
+    assert 'table_name' in files[0]
 
 def main():
     """List tables in cold memory."""

@@ -45,82 +45,107 @@ class MemoryRetrieval:
     """Memory retrieval class for querying cold memory storage."""
     
     def __init__(self, memory_manager: Optional[MemoryManager] = None):
-        """Initialize memory retrieval with DuckDB connection.
-        
-        Args:
-            memory_manager: Optional MemoryManager instance to use for retrieval.
-                          If not provided, a new instance will be created.
-        """
-        # Get project root directory
-        project_root = Path(__file__).parent.parent.parent
-        
-        # Set up data directories
-        self.data_dir = os.path.join(project_root, "data")
-        
-        # Use provided memory manager or create new one
-        self.memory_manager = memory_manager or MemoryManager()
-        
-        # Initialize DuckDB connection from memory manager
-        self.con = self.memory_manager.con
-        
-        # Set up GPU support
-        self.has_gpu = self._has_gpu()
-        
-        # Install and load spatial extension
+        """Initialize memory retrieval."""
+        self.memory_manager = memory_manager
+        if memory_manager and memory_manager.cold:
+            self.con = memory_manager.cold.con
+            self.data_dir = memory_manager.cold.path
+        else:
+            raise ValueError("Memory manager with cold storage is required")
+            
+    def get_parquet_files(self) -> List[str]:
+        """Get list of registered parquet files."""
         try:
-            self.con.execute("INSTALL spatial;")
-            self.con.execute("LOAD spatial;")
-            logger.info("Spatial extension installed and loaded successfully")
+            result = self.con.execute("""
+                SELECT file_path FROM cold_metadata
+                WHERE table_name IS NOT NULL
+            """).fetchall()
+            return [row[0] for row in result]
         except Exception as e:
-            logger.error(f"Error setting up spatial extension: {e}")
-        
-        # Initialize red-hot memory
-        self.red_hot = RedHotMemory()
-        
-        # Initialize sentence transformer model
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
-        
-        logger.info(f"Initialized MemoryRetrieval")
-        logger.info(f"Data directory: {self.data_dir}")
-        logger.info(f"GPU available: {self.has_gpu}")
-
-    @staticmethod
-    def _has_gpu() -> bool:
-        """Check if GPU acceleration is available.
-        
-        Returns:
-            bool: True if both cudf and cuspatial are available and a CUDA device is present
-        """
-        return HAS_CUDF and HAS_CUSPATIAL
-
+            logger.error(f"Error getting parquet files: {e}")
+            return []
+            
     def get_table_schema(self) -> List[str]:
-        """Get the schema of the parquet files."""
+        """Get schema of all tables."""
         try:
-            # Get first parquet file
-            file_query = """
-                SELECT path 
+            tables = self.con.execute("""
+                SELECT DISTINCT table_name 
                 FROM cold_metadata 
-                WHERE data_type = 'parquet' 
-                LIMIT 1
-            """
-            first_file = self.con.execute(file_query).fetchone()
+                WHERE table_name IS NOT NULL
+            """).fetchall()
             
-            if not first_file:
-                return []
-                
-            # Create temporary view to inspect schema
-            self.con.execute(f"""
-                CREATE OR REPLACE VIEW temp_view AS 
-                SELECT * FROM read_parquet('{first_file[0]}')
-            """)
-            
-            # Get column names
-            schema = self.con.execute("DESCRIBE temp_view").fetchall()
-            
-            return [col[0] for col in schema]
-            
+            schemas = []
+            for (table,) in tables:
+                schema = self.con.execute(f"DESCRIBE {table}").fetchall()
+                schemas.extend([f"{table}.{col[0]}" for col in schema])
+            return schemas
         except Exception as e:
-            logger.error(f"Error getting schema: {e}")
+            logger.error(f"Error getting table schema: {e}")
+            return []
+
+    def query_files(self, sql_query: str) -> pd.DataFrame:
+        """Execute a SQL query on registered parquet files."""
+        try:
+            return self.con.execute(sql_query).fetchdf()
+        except Exception as e:
+            logger.error(f"Error executing query: {e}")
+            return pd.DataFrame()
+
+    def get_similar_vectors(self, query_vector: np.ndarray, k: int = 5) -> List[Tuple[int, float]]:
+        """Get similar vectors using FAISS."""
+        if not self.memory_manager or not self.memory_manager.red_hot:
+            raise RuntimeError("Red hot memory required for vector similarity search")
+            
+        return self.memory_manager.red_hot.search(query_vector, k)
+
+    def get_similar_words(self, query_word: str, k: int = 5) -> List[Tuple[str, float]]:
+        """Get similar words using word embeddings."""
+        if not self.memory_manager or not self.memory_manager.red_hot:
+            raise RuntimeError("Red hot memory required for word similarity search")
+            
+        query_vector = self.memory_manager.red_hot.encode_text(query_word)
+        return self.memory_manager.red_hot.search_words(query_vector, k)
+
+    def get_storage_stats(self) -> Dict:
+        """Get storage statistics."""
+        try:
+            stats = self.con.execute("""
+                SELECT 
+                    COUNT(*) as total_files,
+                    SUM(num_rows) as total_rows,
+                    SUM(num_columns) as total_columns
+                FROM cold_metadata
+            """).fetchone()
+            
+            return {
+                'total_files': stats[0],
+                'total_rows': stats[1],
+                'total_columns': stats[2]
+            }
+        except Exception as e:
+            logger.error(f"Error getting storage stats: {e}")
+            return {}
+
+    def list_registered_files(self) -> List[Dict]:
+        """List all registered files."""
+        try:
+            result = self.con.execute("""
+                SELECT * FROM cold_metadata
+                ORDER BY imported_at DESC
+            """).fetchall()
+            
+            return [{
+                'file_path': row[0],
+                'theme': row[1],
+                'tag': row[2],
+                'num_rows': row[3],
+                'num_columns': row[4],
+                'schema': json.loads(row[5]),
+                'imported_at': row[6],
+                'table_name': row[7]
+            } for row in result]
+        except Exception as e:
+            logger.error(f"Error listing files: {e}")
             return []
 
     def find_geometry_column(self, schema: List[Tuple]) -> Tuple[Optional[str], Optional[str]]:
@@ -216,371 +241,6 @@ class MemoryRetrieval:
 
         return ", ".join(select_parts)
 
-    def get_parquet_files(self) -> List[str]:
-        """Get all parquet files in the data directory."""
-        parquet_files = []
-        for pattern in ["**/*.parquet", "**/*.zstd.parquet"]:
-            parquet_files.extend(
-                glob.glob(os.path.join(self.data_dir, pattern), recursive=True)
-            )
-        return parquet_files
-
-    def build_spatial_index(self):
-        """Build spatial index for all parquet files."""
-        try:
-            # Get all parquet files
-            files = self.get_parquet_files()
-            
-            if not files:
-                logger.warning(f"No parquet files found in {self.data_dir}")
-                return
-                
-            logger.info(f"Found {len(files)} parquet files")
-            
-            # Clear existing index
-            self.con.execute("DELETE FROM spatial_index")
-            
-            for file_path in files:
-                try:
-                    # Get schema and geometry column
-                    schema = self.get_parquet_schema(file_path)
-                    geom_column, geom_type = self.find_geometry_column(schema)
-                    
-                    if not geom_column:
-                        continue
-                        
-                    logger.info(f"Indexing {file_path}")
-                    
-                    # Get geometry expression
-                    geom_expr = self.get_geometry_expression(geom_column, geom_type)
-                    
-                    # Calculate bounds for this file
-                    bounds_query = f"""
-                        {self.get_geometry_bounds(geom_expr)}
-                        FROM read_parquet('{file_path}')
-                    """
-                    bounds = self.con.execute(bounds_query).fetchone()
-                    
-                    # Insert into spatial index
-                    if bounds and None not in bounds:
-                        self.con.execute("""
-                            INSERT INTO spatial_index 
-                            VALUES (?, ?, ?, ?, ?)
-                        """, (file_path, *bounds))
-                        logger.info(f"Indexed {file_path} with bounds: {bounds}")
-                        
-                except Exception as e:
-                    logger.error(f"Error indexing {file_path}: {e}")
-                    continue
-                    
-            # Create index on bounds
-            self.con.execute("CREATE INDEX IF NOT EXISTS idx_spatial ON spatial_index(min_lon, min_lat, max_lon, max_lat)")
-            
-            # Log index statistics
-            count = self.con.execute("SELECT COUNT(*) FROM spatial_index").fetchone()[0]
-            logger.info(f"Built spatial index with {count} entries")
-            
-        except Exception as e:
-            logger.error(f"Error building spatial index: {e}")
-            raise
-
-    def query_by_bbox(self, min_lon: float, min_lat: float, max_lon: float, max_lat: float) -> pd.DataFrame:
-        """Query places within a bounding box using spatial index."""
-        try:
-            # Find potentially intersecting files using spatial index
-            files_query = """
-                SELECT data_source
-                FROM spatial_index
-                WHERE max_lon >= ? AND min_lon <= ?
-                  AND max_lat >= ? AND min_lat <= ?
-            """
-            files = self.con.execute(files_query,
-                                   (min_lon, max_lon, min_lat, max_lat)).fetchall()
-            
-            if not files:
-                logger.info("No files found in bounding box")
-                return pd.DataFrame()
-                
-            # Process each file
-            results = pd.DataFrame()
-            for file_path in files:
-                try:
-                    # Read parquet file
-                    df = pd.read_parquet(file_path[0])
-                    
-                    # Filter by bounding box
-                    if 'geometry' in df.columns:
-                        df = df[df.geometry.intersects(box(min_lon, min_lat, max_lon, max_lat))]
-                    else:
-                        df = df[
-                            (df.longitude >= min_lon) & (df.longitude <= max_lon) &
-                            (df.latitude >= min_lat) & (df.latitude <= max_lat)
-                        ]
-                    
-                    if not df.empty:
-                        results = pd.concat([results, df], ignore_index=True)
-                        
-                except Exception as e:
-                    logger.error(f"Error processing {file_path}: {e}")
-                    continue
-                    
-            return results
-            
-        except Exception as e:
-            logger.error(f"Error executing spatial query: {e}")
-            return pd.DataFrame()
-
-    def query_files(self, sql_query: str) -> pd.DataFrame:
-        """
-        Query across all registered parquet files.
-        
-        Args:
-            sql_query: SQL query string. Use 'files.*' to query all columns.
-        
-        Returns:
-            pandas.DataFrame with query results
-        """
-        try:
-            # Get all registered parquet files
-            files_query = """
-                SELECT path 
-                FROM cold_metadata 
-                WHERE data_type = 'parquet'
-            """
-            files = self.con.execute(files_query).fetchall()
-            
-            if not files:
-                logger.warning("No parquet files registered in the database")
-                return pd.DataFrame()
-
-            # Create a view combining all parquet files
-            file_paths = [f[0] for f in files]
-            files_list = ", ".join(f"'{path}'" for path in file_paths)
-            
-            create_view = f"""
-                CREATE OR REPLACE VIEW files AS 
-                SELECT * FROM read_parquet([{files_list}])
-            """
-            self.con.execute(create_view)
-            
-            # Execute the actual query
-            result = self.con.execute(sql_query).df()
-            return result
-            
-        except Exception as e:
-            logger.error(f"Error executing query: {e}")
-            raise
-
-    def get_similar_vectors(self, query_vector: np.ndarray, k: int = 5) -> List[Tuple[int, float]]:
-        """
-        Find most similar vectors in FAISS index.
-        
-        Args:
-            query_vector: The vector to search for (must match index dimension)
-            k: Number of similar results to return (default: 5)
-            
-        Returns:
-            List of tuples containing (vector_id, similarity_score)
-        """
-        try:
-            # Check if index exists and has vectors
-            if not self.red_hot.index or self.red_hot.index.ntotal == 0:
-                logger.warning("No vectors found in FAISS index")
-                return []
-            
-            # Ensure vector has correct shape
-            query_vector = query_vector.reshape(1, -1).astype('float32')
-            
-            # Search in FAISS index
-            distances, indices = self.red_hot.index.search(query_vector, k)
-            
-            # Convert distances to similarities and pair with indices
-            results = []
-            for idx, (distance, vector_idx) in enumerate(zip(distances[0], indices[0])):
-                if vector_idx != -1:  # Valid index
-                    similarity = 1 - (distance / 2)  # Convert L2 distance to similarity score
-                    results.append((int(vector_idx), float(similarity)))
-            
-            logger.info(f"Found {len(results)} similar vectors")
-            return results
-
-        except Exception as e:
-            logger.error(f"Error finding similar vectors: {e}")
-            return []
-
-    def get_similar_words(self, query_word: str, k: int = 5) -> List[Tuple[str, float]]:
-        """
-        Find most similar words in FAISS index.
-        
-        Args:
-            query_word: The word to search for
-            k: Number of similar results to return (default: 5)
-            
-        Returns:
-            List of tuples containing (word, similarity_score)
-        """
-        try:
-            # Check if index exists and has vectors
-            if not self.red_hot.index or self.red_hot.index.ntotal == 0:
-                logger.warning("No vectors found in FAISS index")
-                return []
-            
-            # Convert word to vector using sentence transformer
-            query_vector = self.model.encode([query_word])[0]
-            query_vector = query_vector.reshape(1, -1).astype('float32')
-            
-            # Search in FAISS index
-            distances, indices = self.red_hot.index.search(query_vector, k)
-            
-            # Get words from metadata and pair with similarities
-            results = []
-            for idx, (distance, vector_idx) in enumerate(zip(distances[0], indices[0])):
-                if vector_idx != -1:  # Valid index
-                    metadata = self.red_hot.get_metadata(int(vector_idx))
-                    word = metadata.get('word', f'Unknown_{vector_idx}')
-                    similarity = 1 - (distance / 2)  # Convert L2 distance to similarity score
-                    results.append((word, float(similarity)))
-            
-            logger.info(f"Found {len(results)} similar words for '{query_word}'")
-            return results
-
-        except Exception as e:
-            logger.error(f"Error finding similar words: {e}")
-            return []
-
-    def get_storage_stats(self) -> Dict:
-        """Get statistics about the FAISS index."""
-        try:
-            # Get index statistics if available
-            index_stats = {}
-            if self.red_hot.index:
-                index = self.red_hot.index
-                index_stats = {
-                    'type': type(index).__name__,
-                    'dimension': index.d,
-                    'total_vectors': index.ntotal,
-                    'is_trained': getattr(index, 'is_trained', True)
-                }
-            
-            stats = {
-                'faiss_index': {
-                    'max_size': self.red_hot.max_size,
-                    'storage_path': self.red_hot.storage_path,
-                    'index_stats': index_stats,
-                    'is_initialized': self.red_hot.index is not None
-                }
-            }
-
-            logger.info(f"FAISS index statistics: {stats}")
-            return stats
-
-        except Exception as e:
-            logger.error(f"Error getting FAISS stats: {e}")
-            return {
-                'faiss_index': {
-                    'max_size': 0,
-                    'storage_path': self.red_hot.storage_path,
-                    'index_stats': {},
-                    'is_initialized': False
-                }
-            }
-
-    def list_registered_files(self) -> List[Dict]:
-        """List all registered files and their metadata."""
-        try:
-            query = """
-                SELECT 
-                    id,
-                    timestamp,
-                    size,
-                    data_type,
-                    additional_meta
-                FROM cold_metadata
-                ORDER BY timestamp DESC
-            """
-            
-            results = self.con.execute(query).fetchall()
-            files = []
-            for row in results:
-                files.append({
-                    'id': row[0],
-                    'timestamp': row[1],
-                    'size': row[2],
-                    'data_type': row[3],
-                    'metadata': row[4]
-                })
-            return files
-            
-        except Exception as e:
-            logger.error(f"Error listing registered files: {e}")
-            return []
-
-    def list_available_data(self) -> List[Dict[str, Any]]:
-        """List all available data tables and their metadata.
-        
-        Returns:
-            List of dictionaries containing table information:
-                - table_name: Name of the table
-                - file_path: Original parquet file path
-                - theme: Theme tag if provided during import
-                - tag: Additional tag if provided during import
-                - num_rows: Number of rows
-                - num_columns: Number of columns
-                - schema: Column names and types
-        """
-        return self.cold.list_tables()
-
-    def get_schema(self, table_name: str) -> Optional[Dict[str, str]]:
-        """Get schema for a specific table.
-        
-        Args:
-            table_name: Name of the table
-            
-        Returns:
-            Dictionary mapping column names to their types, or None if table not found
-        """
-        return self.cold.get_table_schema(table_name)
-
-    def preview_data(self, table_name: str, limit: int = 5) -> pd.DataFrame:
-        """Preview data from a specific table.
-        
-        Args:
-            table_name: Name of the table to preview
-            limit: Number of rows to preview (default: 5)
-            
-        Returns:
-            pandas DataFrame with preview rows
-        """
-        return self.cold.get_table_preview(table_name, limit)
-
-    def search(self, 
-              conditions: Dict[str, Any], 
-              tables: Optional[List[str]] = None,
-              limit: int = 100
-    ) -> pd.DataFrame:
-        """Search across tables using specified conditions.
-        
-        Args:
-            conditions: Dictionary of column-value pairs to search for
-            tables: Optional list of specific table names to search in
-            limit: Maximum number of results to return (default: 100)
-            
-        Returns:
-            pandas DataFrame with matching records
-        """
-        return self.cold.search(conditions, tables, limit)
-
-    def query(self, sql_query: str) -> pd.DataFrame:
-        """Execute a SQL query across all imported data.
-        
-        Args:
-            sql_query: SQL query to execute
-            
-        Returns:
-            pandas DataFrame with query results
-        """
-        return self.cold.query(sql_query)
-
     def get_data_by_theme(self, theme: str, limit: int = 100) -> pd.DataFrame:
         """Get data from tables with a specific theme.
         
@@ -593,15 +253,18 @@ class MemoryRetrieval:
         """
         try:
             # Get tables with matching theme
-            tables = self.cold.list_tables()
-            theme_tables = [t["table_name"] for t in tables if t["theme"] == theme]
+            tables = self.con.execute("""
+                SELECT table_name FROM cold_metadata
+                WHERE theme = ?
+            """, (theme,)).fetchall()
+            theme_tables = [t[0] for t in tables]
             
             if not theme_tables:
                 logger.warning(f"No tables found with theme: {theme}")
                 return pd.DataFrame()
             
             # Build query to union all matching tables
-            queries = [f"SELECT *, '{table}' as source_table FROM {table}" for table in theme_tables]
+            queries = [f"SELECT *, '{t}' as source_table FROM {t}" for t in theme_tables]
             full_query = f"""
                 SELECT * FROM (
                     {" UNION ALL ".join(queries)}
@@ -609,7 +272,7 @@ class MemoryRetrieval:
                 LIMIT {limit}
             """
             
-            return self.cold.query(full_query)
+            return self.con.execute(full_query).fetchdf()
             
         except Exception as e:
             logger.error(f"Error getting data for theme {theme}: {e}")
@@ -627,15 +290,18 @@ class MemoryRetrieval:
         """
         try:
             # Get tables with matching tag
-            tables = self.cold.list_tables()
-            tag_tables = [t["table_name"] for t in tables if t["tag"] == tag]
+            tables = self.con.execute("""
+                SELECT table_name FROM cold_metadata
+                WHERE tag = ?
+            """, (tag,)).fetchall()
+            tag_tables = [t[0] for t in tables]
             
             if not tag_tables:
                 logger.warning(f"No tables found with tag: {tag}")
                 return pd.DataFrame()
             
             # Build query to union all matching tables
-            queries = [f"SELECT *, '{table}' as source_table FROM {table}" for table in tag_tables]
+            queries = [f"SELECT *, '{t}' as source_table FROM {t}" for t in tag_tables]
             full_query = f"""
                 SELECT * FROM (
                     {" UNION ALL ".join(queries)}
@@ -643,7 +309,7 @@ class MemoryRetrieval:
                 LIMIT {limit}
             """
             
-            return self.cold.query(full_query)
+            return self.con.execute(full_query).fetchdf()
             
         except Exception as e:
             logger.error(f"Error getting data for tag {tag}: {e}")
@@ -669,7 +335,9 @@ class MemoryRetrieval:
         """
         try:
             # Get all tables
-            tables = self.cold.list_tables()
+            tables = self.con.execute("""
+                SELECT table_name FROM cold_metadata
+            """).fetchall()
             if not tables:
                 logger.warning("No tables available")
                 return pd.DataFrame()
@@ -677,13 +345,13 @@ class MemoryRetrieval:
             # Build query to union all tables with date filter
             queries = []
             for table in tables:
-                table_name = table["table_name"]
-                schema = table["schema"]
+                table_name = table[0]
+                schema = self.con.execute(f"DESCRIBE {table_name}").fetchall()
                 if date_column in schema:
                     queries.append(f"""
                         SELECT *, '{table_name}' as source_table 
                         FROM {table_name}
-                        WHERE {date_column} BETWEEN '{start_date}' AND '{end_date}'
+                        WHERE {date_column} BETWEEN ? AND ?
                     """)
             
             if not queries:
@@ -697,7 +365,7 @@ class MemoryRetrieval:
                 LIMIT {limit}
             """
             
-            return self.cold.query(full_query)
+            return self.con.execute(full_query, (start_date, end_date)).fetchdf()
             
         except Exception as e:
             logger.error(f"Error getting data for date range: {e}")
@@ -716,17 +384,17 @@ class MemoryRetrieval:
         """
         try:
             # Get basic table info
-            schema = self.cold.get_table_schema(table_name)
+            schema = self.con.execute(f"DESCRIBE {table_name}").fetchall()
             if not schema:
                 raise ValueError(f"Table not found: {table_name}")
             
             # Get row count
             count_query = f"SELECT COUNT(*) as row_count FROM {table_name}"
-            row_count = self.cold.query(count_query).iloc[0]['row_count']
+            row_count = self.con.execute(count_query).fetchone()[0]
             
             # Get column statistics
             column_stats = {}
-            for column, dtype in schema.items():
+            for column, dtype in schema:
                 if 'int' in dtype.lower() or 'float' in dtype.lower() or 'double' in dtype.lower():
                     stats_query = f"""
                         SELECT 
@@ -736,15 +404,20 @@ class MemoryRetrieval:
                             COUNT(DISTINCT {column}) as unique_count
                         FROM {table_name}
                     """
-                    stats = self.cold.query(stats_query).to_dict('records')[0]
-                    column_stats[column] = stats
+                    stats = self.con.execute(stats_query).fetchone()
+                    column_stats[column] = {
+                        'min': stats[0],
+                        'max': stats[1],
+                        'avg': stats[2],
+                        'unique_count': stats[3]
+                    }
                 else:
                     # For non-numeric columns, just get unique count
                     stats_query = f"""
                         SELECT COUNT(DISTINCT {column}) as unique_count
                         FROM {table_name}
                     """
-                    stats = {'unique_count': self.cold.query(stats_query).iloc[0]['unique_count']}
+                    stats = {'unique_count': self.con.execute(stats_query).fetchone()[0]}
                     column_stats[column] = stats
             
             return {
@@ -784,21 +457,19 @@ class MemoryRetrieval:
         """
         try:
             # Get all tables
-            tables = self.cold.list_tables()
+            tables = self.con.execute("""
+                SELECT table_name FROM cold_metadata
+            """).fetchall()
             if not tables:
                 logger.warning("No tables available")
                 return pd.DataFrame()
-            
-            # Install and load spatial extension if needed
-            self.cold.con.execute("INSTALL spatial;")
-            self.cold.con.execute("LOAD spatial;")
             
             # Build query to union all tables with bounding box filter
             results = pd.DataFrame()
             
             for table in tables:
-                table_name = table["table_name"]
-                schema = table["schema"]
+                table_name = table[0]
+                schema = self.con.execute(f"DESCRIBE {table_name}").fetchall()
                 
                 # Try geometry column first if it exists
                 if geom_column in schema:
@@ -812,7 +483,7 @@ class MemoryRetrieval:
                         LIMIT {limit}
                     """
                     try:
-                        df = self.cold.query(query)
+                        df = self.con.execute(query).fetchdf()
                         if not df.empty:
                             results = pd.concat([results, df], ignore_index=True)
                     except Exception as e:
@@ -828,7 +499,7 @@ class MemoryRetrieval:
                         LIMIT {limit}
                     """
                     try:
-                        df = self.cold.query(query)
+                        df = self.con.execute(query).fetchdf()
                         if not df.empty:
                             results = pd.concat([results, df], ignore_index=True)
                     except Exception as e:
@@ -878,24 +549,22 @@ class MemoryRetrieval:
         """
         try:
             # Get all tables
-            tables = self.cold.list_tables()
+            tables = self.con.execute("""
+                SELECT table_name FROM cold_metadata
+            """).fetchall()
             if not tables:
                 logger.warning("No tables available")
                 return pd.DataFrame()
-            
-            # Install and load spatial extension if needed
-            self.cold.con.execute("INSTALL spatial;")
-            self.cold.con.execute("LOAD spatial;")
             
             # Build query to union all tables with bounding box filter and value search
             queries = []
             
             for table in tables:
-                table_name = table["table_name"]
-                schema = table["schema"]
+                table_name = table[0]
+                schema = self.con.execute(f"DESCRIBE {table_name}").fetchall()
                 
                 # Get all column names for the table
-                columns = list(schema.keys())
+                columns = [col[0] for col, dtype in schema]
                 
                 # Build the LIKE conditions for each column
                 # Use ILIKE for case-insensitive search if specified
@@ -948,7 +617,7 @@ class MemoryRetrieval:
             
             # Execute the combined query
             try:
-                results = self.cold.query(full_query)
+                results = self.con.execute(full_query).fetchdf()
             except Exception as e:
                 logger.error(f"Error executing combined query: {e}")
                 return pd.DataFrame()
@@ -984,7 +653,9 @@ class MemoryRetrieval:
         """
         try:
             # Get all tables
-            tables = self.cold.list_tables()
+            tables = self.con.execute("""
+                SELECT table_name FROM cold_metadata
+            """).fetchall()
             if not tables:
                 logger.warning("No tables available")
                 return pd.DataFrame()
@@ -993,9 +664,9 @@ class MemoryRetrieval:
             queries = []
             
             for table in tables:
-                table_name = table["table_name"]
-                schema = table["schema"]
-                columns = list(schema.keys())
+                table_name = table[0]
+                schema = self.con.execute(f"DESCRIBE {table_name}").fetchall()
+                columns = [col[0] for col, dtype in schema]
                 
                 # Build similarity conditions for each column
                 similarity_conditions = []
@@ -1046,7 +717,7 @@ class MemoryRetrieval:
             
             # Execute the combined query
             try:
-                results = self.cold.query(full_query)
+                results = self.con.execute(full_query).fetchdf()
             except Exception as e:
                 logger.error(f"Error executing fuzzy search query: {e}")
                 return pd.DataFrame()
@@ -1072,21 +743,19 @@ class MemoryRetrieval:
         """Get data that intersects with a polygon."""
         try:
             # Get all tables
-            tables = self.cold.list_tables()
+            tables = self.con.execute("""
+                SELECT table_name FROM cold_metadata
+            """).fetchall()
             if not tables:
                 logger.warning("No tables available")
                 return pd.DataFrame()
             
-            # Install and load spatial extension
-            self.cold.con.execute("INSTALL spatial;")
-            self.cold.con.execute("LOAD spatial;")
-            
-            # Query each table separately and combine results
+            # Build query to union all tables with polygon filter
             results = pd.DataFrame()
             
             for table in tables:
-                table_name = table["table_name"]
-                schema = table["schema"]
+                table_name = table[0]
+                schema = self.con.execute(f"DESCRIBE {table_name}").fetchall()
                 
                 # Check if geometry column exists in this table
                 if geom_column in schema:
@@ -1100,7 +769,7 @@ class MemoryRetrieval:
                         LIMIT {limit}
                     """
                     try:
-                        df = self.cold.query(query)
+                        df = self.con.execute(query).fetchdf()
                         if not df.empty:
                             results = pd.concat([results, df], ignore_index=True)
                     except Exception as e:
@@ -1114,53 +783,6 @@ class MemoryRetrieval:
         except Exception as e:
             logger.error(f"Error getting data for polygon: {e}")
             return pd.DataFrame()
-
-    @staticmethod
-    def get_data_by_bbox_static(
-        min_lon: float,
-        min_lat: float,
-        max_lon: float,
-        max_lat: float,
-        lon_column: str = "longitude",
-        lat_column: str = "latitude",
-        geom_column: str = "geometry",
-        limit: int = 1000,
-        data_path: str = 'data'
-    ) -> pd.DataFrame:
-        """Get data within a geographic bounding box (static method).
-        
-        Args:
-            min_lon: Minimum longitude of the bounding box
-            min_lat: Minimum latitude of the bounding box
-            max_lon: Maximum longitude of the bounding box
-            max_lat: Maximum latitude of the bounding box
-            lon_column: Name of the longitude column (default: "longitude")
-            lat_column: Name of the latitude column (default: "latitude")
-            geom_column: Name of the geometry column (default: "geometry")
-            limit: Maximum number of results to return (default: 1000)
-            data_path: Path to the data directory (default: 'data')
-            
-        Returns:
-            pandas DataFrame with matching records
-        """
-        from memories.core.cold import ColdMemory
-        from pathlib import Path
-        
-        # Create temporary retrieval instance
-        cold_memory = ColdMemory(storage_path=Path(data_path))
-        retrieval = MemoryRetrieval(cold_memory)
-        
-        # Use the instance method
-        return retrieval.get_data_by_bbox(
-            min_lon=min_lon,
-            min_lat=min_lat,
-            max_lon=max_lon,
-            max_lat=max_lat,
-            lon_column=lon_column,
-            lat_column=lat_column,
-            geom_column=geom_column,
-            limit=limit
-        )
 
     def get_red_hot_stats(self) -> dict:
         """Get statistics about the data in red-hot storage."""
