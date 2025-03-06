@@ -13,6 +13,7 @@ import pandas as pd
 import yaml
 from unittest.mock import patch, MagicMock
 import numpy as np
+import logging
 
 # Load environment variables from .env file
 load_dotenv()
@@ -116,16 +117,27 @@ def mock_sentence_transformer():
 @pytest.fixture
 def memory_manager(tmp_path, mock_sentence_transformer):
     """Create a memory manager instance for testing."""
+    # Configure logging
+    logging.basicConfig(level=logging.INFO)
+    
     config = {
         'memory': {
+            'base_path': str(tmp_path),
             'cold': {
                 'path': str(tmp_path / 'cold'),
-                'max_size': 1024 * 1024 * 1024  # 1GB
+                'max_size': 1024 * 1024 * 1024,  # 1GB
+                'duckdb': {
+                    'memory_limit': '4GB',
+                    'threads': 4
+                }
             }
         }
     }
     manager = MemoryManager(config=config)
-    return manager
+    yield manager
+    
+    # Cleanup
+    manager.cleanup()
 
 @pytest.fixture
 def memory_retrieval(memory_manager, mock_sentence_transformer):

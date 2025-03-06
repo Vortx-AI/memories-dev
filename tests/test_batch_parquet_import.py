@@ -13,6 +13,7 @@ import tempfile
 import yaml
 import pandas as pd
 import numpy as np
+import logging
 
 # Load environment variables from .env file
 load_dotenv()
@@ -139,20 +140,30 @@ def run_import():
 @pytest.fixture
 def memory_manager(tmp_path):
     """Create a memory manager instance for testing."""
+    # Configure logging
+    logging.basicConfig(level=logging.INFO)
+    
     config = {
         'memory': {
+            'base_path': str(tmp_path),
             'cold': {
                 'path': str(tmp_path / 'cold'),
                 'max_size': 1024 * 1024 * 1024,  # 1GB
                 'duckdb': {
                     'memory_limit': '4GB',
-                    'threads': 4
+                    'threads': 4,
+                    'config': {
+                        'enable_external_access': True
+                    }
                 }
             }
         }
     }
     manager = MemoryManager(config=config)
-    return manager
+    yield manager
+    
+    # Cleanup
+    manager.cleanup()
 
 def test_batch_parquet_import(memory_manager, tmp_path):
     """Test importing multiple parquet files."""
