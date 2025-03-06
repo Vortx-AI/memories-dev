@@ -140,20 +140,44 @@ def run_import():
 @pytest.fixture
 def memory_manager(tmp_path):
     """Create a memory manager instance for testing."""
-    # Configure logging
-    #logging.basicConfig(level=logging.INFO)
-    
     config = {
         'memory': {
             'base_path': str(tmp_path),
-            'cold': {
-                'path': str(tmp_path / 'cold'),
-                'max_size': 1024 * 1024 * 1024,  # 1GB
+            'red_hot': {
+                'path': str(tmp_path / 'red_hot'),
+                'max_size': 1000000,  # 1M vectors
+                'vector_dim': 384,    # Default for all-MiniLM-L6-v2
+                'gpu_id': 0,
+                'force_cpu': True,    # Default to CPU for stability
+                'index_type': 'Flat'  # Simple Flat index
+            },
+            'hot': {
+                'path': str(tmp_path / 'hot'),
+                'max_size': 104857600,  # 100MB
+                'redis_url': 'redis://localhost:6379',
+                'redis_db': 0
+            },
+            'warm': {
+                'path': str(tmp_path / 'warm'),
+                'max_size': 1073741824,  # 1GB
                 'duckdb': {
                     'memory_limit': '4GB',
                     'threads': 4,
                     'config': {
-                        'enable_external_access': True
+                        'enable_progress_bar': True,
+                        'enable_object_cache': True
+                    }
+                }
+            },
+            'cold': {
+                'path': str(tmp_path / 'cold'),
+                'max_size': 10737418240,  # 10GB
+                'duckdb': {
+                    'memory_limit': '4GB',
+                    'threads': 4,
+                    'config': {
+                        'enable_progress_bar': True,
+                        'enable_object_cache': True
                     }
                 }
             }
@@ -198,7 +222,7 @@ def test_batch_parquet_import(memory_manager, tmp_path):
     df3.to_parquet(divisions_dir / "test3.parquet")
     
     # Import files
-    result = memory_manager.cold.batch_import_parquet(
+    result = memory_manager.batch_import_parquet(
         test_dir,
         theme="test_theme",
         tag="test_tag",
@@ -206,13 +230,13 @@ def test_batch_parquet_import(memory_manager, tmp_path):
     )
     
     # Check results
-    assert result['num_files'] == 3
-    assert result['num_records'] == 30
+    assert result['files_processed'] == 3
+    assert result['records_imported'] == 30
     assert result['total_size'] > 0
     assert len(result['errors']) == 0
     
-    # Check metadata
-    files = memory_manager.cold.con.execute("""
+    # Check metadata using DuckDB connection
+    files = memory_manager.con.execute("""
         SELECT * FROM cold_metadata
     """).fetchall()
     
@@ -230,7 +254,7 @@ def test_empty_directory(memory_manager, tmp_path):
     empty_dir = tmp_path / "empty"
     empty_dir.mkdir()
     
-    result = memory_manager.cold.batch_import_parquet(empty_dir)
+    result = memory_manager.batch_import_parquet(empty_dir)
     
     assert result['num_files'] == 0
     assert result['num_records'] == 0
@@ -246,7 +270,7 @@ def test_invalid_parquet_file(memory_manager, tmp_path):
     invalid_file = test_dir / "invalid.parquet"
     invalid_file.write_text("This is not a parquet file")
     
-    result = memory_manager.cold.batch_import_parquet(test_dir)
+    result = memory_manager.batch_import_parquet(test_dir)
     
     assert result['num_files'] == 0
     assert result['num_records'] == 0
@@ -256,7 +280,7 @@ def test_invalid_parquet_file(memory_manager, tmp_path):
 def test_nonexistent_directory(memory_manager):
     """Test importing from a nonexistent directory."""
     with pytest.raises(ValueError):
-        memory_manager.cold.batch_import_parquet("nonexistent_dir")
+        memory_manager.batch_import_parquet("nonexistent_dir")
 
 def test_recursive_import(memory_manager, tmp_path):
     """Test recursive import of parquet files."""
@@ -277,12 +301,12 @@ def test_recursive_import(memory_manager, tmp_path):
     df2.to_parquet(sub_dir2 / "test2.parquet")
     
     # Test recursive import
-    result = memory_manager.cold.batch_import_parquet(root_dir, recursive=True)
+    result = memory_manager.batch_import_parquet(root_dir, recursive=True)
     assert result['num_files'] == 2
     assert result['num_records'] == 10
     
     # Test non-recursive import
-    result = memory_manager.cold.batch_import_parquet(root_dir, recursive=False)
+    result = memory_manager.batch_import_parquet(root_dir, recursive=False)
     assert result['num_files'] == 0
 
 if __name__ == "__main__":

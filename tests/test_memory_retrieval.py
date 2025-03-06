@@ -14,6 +14,7 @@ import yaml
 from unittest.mock import patch, MagicMock
 import numpy as np
 import logging
+from datetime import datetime
 
 # Load environment variables from .env file
 load_dotenv()
@@ -115,28 +116,53 @@ def mock_sentence_transformer():
         yield mock
 
 @pytest.fixture
-def memory_manager(tmp_path, mock_sentence_transformer):
+def memory_manager(tmp_path):
     """Create a memory manager instance for testing."""
-    # Configure logging
-    logging.basicConfig(level=logging.INFO)
-    
     config = {
         'memory': {
             'base_path': str(tmp_path),
-            'cold': {
-                'path': str(tmp_path / 'cold'),
-                'max_size': 1024 * 1024 * 1024,  # 1GB
+            'red_hot': {
+                'path': str(tmp_path / 'red_hot'),
+                'max_size': 1000000,
+                'vector_dim': 384,
+                'gpu_id': 0,
+                'force_cpu': True,
+                'index_type': 'Flat'
+            },
+            'hot': {
+                'path': str(tmp_path / 'hot'),
+                'max_size': 104857600,
+                'redis_url': 'redis://localhost:6379',
+                'redis_db': 0
+            },
+            'warm': {
+                'path': str(tmp_path / 'warm'),
+                'max_size': 1073741824,
                 'duckdb': {
                     'memory_limit': '4GB',
-                    'threads': 4
+                    'threads': 4,
+                    'config': {
+                        'enable_progress_bar': True,
+                        'enable_object_cache': True
+                    }
+                }
+            },
+            'cold': {
+                'path': str(tmp_path / 'cold'),
+                'max_size': 10737418240,
+                'duckdb': {
+                    'memory_limit': '4GB',
+                    'threads': 4,
+                    'config': {
+                        'enable_progress_bar': True,
+                        'enable_object_cache': True
+                    }
                 }
             }
         }
     }
     manager = MemoryManager(config=config)
     yield manager
-    
-    # Cleanup
     manager.cleanup()
 
 @pytest.fixture
@@ -144,103 +170,123 @@ def memory_retrieval(memory_manager, mock_sentence_transformer):
     """Create a memory retrieval instance for testing."""
     return MemoryRetrieval(memory_manager)
 
-def test_query_files(memory_manager, tmp_path):
-    """Test querying parquet files."""
-    # Create test data
-    df = pd.DataFrame({
-        'id': range(10),
-        'value': np.random.rand(10)
-    })
+def test_vector_storage_and_retrieval(memory_manager):
+    """Test storing and retrieving vectors from red hot memory."""
+    # Create test vector and metadata
+    vector = np.random.rand(384).astype(np.float32)
+    metadata = {
+        'timestamp': datetime.now().isoformat(),
+        'source': 'test',
+        'type': 'vector'
+    }
     
-    # Save as parquet
-    parquet_dir = tmp_path / "test_data"
-    parquet_dir.mkdir()
-    df.to_parquet(parquet_dir / "test.parquet")
+    # Store vector in red hot memory
+    memory_manager.store('test_key', vector, tier='red_hot', metadata=metadata)
     
-    # Import into cold storage
-    memory_manager.cold.batch_import_parquet(parquet_dir)
+    # Search for similar vectors
+    results = memory_manager.search_vectors(vector, k=1)
     
-    # Create retrieval instance
-    retrieval = MemoryRetrieval(memory_manager)
-    
-    # Test simple query
-    result = retrieval.query_files("SELECT * FROM test")
-    assert len(result) == 10
-    assert 'id' in result.columns
-    assert 'value' in result.columns
+    assert len(results) == 1
+    assert np.allclose(results[0]['distance'], 0.0, atol=1e-5)
+    assert results[0]['metadata']['source'] == 'test'
+    assert results[0]['metadata']['type'] == 'vector'
 
-def test_get_similar_vectors(memory_manager):
-    """Test vector similarity search."""
-    # Create test vectors
-    query_vector = np.random.rand(384)
+def test_hot_memory_storage_and_retrieval(memory_manager):
+    """Test storing and retrieving data from hot memory."""
+    test_data = {
+        'id': 1,
+        'value': 'test',
+        'timestamp': datetime.now().isoformat()
+    }
     
-    # Create retrieval instance
-    retrieval = MemoryRetrieval(memory_manager)
+    # Store in hot memory
+    memory_manager.store('test_key', test_data, tier='hot')
     
-    # Test similarity search
-    results = retrieval.get_similar_vectors(query_vector, k=5)
-    assert isinstance(results, list)
+    # Retrieve from hot memory
+    result = memory_manager.retrieve({'id': 1}, tier='hot')
+    
+    assert result is not None
+    assert result['value'] == 'test'
 
-def test_get_similar_words(memory_manager):
-    """Test word similarity search."""
-    # Create retrieval instance
-    retrieval = MemoryRetrieval(memory_manager)
+def test_warm_memory_storage_and_retrieval(memory_manager):
+    """Test storing and retrieving data from warm memory."""
+    test_data = {
+        'id': 1,
+        'value': 'test',
+        'timestamp': datetime.now().isoformat()
+    }
     
-    # Test word similarity search
-    results = retrieval.get_similar_words("test", k=5)
-    assert isinstance(results, list)
+    # Store in warm memory
+    memory_manager.store('test_key', test_data, tier='warm')
+    
+    # Retrieve from warm memory
+    result = memory_manager.retrieve({'id': 1}, tier='warm')
+    
+    assert result is not None
+    assert result['value'] == 'test'
 
-def test_get_storage_stats(memory_manager, tmp_path):
-    """Test getting storage statistics."""
-    # Create test data
-    df = pd.DataFrame({
-        'id': range(10),
-        'value': np.random.rand(10)
-    })
+def test_cold_memory_storage_and_retrieval(memory_manager):
+    """Test storing and retrieving data from cold memory."""
+    test_data = {
+        'id': 1,
+        'value': 'test',
+        'timestamp': datetime.now().isoformat()
+    }
     
-    # Save as parquet
-    parquet_dir = tmp_path / "test_data"
-    parquet_dir.mkdir()
-    df.to_parquet(parquet_dir / "test.parquet")
+    # Store in cold memory
+    memory_manager.store('test_key', test_data, tier='cold')
     
-    # Import into cold storage
-    memory_manager.cold.batch_import_parquet(parquet_dir)
+    # Retrieve from cold memory
+    result = memory_manager.retrieve({'id': 1}, tier='cold')
     
-    # Create retrieval instance
-    retrieval = MemoryRetrieval(memory_manager)
-    
-    # Test getting stats
-    stats = retrieval.get_storage_stats()
-    assert isinstance(stats, dict)
-    assert stats['total_files'] > 0
-    assert stats['total_rows'] > 0
-    assert stats['total_columns'] > 0
+    assert result is not None
+    assert result['value'] == 'test'
 
-def test_list_registered_files(memory_manager, tmp_path):
-    """Test listing registered files."""
-    # Create test data
-    df = pd.DataFrame({
-        'id': range(10),
-        'value': np.random.rand(10)
-    })
+def test_retrieve_all(memory_manager):
+    """Test retrieving all data from different memory tiers."""
+    # Store test data in different tiers
+    test_data = [
+        {'id': i, 'value': f'test_{i}', 'timestamp': datetime.now().isoformat()}
+        for i in range(3)
+    ]
     
-    # Save as parquet
-    parquet_dir = tmp_path / "test_data"
-    parquet_dir.mkdir()
-    df.to_parquet(parquet_dir / "test.parquet")
+    for i, data in enumerate(test_data):
+        memory_manager.store(f'test_key_{i}', data, tier='hot')
     
-    # Import into cold storage
-    memory_manager.cold.batch_import_parquet(parquet_dir)
+    # Retrieve all from hot memory
+    results = memory_manager.retrieve_all(tier='hot')
     
-    # Create retrieval instance
-    retrieval = MemoryRetrieval(memory_manager)
+    assert len(results) == 3
+    assert all(r['value'].startswith('test_') for r in results)
+
+def test_clear_memory(memory_manager):
+    """Test clearing memory tiers."""
+    # Store test data
+    test_data = {'id': 1, 'value': 'test'}
+    memory_manager.store('test_key', test_data, tier='hot')
     
-    # Test listing files
-    files = retrieval.list_registered_files()
-    assert isinstance(files, list)
-    assert len(files) > 0
-    assert 'file_path' in files[0]
-    assert 'table_name' in files[0]
+    # Clear hot memory
+    memory_manager.clear(tier='hot')
+    
+    # Verify data is cleared
+    result = memory_manager.retrieve({'id': 1}, tier='hot')
+    assert result is None
+
+def test_clear_all_memory(memory_manager):
+    """Test clearing all memory tiers."""
+    # Store test data in different tiers
+    test_data = {'id': 1, 'value': 'test'}
+    memory_manager.store('test_key', test_data, tier='hot')
+    memory_manager.store('test_key', test_data, tier='warm')
+    memory_manager.store('test_key', test_data, tier='cold')
+    
+    # Clear all memory
+    memory_manager.clear()
+    
+    # Verify data is cleared from all tiers
+    assert memory_manager.retrieve({'id': 1}, tier='hot') is None
+    assert memory_manager.retrieve({'id': 1}, tier='warm') is None
+    assert memory_manager.retrieve({'id': 1}, tier='cold') is None
 
 def main():
     """List tables in cold memory."""
