@@ -177,7 +177,7 @@ class MemoryManager:
         """Initialize red hot memory tier."""
         config = self.config['memory']['red_hot']
         self.red_hot = RedHotMemory(
-            vectom_dim=config['vector_dim'],
+            vector_dim=config['vector_dim'],
             gpu_id=config['gpu_id'],
             force_cpu=config['force_cpu'],
             index_type=config['index_type']
