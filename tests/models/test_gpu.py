@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 from memories.models.load_model import LoadModel
 from memories.models.base_model import BaseModel
 from memories.utils.earth.processors import gpu_stat
-from memories.utils.gpu_utils import check_gpu_memory, allocate_gpu_memory
+from memories.utils.processors.gpu_stat import check_gpu_memory, allocate_gpu_memory
 
 @pytest.fixture(autouse=True)
 def cleanup_gpu():
