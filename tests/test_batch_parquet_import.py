@@ -13,7 +13,7 @@ import tempfile
 import yaml
 import pandas as pd
 import numpy as np
-import logging
+#import logging
 
 # Load environment variables from .env file
 load_dotenv()
@@ -141,7 +141,7 @@ def run_import():
 def memory_manager(tmp_path):
     """Create a memory manager instance for testing."""
     # Configure logging
-    logging.basicConfig(level=logging.INFO)
+    #logging.basicConfig(level=logging.INFO)
     
     config = {
         'memory': {

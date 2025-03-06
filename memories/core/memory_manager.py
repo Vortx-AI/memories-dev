@@ -151,7 +151,7 @@ class MemoryManager:
         # Apply custom config overrides if provided
         if custom_config:
             self._deep_update(config, custom_config)
-            self.logger.info("Applied custom configuration overrides")
+            #self.logger.info("Applied custom configuration overrides")
         
         return config
 
