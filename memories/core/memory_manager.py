@@ -301,13 +301,17 @@ class MemoryManager:
             List of results with distances and metadata
         """
         if not self.red_hot:
-            #logger.error("Red hot memory not available")
+            print("Red hot memory not available")
             return []
         
         try:
+            # Ensure we have a valid index before searching
+            if len(self.red_hot) == 0:
+                return []
+                
             return self.red_hot.search(query_vector, k, metadata_filter)
         except Exception as e:
-            #logger.error(f"Failed to search vectors: {e}")
+            print(f"Failed to search vectors: {e}")
             return []
     
     def retrieve(self, query: Dict[str, Any], tier: str = "hot") -> Optional[Dict[str, Any]]:

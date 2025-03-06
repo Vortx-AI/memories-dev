@@ -81,7 +81,7 @@ class WarmMemory:
                     conditions.append("key = ?")
                     params.append(value)
                 else:
-                    conditions.append(f"data->>'$.{key}' = ?")
+                    conditions.append(f"json_extract(data, '$.{key}') = ?")
                     params.append(str(value))
             
             where_clause = " AND ".join(conditions) if conditions else "1=1"
@@ -93,7 +93,9 @@ class WarmMemory:
                 RETURNING data
             """, params).fetchone()
             
-            return json.loads(result[0]) if result else None
+            if result and result[0]:
+                return json.loads(result[0])
+            return None
             
         except Exception as e:
             self.logger.error(f"Failed to retrieve data: {e}")

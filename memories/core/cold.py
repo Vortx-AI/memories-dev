@@ -284,5 +284,58 @@ class ColdMemory:
         """Destructor to ensure cleanup is performed."""
         self.cleanup()
 
+    def retrieve(self, query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Retrieve data from cold memory.
+        
+        Args:
+            query: Query parameters
+            
+        Returns:
+            Retrieved data or None if not found
+        """
+        try:
+            conditions = []
+            params = []
+            
+            # Get all table names from metadata
+            tables = self.con.execute("""
+                SELECT table_name FROM cold_metadata
+            """).fetchall()
+            
+            if not tables:
+                return None
+            
+            # Build query conditions
+            for key, value in query.items():
+                if isinstance(value, (int, float)):
+                    conditions.append(f"{key} = {value}")
+                else:
+                    conditions.append(f"{key} = '{value}'")
+            
+            where_clause = " AND ".join(conditions) if conditions else "1=1"
+            
+            # Search through all tables
+            for table in tables:
+                table_name = table[0]
+                try:
+                    result = self.con.execute(f"""
+                        SELECT * FROM {table_name}
+                        WHERE {where_clause}
+                        LIMIT 1
+                    """).fetchone()
+                    
+                    if result:
+                        # Convert row to dictionary
+                        columns = [desc[0] for desc in self.con.description]
+                        return dict(zip(columns, result))
+                except:
+                    continue
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Failed to retrieve data: {e}")
+            return None
+
 
 

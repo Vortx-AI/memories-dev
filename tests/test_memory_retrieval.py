@@ -253,7 +253,8 @@ def test_retrieve_all(memory_manager):
     test_dir = Path(memory_manager.config['memory']['cold']['path'])
     test_dir.mkdir(exist_ok=True)
     df = pd.DataFrame({'id': [1], 'value': ['test']})
-    df.to_parquet(test_dir / 'test.parquet')
+    parquet_path = test_dir / 'test.parquet'
+    df.to_parquet(parquet_path)
     memory_manager.batch_import_parquet(test_dir)
     
     # Test retrieving from each tier
@@ -261,6 +262,7 @@ def test_retrieve_all(memory_manager):
     warm_results = memory_manager.retrieve_all(tier='warm')
     cold_results = memory_manager.retrieve_all(tier='cold')
     
+    # Verify results
     assert len(hot_results) > 0
     assert any(r.get('value') == 'test' for r in hot_results)
     
@@ -269,6 +271,9 @@ def test_retrieve_all(memory_manager):
     
     assert len(cold_results) > 0
     assert any(r.get('value') == 'test' for r in cold_results)
+    
+    # Clean up
+    memory_manager.clear()
 
 def test_clear_memory(memory_manager):
     """Test clearing data from each memory tier."""
