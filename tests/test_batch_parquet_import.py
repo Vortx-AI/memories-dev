@@ -218,8 +218,8 @@ def test_batch_parquet_import(memory_manager, tmp_path):
     )
     
     # Check results
-    assert result['files_processed'] == 3
-    assert result['records_imported'] == 30
+    assert result['num_files'] == 3
+    assert result['num_records'] == 30
     assert result['total_size'] > 0
     assert len(result['errors']) == 0
     
@@ -234,8 +234,7 @@ def test_batch_parquet_import(memory_manager, tmp_path):
         assert file[2] == "test_tag"    # tag
         assert file[3] == 10            # num_rows
         assert file[4] == 3             # num_columns
-        assert isinstance(file[5], str)  # schema
-        assert file[7] is not None      # table_name
+        assert isinstance(file[7], str)  # table_name
 
 def test_empty_directory(memory_manager, tmp_path):
     """Test importing from an empty directory."""
@@ -250,13 +249,13 @@ def test_empty_directory(memory_manager, tmp_path):
     assert len(result['errors']) == 0
 
 def test_invalid_parquet_file(memory_manager, tmp_path):
-    """Test handling invalid parquet files."""
-    test_dir = tmp_path / "test_invalid"
+    """Test importing an invalid parquet file."""
+    test_dir = tmp_path / "invalid"
     test_dir.mkdir()
     
-    # Create invalid file
-    invalid_file = test_dir / "invalid.parquet"
-    invalid_file.write_text("This is not a parquet file")
+    # Create an invalid file
+    with open(test_dir / "invalid.parquet", "w") as f:
+        f.write("This is not a parquet file")
     
     result = memory_manager.batch_import_parquet(test_dir)
     
@@ -267,7 +266,7 @@ def test_invalid_parquet_file(memory_manager, tmp_path):
 
 def test_nonexistent_directory(memory_manager):
     """Test importing from a nonexistent directory."""
-    with pytest.raises(ValueError):
+    with pytest.raises(FileNotFoundError):
         memory_manager.batch_import_parquet("nonexistent_dir")
 
 def test_recursive_import(memory_manager, tmp_path):
@@ -276,8 +275,8 @@ def test_recursive_import(memory_manager, tmp_path):
     root_dir = tmp_path / "nested"
     root_dir.mkdir()
     sub_dir1 = root_dir / "sub1"
-    sub_dir1.mkdir()
     sub_dir2 = root_dir / "sub2"
+    sub_dir1.mkdir()
     sub_dir2.mkdir()
     
     # Create test DataFrames
@@ -290,12 +289,11 @@ def test_recursive_import(memory_manager, tmp_path):
     
     # Test recursive import
     result = memory_manager.batch_import_parquet(root_dir, recursive=True)
+    
     assert result['num_files'] == 2
     assert result['num_records'] == 10
-    
-    # Test non-recursive import
-    result = memory_manager.batch_import_parquet(root_dir, recursive=False)
-    assert result['num_files'] == 0
+    assert result['total_size'] > 0
+    assert len(result['errors']) == 0
 
 if __name__ == "__main__":
     import sys

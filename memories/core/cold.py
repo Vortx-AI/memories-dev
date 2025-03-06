@@ -197,8 +197,8 @@ class ColdMemory:
             
         Returns:
             Dict containing:
-                files_processed: Number of files processed
-                records_imported: Total number of records imported
+                num_files: Number of files processed
+                num_records: Total number of records imported
                 total_size: Total size of imported data in bytes
                 errors: List of files that had errors
         """
@@ -206,8 +206,8 @@ class ColdMemory:
         if not folder_path.exists():
             raise FileNotFoundError(f"Directory not found: {folder_path}")
 
-        files_processed = 0
-        records_imported = 0
+        num_files = 0
+        num_records = 0
         total_size = 0
         errors = []
 
@@ -220,7 +220,7 @@ class ColdMemory:
         for file_path in parquet_files:
             try:
                 # Import the parquet file
-                table_name = f"parquet_{files_processed}"
+                table_name = f"parquet_{num_files}"
                 self.con.execute(f"CREATE VIEW {table_name} AS SELECT * FROM parquet_scan('{file_path}')")
                 
                 # Get file stats
@@ -243,8 +243,8 @@ class ColdMemory:
                     table_name
                 ))
                 
-                files_processed += 1
-                records_imported += num_rows
+                num_files += 1
+                num_records += num_rows
                 total_size += file_stats.st_size
                 
             except Exception as e:
@@ -252,8 +252,8 @@ class ColdMemory:
                 logger.error(f"Error importing {file_path}: {e}")
 
         return {
-            "files_processed": files_processed,
-            "records_imported": records_imported,
+            "num_files": num_files,
+            "num_records": num_records,
             "total_size": total_size,
             "errors": errors
         }

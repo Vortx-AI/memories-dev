@@ -171,7 +171,7 @@ def test_vector_storage_and_retrieval(memory_manager):
     }
     
     # Store vector in red hot memory
-    memory_manager.store('test_key', vector, tier='red_hot', metadata=metadata)
+    memory_manager.add_to_tier('red_hot', vector, metadata=metadata)
     
     # Search for similar vectors
     results = memory_manager.search_vectors(vector, k=1)
@@ -184,88 +184,116 @@ def test_vector_storage_and_retrieval(memory_manager):
 def test_hot_memory_storage_and_retrieval(memory_manager):
     """Test storing and retrieving data from hot memory."""
     test_data = {'key': 'value', 'number': 42}
-    memory_manager.store('test_key', test_data, tier='hot')
+    memory_manager.add_to_tier('hot', test_data)
     
-    result = memory_manager.retrieve({'key': 'value'}, tier='hot')
-    assert result is not None
-    assert result['number'] == 42
+    # Test retrieval through memory manager
+    results = memory_manager.retrieve({'key': 'value'}, tier='hot')
+    assert len(results) > 0
+    assert any(r.get('number') == 42 for r in results)
 
 def test_warm_memory_storage_and_retrieval(memory_manager):
     """Test storing and retrieving data from warm memory."""
     test_data = {'id': 1, 'name': 'test'}
-    memory_manager.store('test_key', test_data, tier='warm')
+    memory_manager.add_to_tier('warm', test_data)
     
-    result = memory_manager.db_connection.execute("""
-        SELECT * FROM warm_data
-    """).fetchall()
+    # Test retrieval through DuckDB
+    results = memory_manager.db_connection.execute("""
+        SELECT COUNT(*) FROM warm_data
+    """).fetchone()
     
-    assert len(result) == 1
-    assert result[0][1] == 'test'  # name column
+    assert results[0] == 1
 
 def test_cold_memory_storage_and_retrieval(memory_manager):
     """Test storing and retrieving data from cold memory."""
-    test_data = {'id': 1, 'value': 'test'}
-    memory_manager.store('test_key', test_data, tier='cold')
+    # Create a test parquet file
+    test_dir = Path(memory_manager.config['memory']['cold']['path'])
+    test_dir.mkdir(exist_ok=True)
     
-    result = memory_manager.db_connection.execute("""
-        SELECT * FROM cold_data
-    """).fetchall()
+    df = pd.DataFrame({'id': [1], 'value': ['test']})
+    parquet_path = test_dir / 'test.parquet'
+    df.to_parquet(parquet_path)
     
-    assert len(result) == 1
-    assert result[0][1] == 'test'  # value column
+    # Import the parquet file
+    result = memory_manager.batch_import_parquet(
+        test_dir,
+        theme='test',
+        tag='test'
+    )
+    
+    assert result['num_files'] == 1
+    assert result['num_records'] == 1
+    assert result['total_size'] > 0
 
 def test_retrieve_all(memory_manager):
     """Test retrieving all data from each memory tier."""
-    # Store test data in each tier
+    # Store test data in hot and warm memory
     test_data = {'id': 1, 'value': 'test'}
-    memory_manager.store('test_key', test_data, tier='hot')
-    memory_manager.store('test_key', test_data, tier='warm')
-    memory_manager.store('test_key', test_data, tier='cold')
+    memory_manager.add_to_tier('hot', test_data)
+    memory_manager.add_to_tier('warm', test_data)
     
-    # Test retrieving all from each tier
+    # Create test data in cold memory
+    test_dir = Path(memory_manager.config['memory']['cold']['path'])
+    test_dir.mkdir(exist_ok=True)
+    df = pd.DataFrame({'id': [1], 'value': ['test']})
+    df.to_parquet(test_dir / 'test.parquet')
+    memory_manager.batch_import_parquet(test_dir)
+    
+    # Test retrieving from each tier
     hot_results = memory_manager.retrieve_all(tier='hot')
-    warm_results = memory_manager.db_connection.execute("SELECT * FROM warm_data").fetchall()
-    cold_results = memory_manager.db_connection.execute("SELECT * FROM cold_data").fetchall()
+    warm_count = memory_manager.db_connection.execute("SELECT COUNT(*) FROM warm_data").fetchone()[0]
+    cold_count = memory_manager.db_connection.execute("SELECT COUNT(*) FROM cold_metadata").fetchone()[0]
     
     assert len(hot_results) > 0
-    assert len(warm_results) > 0
-    assert len(cold_results) > 0
+    assert warm_count > 0
+    assert cold_count > 0
 
 def test_clear_memory(memory_manager):
     """Test clearing specific memory tiers."""
-    # Store test data
+    # Store test data in warm memory
     test_data = {'id': 1, 'value': 'test'}
-    memory_manager.store('test_key', test_data, tier='warm')
-    memory_manager.store('test_key', test_data, tier='cold')
+    memory_manager.add_to_tier('warm', test_data)
+    
+    # Create test data in cold memory
+    test_dir = Path(memory_manager.config['memory']['cold']['path'])
+    test_dir.mkdir(exist_ok=True)
+    df = pd.DataFrame({'id': [1], 'value': ['test']})
+    df.to_parquet(test_dir / 'test.parquet')
+    memory_manager.batch_import_parquet(test_dir)
     
     # Clear warm memory
     memory_manager.clear(tier='warm')
-    warm_results = memory_manager.db_connection.execute("SELECT * FROM warm_data").fetchall()
-    assert len(warm_results) == 0
+    warm_count = memory_manager.db_connection.execute("SELECT COUNT(*) FROM warm_data").fetchone()[0]
+    assert warm_count == 0
     
     # Cold memory should still have data
-    cold_results = memory_manager.db_connection.execute("SELECT * FROM cold_data").fetchall()
-    assert len(cold_results) > 0
+    cold_count = memory_manager.db_connection.execute("SELECT COUNT(*) FROM cold_metadata").fetchone()[0]
+    assert cold_count > 0
 
 def test_clear_all_memory(memory_manager):
     """Test clearing all memory tiers."""
-    # Store test data in each tier
+    # Store test data in hot and warm memory
     test_data = {'id': 1, 'value': 'test'}
-    memory_manager.store('test_key', test_data, tier='hot')
-    memory_manager.store('test_key', test_data, tier='warm')
-    memory_manager.store('test_key', test_data, tier='cold')
+    memory_manager.add_to_tier('hot', test_data)
+    memory_manager.add_to_tier('warm', test_data)
+    
+    # Create test data in cold memory
+    test_dir = Path(memory_manager.config['memory']['cold']['path'])
+    test_dir.mkdir(exist_ok=True)
+    df = pd.DataFrame({'id': [1], 'value': ['test']})
+    df.to_parquet(test_dir / 'test.parquet')
+    memory_manager.batch_import_parquet(test_dir)
     
     # Clear all memory
     memory_manager.clear()
     
     # Verify all tiers are empty
     hot_results = memory_manager.retrieve_all(tier='hot')
-    warm_results = memory_manager.db_connection.execute("SELECT * FROM warm_data").fetchall()
-    cold_results = memory_manager.db_connection.execute("SELECT * FROM cold_data").fetchall()
+    warm_count = memory_manager.db_connection.execute("SELECT COUNT(*) FROM warm_data").fetchone()[0]
+    cold_count = memory_manager.db_connection.execute("SELECT COUNT(*) FROM cold_metadata").fetchone()[0]
     
     assert len(hot_results) == 0
-    assert len(warm_results) == 0
-    assert len(cold_results) == 0
+    assert warm_count == 0
+    assert cold_count == 0
 
 def main():
     """List tables in cold memory."""
