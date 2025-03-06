@@ -326,116 +326,86 @@ class RedHotMemory:
         vector_data: Union[np.ndarray, torch.Tensor],
         metadata: Optional[Dict[str, Any]] = None
     ) -> None:
-        """Store vector data with metadata.
-        
-        Args:
-            key: Unique identifier for the vector
-            vector_data: Vector to store (numpy array or PyTorch tensor)
-            metadata: Optional metadata to store with the vector
-        """
+        """Store vector data with metadata."""
         try:
-            # Convert to numpy if needed
+            # Convert to numpy array if tensor
             if isinstance(vector_data, torch.Tensor):
                 vector_data = vector_data.detach().cpu().numpy()
             
-            # Ensure vector is 2D
-            if vector_data.ndim == 1:
-                vector_data = vector_data.reshape(1, -1)
+            # Ensure vector is 1D and correct dimension
+            vector_data = vector_data.reshape(-1)
+            if len(vector_data) != self.vector_dim:
+                raise ValueError(f"Vector dimension mismatch. Expected {self.vector_dim}, got {len(vector_data)}")
             
-            # Ensure correct data type
-            vector_data = vector_data.astype('float32')
-            
-            # Check dimensions
-            if vector_data.shape[1] != self.vector_dim:
-                raise ValueError(f"Vector dimension mismatch. Expected {self.vector_dim}, got {vector_data.shape[1]}")
+            # Add vector to index
+            if self.index is None:
+                self._init_index()
             
             # Add to index
-            self.index.add(vector_data)
+            self.index.add(vector_data.reshape(1, -1))
             
             # Store metadata
-            self.metadata[key] = {
-                "index": len(self.metadata),  # Position in the index
-                "timestamp": datetime.now().isoformat(),
-                "metadata": metadata or {}
+            self.metadata[str(len(self.metadata))] = {
+                'key': key,
+                'metadata': metadata or {},
+                'timestamp': datetime.now().isoformat()
             }
             
-            # Save state
-            self._save_state()
-            
-            # Check size limit
-            if len(self.metadata) > self.max_size:
-                self._remove_oldest()
+            # Save state periodically
+            if len(self.metadata) % 100 == 0:
+                self._save_state()
                 
-            device = "CPU" if not self.using_gpu else f"GPU {self.gpu_id}"
-            logger.info(f"Stored vector with key: {key} on {device}")
-            
         except Exception as e:
-            logger.error(f"Failed to store vector data: {e}")
+            logger.error(f"Failed to store vector: {e}")
             raise
-    
+
     def search(
         self,
         query_vector: Union[np.ndarray, torch.Tensor],
         k: int = 5,
         metadata_filter: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
-        """Search for similar vectors.
-        
-        Args:
-            query_vector: Query vector
-            k: Number of results to return
-            metadata_filter: Optional filter to apply on metadata
-            
-        Returns:
-            List of results with distances and metadata
-        """
+        """Search for similar vectors."""
         try:
-            # Convert to numpy if needed
+            if self.index is None or len(self.metadata) == 0:
+                return []
+                
+            # Convert to numpy array if tensor
             if isinstance(query_vector, torch.Tensor):
                 query_vector = query_vector.detach().cpu().numpy()
-            
-            # Ensure vector is 2D
-            if query_vector.ndim == 1:
-                query_vector = query_vector.reshape(1, -1)
-            
-            # Ensure correct data type
-            query_vector = query_vector.astype('float32')
+                
+            # Reshape query vector
+            query_vector = query_vector.reshape(1, -1)
             
             # Search index
             distances, indices = self.index.search(query_vector, k)
             
-            # Prepare results
+            # Format results
             results = []
             for i, (dist, idx) in enumerate(zip(distances[0], indices[0])):
-                if idx == -1:  # No more results
-                    break
+                if idx < 0 or idx >= len(self.metadata):
+                    continue
+                    
+                metadata = self.metadata[str(idx)]
                 
-                # Find metadata for this index
-                for key, data in self.metadata.items():
-                    if data["index"] == idx:
-                        # Apply metadata filter if provided
-                        if metadata_filter:
-                            matches = True
-                            for filter_key, filter_value in metadata_filter.items():
-                                if data["metadata"].get(filter_key) != filter_value:
-                                    matches = False
-                                    break
-                            if not matches:
-                                continue
-                        
-                        results.append({
-                            "key": key,
-                            "distance": float(dist),
-                            "metadata": data["metadata"],
-                            "timestamp": data["timestamp"]
-                        })
-                        break
-            
+                # Apply metadata filter if provided
+                if metadata_filter:
+                    if not all(metadata['metadata'].get(k) == v for k, v in metadata_filter.items()):
+                        continue
+                
+                results.append({
+                    'id': idx,
+                    'distance': float(dist),
+                    'metadata': metadata['metadata'],
+                    'key': metadata['key'],
+                    'timestamp': metadata['timestamp']
+                })
+                
             return results
             
         except Exception as e:
             logger.error(f"Failed to search vectors: {e}")
-            raise
+            return []
     
     def _remove_oldest(self):
         """Remove oldest vectors when size limit is reached."""

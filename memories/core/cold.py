@@ -258,20 +258,64 @@ class ColdMemory:
             "errors": errors
         }
 
+    def retrieve_all(self) -> List[Dict[str, Any]]:
+        """Retrieve all data from cold memory."""
+        try:
+            # Get list of all tables
+            tables = self.con.execute("""
+                SELECT table_name FROM cold_metadata
+            """).fetchall()
+            
+            results = []
+            for table in tables:
+                table_name = table[0]
+                # Get data from each table
+                data = self.con.execute(f"""
+                    SELECT * FROM {table_name}
+                """).fetchall()
+                
+                # Convert to dictionaries
+                columns = self.con.execute(f"""
+                    SELECT column_name FROM information_schema.columns 
+                    WHERE table_name = '{table_name}'
+                """).fetchall()
+                
+                column_names = [col[0] for col in columns]
+                
+                for row in data:
+                    results.append(dict(zip(column_names, row)))
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Failed to retrieve all data: {e}")
+            return []
+
     def clear(self) -> None:
         """Clear all data from cold memory."""
         try:
-            # Drop all views
-            views = self.con.execute("""
+            # Get list of all tables
+            tables = self.con.execute("""
                 SELECT table_name FROM cold_metadata
             """).fetchall()
-            for view in views:
-                self.con.execute(f"DROP VIEW IF EXISTS {view[0]}")
             
-            # Clear metadata
-            self.con.execute("DELETE FROM cold_metadata")
+            # Drop each table
+            for table in tables:
+                table_name = table[0]
+                self.con.execute(f"""
+                    DROP TABLE IF EXISTS {table_name}
+                """)
+            
+            # Clear metadata table
+            self.con.execute("""
+                DELETE FROM cold_metadata
+            """)
+            
+            logger.info("Cold memory cleared successfully")
+            
         except Exception as e:
             logger.error(f"Failed to clear data: {e}")
+            # Don't raise the exception, just log it
 
     def cleanup(self) -> None:
         """Clean up resources."""

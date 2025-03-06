@@ -86,17 +86,23 @@ class HotMemory:
     def clear(self) -> None:
         """Clear all data from hot memory."""
         try:
-            self.client.flushdb()
+            if self.client:
+                self.client.flushdb()
+                logger.info("Hot memory cleared successfully")
         except Exception as e:
             logger.error(f"Failed to clear data: {e}")
-
+            # Don't raise the exception, just log it
+            
     def cleanup(self) -> None:
         """Clean up resources."""
         try:
             self.clear()
-            self.client.close()
+            if self.client:
+                self.client.close()
+                logger.info("Hot memory cleaned up successfully")
         except Exception as e:
             logger.error(f"Failed to cleanup: {e}")
+            # Don't raise the exception, just log it
 
     def __del__(self):
         """Destructor to ensure cleanup is performed."""

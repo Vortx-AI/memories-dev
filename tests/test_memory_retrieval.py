@@ -122,8 +122,26 @@ def mock_redis():
     """Mock Redis client for testing."""
     with patch('redis.from_url') as mock:
         client = MagicMock()
-        client.get.return_value = None
-        client.scan_iter.return_value = []
+        # Store data in memory
+        stored_data = {}
+        
+        def mock_set(key, value):
+            stored_data[key] = value
+            return True
+            
+        def mock_get(key):
+            return stored_data.get(key)
+            
+        def mock_scan_iter():
+            return list(stored_data.keys())
+            
+        def mock_flushdb():
+            stored_data.clear()
+            
+        client.set.side_effect = mock_set
+        client.get.side_effect = mock_get
+        client.scan_iter.side_effect = mock_scan_iter
+        client.flushdb.side_effect = mock_flushdb
         mock.return_value = client
         yield client
 
