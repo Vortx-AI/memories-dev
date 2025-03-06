@@ -178,97 +178,103 @@ class ColdMemory:
         
         logger.info("Initialized cold memory storage")
         
-    def batch_import_parquet(self, 
-                           folder_path: Union[str, Path], 
-                           theme: Optional[str] = None,
-                           tag: Optional[str] = None,
-                           recursive: bool = True,
-                           pattern: str = "*.parquet") -> Dict[str, Any]:
-        """Import multiple parquet files from a folder.
+    def batch_import_parquet(
+        self,
+        folder_path: Union[str, Path],
+        theme: Optional[str] = None,
+        tag: Optional[str] = None,
+        recursive: bool = True,
+        pattern: str = "*.parquet"
+    ) -> Dict[str, Any]:
+        """Import multiple parquet files into cold storage.
         
         Args:
             folder_path: Path to folder containing parquet files
-            theme: Optional theme to tag the imported data with
-            tag: Optional tag to label the imported data with
-            recursive: Whether to search recursively in subdirectories
-            pattern: Glob pattern for matching parquet files
+            theme: Optional theme tag for the data
+            tag: Optional additional tag for the data
+            recursive: Whether to search subdirectories
+            pattern: File pattern to match
             
         Returns:
-            Dictionary containing:
-                - num_files: Number of files processed
-                - num_records: Total number of records imported
-                - total_size: Total size of imported data in bytes
-                - errors: List of errors encountered
+            Dict containing:
+                files_processed: Number of files processed
+                records_imported: Total number of records imported
+                total_size: Total size of imported data in bytes
+                errors: List of files that had errors
         """
         folder_path = Path(folder_path)
         if not folder_path.exists():
-            raise ValueError(f"Folder not found: {folder_path}")
-            
-        # Find all parquet files matching pattern
+            raise FileNotFoundError(f"Directory not found: {folder_path}")
+
+        files_processed = 0
+        records_imported = 0
+        total_size = 0
+        errors = []
+
+        # Find all parquet files
         if recursive:
             parquet_files = list(folder_path.rglob(pattern))
         else:
             parquet_files = list(folder_path.glob(pattern))
-            
-        if not parquet_files:
-            logger.warning(f"No parquet files found in {folder_path}")
-            return {
-                'num_files': 0,
-                'num_records': 0,
-                'total_size': 0,
-                'errors': []
-            }
-            
-        results = {
-            'num_files': 0,
-            'num_records': 0,
-            'total_size': 0,
-            'errors': []
-        }
-        
+
         for file_path in parquet_files:
             try:
-                # Create a unique table name for this file
-                table_name = f"parquet_{uuid.uuid4().hex[:8]}"
+                # Import the parquet file
+                table_name = f"parquet_{files_processed}"
+                self.con.execute(f"CREATE VIEW {table_name} AS SELECT * FROM parquet_scan('{file_path}')")
                 
-                # Create view for the parquet file
-                self.con.execute(f"""
-                    CREATE VIEW {table_name} AS 
-                    SELECT * FROM parquet_scan('{file_path}')
-                """)
+                # Get file stats
+                file_stats = file_path.stat()
+                num_rows = self.con.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+                num_cols = len(self.con.execute(f"SELECT * FROM {table_name} LIMIT 0").description)
                 
-                # Get row count and schema
-                row_count = self.con.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
-                schema = self.con.execute(f"DESCRIBE {table_name}").fetchall()
-                
-                # Add metadata entry
+                # Store metadata
                 self.con.execute("""
                     INSERT INTO cold_metadata 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    (file_path, theme, tag, num_rows, num_columns, imported_at, table_name)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                 """, (
                     str(file_path),
                     theme,
                     tag,
-                    row_count,
-                    len(schema),
-                    json.dumps({col[0]: col[1] for col in schema}),
+                    num_rows,
+                    num_cols,
                     datetime.now(),
                     table_name
                 ))
                 
-                # Update results
-                results['num_files'] += 1
-                results['num_records'] += row_count
-                results['total_size'] += file_path.stat().st_size
-                
-                logger.info(f"Imported {file_path} with {row_count} records")
+                files_processed += 1
+                records_imported += num_rows
+                total_size += file_stats.st_size
                 
             except Exception as e:
-                error_msg = f"Error importing {file_path}: {str(e)}"
-                logger.error(error_msg)
-                results['errors'].append(error_msg)
-                
-        return results
+                errors.append({"file": str(file_path), "error": str(e)})
+                logger.error(f"Error importing {file_path}: {e}")
+
+        return {
+            "files_processed": files_processed,
+            "records_imported": records_imported,
+            "total_size": total_size,
+            "errors": errors
+        }
+
+    def cleanup(self) -> None:
+        """Clean up resources and close connections."""
+        try:
+            # Drop all views
+            views = self.con.execute("SELECT table_name FROM cold_metadata").fetchall()
+            for view in views:
+                try:
+                    self.con.execute(f"DROP VIEW IF EXISTS {view[0]}")
+                except Exception as e:
+                    logger.warning(f"Error dropping view {view[0]}: {e}")
+
+            # Drop metadata table
+            self.con.execute("DROP TABLE IF EXISTS cold_metadata")
+            
+            logger.info("Cleaned up cold memory storage")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
 
 
 

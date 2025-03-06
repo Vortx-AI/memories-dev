@@ -166,7 +166,7 @@ class MemoryManager:
         """Initialize red hot memory tier."""
         config = self.config['memory']['red_hot']
         self.red_hot = RedHotMemory(
-            vectom_dim=config['vector_dim'],
+            vector_dim=config['vector_dim'],
             gpu_id=config['gpu_id'],
             force_cpu=config['force_cpu'],
             index_type=config['index_type']
@@ -249,34 +249,41 @@ class MemoryManager:
             tier: Memory tier to store in ('red_hot', 'hot', 'warm', 'cold', or 'glacier')
             metadata: Optional metadata to store with the data
         """
-        if not isinstance(data, dict) and tier != "red_hot":
-            #logger.error("Data must be a dictionary for non-red_hot tiers")
-            return
-        
-        # Ensure timestamp exists in metadata
         if metadata is None:
             metadata = {}
         if "timestamp" not in metadata:
             metadata["timestamp"] = datetime.now().isoformat()
         
-        # Store in specified tier
         try:
             if tier == "red_hot" and self.red_hot:
-                self.red_hot.store(key, data, metadata)
+                if not isinstance(data, (np.ndarray, list)):
+                    raise ValueError("Data must be a numpy array or list for red_hot tier")
+                if isinstance(data, list):
+                    data = np.array(data)
+                self.red_hot.store(key=key, vector_data=data, metadata=metadata)
             elif tier == "hot" and self.hot:
+                if not isinstance(data, dict):
+                    raise ValueError("Data must be a dictionary for hot tier")
                 self.hot.store(data)
             elif tier == "warm" and self.warm:
+                if not isinstance(data, dict):
+                    raise ValueError("Data must be a dictionary for warm tier")
                 self.warm.store(data)
             elif tier == "cold" and self.cold:
+                if not isinstance(data, dict):
+                    raise ValueError("Data must be a dictionary for cold tier")
                 self.cold.store(data)
             elif tier == "glacier" and self.glacier:
+                if not isinstance(data, dict):
+                    raise ValueError("Data must be a dictionary for glacier tier")
                 self.glacier.store(data)
             else:
-                #logger.error(f"Invalid memory tier: {tier}")
-                print(f"Invalid memory tier: {tier}")
+                raise ValueError(f"Invalid memory tier: {tier}")
         except Exception as e:
             #logger.error(f"Failed to store in {tier} memory: {e}")
             print(f"Failed to store in {tier} memory: {e}")
+            raise
+
     def search_vectors(
         self,
         query_vector: Any,
@@ -386,20 +393,34 @@ class MemoryManager:
             print(f"Failed to clear memory: {e}")
     def cleanup(self) -> None:
         """Cleanup all memory tiers and connections."""
-        # Cleanup memory tiers
-        if self.warm:
-            self.warm.cleanup()
-        if self.cold:
-            self.cold.cleanup()
-        
-        # Close shared DuckDB connection
-        if self.db_connection:
-            self.db_connection.close()
-            self.db_connection = None
-    
-    def __del__(self):
-        """Destructor to ensure cleanup is performed."""
-        self.cleanup()
+        try:
+            # Clean up memory tiers in reverse order of dependency
+            if self.glacier:
+                self.glacier.cleanup()
+            
+            if self.cold:
+                self.cold.cleanup()
+            
+            if self.warm:
+                self.warm.cleanup()
+            
+            if self.hot:
+                self.hot.cleanup()
+            
+            if self.red_hot:
+                self.red_hot.cleanup()
+            
+            # Close shared DuckDB connection last
+            if hasattr(self, 'db_connection') and self.db_connection:
+                self.db_connection.close()
+                self.db_connection = None
+            
+            # Reset initialization flag to allow reinitialization
+            self._initialized = False
+            
+        except Exception as e:
+            #logger.error(f"Error during cleanup: {e}")
+            print(f"Error during cleanup: {e}")
 
     def configure_tiers(
         self,
