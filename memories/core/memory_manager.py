@@ -72,18 +72,7 @@ DEFAULT_CONFIG = {
         },
         'glacier': {
             'path': 'glacier',
-            'max_size': 107374182400,  # 100GB
-            'remote_storage': {
-                'type': 's3',  # or 'gcs', 'azure'
-                'bucket': 'my-glacier-storage',
-                'prefix': 'data/',
-                'region': 'us-west-2',
-                'credentials': {
-                    'profile': 'default'
-                },
-                'compression': 'zstd',
-                'archive_format': 'parquet'
-            }
+            'max_size': 107374182400  # 100GB
         }
     }
 }
@@ -227,7 +216,8 @@ class MemoryManager:
         """Initialize glacier memory tier."""
         config = self.config['memory']['glacier']
         self.glacier = GlacierMemory(
-            remote_storage=config.get('remote_storage', {})
+            storage_path=config['path'],
+            max_size=config['max_size']
         )
         #logger.info("Initialized glacier memory tier")
 
