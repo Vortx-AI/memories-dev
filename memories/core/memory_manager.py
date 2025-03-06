@@ -126,7 +126,7 @@ class MemoryManager:
             self._init_glacier_memory()
             
             self._initialized = True
-            logger.info("Memory manager initialized")
+            #logger.info("Memory manager initialized")
 
     def _load_and_merge_config(
         self,
