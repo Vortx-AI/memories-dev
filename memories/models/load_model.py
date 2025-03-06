@@ -24,6 +24,7 @@ class LoadModel:
                  deployment_type: str = None,  # "local" or "api"
                  model_name: str = None,
                  api_key: str = None,
+                 endpoint: str = None,  # Add endpoint parameter
                  device: str = None):
         """
         Initialize model loader with configuration.
@@ -34,6 +35,7 @@ class LoadModel:
             deployment_type (str): Either "local" or "api"
             model_name (str): Short name of the model from BaseModel.MODEL_MAPPINGS
             api_key (str): API key for the model provider (required for API deployment type)
+            endpoint (str): Endpoint URL for the model provider (optional)
             device (str): Specific GPU device to use (e.g., "cuda:0", "cuda:1")
         """
         # Setup logging
@@ -67,6 +69,7 @@ class LoadModel:
         self.deployment_type = deployment_type
         self.model_name = model_name
         self.api_key = api_key
+        self.endpoint = endpoint
         
         # Handle device selection
         self.device = device
@@ -93,7 +96,7 @@ class LoadModel:
             if not success:
                 raise RuntimeError(f"Failed to initialize model: {model_name}")
         else:  # api
-            self.api_connector = get_connector(model_provider, api_key)
+            self.api_connector = get_connector(model_provider, api_key, endpoint)
     
     def _load_config(self) -> Dict[str, Any]:
         """Load model configuration."""

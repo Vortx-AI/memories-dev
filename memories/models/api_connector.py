@@ -8,8 +8,13 @@ import logging
 from pathlib import Path
 import requests
 from datetime import datetime
+import time
 
 from dotenv import load_dotenv
+
+# Azure AI imports
+from azure.ai.inference import ChatCompletionsClient
+from azure.core.credentials import AzureKeyCredential
 
 # Load environment variables
 load_dotenv()
@@ -516,35 +521,156 @@ class AnthropicConnector(APIConnector):
             logger.error(f"Anthropic chat completion error: {str(e)}", exc_info=True)
             raise
 
-def get_connector(provider: str, api_key: Optional[str] = None) -> APIConnector:
-    """Get the appropriate API connector for a provider.
+class AzureAIConnector(APIConnector):
+    """Connector for Azure AI API."""
+    
+    def __init__(self, api_key: str = None, endpoint: str = None):
+        super().__init__(api_key)
+        # Get Azure credentials from environment or parameters
+        self.api_key = api_key or os.getenv("AZURE_INFERENCE_CREDENTIAL")
+        self.endpoint = endpoint or os.getenv("AZURE_INFERENCE_ENDPOINT")  # Use provided endpoint or env var
+        
+        if not self.api_key:
+            raise Exception("A key should be provided to invoke the endpoint")
+        if not self.endpoint:
+            raise Exception("An endpoint should be provided to invoke the service")
+            
+        try:
+            # Initialize the Azure AI client with endpoint
+            self.client = ChatCompletionsClient(
+                endpoint=self.endpoint,
+                credential=AzureKeyCredential(self.api_key)
+            )
+            
+            # Get and log model information
+            model_info = self.client.get_model_info()
+            logger.info(f"Model name: {model_info.model_name}")
+            logger.info(f"Model type: {model_info.model_type}")
+            logger.info(f"Model provider name: {model_info.model_provider_name}")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize Azure AI client: {str(e)}")
+            raise
+
+    def chat_completion(
+        self,
+        messages: List[Dict[str, str]],
+        tools: Optional[List[Dict[str, Any]]] = None,
+        tool_choice: str = "auto",
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Get chat completion from Azure AI.
+        
+        Args:
+            messages: List of conversation messages
+            tools: Optional list of tools/functions
+            tool_choice: Tool choice strategy
+            **kwargs: Additional arguments
+            
+        Returns:
+            Response containing message, tool calls, and metadata
+        """
+        try:
+            start_time = time.time()
+            
+            # Prepare the request payload
+            payload = {
+                "messages": messages,
+                "max_tokens": kwargs.get("max_tokens", 2048)
+            }
+            
+            # Add tools if provided
+            if tools:
+                payload["tools"] = tools
+                payload["tool_choice"] = tool_choice
+            
+            # Get chat completion
+            response = self.client.complete(payload)
+            generation_time = time.time() - start_time
+            
+            # Extract message content
+            message = response.choices[0].message.content
+            
+            # Extract tool calls if present
+            tool_calls = []
+            if hasattr(response.choices[0].message, 'tool_calls') and response.choices[0].message.tool_calls:
+                tool_calls = [
+                    {
+                        "id": tool_call.id,
+                        "type": tool_call.type,
+                        "function": {
+                            "name": tool_call.function.name,
+                            "arguments": tool_call.function.arguments
+                        }
+                    }
+                    for tool_call in response.choices[0].message.tool_calls
+                ]
+            
+            # Prepare metadata
+            metadata = {
+                "model": response.model,
+                "usage": {
+                    "prompt_tokens": response.usage.prompt_tokens,
+                    "total_tokens": response.usage.total_tokens,
+                    "completion_tokens": response.usage.completion_tokens
+                },
+                "generation_time": generation_time
+            }
+            
+            return {
+                "message": message,
+                "tool_calls": tool_calls,
+                "metadata": metadata
+            }
+            
+        except Exception as e:
+            logger.error(f"Azure AI chat completion error: {str(e)}")
+            raise
+
+    def generate(self, prompt: str, model: str = None, **kwargs) -> str:
+        """Generate text using Azure AI.
+        
+        Args:
+            prompt: Input prompt
+            model: Model name (optional)
+            **kwargs: Additional arguments
+            
+        Returns:
+            Generated text
+        """
+        payload = {
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": kwargs.get("max_tokens", 2048)
+        }
+        response = self.client.complete(payload)
+        return response.choices[0].message.content
+
+def get_connector(provider: str, api_key: Optional[str] = None, endpoint: Optional[str] = None) -> APIConnector:
+    """Get the appropriate API connector based on provider.
     
     Args:
-        provider: The provider name (e.g., "openai", "anthropic", "deepseek-ai")
-        api_key: Optional API key. If not provided, will try to get from environment
+        provider: Model provider name
+        api_key: Optional API key
+        endpoint: Optional endpoint URL (for Azure)
         
     Returns:
-        An instance of the appropriate APIConnector
+        APIConnector instance
     """
     connectors = {
         "openai": OpenAIConnector,
-        "anthropic": AnthropicConnector,
-        "deepseek": DeepseekConnector,
+        "azure": AzureAIConnector,
         "deepseek-ai": DeepseekConnector,
-        "deepseekai": DeepseekConnector
+        "anthropic": AnthropicConnector
     }
     
-    # Normalize provider name
-    provider = provider.lower()
-    if provider == "deepseek-ai" or provider == "deepseekai":
-        provider = "deepseek"
-    
-    connector_class = connectors.get(provider)
-    
+    connector_class = connectors.get(provider.lower())
     if not connector_class:
         raise ValueError(f"Unsupported provider: {provider}")
     
-    return connector_class(api_key)
+    # Pass endpoint only to Azure connector
+    if provider.lower() == "azure":
+        return connector_class(api_key=api_key, endpoint=endpoint)
+    return connector_class(api_key=api_key)
 
 # Usage example:
 """

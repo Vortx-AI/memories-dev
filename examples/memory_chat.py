@@ -2,7 +2,7 @@
 Memory query implementation for handling different types of queries.
 """
 
-from typing import Dict, Any, Union, Optional
+from typing import Dict, Any, Union, Optional, List
 import logging
 from logging.handlers import RotatingFileHandler
 import os
@@ -13,7 +13,9 @@ from dotenv import load_dotenv
 import sys
 import pandas as pd
 import numpy as np
-
+# Add Azure imports
+from azure.ai.inference import ChatCompletionsClient
+from azure.core.credentials import AzureKeyCredential
 
 from memories.models.load_model import LoadModel
 from memories.utils.text.context_utils import classify_query
@@ -105,6 +107,7 @@ class MemoryQuery:
         deployment_type: str = "api",
         model_name: str = "gpt-4",
         api_key: Optional[str] = None,
+        endpoint: Optional[str] = None,
         functions_file: str = "function_definitions.json",
         use_gpu: bool = True
     ):
@@ -112,10 +115,11 @@ class MemoryQuery:
         Initialize the memory query handler with LoadModel.
         
         Args:
-            model_provider (str): The model provider (e.g., "openai")
+            model_provider (str): The model provider (e.g., "openai", "azure-ai")
             deployment_type (str): Type of deployment (e.g., "api")
             model_name (str): Name of the model to use
             api_key (Optional[str]): API key for the model provider
+            endpoint (Optional[str]): Endpoint URL for Azure AI
             functions_file (str): Path to the JSON file containing function definitions
             use_gpu (bool): Whether to use GPU acceleration if available
         """
@@ -125,7 +129,8 @@ class MemoryQuery:
                 model_provider=model_provider,
                 deployment_type=deployment_type,
                 model_name=model_name,
-                api_key=api_key
+                api_key=api_key,
+                endpoint=endpoint
             )
             logger.info(f"Successfully initialized LoadModel with {model_name}")
             
@@ -295,15 +300,7 @@ class MemoryQuery:
             }
 
     def process_query(self, query: str) -> Dict[str, Any]:
-        """
-        Process a query by letting the model decide the approach and function sequence.
-        
-        Args:
-            query (str): The user's query
-            
-        Returns:
-            Dict containing response and results
-        """
+        """Process a query by letting the model decide the approach and function sequence."""
         logger.info(f"Processing query: {query}")
         try:
             system_message = {
@@ -330,27 +327,6 @@ class MemoryQuery:
                 Always explain your reasoning before making function calls."""
             }
             
-            def serialize_result(obj):
-                """Helper function to make results JSON serializable."""
-                if isinstance(obj, bytearray):
-                    return obj.hex()  # Convert bytearray to hex string
-                elif isinstance(obj, bytes):
-                    return obj.hex()
-                elif isinstance(obj, pd.DataFrame):
-                    return obj.to_dict('records')
-                elif isinstance(obj, np.ndarray):
-                    return obj.tolist()
-                elif isinstance(obj, (datetime, date)):
-                    return obj.isoformat()
-                elif isinstance(obj, (int, float, str, bool, type(None))):
-                    return obj
-                elif isinstance(obj, (list, tuple)):
-                    return [serialize_result(item) for item in obj]
-                elif isinstance(obj, dict):
-                    return {k: serialize_result(v) for k, v in obj.items()}
-                else:
-                    return str(obj)  # Convert any other type to string
-
             messages = [
                 system_message,
                 {"role": "user", "content": query}
@@ -370,7 +346,11 @@ class MemoryQuery:
                         "status": "error"
                     }
                 
+                # Handle Azure AI's specific response format
                 assistant_message = response.get("message", {})
+                if isinstance(assistant_message, str):  # Azure returns content directly as string
+                    assistant_message = {"role": "assistant", "content": assistant_message}
+                
                 tool_calls = response.get("tool_calls", [])
                 
                 if not tool_calls and assistant_message.get("content"):
@@ -382,15 +362,21 @@ class MemoryQuery:
                 
                 if tool_calls:
                     for tool_call in tool_calls:
-                        function_name = tool_call.get("function", {}).get("name")
+                        # Handle Azure's tool call format
+                        if isinstance(tool_call, dict):
+                            function_name = tool_call.get("function", {}).get("name")
+                            function_args = tool_call.get("function", {}).get("arguments")
+                        else:  # Azure might return tool_call object directly
+                            function_name = tool_call.function.name
+                            function_args = tool_call.function.arguments
+                        
                         logger.info(f"Executing function: {function_name}")
                         try:
-                            args = json.loads(tool_call["function"]["arguments"])
+                            args = json.loads(function_args)
                             
                             if function_name in self.function_mapping:
                                 function_result = self.function_mapping[function_name](**args)
-                                # Serialize the result before storing or sending to model
-                                serialized_result = serialize_result(function_result)
+                                serialized_result = self.serialize_result(function_result)
                             else:
                                 return {
                                     "response": f"Unknown function: {function_name}",
@@ -410,18 +396,23 @@ class MemoryQuery:
                                 "result": serialized_result
                             })
                             
+                            # Format messages for Azure AI
                             messages.append({
                                 "role": "assistant",
                                 "content": None,
-                                "function_call": {
-                                    "name": function_name,
-                                    "arguments": json.dumps(args)
-                                }
+                                "tool_calls": [{
+                                    "id": tool_call.id if hasattr(tool_call, 'id') else None,
+                                    "type": "function",
+                                    "function": {
+                                        "name": function_name,
+                                        "arguments": json.dumps(args)
+                                    }
+                                }]
                             })
                             messages.append({
-                                "role": "function",
-                                "name": function_name,
-                                "content": json.dumps(serialized_result)
+                                "role": "tool",  # Azure uses 'tool' instead of 'function'
+                                "content": json.dumps(serialized_result),
+                                "tool_call_id": tool_call.id if hasattr(tool_call, 'id') else None
                             })
                             
                             logger.info(f"Successfully executed {function_name}")
@@ -513,13 +504,39 @@ class MemoryQuery:
                 "message": str(e)
             }
 
+    def _format_azure_messages(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """Format messages for Azure AI API."""
+        formatted_messages = []
+        for msg in messages:
+            formatted_msg = {
+                "role": msg["role"],
+                "content": msg["content"]
+            }
+            
+            # Handle tool calls
+            if "tool_calls" in msg:
+                formatted_msg["tool_calls"] = msg["tool_calls"]
+            
+            # Handle tool responses
+            if msg["role"] == "tool":
+                formatted_msg["tool_call_id"] = msg.get("tool_call_id")
+            
+            formatted_messages.append(formatted_msg)
+        
+        return formatted_messages
+
 def main():
     """Example usage of MemoryQuery"""
     try:
-        # Initialize MemoryQuery with OpenAI API key
-        api_key = os.getenv("OPENAI_API_KEY")
+        # Initialize MemoryQuery with Azure AI credentials
+        api_key = os.getenv("AZURE_INFERENCE_CREDENTIAL")
+        endpoint = os.getenv("AZURE_INFERENCE_ENDPOINT")
+        
         if not api_key:
-            logger.error("OPENAI_API_KEY environment variable not set")
+            logger.error("AZURE_INFERENCE_CREDENTIAL environment variable not set")
+            return
+        if not endpoint:
+            logger.error("AZURE_INFERENCE_ENDPOINT environment variable not set")
             return
 
         logger.info("=" * 80)
@@ -527,10 +544,11 @@ def main():
         logger.info("=" * 80)
         
         memory_query = MemoryQuery(
-            model_provider="openai",
+            model_provider="azure-ai",  # Change to azure-ai
             deployment_type="api",
-            model_name="gpt-4",
-            api_key=api_key
+            model_name="gpt-4",  # This will be ignored as the model is determined by the endpoint
+            api_key=api_key,
+            endpoint=endpoint  # Add endpoint parameter
         )
         
         # Check if query was provided
