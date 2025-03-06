@@ -51,14 +51,15 @@ class WarmMemory:
             
         try:
             key = data.get('id') or str(datetime.now().timestamp())
+            current_time = datetime.now()
             self.con.execute("""
                 INSERT INTO warm_data (key, data, metadata, created_at, last_accessed)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT (key) DO UPDATE SET
                     data = EXCLUDED.data,
                     metadata = EXCLUDED.metadata,
-                    last_accessed = CURRENT_TIMESTAMP
-            """, [key, json.dumps(data), json.dumps(metadata or {})])
+                    last_accessed = ?
+            """, [key, json.dumps(data), json.dumps(metadata or {}), current_time, current_time, current_time])
             
         except Exception as e:
             self.logger.error(f"Failed to store data: {e}")

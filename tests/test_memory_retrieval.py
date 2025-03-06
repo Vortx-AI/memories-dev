@@ -15,6 +15,8 @@ from unittest.mock import patch, MagicMock
 import numpy as np
 import logging
 from datetime import datetime
+import redis
+import json
 
 # Load environment variables from .env file
 load_dotenv()
@@ -116,28 +118,38 @@ def mock_sentence_transformer():
         yield mock
 
 @pytest.fixture
-def memory_manager(tmp_path):
+def mock_redis():
+    """Mock Redis client for testing."""
+    with patch('redis.from_url') as mock:
+        client = MagicMock()
+        client.get.return_value = None
+        client.scan_iter.return_value = []
+        mock.return_value = client
+        yield client
+
+@pytest.fixture
+def memory_manager(tmp_path, mock_redis):
     """Create a memory manager instance for testing."""
     config = {
         'memory': {
             'base_path': str(tmp_path),
             'red_hot': {
                 'path': str(tmp_path / 'red_hot'),
-                'max_size': 1000000,  # 1M vectors
-                'vector_dim': 384,    # Default for all-MiniLM-L6-v2
+                'max_size': 1000000,
+                'vector_dim': 384,
                 'gpu_id': 0,
-                'force_cpu': True,    # Default to CPU for stability
-                'index_type': 'Flat'  # Simple Flat index
+                'force_cpu': True,
+                'index_type': 'Flat'
             },
             'hot': {
                 'path': str(tmp_path / 'hot'),
-                'max_size': 104857600,  # 100MB
-                'redis_url': 'redis://localhost:6379',
+                'max_size': 104857600,
+                'redis_url': 'redis://mock:6379',
                 'redis_db': 0
             },
             'cold': {
                 'path': str(tmp_path / 'cold'),
-                'max_size': 10737418240,  # 10GB
+                'max_size': 10737418240,
                 'duckdb': {
                     'memory_limit': '4GB',
                     'threads': 4,
@@ -150,6 +162,11 @@ def memory_manager(tmp_path):
         }
     }
     manager = MemoryManager(config=config)
+    
+    # Configure mock Redis behavior
+    mock_redis.get.side_effect = lambda key: json.dumps({'id': 1, 'value': 'test'}) if key else None
+    mock_redis.scan_iter.return_value = ['test_key']
+    
     yield manager
     
     # Cleanup
@@ -242,12 +259,16 @@ def test_cold_memory_storage_and_retrieval(memory_manager):
     assert result is not None
     assert result.get('value') == 'test'
 
-def test_retrieve_all(memory_manager):
+def test_retrieve_all(memory_manager, mock_redis):
     """Test retrieving all data from each memory tier."""
     # Store test data in hot and warm memory
     test_data = {'id': 1, 'value': 'test'}
     memory_manager.add_to_tier('hot', test_data)
     memory_manager.add_to_tier('warm', test_data)
+    
+    # Configure mock Redis to return our test data
+    mock_redis.get.return_value = json.dumps(test_data)
+    mock_redis.scan_iter.return_value = ['test_key']
     
     # Create test data in cold memory
     test_dir = Path(memory_manager.config['memory']['cold']['path'])
