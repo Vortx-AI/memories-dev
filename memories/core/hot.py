@@ -26,19 +26,18 @@ class HotMemory:
         logger.info("Initialized hot memory storage")
 
     def store(self, data: Dict[str, Any]) -> None:
-        """Store data in hot memory.
-        
-        Args:
-            data: Data to store
-        """
+        """Store data in hot memory."""
         try:
-            # Generate key if not provided
-            key = str(data.get('id', datetime.now().timestamp()))
+            # Ensure data has an id
+            if 'id' not in data:
+                data['id'] = str(datetime.now().timestamp())
+            
+            key = str(data['id'])
             
             # Store data with timestamp
             data_with_timestamp = {
                 **data,
-                'stored_at': datetime.now().isoformat()
+                '_stored_at': datetime.now().isoformat()
             }
             
             self.client.set(key, json.dumps(data_with_timestamp))
@@ -49,30 +48,34 @@ class HotMemory:
             raise
 
     def retrieve(self, query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Retrieve data from hot memory.
-        
-        Args:
-            query: Query parameters
-            
-        Returns:
-            Retrieved data or None if not found
-        """
+        """Retrieve data from hot memory."""
         try:
             # Try direct key lookup first
             if 'id' in query:
                 key = str(query['id'])
                 data = self.client.get(key)
                 if data:
-                    return json.loads(data)
+                    try:
+                        return json.loads(data)
+                    except json.JSONDecodeError:
+                        logger.warning(f"Invalid JSON data for key: {key}")
+                        return None
             
-            # Search through all keys
+            # Search through all keys if no direct match
             for key in self.client.scan_iter():
                 try:
                     data = self.client.get(key)
                     if data:
                         data_dict = json.loads(data)
                         # Check if all query parameters match
-                        if all(data_dict.get(k) == v for k, v in query.items()):
+                        matches = True
+                        for k, v in query.items():
+                            if k == '_stored_at':  # Skip internal fields
+                                continue
+                            if data_dict.get(k) != v:
+                                matches = False
+                                break
+                        if matches:
                             return data_dict
                 except json.JSONDecodeError:
                     logger.warning(f"Invalid JSON data for key: {key}")

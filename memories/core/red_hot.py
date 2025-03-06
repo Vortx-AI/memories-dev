@@ -321,15 +321,9 @@ class RedHotMemory:
         return self.con.execute(query).df()
 
     def store(self, key: str, vector_data: Union[np.ndarray, torch.Tensor], metadata: Optional[Dict[str, Any]] = None) -> None:
-        """Store vector data with metadata.
-        
-        Args:
-            key: Unique identifier for the vector
-            vector_data: Vector to store (numpy array or PyTorch tensor)
-            metadata: Optional metadata to store with the vector
-        """
+        """Store vector data with metadata."""
         try:
-            # Convert PyTorch tensor to numpy if needed
+            # Convert to numpy array if tensor
             if isinstance(vector_data, torch.Tensor):
                 vector_data = vector_data.detach().cpu().numpy()
             
@@ -338,21 +332,22 @@ class RedHotMemory:
             if len(vector_data) != self.vector_dim:
                 raise ValueError(f"Vector dimension mismatch. Expected {self.vector_dim}, got {len(vector_data)}")
             
-            # Initialize index if not already done
+            # Initialize index if needed
             if not hasattr(self, 'index') or self.index is None:
                 self._init_index()
             
-            # Add vector to index
+            # Store the vector
+            index = len(self.metadata)
             self.index.add(vector_data.reshape(1, -1))
             
-            # Store metadata with timestamp
+            # Store metadata
             self.metadata[key] = {
                 'metadata': metadata or {},
                 'timestamp': datetime.now().isoformat(),
-                'index': len(self.metadata)  # Store the index position
+                'index': index
             }
             
-            # Save state periodically (every 100 entries)
+            # Save state periodically
             if len(self.metadata) % 100 == 0:
                 self._save_state()
                 
@@ -361,53 +356,44 @@ class RedHotMemory:
             raise
 
     def search(self, query_vector: Union[np.ndarray, torch.Tensor], k: int = 5, metadata_filter: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
-        """Search for similar vectors.
-        
-        Args:
-            query_vector: Query vector
-            k: Number of results to return
-            metadata_filter: Optional filter for metadata
-            
-        Returns:
-            List of dictionaries containing similar vectors and their metadata
-        """
+        """Search for similar vectors."""
         try:
-            # Convert PyTorch tensor to numpy if needed
+            if not hasattr(self, 'index') or self.index is None or len(self.metadata) == 0:
+                return []
+                
+            # Convert to numpy array if tensor
             if isinstance(query_vector, torch.Tensor):
                 query_vector = query_vector.detach().cpu().numpy()
             
-            # Reshape query vector
+            # Ensure vector is 1D and correct dimension
             query_vector = query_vector.reshape(1, -1)
             
-            if not hasattr(self, 'index') or self.index is None:
-                logger.warning("No index available for search")
-                return []
-            
-            # Perform search
-            distances, indices = self.index.search(query_vector, k)
+            # Search index
+            distances, indices = self.index.search(query_vector, min(k, len(self.metadata)))
             
             # Format results
             results = []
-            for i, (dist, idx) in enumerate(zip(distances[0], indices[0])):
-                if idx != -1:  # Valid index
-                    # Find metadata for this index
-                    for key, meta in self.metadata.items():
-                        if meta['index'] == idx:
-                            result = {
-                                'key': key,
-                                'distance': float(dist),
-                                'metadata': meta['metadata'],
-                                'timestamp': meta['timestamp']
-                            }
-                            
-                            # Apply metadata filter if provided
-                            if metadata_filter:
-                                if all(meta['metadata'].get(k) == v for k, v in metadata_filter.items()):
-                                    results.append(result)
-                            else:
+            for dist, idx in zip(distances[0], indices[0]):
+                if idx == -1:  # Invalid index
+                    continue
+                    
+                # Find metadata for this index
+                for key, meta in self.metadata.items():
+                    if meta['index'] == idx:
+                        result = {
+                            'key': key,
+                            'distance': float(dist),
+                            'metadata': meta['metadata'],
+                            'timestamp': meta['timestamp']
+                        }
+                        
+                        # Apply metadata filter if provided
+                        if metadata_filter:
+                            if all(meta['metadata'].get(k) == v for k, v in metadata_filter.items()):
                                 results.append(result)
-                            
-                            break
+                        else:
+                            results.append(result)
+                        break
             
             return results
             
