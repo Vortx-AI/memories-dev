@@ -122,8 +122,8 @@ def run_import():
         
         # Print detailed results
         print("\nImport Results:")
-        print(f"Files processed: {results['files_processed']}")
-        print(f"Records imported: {results['records_imported']}")
+        print(f"Files processed: {results['num_files']}")
+        print(f"Records imported: {results['num_records']}")
         print(f"Total size: {results['total_size'] / (1024*1024):.2f} MB")
         
         if results['errors']:

@@ -314,14 +314,22 @@ class MemoryManager:
         """Retrieve data from specified memory tier.
         
         Args:
-            query: Query to match against stored data
-            tier: Memory tier to query from ('hot', 'warm', 'cold', or 'glacier')
+            query: Query to match against stored data. For red_hot tier, must contain 'key' or 'vector'.
+            tier: Memory tier to query from ('red_hot', 'hot', 'warm', 'cold', or 'glacier')
             
         Returns:
             Retrieved data or None if not found
         """
         try:
-            if tier == "hot" and self.hot:
+            if tier == "red_hot" and self.red_hot:
+                if 'vector' in query:
+                    # Search by vector
+                    results = self.red_hot.search(query['vector'], k=1)
+                    return results[0] if results else None
+                else:
+                    print("Vector is required for red_hot tier retrieval")
+                    return None
+            elif tier == "hot" and self.hot:
                 return self.hot.retrieve(query)
             elif tier == "warm" and self.warm:
                 return self.warm.retrieve(query)
@@ -330,10 +338,10 @@ class MemoryManager:
             elif tier == "glacier" and self.glacier:
                 return self.glacier.retrieve(query)
             else:
-                #logger.error(f"Invalid memory tier: {tier}")
+                print(f"Invalid memory tier: {tier}")
                 return None
         except Exception as e:
-            #logger.error(f"Failed to retrieve from {tier} memory: {e}")
+            print(f"Failed to retrieve from {tier} memory: {e}")
             return None
     
     def retrieve_all(self, tier: str = "hot") -> List[Dict[str, Any]]:
@@ -610,14 +618,14 @@ class MemoryManager:
             
         Returns:
             Dict containing:
-                files_processed: Number of files processed
-                records_imported: Total number of records imported
+                num_files: Number of files processed
+                num_records: Total number of records imported
                 total_size: Total size of imported data in bytes
                 errors: List of files that had errors
         """
         if not self.cold:
             raise RuntimeError("Cold memory is not enabled. Enable it by setting enable_cold=True")
-
+        
         try:
             # Delegate to cold memory's implementation
             results = self.cold.batch_import_parquet(
@@ -629,27 +637,17 @@ class MemoryManager:
             )
             
             # Log the results
-            #logger.info(
-            #    f"Parquet import complete - "
-            #    f"Processed: {results['files_processed']} files, "
-            #    f"Imported: {results['records_imported']} records, "
-            #    f"Size: {results['total_size'] / (1024*1024):.2f} MB"
-            #)
             print(
                 f"Parquet import complete - "
-                f"Processed: {results['files_processed']} files, "
-                f"Imported: {results['records_imported']} records, "
+                f"Processed: {results['num_files']} files, "
+                f"Imported: {results['num_records']} records, "
                 f"Size: {results['total_size'] / (1024*1024):.2f} MB"
             )
             
-            if results['errors']:
-                #logger.warning(f"Errors occurred in {len(results['errors'])} files")
-                print(f"Errors occurred in {len(results['errors'])} files")
-                
             return results
             
         except Exception as e:
-            #logger.error(f"Failed to import parquet files: {e}")
+            #logger.error(f"Error during parquet import: {e}")
             raise
 
     def cleanup_cold_memory(self, remove_storage: bool = True) -> None:
