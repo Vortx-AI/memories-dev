@@ -146,7 +146,7 @@ def memory_manager(tmp_path):
             'red_hot': {
                 'path': str(tmp_path / 'red_hot'),
                 'max_size': 1000000,  # 1M vectors
-                'vector_dim': 384,    # Default for all-MiniLM-L6-v2
+                'vectom_dim': 384,    # Default for all-MiniLM-L6-v2
                 'gpu_id': 0,
                 'force_cpu': True,    # Default to CPU for stability
                 'index_type': 'Flat'  # Simple Flat index
@@ -236,7 +236,7 @@ def test_batch_parquet_import(memory_manager, tmp_path):
     assert len(result['errors']) == 0
     
     # Check metadata using DuckDB connection
-    files = memory_manager.con.execute("""
+    files = memory_manager.db_connection.execute("""
         SELECT * FROM cold_metadata
     """).fetchall()
     

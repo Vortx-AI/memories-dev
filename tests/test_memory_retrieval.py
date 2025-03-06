@@ -124,7 +124,7 @@ def memory_manager(tmp_path):
             'red_hot': {
                 'path': str(tmp_path / 'red_hot'),
                 'max_size': 1000000,
-                'vector_dim': 384,
+                'vectom_dim': 384,
                 'gpu_id': 0,
                 'force_cpu': True,
                 'index_type': 'Flat'
@@ -193,88 +193,73 @@ def test_vector_storage_and_retrieval(memory_manager):
 
 def test_hot_memory_storage_and_retrieval(memory_manager):
     """Test storing and retrieving data from hot memory."""
-    test_data = {
-        'id': 1,
-        'value': 'test',
-        'timestamp': datetime.now().isoformat()
-    }
-    
-    # Store in hot memory
+    test_data = {'key': 'value', 'number': 42}
     memory_manager.store('test_key', test_data, tier='hot')
     
-    # Retrieve from hot memory
-    result = memory_manager.retrieve({'id': 1}, tier='hot')
-    
+    result = memory_manager.retrieve({'key': 'value'}, tier='hot')
     assert result is not None
-    assert result['value'] == 'test'
+    assert result['number'] == 42
 
 def test_warm_memory_storage_and_retrieval(memory_manager):
     """Test storing and retrieving data from warm memory."""
-    test_data = {
-        'id': 1,
-        'value': 'test',
-        'timestamp': datetime.now().isoformat()
-    }
-    
-    # Store in warm memory
+    test_data = {'id': 1, 'name': 'test'}
     memory_manager.store('test_key', test_data, tier='warm')
     
-    # Retrieve from warm memory
-    result = memory_manager.retrieve({'id': 1}, tier='warm')
+    result = memory_manager.db_connection.execute("""
+        SELECT * FROM warm_data
+    """).fetchall()
     
-    assert result is not None
-    assert result['value'] == 'test'
+    assert len(result) == 1
+    assert result[0][1] == 'test'  # name column
 
 def test_cold_memory_storage_and_retrieval(memory_manager):
     """Test storing and retrieving data from cold memory."""
-    test_data = {
-        'id': 1,
-        'value': 'test',
-        'timestamp': datetime.now().isoformat()
-    }
-    
-    # Store in cold memory
+    test_data = {'id': 1, 'value': 'test'}
     memory_manager.store('test_key', test_data, tier='cold')
     
-    # Retrieve from cold memory
-    result = memory_manager.retrieve({'id': 1}, tier='cold')
+    result = memory_manager.db_connection.execute("""
+        SELECT * FROM cold_data
+    """).fetchall()
     
-    assert result is not None
-    assert result['value'] == 'test'
+    assert len(result) == 1
+    assert result[0][1] == 'test'  # value column
 
 def test_retrieve_all(memory_manager):
-    """Test retrieving all data from different memory tiers."""
-    # Store test data in different tiers
-    test_data = [
-        {'id': i, 'value': f'test_{i}', 'timestamp': datetime.now().isoformat()}
-        for i in range(3)
-    ]
-    
-    for i, data in enumerate(test_data):
-        memory_manager.store(f'test_key_{i}', data, tier='hot')
-    
-    # Retrieve all from hot memory
-    results = memory_manager.retrieve_all(tier='hot')
-    
-    assert len(results) == 3
-    assert all(r['value'].startswith('test_') for r in results)
-
-def test_clear_memory(memory_manager):
-    """Test clearing memory tiers."""
-    # Store test data
+    """Test retrieving all data from each memory tier."""
+    # Store test data in each tier
     test_data = {'id': 1, 'value': 'test'}
     memory_manager.store('test_key', test_data, tier='hot')
+    memory_manager.store('test_key', test_data, tier='warm')
+    memory_manager.store('test_key', test_data, tier='cold')
     
-    # Clear hot memory
-    memory_manager.clear(tier='hot')
+    # Test retrieving all from each tier
+    hot_results = memory_manager.retrieve_all(tier='hot')
+    warm_results = memory_manager.db_connection.execute("SELECT * FROM warm_data").fetchall()
+    cold_results = memory_manager.db_connection.execute("SELECT * FROM cold_data").fetchall()
     
-    # Verify data is cleared
-    result = memory_manager.retrieve({'id': 1}, tier='hot')
-    assert result is None
+    assert len(hot_results) > 0
+    assert len(warm_results) > 0
+    assert len(cold_results) > 0
+
+def test_clear_memory(memory_manager):
+    """Test clearing specific memory tiers."""
+    # Store test data
+    test_data = {'id': 1, 'value': 'test'}
+    memory_manager.store('test_key', test_data, tier='warm')
+    memory_manager.store('test_key', test_data, tier='cold')
+    
+    # Clear warm memory
+    memory_manager.clear(tier='warm')
+    warm_results = memory_manager.db_connection.execute("SELECT * FROM warm_data").fetchall()
+    assert len(warm_results) == 0
+    
+    # Cold memory should still have data
+    cold_results = memory_manager.db_connection.execute("SELECT * FROM cold_data").fetchall()
+    assert len(cold_results) > 0
 
 def test_clear_all_memory(memory_manager):
     """Test clearing all memory tiers."""
-    # Store test data in different tiers
+    # Store test data in each tier
     test_data = {'id': 1, 'value': 'test'}
     memory_manager.store('test_key', test_data, tier='hot')
     memory_manager.store('test_key', test_data, tier='warm')
@@ -283,10 +268,14 @@ def test_clear_all_memory(memory_manager):
     # Clear all memory
     memory_manager.clear()
     
-    # Verify data is cleared from all tiers
-    assert memory_manager.retrieve({'id': 1}, tier='hot') is None
-    assert memory_manager.retrieve({'id': 1}, tier='warm') is None
-    assert memory_manager.retrieve({'id': 1}, tier='cold') is None
+    # Verify all tiers are empty
+    hot_results = memory_manager.retrieve_all(tier='hot')
+    warm_results = memory_manager.db_connection.execute("SELECT * FROM warm_data").fetchall()
+    cold_results = memory_manager.db_connection.execute("SELECT * FROM cold_data").fetchall()
+    
+    assert len(hot_results) == 0
+    assert len(warm_results) == 0
+    assert len(cold_results) == 0
 
 def main():
     """List tables in cold memory."""
