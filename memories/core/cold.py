@@ -258,23 +258,31 @@ class ColdMemory:
             "errors": errors
         }
 
-    def cleanup(self) -> None:
-        """Clean up resources and close connections."""
+    def clear(self) -> None:
+        """Clear all data from cold memory."""
         try:
             # Drop all views
-            views = self.con.execute("SELECT table_name FROM cold_metadata").fetchall()
+            views = self.con.execute("""
+                SELECT table_name FROM cold_metadata
+            """).fetchall()
             for view in views:
-                try:
-                    self.con.execute(f"DROP VIEW IF EXISTS {view[0]}")
-                except Exception as e:
-                    logger.warning(f"Error dropping view {view[0]}: {e}")
-
-            # Drop metadata table
-            self.con.execute("DROP TABLE IF EXISTS cold_metadata")
+                self.con.execute(f"DROP VIEW IF EXISTS {view[0]}")
             
-            logger.info("Cleaned up cold memory storage")
+            # Clear metadata
+            self.con.execute("DELETE FROM cold_metadata")
         except Exception as e:
-            logger.error(f"Error during cleanup: {e}")
+            logger.error(f"Failed to clear data: {e}")
+
+    def cleanup(self) -> None:
+        """Clean up resources."""
+        try:
+            self.clear()  # Just clear the data, don't close connection
+        except Exception as e:
+            logger.error(f"Failed to cleanup: {e}")
+
+    def __del__(self):
+        """Destructor to ensure cleanup is performed."""
+        self.cleanup()
 
 
 

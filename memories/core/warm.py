@@ -127,8 +127,7 @@ class WarmMemory:
     def cleanup(self) -> None:
         """Clean up resources."""
         try:
-            if hasattr(self, 'con'):
-                self.con.close()
+            self.clear()  # Just clear the data, don't close connection
         except Exception as e:
             self.logger.error(f"Failed to cleanup: {e}")
 

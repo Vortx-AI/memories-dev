@@ -471,18 +471,25 @@ class RedHotMemory:
         """Return number of vectors in storage."""
         return self.index.ntotal if self.index is not None else 0
 
-    def cleanup(self):
-        """Clean up resources."""
+    def cleanup(self) -> None:
+        """Clean up resources and close connections."""
         try:
-            # Save final state
-            self._save_state()
-            
             # Close DuckDB connection
             if hasattr(self, 'con') and self.con:
                 self.con.close()
-                
-            logger.info("Cleaned up RedHotMemory resources")
+                self.con = None
+
+            # Save state before cleanup
+            self._save_state()
+
+            # Delete FAISS index
+            if hasattr(self, 'index'):
+                del self.index
+
+            # Clear metadata
+            self.metadata = {}
             
+            logger.info("Cleaned up red hot memory")
         except Exception as e:
             logger.error(f"Error during cleanup: {e}")
 
