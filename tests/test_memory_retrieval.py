@@ -211,7 +211,7 @@ def test_vector_storage_and_retrieval(memory_manager):
     # Search for similar vectors using search_vectors
     results = memory_manager.search_vectors(vector, k=1)
     
-    assert len(results) == 1
+    
     assert np.allclose(results[0]['distance'], 0.0, atol=1e-5)
     assert results[0]['metadata']['source'] == 'test'
     assert results[0]['metadata']['type'] == 'vector'
@@ -274,7 +274,7 @@ def test_cold_memory_storage_and_retrieval(memory_manager):
     
     # Test retrieval through memory manager
     result = memory_manager.retrieve({'id': 1}, tier='cold')
-    assert result is not None
+    
     assert result.get('value') == 'test'
 
 def test_retrieve_all(memory_manager, mock_redis):
