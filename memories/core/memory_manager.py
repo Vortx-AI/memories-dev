@@ -197,7 +197,7 @@ class MemoryManager:
         """Initialize warm memory tier."""
         config = self.config['memory']['warm']
         self.warm = WarmMemory(
-            duckdb_connection=self.con
+            duckdb_connection=self.db_connection
         )
         #logger.info("Initialized warm memory tier")
 
@@ -209,18 +209,18 @@ class MemoryManager:
             
             # Configure DuckDB connection
             if 'memory_limit' in duckdb_config:
-                self.con.execute(f"SET memory_limit='{duckdb_config['memory_limit']}'")
+                self.db_connection.execute(f"SET memory_limit='{duckdb_config['memory_limit']}'")
             if 'threads' in duckdb_config:
-                self.con.execute(f"SET threads={duckdb_config['threads']}")
+                self.db_connection.execute(f"SET threads={duckdb_config['threads']}")
             
             # Initialize cold memory with configuration
             self.cold = ColdMemory(
-                connection=self.con,
+                connection=self.db_connection,
                 config=cold_config
             )
         else:
             # Initialize with default configuration
-            self.cold = ColdMemory(connection=self.con)
+            self.cold = ColdMemory(connection=self.db_connection)
         #logger.info("Initialized cold memory tier")
 
     def _init_glacier_memory(self) -> None:

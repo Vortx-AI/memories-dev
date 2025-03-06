@@ -152,22 +152,15 @@ logger = logging.getLogger(__name__)
 class ColdMemory:
     """Cold memory storage using DuckDB for efficient querying of parquet files."""
     
-    def __init__(self, storage_path: Optional[Path] = None):
+    def __init__(self, connection: duckdb.DuckDBPyConnection, config: Optional[Dict[str, Any]] = None):
         """Initialize cold memory storage.
         
         Args:
-            storage_path: Optional path to store the database file. If not provided,
-                        a temporary file will be created.
+            connection: DuckDB connection to use
+            config: Optional configuration dictionary
         """
-        self.path = storage_path or Path.home() / ".memories" / "cold_storage"
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        
-        # Initialize DuckDB connection
-        self.con = duckdb.connect(str(self.path / "cold.db"))
-        
-        # Set memory limits and threads
-        self.con.execute("SET memory_limit='4GB'")
-        self.con.execute("SET threads TO 4")
+        self.con = connection
+        self.config = config or {}
         
         # Create metadata table if it doesn't exist
         self.con.execute("""
@@ -183,7 +176,7 @@ class ColdMemory:
             )
         """)
         
-        logger.info(f"Initialized cold memory storage at {self.path}")
+        logger.info("Initialized cold memory storage")
         
     def batch_import_parquet(self, 
                            folder_path: Union[str, Path], 
