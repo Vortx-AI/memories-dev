@@ -11,6 +11,8 @@ from memories.core.cold import ColdMemory
 import shutil
 import pandas as pd
 import yaml
+from unittest.mock import patch, MagicMock
+import numpy as np
 
 # Load environment variables from .env file
 load_dotenv()
@@ -102,54 +104,51 @@ def list_cold_tables():
         if 'memory_manager' in locals():
             memory_manager.cleanup()
 
-@pytest.fixture(scope="function")
-def memory_manager(tmp_path):
+@pytest.fixture
+def mock_sentence_transformer():
+    """Mock sentence transformer to avoid network calls."""
+    with patch('sentence_transformers.SentenceTransformer') as mock:
+        model = MagicMock()
+        model.encode.return_value = np.random.rand(384)  # Return random embeddings
+        mock.return_value = model
+        yield mock
+
+@pytest.fixture
+def memory_manager(tmp_path, mock_sentence_transformer):
     """Create a memory manager instance for testing."""
-    # Create test database
+    # Create DuckDB connection for tests
     db_path = tmp_path / 'test.db'
     con = duckdb.connect(str(db_path))
     
-    # Create spatial index table
-    con.execute("""
-        CREATE TABLE spatial_index (
-            id INTEGER PRIMARY KEY,
-            min_lat DOUBLE,
-            max_lat DOUBLE,
-            min_lon DOUBLE,
-            max_lon DOUBLE,
-            data_source VARCHAR,
-            metadata JSON
-        )
-    """)
-    
     # Initialize memory manager
     manager = MemoryManager()
-    manager.con = con
     
-    # Configure cold memory
-    manager.configure_tiers(
-        cold_config={
+    # Initialize cold memory with test connection
+    manager.cold = ColdMemory(
+        connection=con,
+        config={
             'path': str(tmp_path / 'cold'),
             'max_size': 1073741824,  # 1GB
             'duckdb': {
                 'memory_limit': '1GB',
-                'threads': 4
+                'threads': 2
             }
-        },
-        reinitialize=True
+        }
     )
     
     yield manager
     
     # Cleanup
     con.close()
+    if db_path.exists():
+        db_path.unlink()
     if (tmp_path / 'cold').exists():
         shutil.rmtree(tmp_path / 'cold')
 
 @pytest.fixture
-def memory_retrieval(memory_manager):
+def memory_retrieval(memory_manager, mock_sentence_transformer):
     """Create a memory retrieval instance for testing."""
-    return MemoryRetrieval(memory_manager=memory_manager)
+    return MemoryRetrieval(memory_manager)
 
 def test_list_tables(memory_retrieval):
     """Test listing tables in cold memory."""
@@ -161,16 +160,20 @@ def test_empty_tables(memory_retrieval):
     tables = memory_retrieval.list_registered_files()
     assert len(tables) == 0
 
-def test_bbox_query(memory_retrieval):
-    """Test querying data within a bounding box."""
-    df = memory_retrieval.query_by_bbox(
-        min_lon=-180,
-        min_lat=-90,
-        max_lon=180,
-        max_lat=90
-    )
-    assert isinstance(df, pd.DataFrame)
-    assert len(df) == 0  # Empty since no data loaded
+def test_bbox_query(memory_manager):
+    # Query within first location's bounding box
+    result = memory_manager.cold.query_by_bbox(9.5, 49.5, 10.5, 50.5)
+    assert len(result) == 1
+    assert result.iloc[0]['name'] == 'Test Location 1'
+    
+    # Query within second location's bounding box
+    result = memory_manager.cold.query_by_bbox(19.5, 59.5, 20.5, 60.5)
+    assert len(result) == 1
+    assert result.iloc[0]['name'] == 'Test Location 2'
+    
+    # Query covering both locations
+    result = memory_manager.cold.query_by_bbox(8.0, 48.0, 22.0, 62.0)
+    assert len(result) == 2
 
 def test_polygon_query(memory_retrieval):
     """Test querying data within a polygon."""
@@ -179,16 +182,10 @@ def test_polygon_query(memory_retrieval):
     assert isinstance(df, pd.DataFrame)
     assert len(df) == 0  # Empty since no data loaded
 
-def test_empty_bbox_query(memory_retrieval):
-    """Test querying empty bounding box."""
-    df = memory_retrieval.query_by_bbox(
-        min_lon=0,
-        min_lat=0,
-        max_lon=0,
-        max_lat=0
-    )
-    assert isinstance(df, pd.DataFrame)
-    assert len(df) == 0
+def test_empty_bbox_query(memory_manager):
+    # Query outside any location
+    result = memory_manager.cold.query_by_bbox(0.0, 0.0, 1.0, 1.0)
+    assert len(result) == 0
 
 def test_invalid_column_names(memory_retrieval):
     """Test querying with invalid column names."""

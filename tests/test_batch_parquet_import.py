@@ -11,6 +11,7 @@ from memories.utils.text.embeddings import get_encoder
 import shutil
 import tempfile
 import yaml
+import pandas as pd
 
 # Load environment variables from .env file
 load_dotenv()
@@ -212,10 +213,29 @@ def test_batch_parquet_import(memory_manager, tmp_path):
     test_dir.mkdir()
     (test_dir / "divisions").mkdir()
     
-    # Create some dummy parquet files (just for testing structure)
-    (test_dir / "test1.parquet").touch()
-    (test_dir / "test2.parquet").touch()
-    (test_dir / "divisions" / "test3.parquet").touch()
+    # Create test dataframes
+    df1 = pd.DataFrame({
+        'id': [1, 2, 3],
+        'name': ['test1', 'test2', 'test3'],
+        'value': [10, 20, 30]
+    })
+    
+    df2 = pd.DataFrame({
+        'id': [4, 5, 6],
+        'name': ['test4', 'test5', 'test6'],
+        'value': [40, 50, 60]
+    })
+    
+    df3 = pd.DataFrame({
+        'id': [7, 8, 9],
+        'name': ['test7', 'test8', 'test9'],
+        'value': [70, 80, 90]
+    })
+    
+    # Save test parquet files
+    df1.to_parquet(test_dir / "test1.parquet")
+    df2.to_parquet(test_dir / "test2.parquet")
+    df3.to_parquet(test_dir / "divisions" / "test3.parquet")
     
     print(f"\n=== Testing Batch Parquet Import ===\n")
     print(f"Test directory: {test_dir}")
@@ -240,9 +260,10 @@ def test_batch_parquet_import(memory_manager, tmp_path):
             print("\nErrors encountered:")
             for error in results['errors']:
                 print(f"- {error}")
-        
+                
         # Verify results
         assert results['files_processed'] == 3, "Should process 3 parquet files"
+        assert results['records_imported'] == 9, "Should import 9 records total"
         assert len(results['errors']) == 0, "Should not have any errors"
         
         print("\nTest completed successfully!")

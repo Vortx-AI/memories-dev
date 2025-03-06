@@ -285,66 +285,46 @@ class MemoryRetrieval:
         try:
             # Find potentially intersecting files using spatial index
             files_query = """
-                SELECT path 
-                FROM spatial_index 
-                WHERE max_lon >= ? AND min_lon <= ? 
+                SELECT data_source
+                FROM spatial_index
+                WHERE max_lon >= ? AND min_lon <= ?
                   AND max_lat >= ? AND min_lat <= ?
             """
-            files = self.con.execute(files_query, 
+            files = self.con.execute(files_query,
                                    (min_lon, max_lon, min_lat, max_lat)).fetchall()
             
             if not files:
-                logger.warning("No files intersect the query bbox")
+                logger.info("No files found in bounding box")
                 return pd.DataFrame()
-
-            logger.info(f"Found {len(files)} potentially matching files")
-
-            # Process matching files
-            results = []
-            for file_path in [f[0] for f in files]:
+                
+            # Process each file
+            results = pd.DataFrame()
+            for file_path in files:
                 try:
-                    schema = self.get_parquet_schema(file_path)
-                    geom_column, geom_type = self.find_geometry_column(schema)
+                    # Read parquet file
+                    df = pd.read_parquet(file_path[0])
                     
-                    if not geom_column:
-                        continue
-                        
-                    geom_expr = self.get_geometry_expression(geom_column, geom_type)
-                    select_clause = self.build_select_clause(schema, geom_column, geom_type)
+                    # Filter by bounding box
+                    if 'geometry' in df.columns:
+                        df = df[df.geometry.intersects(box(min_lon, min_lat, max_lon, max_lat))]
+                    else:
+                        df = df[
+                            (df.longitude >= min_lon) & (df.longitude <= max_lon) &
+                            (df.latitude >= min_lat) & (df.latitude <= max_lat)
+                        ]
                     
-                    query = f"""
-                        SELECT {select_clause}
-                        FROM read_parquet('{file_path}')
-                        WHERE ST_Intersects(
-                            {geom_expr},
-                            ST_MakeEnvelope(CAST({min_lon} AS DOUBLE), 
-                                          CAST({min_lat} AS DOUBLE), 
-                                          CAST({max_lon} AS DOUBLE), 
-                                          CAST({max_lat} AS DOUBLE))
-                        )
-                    """
-                    
-                    result = self.con.execute(query).df()
-                    
-                    if not result.empty:
-                        result['source_file'] = os.path.basename(file_path)
-                        result['source_type'] = os.path.basename(os.path.dirname(os.path.dirname(file_path)))
-                        results.append(result)
-                        logger.info(f"Found {len(result)} results in {file_path}")
+                    if not df.empty:
+                        results = pd.concat([results, df], ignore_index=True)
                         
                 except Exception as e:
                     logger.error(f"Error processing {file_path}: {e}")
                     continue
-            
-            if not results:
-                return pd.DataFrame()
-                
-            combined = pd.concat(results, ignore_index=True, sort=False)
-            return combined.sort_values('name') if 'name' in combined.columns else combined
+                    
+            return results
             
         except Exception as e:
             logger.error(f"Error executing spatial query: {e}")
-            raise
+            return pd.DataFrame()
 
     def query_files(self, sql_query: str) -> pd.DataFrame:
         """

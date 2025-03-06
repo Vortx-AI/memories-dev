@@ -469,15 +469,16 @@ class ColdMemory:
                 
             for file_path in parquet_files:
                 try:
-                    # Read parquet file
+                    # Register parquet file with a unique table name
+                    table_name = f"parquet_data_{results['files_processed']}"
                     self.con.execute(f"""
-                        CREATE TABLE IF NOT EXISTS temp_import AS
-                        SELECT * FROM read_parquet(?)
+                        CREATE VIEW {table_name} AS 
+                        SELECT * FROM parquet_scan(?)
                     """, [str(file_path)])
                     
                     # Get row count and schema
-                    row_count = self.con.execute("SELECT COUNT(*) FROM temp_import").fetchone()[0]
-                    schema = self.con.execute("DESCRIBE temp_import").fetchall()
+                    row_count = self.con.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+                    schema = self.con.execute(f"DESCRIBE {table_name}").fetchall()
                     
                     # Create metadata entry
                     metadata = {
@@ -487,7 +488,8 @@ class ColdMemory:
                         'num_rows': row_count,
                         'num_columns': len(schema),
                         'schema': {col[0]: col[1] for col in schema},
-                        'imported_at': datetime.now().isoformat()
+                        'imported_at': datetime.now().isoformat(),
+                        'table_name': table_name
                     }
                     
                     # Create metadata table if not exists
@@ -499,15 +501,16 @@ class ColdMemory:
                             num_rows INTEGER,
                             num_columns INTEGER,
                             schema JSON,
-                            imported_at TIMESTAMP
+                            imported_at TIMESTAMP,
+                            table_name VARCHAR
                         )
                     """)
                     
                     # Insert metadata
                     self.con.execute("""
-                        INSERT INTO cold_metadata
-                        (file_path, theme, tag, num_rows, num_columns, schema, imported_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        INSERT OR REPLACE INTO cold_metadata
+                        (file_path, theme, tag, num_rows, num_columns, schema, imported_at, table_name)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """, [
                         metadata['file_path'],
                         metadata['theme'],
@@ -515,7 +518,8 @@ class ColdMemory:
                         metadata['num_rows'],
                         metadata['num_columns'],
                         json.dumps(metadata['schema']),
-                        metadata['imported_at']
+                        metadata['imported_at'],
+                        metadata['table_name']
                     ])
                     
                     # Update results
@@ -526,9 +530,6 @@ class ColdMemory:
                 except Exception as e:
                     logger.error(f"Error importing {file_path}: {e}")
                     results['errors'].append(str(file_path))
-                finally:
-                    # Clean up temporary table
-                    self.con.execute("DROP TABLE IF EXISTS temp_import")
                     
         except Exception as e:
             logger.error(f"Error during batch import: {e}")
