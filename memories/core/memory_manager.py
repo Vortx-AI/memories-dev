@@ -20,7 +20,7 @@ from .cold import ColdMemory
 from .glacier import GlacierMemory
 
 # Initialize logger
-logger = logging.getLogger(__name__)
+#logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG = {
     'memory': {
@@ -168,9 +168,9 @@ class MemoryManager:
         try:
             import duckdb
             self.db_connection = duckdb.connect(database=':memory:', read_only=False)
-            self.logger.info("Initialized DuckDB connection")
+            #self.logger.info("Initialized DuckDB connection")
         except Exception as e:
-            self.logger.error(f"Failed to initialize DuckDB: {e}")
+            #self.logger.error(f"Failed to initialize DuckDB: {e}")
             self.db_connection = None
 
     def _init_red_hot_memory(self) -> None:
@@ -182,7 +182,7 @@ class MemoryManager:
             force_cpu=config['force_cpu'],
             index_type=config['index_type']
         )
-        logger.info("Initialized red hot memory tier")
+        #logger.info("Initialized red hot memory tier")
 
     def _init_hot_memory(self) -> None:
         """Initialize hot memory tier."""
@@ -191,7 +191,7 @@ class MemoryManager:
             redis_url=config['redis_url'],
             redis_db=config['redis_db']
         )
-        logger.info("Initialized hot memory tier")
+        #logger.info("Initialized hot memory tier")
 
     def _init_warm_memory(self) -> None:
         """Initialize warm memory tier."""
@@ -199,7 +199,7 @@ class MemoryManager:
         self.warm = WarmMemory(
             duckdb_connection=self.con
         )
-        logger.info("Initialized warm memory tier")
+        #logger.info("Initialized warm memory tier")
 
     def _init_cold_memory(self) -> None:
         """Initialize cold memory with current configuration."""
@@ -221,7 +221,7 @@ class MemoryManager:
         else:
             # Initialize with default configuration
             self.cold = ColdMemory(connection=self.con)
-        logger.info("Initialized cold memory tier")
+        #logger.info("Initialized cold memory tier")
 
     def _init_glacier_memory(self) -> None:
         """Initialize glacier memory tier."""
@@ -229,7 +229,7 @@ class MemoryManager:
         self.glacier = GlacierMemory(
             remote_storage=config.get('remote_storage', {})
         )
-        logger.info("Initialized glacier memory tier")
+        #logger.info("Initialized glacier memory tier")
 
     def get_memory_path(self, memory_type: str) -> Optional[Path]:
         """Get path for specific memory type"""
@@ -241,7 +241,7 @@ class MemoryManager:
             return self.config['memory']['base_path'] / config['path']
             
         except Exception as e:
-            self.logger.error(f"Error getting {memory_type} memory path: {e}")
+            #self.logger.error(f"Error getting {memory_type} memory path: {e}")
             return None
 
     def store(
@@ -260,7 +260,7 @@ class MemoryManager:
             metadata: Optional metadata to store with the data
         """
         if not isinstance(data, dict) and tier != "red_hot":
-            logger.error("Data must be a dictionary for non-red_hot tiers")
+            #logger.error("Data must be a dictionary for non-red_hot tiers")
             return
         
         # Ensure timestamp exists in metadata
@@ -282,10 +282,11 @@ class MemoryManager:
             elif tier == "glacier" and self.glacier:
                 self.glacier.store(data)
             else:
-                logger.error(f"Invalid memory tier: {tier}")
+                #logger.error(f"Invalid memory tier: {tier}")
+                print(f"Invalid memory tier: {tier}")
         except Exception as e:
-            logger.error(f"Failed to store in {tier} memory: {e}")
-    
+            #logger.error(f"Failed to store in {tier} memory: {e}")
+            print(f"Failed to store in {tier} memory: {e}")
     def search_vectors(
         self,
         query_vector: Any,
@@ -303,13 +304,13 @@ class MemoryManager:
             List of results with distances and metadata
         """
         if not self.red_hot:
-            logger.error("Red hot memory not available")
+            #logger.error("Red hot memory not available")
             return []
         
         try:
             return self.red_hot.search(query_vector, k, metadata_filter)
         except Exception as e:
-            logger.error(f"Failed to search vectors: {e}")
+            #logger.error(f"Failed to search vectors: {e}")
             return []
     
     def retrieve(self, query: Dict[str, Any], tier: str = "hot") -> Optional[Dict[str, Any]]:
@@ -332,10 +333,10 @@ class MemoryManager:
             elif tier == "glacier" and self.glacier:
                 return self.glacier.retrieve(query)
             else:
-                logger.error(f"Invalid memory tier: {tier}")
+                #logger.error(f"Invalid memory tier: {tier}")
                 return None
         except Exception as e:
-            logger.error(f"Failed to retrieve from {tier} memory: {e}")
+            #logger.error(f"Failed to retrieve from {tier} memory: {e}")
             return None
     
     def retrieve_all(self, tier: str = "hot") -> List[Dict[str, Any]]:
@@ -357,10 +358,10 @@ class MemoryManager:
             elif tier == "glacier" and self.glacier:
                 return self.glacier.retrieve_all()
             else:
-                logger.error(f"Invalid memory tier: {tier}")
+                #logger.error(f"Invalid memory tier: {tier}")
                 return []
         except Exception as e:
-            logger.error(f"Failed to retrieve all from {tier} memory: {e}")
+            #logger.error(f"Failed to retrieve all from {tier} memory: {e}")
             return []
     
     def clear(self, tier: Optional[str] = None) -> None:
@@ -391,8 +392,8 @@ class MemoryManager:
                 if self.glacier:
                     self.glacier.clear()
         except Exception as e:
-            logger.error(f"Failed to clear memory: {e}")
-    
+            #logger.error(f"Failed to clear memory: {e}")
+            print(f"Failed to clear memory: {e}")
     def cleanup(self) -> None:
         """Cleanup all memory tiers and connections."""
         # Cleanup memory tiers
@@ -454,7 +455,8 @@ class MemoryManager:
             if glacier_config:
                 self._init_glacier_memory()
         
-        self.logger.info("Memory tiers configuration updated")
+        #self.logger.info("Memory tiers configuration updated")
+        print("Memory tiers configuration updated")
 
     def add_to_tier(
         self,
@@ -497,7 +499,7 @@ class MemoryManager:
         try:
             # Validate tier
             if tier not in ['red_hot', 'hot', 'warm', 'cold', 'glacier']:
-                self.logger.error(f"Invalid memory tier: {tier}")
+                #self.logger.error(f"Invalid memory tier: {tier}")
                 return False
 
             # Ensure metadata has timestamp
@@ -509,7 +511,7 @@ class MemoryManager:
             # Handle each tier appropriately
             if tier == 'red_hot':
                 if not key:
-                    self.logger.error("Key is required for red_hot tier")
+                    #self.logger.error("Key is required for red_hot tier")
                     return False
                 if self.red_hot:
                     self.red_hot.store(key=key, vector_data=data, metadata=metadata)
@@ -517,7 +519,7 @@ class MemoryManager:
 
             elif tier == 'hot':
                 if not isinstance(data, dict):
-                    self.logger.error("Data must be a dictionary for hot tier")
+                    #self.logger.error("Data must be a dictionary for hot tier")
                     return False
                 if self.hot:
                     self.hot.store(data)
@@ -525,7 +527,7 @@ class MemoryManager:
 
             elif tier == 'warm':
                 if not isinstance(data, dict):
-                    self.logger.error("Data must be a dictionary for warm tier")
+                    #self.logger.error("Data must be a dictionary for warm tier")
                     return False
                 if self.warm:
                     table_name = kwargs.get('table_name', 'warm_data')
@@ -543,7 +545,7 @@ class MemoryManager:
                         self.cold.store(data)
                         return True
                     else:
-                        self.logger.error("Data must be a dictionary or path to Parquet file for cold tier")
+                        #self.logger.error("Data must be a dictionary or path to Parquet file for cold tier")
                         return False
 
             elif tier == 'glacier':
@@ -554,7 +556,7 @@ class MemoryManager:
                     elif isinstance(data, (str, Path)):  # File path
                         path = Path(data)
                         if not path.exists():
-                            self.logger.error(f"File not found: {path}")
+                            #self.logger.error(f"File not found: {path}")
                             return False
                         # Add file-specific metadata
                         file_metadata = {
@@ -569,13 +571,13 @@ class MemoryManager:
                         )
                         return True
                     else:
-                        self.logger.error("Data must be a dictionary or file path for glacier tier")
+                        #self.logger.error("Data must be a dictionary or file path for glacier tier")
                         return False
 
             return False
 
         except Exception as e:
-            self.logger.error(f"Failed to add data to {tier} tier: {e}")
+            #self.logger.error(f"Failed to add data to {tier} tier: {e}")
             return False
 
     def batch_import_parquet(
@@ -616,7 +618,13 @@ class MemoryManager:
             )
             
             # Log the results
-            logger.info(
+            #logger.info(
+            #    f"Parquet import complete - "
+            #    f"Processed: {results['files_processed']} files, "
+            #    f"Imported: {results['records_imported']} records, "
+            #    f"Size: {results['total_size'] / (1024*1024):.2f} MB"
+            #)
+            print(
                 f"Parquet import complete - "
                 f"Processed: {results['files_processed']} files, "
                 f"Imported: {results['records_imported']} records, "
@@ -624,12 +632,13 @@ class MemoryManager:
             )
             
             if results['errors']:
-                logger.warning(f"Errors occurred in {len(results['errors'])} files")
+                #logger.warning(f"Errors occurred in {len(results['errors'])} files")
+                print(f"Errors occurred in {len(results['errors'])} files")
                 
             return results
             
         except Exception as e:
-            logger.error(f"Failed to import parquet files: {e}")
+            #logger.error(f"Failed to import parquet files: {e}")
             raise
 
     def cleanup_cold_memory(self, remove_storage: bool = True) -> None:
@@ -639,18 +648,18 @@ class MemoryManager:
             remove_storage: Whether to remove the entire storage directory after cleanup
         """
         if not self.cold:
-            self.logger.warning("Cold memory is not enabled")
+            #self.logger.warning("Cold memory is not enabled")
             return
             
         try:
             storage_dir = self.config['memory']['base_path']
             if not storage_dir.exists():
-                self.logger.info("No existing storage directory found")
+                #self.logger.info("No existing storage directory found")
                 return
                 
             cold_dir = storage_dir / self.config['memory']['cold']['path']
             if not cold_dir.exists():
-                self.logger.info("No existing cold storage directory found")
+                #self.logger.info("No existing cold storage directory found")
                 return
                 
             # Clear all tables and their data
@@ -660,19 +669,19 @@ class MemoryManager:
             # Close DuckDB connection if it exists
             if hasattr(self, 'cold_db'):
                 self.cold_db.close()
-                self.logger.info("Closed cold DuckDB connection")
+                #self.logger.info("Closed cold DuckDB connection")
             
             # Optionally remove the entire storage directory
             if remove_storage and storage_dir.exists():
-                self.logger.info("Removing storage directory...")
+                #self.logger.info("Removing storage directory...")
                 import shutil
                 shutil.rmtree(storage_dir)
-                self.logger.info("Storage directory removed")
+                #self.logger.info("Storage directory removed")
                 
-            self.logger.info("Cold memory cleanup completed successfully")
-            
+            #self.logger.info("Cold memory cleanup completed successfully")
+            print("Cold memory cleanup completed successfully")
         except Exception as e:
-            self.logger.error(f"Error during cold memory cleanup: {e}")
+            #self.logger.error(f"Error during cold memory cleanup: {e}")
             raise 
 
     def add_to_hot_memory(self, vector: np.ndarray, metadata: dict):
