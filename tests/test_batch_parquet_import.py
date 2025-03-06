@@ -157,7 +157,6 @@ def memory_manager(tmp_path):
                 'redis_url': 'redis://localhost:6379',
                 'redis_db': 0
             },
-            
             'cold': {
                 'path': str(tmp_path / 'cold'),
                 'max_size': 10737418240,  # 10GB

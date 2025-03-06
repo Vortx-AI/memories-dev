@@ -123,22 +123,21 @@ def memory_manager(tmp_path):
             'base_path': str(tmp_path),
             'red_hot': {
                 'path': str(tmp_path / 'red_hot'),
-                'max_size': 1000000,
-                'vectom_dim': 384,
+                'max_size': 1000000,  # 1M vectors
+                'vectom_dim': 384,    # Default for all-MiniLM-L6-v2
                 'gpu_id': 0,
-                'force_cpu': True,
-                'index_type': 'Flat'
+                'force_cpu': True,    # Default to CPU for stability
+                'index_type': 'Flat'  # Simple Flat index
             },
             'hot': {
                 'path': str(tmp_path / 'hot'),
-                'max_size': 104857600,
+                'max_size': 104857600,  # 100MB
                 'redis_url': 'redis://localhost:6379',
                 'redis_db': 0
             },
-            
             'cold': {
                 'path': str(tmp_path / 'cold'),
-                'max_size': 10737418240,
+                'max_size': 10737418240,  # 10GB
                 'duckdb': {
                     'memory_limit': '4GB',
                     'threads': 4,
@@ -152,6 +151,8 @@ def memory_manager(tmp_path):
     }
     manager = MemoryManager(config=config)
     yield manager
+    
+    # Cleanup
     manager.cleanup()
 
 @pytest.fixture
