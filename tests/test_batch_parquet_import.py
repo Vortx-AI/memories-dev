@@ -146,7 +146,7 @@ def memory_manager(tmp_path):
             'red_hot': {
                 'path': str(tmp_path / 'red_hot'),
                 'max_size': 1000000,  # 1M vectors
-                'vectom_dim': 384,    # Default for all-MiniLM-L6-v2
+                'vector_dim': 384,    # Default for all-MiniLM-L6-v2
                 'gpu_id': 0,
                 'force_cpu': True,    # Default to CPU for stability
                 'index_type': 'Flat'  # Simple Flat index

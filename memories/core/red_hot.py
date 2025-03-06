@@ -21,17 +21,17 @@ logger = logging.getLogger(__name__)
 class RedHotMemory:
     """Red hot memory layer using FAISS for ultra-fast vector similarity search."""
     
-    def __init__(self, vectom_dim: int = 384, max_size: int = 10000, gpu_id: int = 0, force_cpu: bool = True, index_type: str = 'L2'):
+    def __init__(self, vector_dim: int = 384, max_size: int = 10000, gpu_id: int = 0, force_cpu: bool = True, index_type: str = 'L2'):
         """Initialize red-hot memory with FAISS index.
         
         Args:
-            vectom_dim: Dimension of vectors to store
+            vector_dim: Dimension of vectors to store
             max_size: Maximum number of vectors to store
             gpu_id: GPU device ID to use (if available)
             force_cpu: Whether to force CPU usage even if GPU is available
             index_type: Type of FAISS index to use ('L2' or 'IP')
         """
-        self.vector_dim = vectom_dim
+        self.vector_dim = vector_dim
         self.max_size = max_size
         self.gpu_id = gpu_id
         self.force_cpu = force_cpu
