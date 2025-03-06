@@ -258,7 +258,7 @@ async def test_download_vector_data(data_manager, bbox):
             bbox=bbox
         )
         
-        
+        assert len(results) == 1
         assert all('type' in item for item in results)
         assert all('geometry' in item for item in results)
 

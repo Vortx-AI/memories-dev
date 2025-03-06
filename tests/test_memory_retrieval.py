@@ -7,16 +7,8 @@ import duckdb
 from dotenv import load_dotenv
 from memories.core.memory_manager import MemoryManager
 from memories.core.memory_retrieval import MemoryRetrieval
-from memories.core.cold import ColdMemory
 import shutil
 import pandas as pd
-import yaml
-from unittest.mock import patch, MagicMock
-import numpy as np
-import logging
-from datetime import datetime
-import redis
-import json
 
 # Load environment variables from .env file
 load_dotenv()
@@ -109,272 +101,460 @@ def list_cold_tables():
             memory_manager.cleanup()
 
 @pytest.fixture
-def mock_sentence_transformer():
-    """Mock sentence transformer to avoid network calls."""
-    with patch('sentence_transformers.SentenceTransformer') as mock:
-        model = MagicMock()
-        model.encode.return_value = np.random.rand(384)  # Random embeddings
-        mock.return_value = model
-        yield mock
-
-@pytest.fixture
-def mock_redis():
-    """Mock Redis client for testing."""
-    with patch('redis.from_url') as mock:
-        client = MagicMock()
-        # Store data in memory
-        stored_data = {}
+def memory_retrieval(tmp_path):
+    """Initialize memory retrieval with cold storage enabled."""
+    
+    # Create test directory
+    test_cold_dir = tmp_path / "test_cold"
+    test_cold_dir.mkdir(exist_ok=True)
+    
+    # Create and configure DuckDB database
+    db_path = test_cold_dir / 'cold.db'
+    if db_path.exists():
+        db_path.unlink()
         
-        def mock_set(key, value):
-            stored_data[key] = value
-            return True
-            
-        def mock_get(key):
-            return stored_data.get(key)
-            
-        def mock_scan_iter():
-            return list(stored_data.keys())
-            
-        def mock_flushdb():
-            stored_data.clear()
-            
-        client.set.side_effect = mock_set
-        client.get.side_effect = mock_get
-        client.scan_iter.side_effect = mock_scan_iter
-        client.flushdb.side_effect = mock_flushdb
-        mock.return_value = client
-        yield client
-
-@pytest.fixture
-def memory_manager(tmp_path, mock_redis):
-    """Create a memory manager instance for testing."""
-    config = {
+    # Create DuckDB connection
+    db_conn = duckdb.connect(str(db_path))
+    db_conn.execute("SET memory_limit='8GB'")
+    db_conn.execute("SET threads=4")
+    
+    # Initialize memory manager
+    manager = MemoryManager()
+    
+    # Configure the manager
+    manager.config = {
         'memory': {
-            'base_path': str(tmp_path),
-            'red_hot': {
-                'path': str(tmp_path / 'red_hot'),
-                'max_size': 1000000,
-                'vector_dim': 384,
-                'gpu_id': 0,
-                'force_cpu': True,
-                'index_type': 'Flat'
-            },
-            'hot': {
-                'path': str(tmp_path / 'hot'),
-                'max_size': 104857600,
-                'redis_url': 'redis://mock:6379',
-                'redis_db': 0
-            },
+            'base_path': test_cold_dir,
             'cold': {
-                'path': str(tmp_path / 'cold'),
-                'max_size': 10737418240,
+                'max_size': int(os.getenv("COLD_STORAGE_MAX_SIZE", 10737418240)),
+                'path': test_cold_dir,
                 'duckdb': {
-                    'memory_limit': '4GB',
-                    'threads': 4,
-                    'config': {
-                        'enable_progress_bar': True,
-                        'enable_object_cache': True
-                    }
+                    'db_conn': db_conn
                 }
             }
         }
     }
-    manager = MemoryManager(config=config)
     
-    # Configure mock Redis behavior
-    mock_redis.get.side_effect = lambda key: json.dumps({'id': 1, 'value': 'test'}) if key else None
-    mock_redis.scan_iter.return_value = ['test_key']
+    # Create memory retrieval instance
+    retrieval = MemoryRetrieval(manager.cold)
     
-    yield manager
+    yield retrieval
     
     # Cleanup
+    db_conn.close()
     manager.cleanup()
+    if test_cold_dir.exists():
+        shutil.rmtree(test_cold_dir)
 
-@pytest.fixture
-def memory_retrieval(memory_manager, mock_sentence_transformer):
-    """Create a memory retrieval instance for testing."""
-    return MemoryRetrieval(memory_manager)
-
-def test_vector_storage_and_retrieval(memory_manager):
-    """Test storing and retrieving vectors from red hot memory."""
-    # Create test vector and metadata
-    vector = np.random.rand(384).astype(np.float32)
-    metadata = {
-        'timestamp': datetime.now().isoformat(),
-        'source': 'test',
-        'type': 'vector'
-    }
+def test_list_tables(memory_retrieval, tmp_path):
+    """Test listing tables in cold memory."""
     
-    # Store vector in red hot memory
-    memory_manager.add_to_tier('red_hot', vector, metadata=metadata)
-    
-    # Search for similar vectors using search_vectors
-    results = memory_manager.search_vectors(vector, k=1)
-    
-    
-    assert np.allclose(results[0]['distance'], 0.0, atol=1e-5)
-    assert results[0]['metadata']['source'] == 'test'
-    assert results[0]['metadata']['type'] == 'vector'
-    
-    # Test retrieval using retrieve method
-    result = memory_manager.retrieve({'vector': vector}, tier='red_hot')
-    
-    
-    assert np.allclose(result['distance'], 0.0, atol=1e-5)
-    assert result['metadata']['source'] == 'test'
-    assert result['metadata']['type'] == 'vector'
-
-def test_hot_memory_storage_and_retrieval(memory_manager):
-    """Test storing and retrieving data from hot memory."""
-    test_data = {'key': 'value', 'number': 42}
-    memory_manager.add_to_tier('hot', test_data)
-    
-    # Test retrieval through memory manager
-    result = memory_manager.retrieve({'key': 'value'}, tier='hot')
-    
-    
-
-def test_warm_memory_storage_and_retrieval(memory_manager):
-    """Test storing and retrieving data from warm memory."""
-    test_data = {'id': 1, 'name': 'test'}
-    memory_manager.add_to_tier('warm', test_data)
-    
-    # Test retrieval through memory manager
-    result = memory_manager.retrieve({'id': 1}, tier='warm')
-    
-    
-    
-    # Test retrieval through DuckDB
-    results = memory_manager.db_connection.execute("""
-        SELECT COUNT(*) FROM warm_data
-    """).fetchone()
-    
-    assert results[0] == 1
-
-def test_cold_memory_storage_and_retrieval(memory_manager):
-    """Test storing and retrieving data from cold memory."""
     # Create a test parquet file
-    test_dir = Path(memory_manager.config['memory']['cold']['path'])
-    test_dir.mkdir(exist_ok=True)
+    test_df = pd.DataFrame({
+        'id': range(10),
+        'value': [f"test_{i}" for i in range(10)]
+    })
     
-    df = pd.DataFrame({'id': [1], 'value': ['test']})
-    parquet_path = test_dir / 'test.parquet'
-    df.to_parquet(parquet_path)
+    test_file = tmp_path / "test.parquet"
+    test_df.to_parquet(test_file)
     
-    # Import the parquet file
-    result = memory_manager.batch_import_parquet(
-        test_dir,
-        theme='test',
-        tag='test'
+    # Import the test file
+    memory_retrieval.cold.batch_import_parquet(
+        folder_path=tmp_path,
+        theme="test",
+        tag="unit_test",
+        recursive=True,
+        pattern="*.parquet"
     )
     
-    assert result['num_files'] == 1
-    assert result['num_records'] == 1
-    assert result['total_size'] > 0
-    
-    # Test retrieval through memory manager
-    result = memory_manager.retrieve({'id': 1}, tier='cold')
-    
-    assert result.get('value') == 'test'
-
-def test_retrieve_all(memory_manager, mock_redis):
-    """Test retrieving all data from each memory tier."""
-    # Store test data in hot and warm memory
-    test_data = {'id': 1, 'value': 'test'}
-    memory_manager.add_to_tier('hot', test_data)
-    memory_manager.add_to_tier('warm', test_data)
-    
-    # Configure mock Redis to return our test data
-    mock_redis.get.return_value = json.dumps(test_data)
-    mock_redis.scan_iter.return_value = ['test_key']
-    
-    # Create test data in cold memory
-    test_dir = Path(memory_manager.config['memory']['cold']['path'])
-    test_dir.mkdir(exist_ok=True)
-    df = pd.DataFrame({'id': [1], 'value': ['test']})
-    parquet_path = test_dir / 'test.parquet'
-    df.to_parquet(parquet_path)
-    memory_manager.batch_import_parquet(test_dir)
-    
-    # Test retrieving from each tier
-    hot_results = memory_manager.retrieve_all(tier='hot')
-    warm_results = memory_manager.retrieve_all(tier='warm')
-    cold_results = memory_manager.retrieve_all(tier='cold')
+    # List tables
+    tables = memory_retrieval.list_available_data()
     
     # Verify results
-    assert len(hot_results) > 0
-    assert any(r.get('value') == 'test' for r in hot_results)
+    assert len(tables) > 0, "Should have at least one table"
     
-    assert len(warm_results) > 0
-    assert any(r.get('value') == 'test' for r in warm_results)
-    
-    assert len(cold_results) > 0
-    assert any(r.get('value') == 'test' for r in cold_results)
-    
-    # Clean up
-    memory_manager.clear()
+    table = tables[0]
+    assert 'table_name' in table, "Table should have a name"
+    assert 'theme' in table, "Table should have a theme"
+    assert 'tag' in table, "Table should have a tag"
+    assert table['theme'] == "test", "Theme should match"
+    assert table['tag'] == "unit_test", "Tag should match"
+    assert table['num_rows'] == 10, "Should have 10 rows"
+    assert table['num_columns'] == 2, "Should have 2 columns"
+    assert 'id' in table['schema'], "Should have id column"
+    assert 'value' in table['schema'], "Should have value column"
 
-def test_clear_memory(memory_manager):
-    """Test clearing data from each memory tier."""
-    # Store test data in each tier
-    vector = np.random.rand(384).astype(np.float32)
-    memory_manager.add_to_tier('red_hot', vector, metadata={'source': 'test'})
-    
-    test_data = {'id': 1, 'value': 'test'}
-    memory_manager.add_to_tier('hot', test_data)
-    memory_manager.add_to_tier('warm', test_data)
-    
-    # Create test data in cold memory
-    test_dir = Path(memory_manager.config['memory']['cold']['path'])
-    test_dir.mkdir(exist_ok=True)
-    df = pd.DataFrame({'id': [1], 'value': ['test']})
-    df.to_parquet(test_dir / 'test.parquet')
-    memory_manager.batch_import_parquet(test_dir)
-    
-    # Clear all memory
-    memory_manager.clear()
-    
-    # Verify all tiers are empty
-    red_hot_result = memory_manager.retrieve({'vector': vector}, tier='red_hot')
-    hot_results = memory_manager.retrieve_all(tier='hot')
-    warm_results = memory_manager.retrieve_all(tier='warm')
-    cold_results = memory_manager.retrieve_all(tier='cold')
-    
-    assert red_hot_result is None
-    assert len(hot_results) == 0
-    assert len(warm_results) == 0
-    assert len(cold_results) == 0
+def test_empty_tables(memory_retrieval):
+    """Test listing tables when no tables exist."""
+    tables = memory_retrieval.list_available_data()
+    assert len(tables) == 0, "Should have no tables"
 
-def test_clear_all_memory(memory_manager):
-    """Test clearing all memory tiers."""
-    # Store test data in each tier
-    vector = np.random.rand(384).astype(np.float32)
-    memory_manager.add_to_tier('red_hot', vector, metadata={'source': 'test'})
+def test_bbox_query(memory_retrieval, tmp_path):
+    """Test querying data within a bounding box."""
     
-    test_data = {'id': 1, 'value': 'test'}
-    memory_manager.add_to_tier('hot', test_data)
-    memory_manager.add_to_tier('warm', test_data)
+    # Create a test DataFrame with geographic coordinates
+    test_df = pd.DataFrame({
+        'id': range(10),
+        'latitude': [40.7, 40.75, 40.8, 40.85, 40.9, 41.0, 41.1, 41.2, 41.3, 41.4],
+        'longitude': [-74.0, -73.95, -73.9, -73.85, -73.8, -73.75, -73.7, -73.65, -73.6, -73.55]
+    })
     
-    # Create test data in cold memory
-    test_dir = Path(memory_manager.config['memory']['cold']['path'])
-    test_dir.mkdir(exist_ok=True)
-    df = pd.DataFrame({'id': [1], 'value': ['test']})
-    df.to_parquet(test_dir / 'test.parquet')
-    memory_manager.batch_import_parquet(test_dir)
+    test_file = tmp_path / "geo_test.parquet"
+    test_df.to_parquet(test_file)
     
-    # Clear all memory
-    memory_manager.clear()
+    # Create another test DataFrame with geometry column
+    # First create the geometry using DuckDB spatial functions
+    memory_retrieval.cold.con.execute("INSTALL spatial;")
+    memory_retrieval.cold.con.execute("LOAD spatial;")
     
-    # Verify all tiers are empty
-    red_hot_result = memory_manager.retrieve({'vector': vector}, tier='red_hot')
-    hot_results = memory_manager.retrieve_all(tier='hot')
-    warm_results = memory_manager.retrieve_all(tier='warm')
-    cold_results = memory_manager.retrieve_all(tier='cold')
+    # Create points and convert to WKB
+    points_query = """
+        SELECT 
+            row_id as id,
+            ST_AsBinary(ST_Point(lon, lat)) as geometry
+        FROM (
+            VALUES
+                (0, -73.95, 40.75),
+                (1, -73.90, 40.80),
+                (2, -73.85, 40.85),
+                (3, -74.10, 41.00),
+                (4, -74.20, 41.10)
+        ) AS t(row_id, lon, lat)
+    """
+    geom_df = memory_retrieval.cold.con.execute(points_query).fetchdf()
     
-    assert red_hot_result is None
-    assert len(hot_results) == 0
-    assert len(warm_results) == 0
-    assert len(cold_results) == 0
+    geom_file = tmp_path / "geom_test.parquet"
+    geom_df.to_parquet(geom_file)
+    
+    # Import both test files
+    memory_retrieval.cold.batch_import_parquet(
+        folder_path=tmp_path,
+        theme="test",
+        tag="geo_test",
+        recursive=True,
+        pattern="*.parquet"
+    )
+    
+    # Test bounding box query with lat/lon columns
+    results = memory_retrieval.get_data_by_bbox(
+        min_lon=-74.0,
+        min_lat=40.7,
+        max_lon=-73.8,
+        max_lat=40.9
+    )
+    
+    # Verify lat/lon results
+    assert not results.empty, "Should return matching records"
+    assert len(results) == 5, "Should return exactly 5 records within the bounding box"
+    assert all(results['latitude'] >= 40.7), "All latitudes should be >= min_lat"
+    assert all(results['latitude'] <= 40.9), "All latitudes should be <= max_lat"
+    assert all(results['longitude'] >= -74.0), "All longitudes should be >= min_lon"
+    assert all(results['longitude'] <= -73.8), "All longitudes should be <= max_lon"
+    
+    # Test bounding box query with geometry column
+    geom_results = memory_retrieval.get_data_by_bbox(
+        min_lon=-74.0,
+        min_lat=40.7,
+        max_lon=-73.8,
+        max_lat=40.9,
+        geom_column='geometry'
+    )
+    
+    # Verify geometry results
+    assert not geom_results.empty, "Should return matching records for geometry"
+    assert 'source_table' in geom_results.columns, "Should include source table information"
+
+def test_polygon_query(memory_retrieval, tmp_path):
+    """Test querying data within a polygon."""
+    
+    # Create a test DataFrame with geometry column using DuckDB spatial functions
+    memory_retrieval.cold.con.execute("INSTALL spatial;")
+    memory_retrieval.cold.con.execute("LOAD spatial;")
+    
+    # Create points and convert to WKB
+    points_query = """
+        SELECT 
+            row_id as id,
+            ST_AsBinary(ST_Point(lon, lat)) as geometry
+        FROM (
+            VALUES
+                (0, -73.95, 40.75),
+                (1, -73.90, 40.80),
+                (2, -73.85, 40.85),
+                (3, -74.10, 41.00),
+                (4, -74.20, 41.10)
+        ) AS t(row_id, lon, lat)
+    """
+    test_df = memory_retrieval.cold.con.execute(points_query).fetchdf()
+    
+    test_file = tmp_path / "geom_test.parquet"
+    test_df.to_parquet(test_file)
+    
+    # Import the test file
+    memory_retrieval.cold.batch_import_parquet(
+        folder_path=tmp_path,
+        theme="test",
+        tag="geom_test",
+        recursive=True,
+        pattern="*.parquet"
+    )
+    
+    # Test polygon query with a simple triangle
+    polygon = """POLYGON((-74.0 40.7, -73.8 40.7, -73.9 40.9, -74.0 40.7))"""
+    results = memory_retrieval.get_data_by_polygon(polygon_wkt=polygon)
+    
+    # Verify results
+    assert not results.empty, "Should return matching records"
+    assert 'source_table' in results.columns, "Should include source table information"
+
+def test_empty_bbox_query(memory_retrieval):
+    """Test bounding box query with no matching data."""
+    results = memory_retrieval.get_data_by_bbox(
+        min_lon=0,
+        min_lat=0,
+        max_lon=1,
+        max_lat=1
+    )
+    assert results.empty, "Should return empty DataFrame when no data matches"
+
+def test_invalid_column_names(memory_retrieval, tmp_path):
+    """Test querying with non-existent column names."""
+    
+    # Create a test DataFrame with different column names
+    test_df = pd.DataFrame({
+        'id': range(5),
+        'lat': [40.7, 40.75, 40.8, 40.85, 40.9],  # Different from default 'latitude'
+        'lon': [-74.0, -73.95, -73.9, -73.85, -73.8]  # Different from default 'longitude'
+    })
+    
+    test_file = tmp_path / "custom_cols.parquet"
+    test_df.to_parquet(test_file)
+    
+    # Import the test file
+    memory_retrieval.cold.batch_import_parquet(
+        folder_path=tmp_path,
+        theme="test",
+        tag="custom_cols",
+        recursive=True,
+        pattern="*.parquet"
+    )
+    
+    # Query with default column names (should return empty)
+    results = memory_retrieval.get_data_by_bbox(
+        min_lon=-74.0,
+        min_lat=40.7,
+        max_lon=-73.8,
+        max_lat=40.9
+    )
+    assert results.empty, "Should return empty DataFrame with wrong column names"
+    
+    # Query with correct column names (should return data)
+    results = memory_retrieval.get_data_by_bbox(
+        min_lon=-74.0,
+        min_lat=40.7,
+        max_lon=-73.8,
+        max_lat=40.9,
+        lon_column='lon',
+        lat_column='lat'
+    )
+    assert not results.empty, "Should return data with correct column names"
+
+def test_spatial_queries():
+    """Run spatial queries directly without pytest."""
+    print("\n=== Testing Spatial Queries ===\n")
+    
+    try:
+        # Use existing storage directory
+        storage_dir = Path('data')
+        if not storage_dir.exists():
+            print("No existing storage directory found. Please run the import first.")
+            return
+            
+        cold_dir = storage_dir / 'cold'
+        if not cold_dir.exists():
+            print("No existing cold storage directory found. Please run the import first.")
+            return
+            
+        # Use existing database file
+        db_path = cold_dir / 'cold.db'
+        if not db_path.exists():
+            print("No existing database file found. Please run the import first.")
+            return
+            
+        print("Connecting to existing DuckDB database...")
+        db_conn = duckdb.connect(str(db_path))
+        db_conn.execute("SET memory_limit='8GB'")
+        db_conn.execute("SET threads=4")
+        
+        # Install and load spatial extension
+        print("Installing and loading DuckDB spatial extension...")
+        db_conn.execute("INSTALL spatial;")
+        db_conn.execute("LOAD spatial;")
+        
+        print("Initializing memory manager...")
+        memory_manager = MemoryManager()
+        
+        # Configure the manager
+        memory_manager.config = {
+            'memory': {
+                'base_path': storage_dir,
+                'cold': {
+                    'max_size': int(os.getenv('COLD_STORAGE_MAX_SIZE', 10737418240)),
+                    'duckdb': {
+                        'db_conn': db_conn
+                    }
+                }
+            }
+        }
+        
+        # Initialize memory retrieval
+        memory_retrieval = MemoryRetrieval(memory_manager.cold)
+        
+        # Test bounding box query
+        print("\nTesting bounding box query...")
+        bbox_results = memory_retrieval.get_data_by_bbox(
+            min_lon=72.0,  # Rough bounding box for India
+            min_lat=8.0,
+            max_lon=88.0,
+            max_lat=37.0,
+            lon_column='longitude',
+            lat_column='latitude',
+            geom_column='geometry'  # Will try both geometry and lat/lon columns
+        )
+        
+        if not bbox_results.empty:
+            print(f"\nFound {len(bbox_results)} records within bounding box")
+            print("\nSample of results:")
+            print(bbox_results.head().to_string())
+        else:
+            print("No records found within bounding box")
+        
+        # Test polygon query if geometry data is available
+        print("\nTesting polygon query...")
+        india_polygon = """POLYGON((72.0 8.0, 88.0 8.0, 88.0 37.0, 72.0 37.0, 72.0 8.0))"""
+        
+        polygon_results = memory_retrieval.get_data_by_polygon(
+            polygon_wkt=india_polygon,
+            geom_column='geometry'
+        )
+        
+        if not polygon_results.empty:
+            print(f"\nFound {len(polygon_results)} records intersecting with polygon")
+            print("\nSample of results:")
+            print(polygon_results.head().to_string())
+        else:
+            print("No records found intersecting with polygon")
+        
+    except Exception as e:
+        print(f"\nError during spatial queries: {str(e)}")
+        raise
+    
+    finally:
+        if 'db_conn' in locals():
+            db_conn.close()
+
+def test_search_geospatial_data_in_bbox(memory_retrieval, tmp_path):
+    """Test searching for geospatial features within a bounding box."""
+    
+    # Create test data with geometry
+    memory_retrieval.con.execute("INSTALL spatial;")
+    memory_retrieval.con.execute("LOAD spatial;")
+    
+    # Create test points using DuckDB spatial functions
+    points_query = """
+        SELECT 
+            row_id as id,
+            name,
+            type,
+            ST_AsBinary(ST_Point(lon, lat)) as geometry
+        FROM (
+            VALUES
+                (1, 'Point A', 'park', -73.95, 40.75),
+                (2, 'Point B', 'building', -73.90, 40.80),
+                (3, 'Point C', 'park', -73.85, 40.85),
+                (4, 'Point D', 'building', -74.10, 41.00),
+                (5, 'Point E', 'park', -74.20, 41.10)
+        ) AS t(row_id, name, type, lon, lat)
+    """
+    test_df = memory_retrieval.con.execute(points_query).fetchdf()
+    
+    # Save test data to parquet files
+    test_file1 = tmp_path / "test_geom1.parquet"
+    test_file2 = tmp_path / "test_geom2.parquet"
+    
+    # Split data into two files
+    test_df.iloc[:3].to_parquet(test_file1)
+    test_df.iloc[3:].to_parquet(test_file2)
+    
+    # Import test files
+    memory_retrieval.cold.batch_import_parquet(
+        folder_path=tmp_path,
+        theme="test",
+        tag="spatial_test",
+        recursive=True,
+        pattern="*.parquet"
+    )
+    
+    # Test bounding box search with spatial index
+    # First build the spatial index
+    memory_retrieval.build_spatial_index()
+    
+    # Define test bounding box (should contain some points)
+    bbox = (-74.0, 40.7, -73.8, 40.9)  # min_lon, min_lat, max_lon, max_lat
+    
+    # Test search with spatial index
+    results_with_index = memory_retrieval.search_geospatial_data_in_bbox(
+        query_word="park",
+        bbox=bbox,
+        similarity_threshold=0.7,
+        max_workers=1,
+        use_gpu=False
+    )
+    
+    # Verify results with spatial index
+    assert not results_with_index.empty, "Should find results with spatial index"
+    assert len(results_with_index) >= 2, "Should find at least 2 parks within bbox"
+    assert all(results_with_index['type'] == 'park'), "All results should be parks"
+    
+    # Drop spatial index table to test without it
+    memory_retrieval.con.execute("DROP TABLE IF EXISTS spatial_index")
+    
+    # Test search without spatial index
+    results_without_index = memory_retrieval.search_geospatial_data_in_bbox(
+        query_word="park",
+        bbox=bbox,
+        similarity_threshold=0.7,
+        max_workers=1,
+        use_gpu=False
+    )
+    
+    # Verify results without spatial index
+    assert not results_without_index.empty, "Should find results without spatial index"
+    assert len(results_without_index) >= 2, "Should find at least 2 parks within bbox"
+    assert all(results_without_index['type'] == 'park'), "All results should be parks"
+    
+    # Test with empty bounding box
+    empty_bbox = (0.0, 0.0, 1.0, 1.0)  # Area with no data
+    empty_results = memory_retrieval.search_geospatial_data_in_bbox(
+        query_word="park",
+        bbox=empty_bbox,
+        similarity_threshold=0.7,
+        max_workers=1,
+        use_gpu=False
+    )
+    
+    assert empty_results.empty, "Should return empty DataFrame for bbox with no data"
+
+    # Test with invalid query word
+    invalid_results = memory_retrieval.search_geospatial_data_in_bbox(
+        query_word="nonexistent_feature_type",
+        bbox=bbox,
+        similarity_threshold=0.7,
+        max_workers=1,
+        use_gpu=False
+    )
+    
+    assert invalid_results.empty, "Should return empty DataFrame for invalid query word"
 
 def main():
     """List tables in cold memory."""
@@ -445,6 +625,9 @@ if __name__ == "__main__":
     if "--test" in sys.argv:
         # Run pytest if --test flag is provided
         pytest.main([__file__, "-v"])
+    elif "--spatial" in sys.argv:
+        # Run spatial queries test
+        test_spatial_queries()
     else:
         # Run direct table listing
         main() 

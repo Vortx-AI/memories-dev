@@ -51,15 +51,14 @@ class WarmMemory:
             
         try:
             key = data.get('id') or str(datetime.now().timestamp())
-            current_time = datetime.now()
             self.con.execute("""
                 INSERT INTO warm_data (key, data, metadata, created_at, last_accessed)
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 ON CONFLICT (key) DO UPDATE SET
                     data = EXCLUDED.data,
                     metadata = EXCLUDED.metadata,
-                    last_accessed = ?
-            """, [key, json.dumps(data), json.dumps(metadata or {}), current_time, current_time, current_time])
+                    last_accessed = CURRENT_TIMESTAMP
+            """, [key, json.dumps(data), json.dumps(metadata or {})])
             
         except Exception as e:
             self.logger.error(f"Failed to store data: {e}")
@@ -82,7 +81,7 @@ class WarmMemory:
                     conditions.append("key = ?")
                     params.append(value)
                 else:
-                    conditions.append(f"json_extract(data, '$.{key}') = ?")
+                    conditions.append(f"data->>'$.{key}' = ?")
                     params.append(str(value))
             
             where_clause = " AND ".join(conditions) if conditions else "1=1"
@@ -94,9 +93,7 @@ class WarmMemory:
                 RETURNING data
             """, params).fetchone()
             
-            if result and result[0]:
-                return json.loads(result[0])
-            return None
+            return json.loads(result[0]) if result else None
             
         except Exception as e:
             self.logger.error(f"Failed to retrieve data: {e}")
@@ -130,7 +127,8 @@ class WarmMemory:
     def cleanup(self) -> None:
         """Clean up resources."""
         try:
-            self.clear()  # Just clear the data, don't close connection
+            if hasattr(self, 'con'):
+                self.con.close()
         except Exception as e:
             self.logger.error(f"Failed to cleanup: {e}")
 
