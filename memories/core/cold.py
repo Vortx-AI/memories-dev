@@ -303,18 +303,18 @@ class ColdMemory:
             for table in tables:
                 table_name = table[0]
                 self.con.execute(f"""
-                    DROP TABLE IF EXISTS {table_name}
+                    DROP VIEW IF EXISTS {table_name};
+                    DROP TABLE IF EXISTS {table_name};
                 """)
             
             # Clear metadata table
-            self.con.execute("""
-                DELETE FROM cold_metadata
-            """)
+            self.con.execute("DELETE FROM cold_metadata")
+            self.con.execute("COMMIT")  # Force commit changes
             
             logger.info("Cold memory cleared successfully")
             
         except Exception as e:
-            logger.error(f"Failed to clear data: {e}")
+            logger.error(f"Failed to clear cold memory: {e}")
             # Don't raise the exception, just log it
 
     def cleanup(self) -> None:

@@ -32,10 +32,21 @@ class HotMemory:
             data: Data to store
         """
         try:
-            key = data.get('key', str(datetime.now().timestamp()))
-            self.client.set(key, json.dumps(data))
+            # Generate key if not provided
+            key = str(data.get('id', datetime.now().timestamp()))
+            
+            # Store data with timestamp
+            data_with_timestamp = {
+                **data,
+                'stored_at': datetime.now().isoformat()
+            }
+            
+            self.client.set(key, json.dumps(data_with_timestamp))
+            logger.debug(f"Stored data with key: {key}")
+            
         except Exception as e:
             logger.error(f"Failed to store data: {e}")
+            raise
 
     def retrieve(self, query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Retrieve data from hot memory.
@@ -47,19 +58,26 @@ class HotMemory:
             Retrieved data or None if not found
         """
         try:
-            key = query.get('key')
-            if key:
+            # Try direct key lookup first
+            if 'id' in query:
+                key = str(query['id'])
                 data = self.client.get(key)
                 if data:
                     return json.loads(data)
             
-            # If no key or key not found, search by value
+            # Search through all keys
             for key in self.client.scan_iter():
-                data = self.client.get(key)
-                if data:
-                    data_dict = json.loads(data)
-                    if all(data_dict.get(k) == v for k, v in query.items()):
-                        return data_dict
+                try:
+                    data = self.client.get(key)
+                    if data:
+                        data_dict = json.loads(data)
+                        # Check if all query parameters match
+                        if all(data_dict.get(k) == v for k, v in query.items()):
+                            return data_dict
+                except json.JSONDecodeError:
+                    logger.warning(f"Invalid JSON data for key: {key}")
+                    continue
+                    
             return None
             
         except Exception as e:
@@ -88,9 +106,10 @@ class HotMemory:
         try:
             if self.client:
                 self.client.flushdb()
+                self.client.save()  # Force save to disk
                 logger.info("Hot memory cleared successfully")
         except Exception as e:
-            logger.error(f"Failed to clear data: {e}")
+            logger.error(f"Failed to clear hot memory: {e}")
             # Don't raise the exception, just log it
             
     def cleanup(self) -> None:
@@ -98,10 +117,12 @@ class HotMemory:
         try:
             self.clear()
             if self.client:
+                self.client.save()  # Force save before closing
                 self.client.close()
+                self.client = None
                 logger.info("Hot memory cleaned up successfully")
         except Exception as e:
-            logger.error(f"Failed to cleanup: {e}")
+            logger.error(f"Failed to cleanup hot memory: {e}")
             # Don't raise the exception, just log it
 
     def __del__(self):

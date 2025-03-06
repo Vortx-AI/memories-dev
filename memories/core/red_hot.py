@@ -320,15 +320,16 @@ class RedHotMemory:
             return self.con.execute(query, [f"%{pattern}%"]).df()
         return self.con.execute(query).df()
 
-    def store(
-        self,
-        key: str,
-        vector_data: Union[np.ndarray, torch.Tensor],
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> None:
-        """Store vector data with metadata."""
+    def store(self, key: str, vector_data: Union[np.ndarray, torch.Tensor], metadata: Optional[Dict[str, Any]] = None) -> None:
+        """Store vector data with metadata.
+        
+        Args:
+            key: Unique identifier for the vector
+            vector_data: Vector to store (numpy array or PyTorch tensor)
+            metadata: Optional metadata to store with the vector
+        """
         try:
-            # Convert to numpy array if tensor
+            # Convert PyTorch tensor to numpy if needed
             if isinstance(vector_data, torch.Tensor):
                 vector_data = vector_data.detach().cpu().numpy()
             
@@ -337,21 +338,21 @@ class RedHotMemory:
             if len(vector_data) != self.vector_dim:
                 raise ValueError(f"Vector dimension mismatch. Expected {self.vector_dim}, got {len(vector_data)}")
             
-            # Add vector to index
-            if self.index is None:
+            # Initialize index if not already done
+            if not hasattr(self, 'index') or self.index is None:
                 self._init_index()
             
-            # Add to index
+            # Add vector to index
             self.index.add(vector_data.reshape(1, -1))
             
-            # Store metadata
-            self.metadata[str(len(self.metadata))] = {
-                'key': key,
+            # Store metadata with timestamp
+            self.metadata[key] = {
                 'metadata': metadata or {},
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now().isoformat(),
+                'index': len(self.metadata)  # Store the index position
             }
             
-            # Save state periodically
+            # Save state periodically (every 100 entries)
             if len(self.metadata) % 100 == 0:
                 self._save_state()
                 
@@ -359,48 +360,55 @@ class RedHotMemory:
             logger.error(f"Failed to store vector: {e}")
             raise
 
-    def search(
-        self,
-        query_vector: Union[np.ndarray, torch.Tensor],
-        k: int = 5,
-        metadata_filter: Optional[Dict[str, Any]] = None
-    ) -> List[Dict[str, Any]]:
-        """Search for similar vectors."""
+    def search(self, query_vector: Union[np.ndarray, torch.Tensor], k: int = 5, metadata_filter: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        """Search for similar vectors.
+        
+        Args:
+            query_vector: Query vector
+            k: Number of results to return
+            metadata_filter: Optional filter for metadata
+            
+        Returns:
+            List of dictionaries containing similar vectors and their metadata
+        """
         try:
-            if self.index is None or len(self.metadata) == 0:
-                return []
-                
-            # Convert to numpy array if tensor
+            # Convert PyTorch tensor to numpy if needed
             if isinstance(query_vector, torch.Tensor):
                 query_vector = query_vector.detach().cpu().numpy()
-                
+            
             # Reshape query vector
             query_vector = query_vector.reshape(1, -1)
             
-            # Search index
+            if not hasattr(self, 'index') or self.index is None:
+                logger.warning("No index available for search")
+                return []
+            
+            # Perform search
             distances, indices = self.index.search(query_vector, k)
             
             # Format results
             results = []
             for i, (dist, idx) in enumerate(zip(distances[0], indices[0])):
-                if idx < 0 or idx >= len(self.metadata):
-                    continue
-                    
-                metadata = self.metadata[str(idx)]
-                
-                # Apply metadata filter if provided
-                if metadata_filter:
-                    if not all(metadata['metadata'].get(k) == v for k, v in metadata_filter.items()):
-                        continue
-                
-                results.append({
-                    'id': idx,
-                    'distance': float(dist),
-                    'metadata': metadata['metadata'],
-                    'key': metadata['key'],
-                    'timestamp': metadata['timestamp']
-                })
-                
+                if idx != -1:  # Valid index
+                    # Find metadata for this index
+                    for key, meta in self.metadata.items():
+                        if meta['index'] == idx:
+                            result = {
+                                'key': key,
+                                'distance': float(dist),
+                                'metadata': meta['metadata'],
+                                'timestamp': meta['timestamp']
+                            }
+                            
+                            # Apply metadata filter if provided
+                            if metadata_filter:
+                                if all(meta['metadata'].get(k) == v for k, v in metadata_filter.items()):
+                                    results.append(result)
+                            else:
+                                results.append(result)
+                            
+                            break
+            
             return results
             
         except Exception as e:
