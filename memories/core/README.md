@@ -640,7 +640,7 @@ Inspired by these real-world applications? Here's how to get started with your o
 4. **Implement data placement strategies**: Decide which data belongs in which tier
 5. **Set up migration policies**: Configure automatic data migration between tiers
 
-For more detailed guidance, check out our [comprehensive documentation](https://memories-dev.readthedocs.io/) and [tutorial series](https://memories-dev.readthedocs.io/tutorials/).
+For more detailed guidance, check out our [comprehensive documentation](../../docs/) and [tutorial series](../../docs/tutorials/).
 
 ## Coming in Version 2.1.0 (March 2025)
 
@@ -652,7 +652,7 @@ For more detailed guidance, check out our [comprehensive documentation](https://
 
 ## Contributing
 
-We welcome contributions to the memory management system! Please see our [Contributing Guide](https://memories-dev.readthedocs.io/development/contributing.html) for more information.
+We welcome contributions to the memory management system! Please see our [Contributing Guide](../../docs/contributing.md) for more information.
 
 <p align="center">Built with 💜 by the memories-dev team</p>
 

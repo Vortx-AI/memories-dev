@@ -516,10 +516,10 @@ Inspired by these real-world applications? Here's how to get started with your o
 4. **Implement data processing**: Use our processing utilities or create custom ones
 5. **Integrate with models**: Connect with our model system for advanced analysis
 
-For more detailed guidance, check out our [comprehensive documentation](https://memories-dev.readthedocs.io/) and [tutorial series](https://memories-dev.readthedocs.io/tutorials/).
+For more detailed guidance, check out our [comprehensive documentation](../../docs/) and [tutorial series](../../docs/tutorials/).
 
 ## Contributing
 
-We welcome contributions to the data acquisition module! Please see our [Contributing Guide](https://memories-dev.readthedocs.io/development/contributing.html) for more information.
+We welcome contributions to the data acquisition module! Please see our [Contributing Guide](../../docs/contributing.md) for more information.
 
 <p align="center">Built with 💜 by the memories-dev team</p> 

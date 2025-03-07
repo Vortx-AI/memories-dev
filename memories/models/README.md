@@ -570,11 +570,11 @@ Inspired by these real-world applications? Here's how to get started with your o
 4. **Implement your application logic**: Connect models with your data sources and processing
 5. **Optimize for performance**: Fine-tune parameters and implement caching as needed
 
-For more detailed guidance, check out our [comprehensive documentation](https://memories-dev.readthedocs.io/) and [tutorial series](https://memories-dev.readthedocs.io/tutorials/).
+For more detailed guidance, check out our [comprehensive documentation](../../docs/) and [tutorial series](../../docs/tutorials/).
 
 ## Contributing
 
-We welcome contributions to the models module! Please see our [Contributing Guide](https://memories-dev.readthedocs.io/development/contributing.html) for more information.
+We welcome contributions to the models module! Please see our [Contributing Guide](../../docs/contributing.md) for more information.
 
 <p align="center">Built with 💜 by the memories-dev team</p>
 

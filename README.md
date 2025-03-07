@@ -4,7 +4,6 @@
 
 **Building Earth's Unified Memory System for Artificial General Intelligence**
 
-[![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://memories-dev.readthedocs.io/index.html)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -749,7 +748,7 @@ The framework undergoes continuous performance testing across different deployme
 - **Consensus**: Designed for high-reliability production deployments
 - **Swarmed**: Engineered for high-throughput, large-scale operations
 
-Performance testing focuses on key metrics including query latency, memory throughput, data ingestion rates, and concurrent user capacity. Full benchmark reports are available in the [documentation](https://memories-dev.readthedocs.io/benchmarks.html).
+Performance testing focuses on key metrics including query latency, memory throughput, data ingestion rates, and concurrent user capacity. Full benchmark reports are available in the [documentation](docs/benchmarks.md).
 
 ### Analysis Accuracy
 
@@ -761,7 +760,7 @@ Our Earth analyzers are validated against scientific ground truth data:
 - **Urban Development**: Validation with municipal records and high-resolution satellite imagery
 - **Biodiversity Assessment**: Correlation with field surveys and ecological monitoring sites
 
-Detailed methodology and validation reports are available in our [scientific documentation](https://memories-dev.readthedocs.io/validation.html).
+Detailed methodology and validation reports are available in our [scientific documentation](docs/validation.md).
 
 ### Memory System Performance
 
@@ -780,9 +779,9 @@ Each tier is continuously optimized for access patterns, compression ratios, and
 
 For researchers interested in the technical foundations of the framework:
 
-- Technical white paper: ["Earth Memory: A Framework for Grounding AI in Observable Reality"](https://memories-dev.readthedocs.io/whitepaper.html)
-- System architecture: ["Multi-Tiered Memory Systems for Earth Observation Data"](https://memories-dev.readthedocs.io/architecture.html)
-- Validation methodology: ["Benchmarking Geographic Information Retrieval in AI Systems"](https://memories-dev.readthedocs.io/validation.html)
+- Technical white paper: ["Earth Memory: A Framework for Grounding AI in Observable Reality"](docs/whitepaper.md)
+- System architecture: ["Multi-Tiered Memory Systems for Earth Observation Data"](docs/architecture.md)
+- Validation methodology: ["Benchmarking Geographic Information Retrieval in AI Systems"](docs/validation.md)
 
 ### Related Research Areas
 
@@ -796,7 +795,7 @@ Our work intersects with several active research domains:
 
 ### Documentation Resources
 
-For comprehensive documentation, visit [memories-dev.readthedocs.io](https://memories-dev.readthedocs.io/), which includes:
+For comprehensive documentation, visit our [GitHub documentation](docs/), which includes:
 
 - Complete API reference
 - Detailed tutorials and examples

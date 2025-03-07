@@ -225,4 +225,4 @@ Potential enhancements for future versions:
 
 ## Credits
 
-The Professional Developer Theme was developed for the Memories-Dev project, with inspiration from modern documentation sites like Google Developer Documentation, MDN Web Docs, and ReadTheDocs. 
+The Professional Developer Theme was developed for the Memories-Dev project, with inspiration from modern documentation sites like Developer Documentation, MDN Web Docs, and other popular documentation platforms. 

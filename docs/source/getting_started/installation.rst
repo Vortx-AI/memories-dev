@@ -267,7 +267,7 @@ Getting Help
 
 If you encounter issues not covered here:
 
-1. Check the `FAQ <https://memories-dev.readthedocs.io/en/latest/faq.html>`_
+1. Check the `FAQ <../faq.md>`_
 2. Search the `GitHub Issues <https://github.com/Vortx-AI/memories-dev/issues>`_
 3. Ask a question on the `Discussion Forum <https://github.com/Vortx-AI/memories-dev/discussions>`_
 4. Join our `Discord Community <https://discord.gg/memories-dev>`_

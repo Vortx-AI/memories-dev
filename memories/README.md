@@ -226,10 +226,10 @@ Offers flexible deployment options including standalone, consensus-based, and sw
 
 For more detailed information, check out our documentation:
 
-- [Quick Start Guide](https://memories-dev.readthedocs.io/quickstart.html)
-- [User Guide](https://memories-dev.readthedocs.io/user_guide/index.html)
-- [API Reference](https://memories-dev.readthedocs.io/api_reference/index.html)
-- [Examples](https://memories-dev.readthedocs.io/user_guide/examples.html)
-- [Development Guide](https://memories-dev.readthedocs.io/development/index.html)
+- [Quick Start Guide](../../docs/quickstart.md)
+- [User Guide](../../docs/user_guide/index.md)
+- [API Reference](../../docs/api_reference/index.md)
+- [Examples](../../docs/user_guide/examples.md)
+- [Development Guide](../../docs/development/index.md)
 
 <p align="center">Built with 💜 by the memories-dev team</p>
