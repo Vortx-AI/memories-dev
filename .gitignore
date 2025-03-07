@@ -109,3 +109,4 @@ examples/memory_query1.py
 examples/test_nearby_parks.py
 add_parquet.py
 tests/model/test_azure_ai.py
+test_venv/
