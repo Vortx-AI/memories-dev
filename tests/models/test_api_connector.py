@@ -103,9 +103,14 @@ def test_deepseek_error_handling():
     pytest.param("openai", "OPENAI_API_KEY", marks=pytest.mark.skipif(not is_package_installed("openai"), reason="openai package not installed")),
     ("deepseek", "DEEPSEEK_API_KEY")
 ])
-@patch("openai.OpenAI")
-def test_api_key_from_env(mock_openai, provider, env_var, monkeypatch):
+def test_api_key_from_env(provider, env_var, monkeypatch):
     """Test getting API key from environment variables."""
     monkeypatch.setenv(env_var, "test-key")
-    connector = get_connector(provider)
-    assert connector.api_key == "test-key" 
+    
+    if provider == "openai" and is_package_installed("openai"):
+        with patch("openai.OpenAI") as mock_openai:
+            connector = get_connector(provider)
+            assert connector.api_key == "test-key"
+    else:
+        connector = get_connector(provider)
+        assert connector.api_key == "test-key" 
