@@ -5,7 +5,7 @@ All notable changes to memories.dev will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.5] - 2025-03-05
+## [2.0.5] - 2025-03-07
 
 ### Added
 
@@ -25,6 +25,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved batch processing for large datasets
   - Enhanced memory cleanup routines
 
+- **Testing Improvements**
+  - Enhanced test suite with better mocking and fixtures
+  - Added conditional test skipping for optional dependencies
+  - Improved documentation testing with mock imports
+  - Added comprehensive API connector tests
+  - Enhanced geospatial data testing
+
+- **API Connectors**
+  - Added robust error handling for OpenAI API
+  - Enhanced Deepseek API integration
+  - Improved API key management from environment variables
+  - Added comprehensive logging for API interactions
+  - Enhanced chat completion functionality
+
 ### Fixed
 
 - **Test Suite Fixes**
@@ -32,6 +46,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Resolved multiple TypeErrors in memory retrieval tests related to 'vector_encoder' parameter
   - Fixed geospatial data querying test failures
   - Updated test suite to match new API parameters
+  - Resolved documentation test dependencies
+  - Fixed API connector test reliability issues
+
+### Enhanced
+
+- **Documentation**
+  - Improved version consistency checks
+  - Enhanced API reference completeness
+  - Added better example code validation
+  - Updated changelog formatting and structure
+  - Improved license information consistency
 
 ## [2.0.4] - 2025-03-03
 
