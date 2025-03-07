@@ -111,3 +111,4 @@ add_parquet.py
 tests/model/test_azure_ai.py
 test_venv/
 a.py
+memory_chat.py

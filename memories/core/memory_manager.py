@@ -18,7 +18,11 @@ from .warm import WarmMemory
 from .cold import ColdMemory
 from .glacier import GlacierMemory
 
-# Initialize logger
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG = {
@@ -115,6 +119,9 @@ class MemoryManager:
     def __init__(self):
         """Initialize the memory manager."""
         if not hasattr(self, '_initialized'):
+            # Initialize logger
+            self.logger = logging.getLogger(__name__)
+            
             # Try to find config in standard locations
             config_locations = [
                 Path('config/db_config.yml'),  # Local development
@@ -130,7 +137,7 @@ class MemoryManager:
                     break
             
             if not config_found:
-                logger.warning("No config file found, using default configuration")
+                self.logger.warning("No config file found, using default configuration")
                 self.config = DEFAULT_CONFIG
             
             # Initialize memory tiers
@@ -142,7 +149,7 @@ class MemoryManager:
             self._init_glacier_memory()
             
             self._initialized = True
-            logger.info(f"Initialized MemoryManager with database at: {self.config['database']['path']}/{self.config['database']['name']}")
+            self.logger.info(f"Initialized MemoryManager with database at: {self.config['database']['path']}/{self.config['database']['name']}")
 
     def _load_and_merge_config(
         self,
