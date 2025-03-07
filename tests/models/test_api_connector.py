@@ -32,6 +32,7 @@ def mock_deepseek_response():
         ]
     }
 
+@pytest.mark.skipif(not is_package_installed("openai"), reason="openai package not installed")
 @patch("openai.OpenAI")
 def test_get_connector_openai(mock_openai):
     """Test getting OpenAI connector."""
@@ -50,6 +51,7 @@ def test_get_connector_invalid():
     with pytest.raises(ValueError):
         get_connector("invalid-provider", "test-key")
 
+@pytest.mark.skipif(not is_package_installed("openai"), reason="openai package not installed")
 @patch("openai.OpenAI")
 def test_openai_generate(mock_openai, mock_openai_response):
     """Test OpenAI text generation."""
@@ -76,6 +78,7 @@ def test_deepseek_generate(mock_post, mock_deepseek_response):
     assert response == "Test response"
     mock_post.assert_called_once()
 
+@pytest.mark.skipif(not is_package_installed("openai"), reason="openai package not installed")
 @patch("openai.OpenAI")
 def test_openai_error_handling(mock_openai):
     """Test OpenAI error handling."""
@@ -97,7 +100,7 @@ def test_deepseek_error_handling():
             connector.generate("Test prompt")
 
 @pytest.mark.parametrize("provider,env_var", [
-    ("openai", "OPENAI_API_KEY"),
+    pytest.param("openai", "OPENAI_API_KEY", marks=pytest.mark.skipif(not is_package_installed("openai"), reason="openai package not installed")),
     ("deepseek", "DEEPSEEK_API_KEY")
 ])
 @patch("openai.OpenAI")
