@@ -522,36 +522,26 @@ class AnthropicConnector(APIConnector):
 
 class AzureAIConnector(APIConnector):
     """Connector for Azure AI API."""
-    from azure.ai.inference import ChatCompletionsClient
-    from azure.core.credentials import AzureKeyCredential
     
     def __init__(self, api_key: str = None, endpoint: str = None):
-        super().__init__(api_key)
-        # Get Azure credentials from environment or parameters
-        self.api_key = api_key or os.getenv("AZURE_INFERENCE_CREDENTIAL")
-        self.endpoint = endpoint or os.getenv("AZURE_INFERENCE_ENDPOINT")  # Use provided endpoint or env var
-        
-        if not self.api_key:
-            raise Exception("A key should be provided to invoke the endpoint")
-        if not self.endpoint:
-            raise Exception("An endpoint should be provided to invoke the service")
-            
         try:
-            # Initialize the Azure AI client with endpoint
-            self.client = ChatCompletionsClient(
-                endpoint=self.endpoint,
-                credential=AzureKeyCredential(self.api_key)
+            from azure.ai.inference import ChatCompletionsClient
+            from azure.core.credentials import AzureKeyCredential
+        except ImportError:
+            raise ImportError(
+                "Azure AI dependencies not found. Please install them with: pip install azure-ai-inference"
             )
             
-            # Get and log model information
-            model_info = self.client.get_model_info()
-            logger.info(f"Model name: {model_info.model_name}")
-            logger.info(f"Model type: {model_info.model_type}")
-            logger.info(f"Model provider name: {model_info.model_provider_name}")
+        super().__init__(api_key)
+        # Get Azure credentials from environment or parameters
+        self.api_key = api_key or self._get_api_key()
+        self.endpoint = endpoint or os.getenv("AZURE_ENDPOINT")
+        
+        if not self.api_key or not self.endpoint:
+            raise ValueError("Azure API key and endpoint are required")
             
-        except Exception as e:
-            logger.error(f"Failed to initialize Azure AI client: {str(e)}")
-            raise
+        self.credential = AzureKeyCredential(self.api_key)
+        self.client = ChatCompletionsClient(self.endpoint, self.credential)
 
     def chat_completion(
         self,
@@ -560,17 +550,7 @@ class AzureAIConnector(APIConnector):
         tool_choice: str = "auto",
         **kwargs
     ) -> Dict[str, Any]:
-        """Get chat completion from Azure AI.
-        
-        Args:
-            messages: List of conversation messages
-            tools: Optional list of tools/functions
-            tool_choice: Tool choice strategy
-            **kwargs: Additional arguments
-            
-        Returns:
-            Response containing message, tool calls, and metadata
-        """
+        """Generate chat completion using Azure AI API."""
         try:
             start_time = time.time()
             
@@ -650,28 +630,33 @@ def get_connector(provider: str, api_key: Optional[str] = None, endpoint: Option
     """Get the appropriate API connector based on provider.
     
     Args:
-        provider: Model provider name
+        provider: Name of the API provider (openai, azure, anthropic, deepseek)
         api_key: Optional API key
         endpoint: Optional endpoint URL (for Azure)
         
     Returns:
         APIConnector instance
+        
+    Raises:
+        ValueError: If provider is not supported
     """
-    connectors = {
-        "openai": OpenAIConnector,
-        "azure": AzureAIConnector,
-        "deepseek-ai": DeepseekConnector,
-        "anthropic": AnthropicConnector
-    }
+    provider = provider.lower()
     
-    connector_class = connectors.get(provider.lower())
-    if not connector_class:
+    if provider == "openai":
+        return OpenAIConnector(api_key)
+    elif provider == "anthropic":
+        return AnthropicConnector(api_key)
+    elif provider == "deepseek":
+        return DeepseekConnector(api_key)
+    elif provider == "azure":
+        try:
+            return AzureAIConnector(api_key, endpoint)
+        except ImportError as e:
+            logger.warning(f"Azure AI dependencies not available: {str(e)}")
+            logger.warning("Falling back to OpenAI connector")
+            return OpenAIConnector(api_key)
+    else:
         raise ValueError(f"Unsupported provider: {provider}")
-    
-    # Pass endpoint only to Azure connector
-    if provider.lower() == "azure":
-        return connector_class(api_key=api_key, endpoint=endpoint)
-    return connector_class(api_key=api_key)
 
 # Usage example:
 """

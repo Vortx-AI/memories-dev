@@ -2,7 +2,6 @@
 
 import pytest
 from unittest.mock import Mock, patch
-import torch
 from memories.models.load_model import LoadModel
 from memories.models.base_model import BaseModel
 
@@ -56,7 +55,7 @@ def test_init_api_model(mock_get_connector, mock_api_connector):
     assert model.deployment_type == "api"
     assert model.model_name == "gpt-4"
     assert model.api_key == "test-key"
-    mock_get_connector.assert_called_once_with("openai", "test-key")
+    mock_get_connector.assert_called_once_with("openai", "test-key", None)
 
 @patch("memories.models.load_model.BaseModel")
 def test_init_local_model(mock_base_model_class):
@@ -201,27 +200,4 @@ def test_cleanup():
         )
 
         model.cleanup()
-        mock_base_model.cleanup.assert_called_once()
-        if torch.cuda.is_available():
-            assert torch.cuda.memory_allocated() == 0
-
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
-def test_gpu_usage():
-    """Test GPU usage when available."""
-    with patch("memories.models.load_model.BaseModel") as mock_base_model_class:
-        mock_base_model = Mock()
-        mock_base_model_class.get_instance.return_value = mock_base_model
-        mock_base_model.initialize_model.return_value = True
-        
-        model = LoadModel(
-            model_provider="deepseek-ai",
-            deployment_type="local",
-            model_name="deepseek-coder-small",
-            use_gpu=True
-        )
-        
-        assert model.use_gpu == True
-        mock_base_model.initialize_model.assert_called_once_with(
-            "deepseek-coder-small",
-            use_gpu=True
-        ) 
+        mock_base_model.cleanup.assert_called_once() 

@@ -9,6 +9,7 @@ pyarrow>=14.0.1
 mercantile>=1.2.1
 owslib>=0.31.0  # Added for WFS/WMS support
 deepseek-ai>=0.0.1  # Added for DeepSeek AI integration
+azure-ai-inference>=1.0.0b9  # Added for Azure AI integration (beta version)
 
 # Note: Version-specific dependencies based on Python version
 mapbox-vector-tile>=2.0.1  # Will be adjusted during install based on Python version
