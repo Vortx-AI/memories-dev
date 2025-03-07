@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved temporary directory handling and cleanup
   - Enhanced DuckDB lock management and release mechanisms
   - Better error handling and logging across core functions
+  - Added fallback configuration handling for test environments
 
 - **Memory Optimization**
   - Optimized parquet file handling to reduce disk space usage
@@ -31,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved documentation testing with mock imports
   - Added comprehensive API connector tests
   - Enhanced geospatial data testing
+  - Added test environment configuration handling
 
 - **API Connectors**
   - Added robust error handling for OpenAI API
@@ -48,6 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated test suite to match new API parameters
   - Resolved documentation test dependencies
   - Fixed API connector test reliability issues
+  - Fixed config file not found error in test environments
+  - Added proper test configuration initialization
 
 ### Enhanced
 
@@ -57,6 +61,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added better example code validation
   - Updated changelog formatting and structure
   - Improved license information consistency
+  - Added test environment setup documentation
+
+- **Configuration Management**
+  - Improved config file path handling
+  - Added environment-aware configuration loading
+  - Enhanced error messages for missing configurations
+  - Added test-specific configuration defaults
 
 ## [2.0.4] - 2025-03-03
 
