@@ -34,6 +34,7 @@ def mock_deepseek_response():
 
 def test_get_connector_openai():
     """Test getting OpenAI connector."""
+    import openai
     connector = get_connector("openai", "test-key")
     assert isinstance(connector, OpenAIConnector)
     assert connector.api_key == "test-key"
