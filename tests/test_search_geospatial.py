@@ -15,7 +15,33 @@ logger = logging.getLogger(__name__)
 def test_search_geospatial():
     """Test the search_geospatial_data_in_bbox function."""
     try:
-        # Initialize memory manager
+        # Get the project root directory
+        project_root = Path(__file__).parent.parent
+        config_path = project_root / 'config' / 'db_config.yml'
+        
+        # Create test config if it doesn't exist
+        if not config_path.exists():
+            os.makedirs(config_path.parent, exist_ok=True)
+            test_config = {
+                'database': {'path': './data/db', 'name': 'memories.db'},
+                'memory': {
+                    'base_path': './data/memory',
+                    'hot': {'path': 'hot', 'max_size': 104857600},
+                    'warm': {'path': 'warm', 'max_size': 1073741824},
+                    'cold': {'path': 'cold', 'max_size': 10737418240},
+                    'glacier': {'path': 'glacier', 'max_size': 107374182400}
+                },
+                'data': {
+                    'storage': './data/storage',
+                    'models': './data/models',
+                    'cache': './data/cache'
+                }
+            }
+            import yaml
+            with open(config_path, 'w') as f:
+                yaml.dump(test_config, f)
+        
+        # Initialize memory manager with explicit config path
         memory_manager = MemoryManager()
         
         # Initialize memory retrieval

@@ -22,6 +22,10 @@ from .glacier import GlacierMemory
 logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG = {
+    'database': {
+        'path': './data/db',
+        'name': 'memories.db'
+    },
     'memory': {
         'base_path': './data/memory',
         'red_hot': {
@@ -84,6 +88,11 @@ DEFAULT_CONFIG = {
                 'archive_format': 'parquet'
             }
         }
+    },
+    'data': {
+        'storage': './data/storage',
+        'models': './data/models',
+        'cache': './data/cache'
     }
 }
 
@@ -100,28 +109,40 @@ class MemoryManager:
     
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
+            cls._instance = super(MemoryManager, cls).__new__(cls)
         return cls._instance
     
     def __init__(self):
-        if self._initialized:
-            return
+        """Initialize the memory manager."""
+        if not hasattr(self, '_initialized'):
+            # Try to find config in standard locations
+            config_locations = [
+                Path('config/db_config.yml'),  # Local development
+                Path(__file__).parent.parent.parent / 'config' / 'db_config.yml',  # Package root
+                Path.home() / '.memories' / 'config' / 'db_config.yml'  # User home
+            ]
             
-        self.config = Config()
-        
-        # Get project root from Config
-        project_root = os.getenv("PROJECT_ROOT", os.path.expanduser("~"))
-        
-        # Initialize DuckDB connection in project root
-        db_path = Path(project_root) / 'memories.db'
-        self.con = duckdb.connect(str(db_path))
-        
-        # Initialize cold memory with the connection
-        self.cold_memory = ColdMemory(self.con)
-        
-        self._initialized = True
-        logger.info(f"Initialized MemoryManager with database at: {db_path}")
+            config_found = False
+            for config_path in config_locations:
+                if config_path.exists():
+                    self.config = self._load_and_merge_config(config_path)
+                    config_found = True
+                    break
+            
+            if not config_found:
+                logger.warning("No config file found, using default configuration")
+                self.config = DEFAULT_CONFIG
+            
+            # Initialize memory tiers
+            self._init_duckdb()
+            self._init_red_hot_memory()
+            self._init_hot_memory()
+            self._init_warm_memory()
+            self._init_cold_memory()
+            self._init_glacier_memory()
+            
+            self._initialized = True
+            logger.info(f"Initialized MemoryManager with database at: {self.config['database']['path']}/{self.config['database']['name']}")
 
     def _load_and_merge_config(
         self,
@@ -162,11 +183,11 @@ class MemoryManager:
         """Initialize single DuckDB connection for warm and cold storage."""
         try:
             import duckdb
-            self.db_connection = duckdb.connect(database=':memory:', read_only=False)
+            self.con = duckdb.connect(database=':memory:', read_only=False)
             self.logger.info("Initialized DuckDB connection")
         except Exception as e:
             self.logger.error(f"Failed to initialize DuckDB: {e}")
-            self.db_connection = None
+            self.con = None
 
     def _init_red_hot_memory(self) -> None:
         """Initialize red hot memory tier."""
@@ -206,7 +227,7 @@ class MemoryManager:
         """Initialize warm memory tier."""
         try:
             self.warm = WarmMemory(
-                duckdb_connection=self.db_connection
+                duckdb_connection=self.con
             )
             self.logger.info("Initialized warm memory")
         except Exception as e:
@@ -217,7 +238,7 @@ class MemoryManager:
         """Initialize cold memory tier."""
         try:
             self.cold = ColdMemory(
-                duckdb_connection=self.db_connection
+                duckdb_connection=self.con
             )
             self.logger.info("Initialized cold memory")
         except Exception as e:
@@ -410,9 +431,9 @@ class MemoryManager:
             self.cold.cleanup()
         
         # Close shared DuckDB connection
-        if self.db_connection:
-            self.db_connection.close()
-            self.db_connection = None
+        if self.con:
+            self.con.close()
+            self.con = None
     
     def __del__(self):
         """Destructor to ensure cleanup is performed."""
@@ -712,8 +733,8 @@ class MemoryManager:
             self.cold.clear_tables(keep_files=False)
             
             # Close DuckDB connection if it exists
-            if hasattr(self, 'cold_db'):
-                self.cold_db.close()
+            if hasattr(self, 'con'):
+                self.con.close()
                 self.logger.info("Closed cold DuckDB connection")
             
             # Optionally remove the entire storage directory
