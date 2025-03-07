@@ -13,8 +13,7 @@ import time
 from dotenv import load_dotenv
 
 # Azure AI imports
-from azure.ai.inference import ChatCompletionsClient
-from azure.core.credentials import AzureKeyCredential
+
 
 # Load environment variables
 load_dotenv()
@@ -523,6 +522,8 @@ class AnthropicConnector(APIConnector):
 
 class AzureAIConnector(APIConnector):
     """Connector for Azure AI API."""
+    from azure.ai.inference import ChatCompletionsClient
+    from azure.core.credentials import AzureKeyCredential
     
     def __init__(self, api_key: str = None, endpoint: str = None):
         super().__init__(api_key)
