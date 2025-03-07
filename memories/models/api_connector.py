@@ -630,7 +630,7 @@ def get_connector(provider: str, api_key: Optional[str] = None, endpoint: Option
     """Get the appropriate API connector based on provider.
     
     Args:
-        provider: Name of the API provider (openai, azure, anthropic, deepseek)
+        provider: Name of the API provider (openai, azure-ai, anthropic, deepseek)
         api_key: Optional API key
         endpoint: Optional endpoint URL (for Azure)
         
@@ -648,7 +648,7 @@ def get_connector(provider: str, api_key: Optional[str] = None, endpoint: Option
         return AnthropicConnector(api_key)
     elif provider == "deepseek":
         return DeepseekConnector(api_key)
-    elif provider == "azure":
+    elif provider == "azure-ai":
         try:
             return AzureAIConnector(api_key, endpoint)
         except ImportError as e:

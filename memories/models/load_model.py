@@ -31,7 +31,7 @@ class LoadModel:
         
         Args:
             use_gpu (bool): Whether to use GPU if available
-            model_provider (str): The model provider (e.g., "deepseek", "llama", "mistral")
+            model_provider (str): The model provider (e.g., "deepseek", "azure-ai", "mistral")
             deployment_type (str): Either "local" or "api"
             model_name (str): Short name of the model from BaseModel.MODEL_MAPPINGS
             api_key (str): API key for the model provider (required for API deployment type)
@@ -57,7 +57,11 @@ class LoadModel:
         if deployment_type not in self.config["deployment_types"]:
             raise ValueError(f"deployment_type must be one of: {self.config['deployment_types']}")
             
-        if model_provider not in self.config["supported_providers"]:
+        # Special handling for azure-ai provider
+        if model_provider == "azure-ai":
+            if not endpoint:
+                raise ValueError("endpoint is required for azure-ai provider")
+        elif model_provider not in self.config["supported_providers"]:
             raise ValueError(f"model_provider must be one of: {self.config['supported_providers']}")
             
         if deployment_type == "api" and not api_key:
