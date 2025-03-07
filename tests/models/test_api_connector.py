@@ -32,9 +32,9 @@ def mock_deepseek_response():
         ]
     }
 
-def test_get_connector_openai():
+@patch("openai.OpenAI")
+def test_get_connector_openai(mock_openai):
     """Test getting OpenAI connector."""
-    import openai
     connector = get_connector("openai", "test-key")
     assert isinstance(connector, OpenAIConnector)
     assert connector.api_key == "test-key"
@@ -76,16 +76,16 @@ def test_deepseek_generate(mock_post, mock_deepseek_response):
     assert response == "Test response"
     mock_post.assert_called_once()
 
-def test_openai_error_handling():
+@patch("openai.OpenAI")
+def test_openai_error_handling(mock_openai):
     """Test OpenAI error handling."""
-    with patch("openai.OpenAI") as mock_openai:
-        mock_client = Mock()
-        mock_client.chat.completions.create.side_effect = Exception("API Error")
-        mock_openai.return_value = mock_client
+    mock_client = Mock()
+    mock_client.chat.completions.create.side_effect = Exception("API Error")
+    mock_openai.return_value = mock_client
 
-        connector = OpenAIConnector("test-key")
-        with pytest.raises(Exception):
-            connector.generate("Test prompt")
+    connector = OpenAIConnector("test-key")
+    with pytest.raises(Exception):
+        connector.generate("Test prompt")
 
 def test_deepseek_error_handling():
     """Test Deepseek error handling."""
@@ -100,7 +100,8 @@ def test_deepseek_error_handling():
     ("openai", "OPENAI_API_KEY"),
     ("deepseek", "DEEPSEEK_API_KEY")
 ])
-def test_api_key_from_env(provider, env_var, monkeypatch):
+@patch("openai.OpenAI")
+def test_api_key_from_env(mock_openai, provider, env_var, monkeypatch):
     """Test getting API key from environment variables."""
     monkeypatch.setenv(env_var, "test-key")
     connector = get_connector(provider)
