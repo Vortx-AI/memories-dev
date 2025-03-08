@@ -152,16 +152,51 @@ logger = logging.getLogger(__name__)
 class ColdMemory:
     """Cold memory storage for infrequently accessed data using DuckDB."""
     
-    def __init__(self, con):
+    def __init__(self):
         """Initialize cold memory storage."""
         self.config = Config()
-        self.con = con  # Use the connection passed from MemoryManager
         self.logger = logging.getLogger(__name__)
         
         # Set up storage path in project root
         project_root = os.getenv("PROJECT_ROOT", os.path.expanduser("~"))
         self.storage_path = Path(project_root)
         self.storage_path.mkdir(parents=True, exist_ok=True)
+
+        # Initialize DuckDB connection
+        try:
+            self.con = duckdb.connect()
+            self._initialize_schema()
+            self.logger.info("Successfully initialized DuckDB connection")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize DuckDB connection: {e}")
+            raise
+
+    def _initialize_schema(self):
+        """Initialize database schema."""
+        try:
+            # Create metadata table if it doesn't exist with BIGINT for size
+            self.con.execute("""
+                CREATE TABLE IF NOT EXISTS cold_metadata (
+                    id VARCHAR PRIMARY KEY,
+                    timestamp TIMESTAMP,
+                    data_type VARCHAR,
+                    size BIGINT,
+                    additional_meta JSON
+                )
+            """)
+
+            # Create data table if it doesn't exist
+            self.con.execute("""
+                CREATE TABLE IF NOT EXISTS cold_data (
+                    id VARCHAR PRIMARY KEY,
+                    data JSON
+                )
+            """)
+            
+            self.logger.info("Initialized cold storage schema")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize database schema: {e}")
+            raise
 
     def register_external_file(self, file_path: str) -> None:
         """Register an external file in the cold storage metadata."""
@@ -216,25 +251,6 @@ class ColdMemory:
 
         except Exception as e:
             self.logger.error(f"Error registering external file: {e}")
-            raise
-
-    def _initialize_schema(self):
-        """Initialize database schema."""
-        try:
-            # Create metadata table if it doesn't exist with BIGINT for size
-            self.con.execute("""
-                CREATE TABLE IF NOT EXISTS cold_metadata (
-                    id VARCHAR PRIMARY KEY,
-                    timestamp TIMESTAMP,
-                    data_type VARCHAR,
-                    size BIGINT,  -- Changed from INTEGER to BIGINT
-                    additional_meta JSON
-                )
-            """)
-            
-            self.logger.info("Initialized cold storage schema")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize database schema: {e}")
             raise
 
     def store(self, data: Dict[str, Any], metadata: Optional[Dict[str, Any]] = None) -> bool:
@@ -363,7 +379,16 @@ class ColdMemory:
 
     def cleanup(self) -> None:
         """Cleanup resources."""
-        pass  # DuckDB connection is managed by MemoryManager
+        try:
+            if hasattr(self, 'con') and self.con:
+                self.con.close()
+                self.logger.info("Closed DuckDB connection")
+        except Exception as e:
+            self.logger.error(f"Error during cleanup: {e}")
+
+    def __del__(self):
+        """Ensure cleanup is called when object is destroyed."""
+        self.cleanup()
 
     def get_all_schemas(self):
         """Get all file paths from cold storage metadata and extract their schemas."""

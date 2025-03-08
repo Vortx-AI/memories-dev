@@ -14,7 +14,7 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-class OvertureAPI:
+class OvertureConnector:
     """Interface for accessing Overture Maps data using DuckDB's S3 integration."""
     
     # Latest Overture release
@@ -217,7 +217,7 @@ class OvertureAPI:
                 
                 theme_results = []
                 for type_name in self.THEMES[theme]:
-                    parquet_file = theme_dir / f"{type_name}_filtered.parquet"
+                    parquet_file = theme_dir / type_name / f"{type_name}_filtered.parquet"
                     if not parquet_file.exists():
                         logger.warning(f"No data file found for {theme}/{type_name}")
                         continue
@@ -399,11 +399,11 @@ class OvertureAPI:
                             "theme": theme,
                             "tag": type_name,
                             # Add executable metadata fields
-                            "import": "from memories.data_acquisition.sources.overture_api import OvertureAPI",
+                            "import": "from memories.data_acquisition.sources.overture_api import OvertureConnector",
                             "function": "download_theme_type",
                             "parameters": f"""
 # Initialize API
-api = OvertureAPI()
+api = OvertureConnector()
 
 # Create bbox from existing coordinates
 {bbox_template}
@@ -473,15 +473,13 @@ api = OvertureAPI()
             logger.error(f"Error validating bbox: {e}")
             return False
 
-    def download_theme_type(self, theme: str, tag: str, bbox: Dict[str, float], storage_path: str = None, max_size: int = None) -> bool:
+    def download_theme_type(self, theme: str, type_name: str, bbox: Dict[str, float]) -> bool:
         """Download data for a specific theme and type with bbox filtering.
         
         Args:
             theme: Theme name
-            tag: Type name within theme
+            type_name: Type name within theme
             bbox: Bounding box dictionary with xmin, ymin, xmax, ymax
-            storage_path: Optional override for storage path
-            max_size: Optional maximum file size in bytes
             
         Returns:
             bool: True if download successful
@@ -490,24 +488,22 @@ api = OvertureAPI()
             logger.error(f"Invalid theme: {theme}")
             return False
             
-        if tag not in self.THEMES[theme]:
-            logger.error(f"Invalid tag {tag} for theme {theme}")
+        if type_name not in self.THEMES[theme]:
+            logger.error(f"Invalid tag {type_name} for theme {theme}")
             return False
             
         if not self.validate_bbox(bbox):
             return False
             
         try:
-            # Use provided storage path or default
-            storage_dir = Path(storage_path) if storage_path else self.data_dir
-            storage_dir = storage_dir / "overture" / theme / tag
-            storage_dir.mkdir(parents=True, exist_ok=True)
-            
-            s3_path = self.get_s3_path(theme, tag)
-            output_file = storage_dir / f"{tag}_filtered.parquet"
-            
-            logger.info(f"Starting download for {theme}/{tag}")
+            logger.info(f"Starting download for {theme}/{type_name}")
+            s3_path = self.get_s3_path(theme, type_name)
             logger.info(f"Using S3 path: {s3_path}")
+            
+            # Create output directory
+            storage_dir = self.data_dir / theme / type_name
+            storage_dir.mkdir(parents=True, exist_ok=True)
+            output_file = storage_dir / f"{type_name}_filtered.parquet"
             logger.info(f"Output will be saved to: {output_file}")
             
             # Test S3 access
@@ -518,10 +514,10 @@ api = OvertureAPI()
             """
             
             try:
-                logger.info(f"Testing S3 access for {theme}/{tag}...")
+                logger.info(f"Testing S3 access for {theme}/{type_name}...")
                 self.con.execute(test_query)
             except Exception as e:
-                logger.error(f"Failed to access S3 path for {theme}/{tag}: {e}")
+                logger.error(f"Failed to access S3 path for {theme}/{type_name}: {e}")
                 return False
             
             # Query to filter and download data
@@ -542,7 +538,7 @@ api = OvertureAPI()
             ) TO '{output_file}' (FORMAT 'parquet');
             """
             
-            logger.info(f"Downloading filtered data for {theme}/{tag}...")
+            logger.info(f"Downloading filtered data for {theme}/{type_name}...")
             try:
                 self.con.execute(query)
                 
@@ -550,17 +546,17 @@ api = OvertureAPI()
                 if output_file.exists() and output_file.stat().st_size > 0:
                     count_query = f"SELECT COUNT(*) as count FROM read_parquet('{output_file}')"
                     count = self.con.execute(count_query).fetchone()[0]
-                    logger.info(f"Successfully saved {count} features for {theme}/{tag}")
+                    logger.info(f"Successfully saved {count} features for {theme}/{type_name}")
                     return True
                 else:
-                    logger.warning(f"No features found for {theme}/{tag}")
+                    logger.warning(f"No features found for {theme}/{type_name}")
                     return True  # Still return True as the operation completed successfully
             except Exception as e:
-                logger.error(f"Error downloading {theme}/{tag}: {e}")
+                logger.error(f"Error downloading {theme}/{type_name}: {e}")
                 return False
                 
         except Exception as e:
-            logger.error(f"Error downloading {theme}/{tag} data: {e}")
+            logger.error(f"Error downloading {theme}/{type_name} data: {e}")
             return False
 
     def search_features_by_type(self, feature_type: str, bbox: Union[List[float], Dict[str, float]]) -> Dict[str, Any]:
@@ -660,4 +656,3 @@ api = OvertureAPI()
             logger.error(f"Error searching for {feature_type}: {str(e)}")
             return {"error": str(e)}
 
-    

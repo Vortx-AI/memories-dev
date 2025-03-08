@@ -12,6 +12,7 @@ import json
 from datetime import datetime
 import os
 import shutil
+from io import open  # Explicitly import open from io
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +30,7 @@ class RedHotMemory:
         self.storage_path = os.path.join(project_root, "data", "red_hot")
         
         # Create storage directory if it doesn't exist
-        if not os.path.exists(self.storage_path):
-            os.makedirs(self.storage_path)
+        os.makedirs(self.storage_path, exist_ok=True)
             
         logger.info(f"Initialized RedHotMemory with storage at: {self.storage_path}")
         
@@ -45,17 +45,24 @@ class RedHotMemory:
 
     def _save_state(self):
         """Save FAISS index and metadata to disk."""
-        # Save FAISS index
-        index_path = os.path.join(self.storage_path, "index.faiss")
-        faiss.write_index(self.index, index_path)
-        
-        # Save metadata
-        metadata_path = os.path.join(self.storage_path, "metadata.json")
-        with open(metadata_path, 'w') as f:
-            json.dump(self.metadata, f)
+        try:
+            # Ensure storage directory exists
+            os.makedirs(self.storage_path, exist_ok=True)
             
-        logger.debug(f"Saved FAISS index to {index_path}")
-        logger.debug(f"Saved metadata to {metadata_path}")
+            # Save FAISS index
+            index_path = os.path.join(self.storage_path, "index.faiss")
+            faiss.write_index(self.index, index_path)
+            
+            # Save metadata
+            metadata_path = os.path.join(self.storage_path, "metadata.json")
+            with open(metadata_path, 'w') as f:
+                json.dump(self.metadata, f)
+                
+            logger.debug(f"Saved FAISS index to {index_path}")
+            logger.debug(f"Saved metadata to {metadata_path}")
+        except Exception as e:
+            logger.error(f"Failed to save state: {e}")
+            raise
 
     def _load_state(self):
         """Load FAISS index and metadata from disk."""
@@ -114,17 +121,28 @@ class RedHotMemory:
 
     def _load_metadata(self) -> Dict[str, Any]:
         """Load metadata from disk."""
-        if self.metadata_file.exists():
+        metadata_path = os.path.join(self.storage_path, "metadata.json")
+        if os.path.exists(metadata_path):
             try:
-                with open(self.metadata_file) as f:
+                with open(metadata_path, 'r') as f:
                     return json.load(f)
             except Exception as e:
                 logger.error(f"Failed to load metadata: {e}")
         return {}
     
     def _save_metadata(self):
-        """No-op method to handle metadata saving calls."""
-        pass
+        """Save metadata to disk."""
+        try:
+            metadata_path = os.path.join(self.storage_path, "metadata.json")
+            
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
+            
+            with open(metadata_path, 'w') as f:
+                json.dump(self.metadata, f)
+            logger.debug(f"Successfully saved metadata to {metadata_path}")
+        except Exception as e:
+            logger.error(f"Failed to save metadata: {e}")
 
     def store(
         self,
@@ -152,8 +170,8 @@ class RedHotMemory:
             vector_data = vector_data.astype('float32')
             
             # Check dimensions
-            if vector_data.shape[1] != self.vector_dim:
-                raise ValueError(f"Vector dimension mismatch. Expected {self.vector_dim}, got {vector_data.shape[1]}")
+            if vector_data.shape[1] != self.dimension:
+                raise ValueError(f"Vector dimension mismatch. Expected {self.dimension}, got {vector_data.shape[1]}")
             
             # Add to index
             self.index.add(vector_data)
@@ -165,15 +183,14 @@ class RedHotMemory:
                 "metadata": metadata or {}
             }
             
-            # Save metadata
-            self._save_metadata()
+            # Save state
+            self._save_state()
             
             # Check size limit
             if len(self.metadata) > self.max_size:
                 self._remove_oldest()
                 
-            device = "CPU" if not self.using_gpu else f"GPU {self.gpu_id}"
-            logger.info(f"Stored vector with key: {key} on {device}")
+            logger.info(f"Stored vector with key: {key}")
             
         except Exception as e:
             logger.error(f"Failed to store vector data: {e}")
@@ -252,72 +269,50 @@ class RedHotMemory:
                 key=lambda x: x[1]["timestamp"]
             )
             
-            # Remove oldest items
-            num_to_remove = len(self.metadata) - self.max_size
-            for key, _ in sorted_items[:num_to_remove]:
+            # Remove oldest items until under limit
+            while len(self.metadata) > self.max_size:
+                key, _ = sorted_items.pop(0)
                 del self.metadata[key]
-            
-            # Rebuild index with remaining items
-            self._rebuild_index()
+                
+            # Save state
+            self._save_state()
             
         except Exception as e:
             logger.error(f"Failed to remove oldest vectors: {e}")
-            raise
-    
-    def _rebuild_index(self):
-        """Rebuild FAISS index after removing items."""
-        try:
-            # Create new index
-            self._init_index()
-            
-            # Update indices in metadata
-            for i, (key, data) in enumerate(self.metadata.items()):
-                self.metadata[key]["index"] = i
-            
-            self._save_metadata()
-            
-        except Exception as e:
-            logger.error(f"Failed to rebuild index: {e}")
-            raise
-    
+
     def clear(self) -> bool:
-        """
-        Clear all vectors and metadata from storage.
-        Returns:
-            bool: True if cleared successfully, False otherwise
-        """
+        """Clear all data from storage."""
         try:
             # Reset index
-            self.index = faiss.IndexFlatL2(self.dimension)
-            self.metadata = {}
-            logger.info("Successfully cleared red-hot memory")
-            return True
+            self._init_index()
             
+            # Clear metadata
+            self.metadata = {}
+            
+            # Save empty state
+            self._save_state()
+            
+            return True
         except Exception as e:
-            logger.error(f"Error clearing storage: {e}")
+            logger.error(f"Failed to clear storage: {e}")
             return False
 
     def reset(self) -> bool:
-        """
-        Reset the entire storage directory.
-        WARNING: This will delete everything in the storage directory.
-        """
+        """Reset storage to initial state."""
         try:
+            # Clear all data
+            self.clear()
+            
+            # Remove storage directory
             if os.path.exists(self.storage_path):
                 shutil.rmtree(self.storage_path)
-            os.makedirs(self.storage_path)
+                os.makedirs(self.storage_path)
             
-            # Reinitialize empty index
-            self.index = faiss.IndexFlatL2(self.dimension)
-            self.metadata = {}
-            
-            logger.info("Successfully reset red-hot memory storage")
             return True
-            
         except Exception as e:
-            logger.error(f"Error resetting red-hot memory: {e}")
+            logger.error(f"Failed to reset storage: {e}")
             return False
-    
+
     def cleanup(self) -> None:
         """Clean up resources."""
         try:

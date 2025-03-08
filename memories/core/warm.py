@@ -14,29 +14,29 @@ logger = logging.getLogger(__name__)
 class WarmMemory:
     """Warm memory layer using DuckDB for fast in-memory operations."""
     
-    def __init__(self, duckdb_connection):
-        """Initialize warm memory.
-        
-        Args:
-            duckdb_connection: DuckDB connection from memory manager
-        """
+    def __init__(self):
+        """Initialize warm memory."""
         self.logger = logger
-        self.con = duckdb_connection
-        if self.con is None:
-            raise ValueError("DuckDB connection is required")
-            
-        # Create main table for data storage
-        self.con.execute("""
-            CREATE TABLE IF NOT EXISTS warm_data (
-                key VARCHAR PRIMARY KEY,
-                data JSON,
-                metadata JSON,
-                created_at TIMESTAMP,
-                last_accessed TIMESTAMP
-            )
-        """)
         
-        self.logger.info("Initialized warm memory storage")
+        try:
+            # Initialize DuckDB connection
+            self.con = duckdb.connect()
+            
+            # Create main table for data storage
+            self.con.execute("""
+                CREATE TABLE IF NOT EXISTS warm_data (
+                    key VARCHAR PRIMARY KEY,
+                    data JSON,
+                    metadata JSON,
+                    created_at TIMESTAMP,
+                    last_accessed TIMESTAMP
+                )
+            """)
+            
+            self.logger.info("Initialized warm memory storage")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize warm memory: {e}")
+            raise
 
     def store(self, data: Dict[str, Any], metadata: Optional[Dict[str, Any]] = None) -> None:
         """Store data in warm memory.
