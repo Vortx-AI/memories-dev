@@ -10,10 +10,7 @@ import asyncio
 
 from memories.core.memory_manager import MemoryManager
 from memories.core.memory_catalog import memory_catalog
-from memories.core.hot import HotMemory
 from memories.core.warm import WarmMemory
-from memories.core.cold import ColdMemory
-from memories.core.red_hot import RedHotMemory
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +31,7 @@ class MemoryStore:
     def _init_hot(self) -> None:
         """Initialize hot memory on demand."""
         if not self._hot_memory:
+            from memories.core.hot import HotMemory
             self._hot_memory = HotMemory()
 
     def _init_warm(self) -> None:
@@ -44,11 +42,13 @@ class MemoryStore:
     def _init_cold(self) -> None:
         """Initialize cold memory on demand."""
         if not self._cold_memory:
+            from memories.core.cold import ColdMemory
             self._cold_memory = ColdMemory()
 
     def _init_red_hot(self) -> None:
         """Initialize red hot memory on demand."""
         if not self._red_hot_memory:
+            from memories.core.red_hot import RedHotMemory
             self._red_hot_memory = RedHotMemory()
 
     def _get_data_size(self, data: Any) -> int:
