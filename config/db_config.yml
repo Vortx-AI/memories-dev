@@ -7,20 +7,73 @@ redis:
   db: 0
 
 memory:
-  base_path: "/Users/jaya/data/memory"
+  base_path: ./data/memory
+  enabled_tiers: ['glacier']  # Only enable glacier by default
+  
+  red_hot:
+    path: red_hot
+    max_size: 1000000  # 1M vectors
+    vector_dim: 384    # Default for all-MiniLM-L6-v2
+    gpu_id: 0
+    force_cpu: true    # Default to CPU for stability
+    index_type: Flat   # Simple Flat index
+    age_hours: 1
+    access_threshold: 100
+    promotion_threshold: 1000
+  
   hot:
-    path: "hot"
-    max_size: 104857600  # 100MB in bytes
-    redis_url: "redis://localhost:6379"
+    path: hot
+    max_size: 104857600  # 100MB
+    redis_url: redis://localhost:6379
+    redis_db: 0
+    age_days: 1
+    access_threshold: 50
+    promotion_threshold: 1000
+  
   warm:
-    path: "warm"
-    max_size: 1073741824  # 1GB in bytes
+    path: warm
+    max_size: 1073741824  # 1GB
+    age_days: 7
+    access_threshold: 10
+    promotion_threshold: 500
+    duckdb:
+      memory_limit: 8GB
+      threads: 4
+      config:
+        enable_progress_bar: true
+        enable_object_cache: true
+  
   cold:
-    path: "cold"
-    max_size: 10737418240  # 10GB in bytes
+    path: cold
+    max_size: 10737418240  # 10GB
+    age_days: 30
+    access_threshold: 0
+    promotion_threshold: 100
+    duckdb:
+      db_file: cold.duckdb
+      memory_limit: 4GB
+      threads: 4
+      config:
+        enable_progress_bar: true
+        enable_external_access: true
+        enable_object_cache: true
+      parquet:
+        compression: zstd
+        row_group_size: 100000
+        enable_statistics: true
+  
   glacier:
-    path: "glacier"
-    max_size: 107374182400  # 100GB in bytes
+    path: glacier
+    max_size: 107374182400  # 100GB
+    remote_storage:
+      type: s3  # or 'gcs', 'azure'
+      bucket: my-glacier-storage
+      prefix: data/
+      region: us-west-2
+      credentials:
+        profile: default
+      compression: zstd
+      archive_format: parquet
 
 data:
   storage: ./data/storage

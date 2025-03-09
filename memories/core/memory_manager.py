@@ -1,725 +1,238 @@
-"""
-Memory manager implementation for managing different memory tiers.
-"""
-
-import logging
-from typing import Dict, Any, Optional, List, Union
 from pathlib import Path
-from datetime import datetime
-import yaml
-import os
+from typing import Any, Dict, Optional
 import duckdb
 import numpy as np
-
-from .config import Config
-from .hot import HotMemory
-from .red_hot import RedHotMemory
-from .warm import WarmMemory
-from .cold import ColdMemory
-from .glacier import GlacierMemory
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-DEFAULT_CONFIG = {
-    'database': {
-        'path': './data/db',
-        'name': 'memories.db'
-    },
-    'memory': {
-        'base_path': './data/memory',
-        'enabled_tiers': ['glacier'],  # Only enable glacier by default
-        'red_hot': {
-            'path': 'red_hot',
-            'max_size': 1000000,  # 1M vectors
-            'vector_dim': 384,    # Default for all-MiniLM-L6-v2
-            'gpu_id': 0,
-            'force_cpu': True,    # Default to CPU for stability
-            'index_type': 'Flat'  # Simple Flat index
-        },
-        'hot': {
-            'path': 'hot',
-            'max_size': 104857600,  # 100MB
-            'redis_url': 'redis://localhost:6379',
-            'redis_db': 0
-        },
-        'warm': {
-            'path': 'warm',
-            'max_size': 1073741824,  # 1GB
-            'duckdb': {
-                'memory_limit': '8GB',
-                'threads': 4,
-                'config': {
-                    'enable_progress_bar': True,
-                    'enable_object_cache': True
-                }
-            }
-        },
-        'cold': {
-            'path': 'cold',
-            'max_size': 10737418240,  # 10GB
-            'duckdb': {
-                'db_file': 'cold.duckdb',
-                'memory_limit': '4GB',
-                'threads': 4,
-                'config': {
-                    'enable_progress_bar': True,
-                    'enable_external_access': True,
-                    'enable_object_cache': True
-                },
-                'parquet': {
-                    'compression': 'zstd',
-                    'row_group_size': 100000,
-                    'enable_statistics': True
-                }
-            }
-        },
-        'glacier': {
-            'path': 'glacier',
-            'max_size': 107374182400,  # 100GB
-            'remote_storage': {
-                'type': 's3',  # or 'gcs', 'azure'
-                'bucket': 'my-glacier-storage',
-                'prefix': 'data/',
-                'region': 'us-west-2',
-                'credentials': {
-                    'profile': 'default'
-                },
-                'compression': 'zstd',
-                'archive_format': 'parquet'
-            }
-        }
-    },
-    'data': {
-        'storage': './data/storage',
-        'models': './data/models',
-        'cache': './data/cache'
-    }
-}
+import yaml
+import os
+import faiss
+import logging
+from threading import Lock
+import re
 
 class MemoryManager:
-    """Memory manager that handles different memory tiers:
-    - Red Hot Memory: GPU-accelerated FAISS for ultra-fast vector similarity search
-    - Hot Memory: GPU-accelerated memory for immediate processing
-    - Warm Memory: CPU and Redis for fast in-memory access
-    - Cold Memory: DuckDB for efficient on-device storage
-    - Glacier Memory: Parquet files for off-device compressed storage
-    """
-    
+    """Memory manager for handling different memory tiers."""
+
     _instance = None
-    
+    _lock = Lock()
+
     def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(MemoryManager, cls).__new__(cls)
-        return cls._instance
-    
+        """Create singleton instance."""
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
+            return cls._instance
+
     def __init__(self):
-        """Initialize the memory manager."""
-        if not hasattr(self, '_initialized'):
-            # Initialize logger
+        """Initialize memory manager."""
+        if not hasattr(self, 'initialized'):
             self.logger = logging.getLogger(__name__)
-            
-            # Try to find config in standard locations
-            config_locations = [
-                Path('config/db_config.yml'),  # Local development
-                Path(__file__).parent.parent.parent / 'config' / 'db_config.yml',  # Package root
-                Path.home() / '.memories' / 'config' / 'db_config.yml'  # User home
-            ]
-            
-            config_found = False
-            for config_path in config_locations:
-                if config_path.exists():
-                    self.config = self._load_and_merge_config(config_path)
-                    config_found = True
-                    break
-            
-            if not config_found:
-                self.logger.warning("No config file found, using default configuration")
-                self.config = DEFAULT_CONFIG
-            
-            # Get enabled tiers from config
-            enabled_tiers = self.config['memory'].get('enabled_tiers', ['glacier'])
-            
-            # Initialize only enabled memory tiers
+            self.config = self._load_config()
+            self.initialized = True
+            self.indexes = {}  # Store FAISS indexes
+            self.con = None   # Store DuckDB connection
+            self._init_paths()
             self._init_duckdb()
+            self._init_cold_memory()
+            self._init_faiss()
+            self._init_storage_backends()
+
+    def _load_config(self) -> Dict[str, Any]:
+        """Load configuration from file.
+
+        Returns:
+            Dict: Configuration dictionary
+        """
+        try:
+            config_path = Path(__file__).parent.parent.parent / 'config' / 'db_config.yml'
+            if not config_path.exists():
+                raise FileNotFoundError(f"Configuration file not found at {config_path}")
+                
+            with open(config_path, 'r') as f:
+                config = yaml.safe_load(f)
+
+            # Ensure memory section exists
+            if 'memory' not in config:
+                config['memory'] = {}
+
+            # Set default base path if not provided
+            if 'base_path' not in config['memory']:
+                config['memory']['base_path'] = './data/memory'
+
+            # Convert base path to absolute path
+            config['memory']['base_path'] = str(Path(config['memory']['base_path']).resolve())
+
+            return config
+        except Exception as e:
+            raise RuntimeError(f"Error loading configuration: {e}")
             
-            if 'red_hot' in enabled_tiers:
-                self._init_red_hot_memory()
+    def _update_config_recursive(self, base_config: Dict, override_config: Dict) -> None:
+        """Recursively update configuration with override values.
+        
+        Args:
+            base_config: Base configuration dictionary to update
+            override_config: Override configuration dictionary
+        """
+        for key, value in override_config.items():
+            if key in base_config and isinstance(base_config[key], dict) and isinstance(value, dict):
+                self._update_config_recursive(base_config[key], value)
             else:
-                self.red_hot = None
+                base_config[key] = value
                 
-            if 'hot' in enabled_tiers:
-                self._init_hot_memory()
-            else:
-                self.hot = None
-                
-            if 'warm' in enabled_tiers:
-                self._init_warm_memory()
-            else:
-                self.warm = None
-                
-            if 'cold' in enabled_tiers:
-                self._init_cold_memory()
-            else:
-                self.cold = None
-                
-            if 'glacier' in enabled_tiers:
-                self._init_glacier_memory()
-            else:
-                self.glacier = None
+    def _init_paths(self) -> None:
+        """Initialize and create necessary directory paths."""
+        try:
+            # Create base memory path
+            base_path = Path(self.config['memory']['base_path'])
+            base_path.mkdir(parents=True, exist_ok=True)
             
-            self._initialized = True
-            self.logger.info(f"Initialized MemoryManager with database at: {self.config['database']['path']}/{self.config['database']['name']}")
-
-    def _load_and_merge_config(
-        self,
-        config_path: Optional[Union[str, Path]] = None,
-        custom_config: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """Load and merge configuration from multiple sources."""
-        # Start with default config
-        config = DEFAULT_CONFIG.copy()
-        
-        # Try loading from file if provided
-        if config_path:
-            try:
-                with open(config_path, 'r') as f:
-                    file_config = yaml.safe_load(f)
-                    if file_config:
-                        self._deep_update(config, file_config)
-                    self.logger.info(f"Loaded configuration from {config_path}")
-            except Exception as e:
-                self.logger.warning(f"Failed to load config from {config_path}: {e}")
-        
-        # Apply custom config overrides if provided
-        if custom_config:
-            self._deep_update(config, custom_config)
-            self.logger.info("Applied custom configuration overrides")
-        
-        return config
-
-    def _deep_update(self, base_dict: Dict, update_dict: Dict) -> None:
-        """Recursively update a dictionary."""
-        for key, value in update_dict.items():
-            if isinstance(value, dict) and key in base_dict and isinstance(base_dict[key], dict):
-                self._deep_update(base_dict[key], value)
-            else:
-                base_dict[key] = value
-
-    def _init_duckdb(self) -> None:
-        """Initialize single DuckDB connection for warm and cold storage."""
-        try:
-            import duckdb
-            self.con = duckdb.connect(database=':memory:', read_only=False)
-            self.logger.info("Initialized DuckDB connection")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize DuckDB: {e}")
-            self.con = None
-
-    def _init_red_hot_memory(self) -> None:
-        """Initialize red hot memory tier."""
-        try:
-            red_hot_config = self.config['memory'].get('red_hot', {})
+            # Create paths for each memory tier
+            for tier in ['red_hot', 'hot', 'warm', 'cold', 'glacier']:
+                if tier in self.config['memory']:
+                    tier_path = base_path / self.config['memory'][tier]['path']
+                    tier_path.mkdir(parents=True, exist_ok=True)
             
-            self.red_hot = RedHotMemory(
-                dimension=red_hot_config.get('vector_dim', 384),
-                max_size=red_hot_config.get('max_size', 1000000)
-            )
-            self.logger.info("Initialized red hot memory")
+            # Create data paths
+            for path_type in ['storage', 'models', 'cache']:
+                if path_type in self.config['data']:
+                    data_path = Path(self.config['data'][path_type])
+                    data_path.mkdir(parents=True, exist_ok=True)
+                    
         except Exception as e:
-            self.logger.error(f"Failed to initialize red hot memory: {e}")
-            self.red_hot = None
+            raise RuntimeError(f"Error initializing paths: {e}")
 
-    def _init_hot_memory(self) -> None:
-        """Initialize hot memory tier."""
+    def _init_duckdb(self):
+        """Initialize DuckDB connection."""
         try:
-            hot_config = self.config['memory'].get('hot', {})
-            self.hot = HotMemory(
-                redis_url=hot_config.get('redis_url', 'redis://localhost:6379'),
-                redis_db=hot_config.get('redis_db', 0)
-            )
-            self.logger.info("Initialized hot memory")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize hot memory: {e}")
-            self.hot = None
+            if 'cold' not in self.config['memory']:
+                return None
 
-    def _init_warm_memory(self) -> None:
-        """Initialize warm memory tier."""
-        try:
-            self.warm = WarmMemory()  # No longer needs duckdb_connection
-            self.logger.info("Initialized warm memory")
+            duckdb_config = self.config['memory']['cold'].get('duckdb', {})
+            memory_limit = duckdb_config.get('memory_limit', '4.0 GiB')
+            
+            # Normalize memory limit format to GiB
+            if isinstance(memory_limit, str):
+                # Extract numeric value and unit
+                match = re.match(r'(\d+(?:\.\d+)?)\s*([KMGT]?B)', memory_limit.upper())
+                if match:
+                    value = float(match.group(1))
+                    unit = match.group(2)
+                    
+                    # Convert to GiB
+                    multipliers = {
+                        'B': 1/(1024**3),
+                        'KB': 1/(1024**2),
+                        'MB': 1/1024,
+                        'GB': 1,
+                        'TB': 1024
+                    }
+                    value = value * multipliers.get(unit, 1)
+                    memory_limit = f"{value:.1f} GiB"
+
+            self.con = duckdb.connect(database=':memory:', config={'memory_limit': memory_limit})
+            self.logger.info(f"Successfully initialized DuckDB connection with memory limit {memory_limit}")
+
         except Exception as e:
-            self.logger.error(f"Failed to initialize warm memory: {e}")
-            self.warm = None
+            self.logger.error(f"Failed to initialize DuckDB connection: {str(e)}")
+            raise
 
     def _init_cold_memory(self) -> None:
-        """Initialize cold memory tier."""
+        """Initialize cold memory storage."""
         try:
-            cold_config = self.config['memory'].get('cold', {})
-            self.cold = ColdMemory()  # Initialize without arguments
-            self.logger.info("Initialized cold memory")
+            from memories.core.cold import ColdMemory
+            
+            self.cold = ColdMemory()
+            self.logger.info("Cold memory initialized")
+            
         except Exception as e:
-            self.logger.error(f"Failed to initialize cold memory: {e}")
+            self.logger.error(f"Error initializing cold memory: {e}")
             self.cold = None
+            raise
 
-    def _init_glacier_memory(self) -> None:
-        """Initialize glacier memory tier."""
+    def _init_faiss(self):
+        """Initialize FAISS index for vector storage."""
         try:
-            self.glacier = GlacierMemory()  # No config needed, it's optional
-            self.logger.info("Initialized glacier memory")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize glacier memory: {e}")
-            self.glacier = None
-
-    def get_memory_path(self, memory_type: str) -> Optional[Path]:
-        """Get path for specific memory type"""
-        try:
-            if memory_type not in ['hot', 'warm', 'cold', 'glacier']:
-                raise ValueError(f"Invalid memory type: {memory_type}")
-                
-            config = self.config['memory'][memory_type]
-            return self.config['memory']['base_path'] / config['path']
-            
-        except Exception as e:
-            self.logger.error(f"Error getting {memory_type} memory path: {e}")
-            return None
-
-    def store(
-        self,
-        key: str,
-        data: Any,
-        tier: str = "hot",
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> None:
-        """Store data in specified memory tier.
-        
-        Args:
-            key: Unique identifier for the data
-            data: Data to store (vector data for red_hot tier)
-            tier: Memory tier to store in ('red_hot', 'hot', 'warm', 'cold', or 'glacier')
-            metadata: Optional metadata to store with the data
-        """
-        if not isinstance(data, dict) and tier != "red_hot":
-            logger.error("Data must be a dictionary for non-red_hot tiers")
-            return
-        
-        # Ensure timestamp exists in metadata
-        if metadata is None:
-            metadata = {}
-        if "timestamp" not in metadata:
-            metadata["timestamp"] = datetime.now().isoformat()
-        
-        # Store in specified tier
-        try:
-            if tier == "red_hot" and self.red_hot:
-                self.red_hot.store(key, data, metadata)
-            elif tier == "hot" and self.hot:
-                self.hot.store(data)
-            elif tier == "warm" and self.warm:
-                self.warm.store(data)
-            elif tier == "cold" and self.cold:
-                self.cold.store(data)
-            elif tier == "glacier" and self.glacier:
-                self.glacier.store(data)
-            else:
-                logger.error(f"Invalid memory tier: {tier}")
-        except Exception as e:
-            logger.error(f"Failed to store in {tier} memory: {e}")
-    
-    def search_vectors(
-        self,
-        query_vector: Any,
-        k: int = 5,
-        metadata_filter: Optional[Dict[str, Any]] = None
-    ) -> List[Dict[str, Any]]:
-        """Search for similar vectors in red hot memory.
-        
-        Args:
-            query_vector: Query vector
-            k: Number of results to return
-            metadata_filter: Optional filter to apply on metadata
-            
-        Returns:
-            List of results with distances and metadata
-        """
-        if not self.red_hot:
-            logger.error("Red hot memory not available")
-            return []
-        
-        try:
-            return self.red_hot.search(query_vector, k, metadata_filter)
-        except Exception as e:
-            logger.error(f"Failed to search vectors: {e}")
-            return []
-    
-    def retrieve(self, query: Dict[str, Any], tier: str = "hot") -> Optional[Dict[str, Any]]:
-        """Retrieve data from specified memory tier.
-        
-        Args:
-            query: Query to match against stored data
-            tier: Memory tier to query from ('hot', 'warm', 'cold', or 'glacier')
-            
-        Returns:
-            Retrieved data or None if not found
-        """
-        try:
-            if tier == "hot" and self.hot:
-                return self.hot.retrieve(query)
-            elif tier == "warm" and self.warm:
-                return self.warm.retrieve(query)
-            elif tier == "cold" and self.cold:
-                return self.cold.retrieve(query)
-            elif tier == "glacier" and self.glacier:
-                return self.glacier.retrieve(query)
-            else:
-                logger.error(f"Invalid memory tier: {tier}")
+            if 'red_hot' not in self.config['memory']:
                 return None
-        except Exception as e:
-            logger.error(f"Failed to retrieve from {tier} memory: {e}")
-            return None
-    
-    def retrieve_all(self, tier: str = "hot") -> List[Dict[str, Any]]:
-        """Retrieve all data from specified memory tier.
-        
-        Args:
-            tier: Memory tier to retrieve from ('hot', 'warm', 'cold', or 'glacier')
+
+            use_gpu = self.config['memory']['red_hot'].get('use_gpu', False)
+            index_type = self.config['memory']['red_hot'].get('index_type', 'Flat')
             
-        Returns:
-            List of all stored data
-        """
-        try:
-            if tier == "hot" and self.hot:
-                return self.hot.retrieve_all()
-            elif tier == "warm" and self.warm:
-                return self.warm.retrieve_all()
-            elif tier == "cold" and self.cold:
-                return self.cold.retrieve_all()
-            elif tier == "glacier" and self.glacier:
-                return self.glacier.retrieve_all()
-            else:
-                logger.error(f"Invalid memory tier: {tier}")
-                return []
-        except Exception as e:
-            logger.error(f"Failed to retrieve all from {tier} memory: {e}")
-            return []
-    
-    def clear(self, tier: Optional[str] = None) -> None:
-        """Clear data from specified memory tier or all tiers if none specified.
-        
-        Args:
-            tier: Memory tier to clear ('red_hot', 'hot', 'warm', 'cold', or 'glacier')
-                 If None, clears all tiers
-        """
-        try:
-            if tier is None or tier == "red_hot":
-                if self.red_hot:
-                    self.red_hot.clear()
-            
-            if tier is None or tier == "hot":
-                if self.hot:
-                    self.hot.clear()
-            
-            if tier is None or tier == "warm":
-                if self.warm:
-                    self.warm.clear()
-            
-            if tier is None or tier == "cold":
-                if self.cold:
-                    self.cold.clear()
-            
-            if tier is None or tier == "glacier":
-                if self.glacier:
-                    self.glacier.clear()
-        except Exception as e:
-            logger.error(f"Failed to clear memory: {e}")
-    
-    def cleanup(self) -> None:
-        """Cleanup all memory tiers and connections."""
-        # Cleanup memory tiers
-        if self.warm:
-            self.warm.cleanup()
-        if self.cold:
-            self.cold.cleanup()
-        
-        # Close shared DuckDB connection
-        if self.con:
-            self.con.close()
-            self.con = None
-    
-    def __del__(self):
-        """Destructor to ensure cleanup is performed."""
-        self.cleanup()
+            # Validate index type
+            valid_index_types = ['Flat', 'IVF']
+            if index_type not in valid_index_types:
+                raise ValueError(f"Invalid FAISS index type: {index_type}. Must be one of {valid_index_types}")
 
-    def configure_tiers(
-        self,
-        red_hot_config: Optional[Dict[str, Any]] = None,
-        hot_config: Optional[Dict[str, Any]] = None,
-        warm_config: Optional[Dict[str, Any]] = None,
-        cold_config: Optional[Dict[str, Any]] = None,
-        glacier_config: Optional[Dict[str, Any]] = None,
-        reinitialize: bool = True
-    ) -> None:
-        """Configure memory tiers with custom values and paths.
-        
-        Args:
-            red_hot_config: Configuration for red hot memory tier
-                Example: {
-                    'path': 'custom/red_hot',
-                    'max_size': 2000000,
-                    'vector_dim': 512,
-                    'gpu_id': 1,
-                    'force_cpu': True,
-                    'index_type': 'Flat'
-                }
-            hot_config: Configuration for hot memory tier
-                Example: {
-                    'path': 'custom/hot',
-                    'max_size': 209715200,  # 200MB
-                    'redis_url': 'redis://custom:6379',
-                    'redis_db': 1
-                }
-            warm_config: Configuration for warm memory tier
-                Example: {
-                    'path': 'custom/warm',
-                    'max_size': 2147483648,  # 2GB
-                    'duckdb': {
-                        'memory_limit': '16GB',
-                        'threads': 8
-                    }
-                }
-            cold_config: Configuration for cold memory tier
-                Example: {
-                    'path': 'custom/cold',
-                    'max_size': 21474836480,  # 20GB
-                    'duckdb': {
-                        'db_file': 'custom.duckdb',
-                        'memory_limit': '8GB',
-                        'threads': 8,
-                        'parquet': {
-                            'compression': 'zstd',
-                            'row_group_size': 200000
-                        }
-                    }
-                }
-            glacier_config: Configuration for glacier memory tier
-                Example: {
-                    'path': 'custom/glacier',
-                    'max_size': 214748364800,  # 200GB
-                    'remote_storage': {
-                        'type': 's3',
-                        'bucket': 'custom-bucket',
-                        'prefix': 'custom/data/',
-                        'region': 'us-east-1'
-                    }
-                }
-            reinitialize: Whether to reinitialize the memory tiers with new config
-        """
-        # Update configurations
-        if red_hot_config:
-            self._deep_update(self.config['memory']['red_hot'], red_hot_config)
-            if reinitialize and self.red_hot is not None:
-                self._init_red_hot_memory()
-        
-        if hot_config:
-            self._deep_update(self.config['memory']['hot'], hot_config)
-            if reinitialize and self.hot is not None:
-                self._init_hot_memory()
-        
-        if warm_config:
-            self._deep_update(self.config['memory']['warm'], warm_config)
-            if reinitialize and self.warm is not None:
-                self._init_warm_memory()
-        
-        if cold_config:
-            self._deep_update(self.config['memory']['cold'], cold_config)
-            if reinitialize and self.cold is not None:
-                self._init_cold_memory()
-        
-        if glacier_config:
-            self._deep_update(self.config['memory']['glacier'], glacier_config)
-            if reinitialize and self.glacier is not None:
-                self._init_glacier_memory()
-        
-        self.logger.info("Memory tiers configuration updated")
+            # Create index based on type
+            if index_type == 'Flat':
+                index = faiss.IndexFlatL2(384)  # 384 is default vector dimension
+            elif index_type == 'IVF':
+                quantizer = faiss.IndexFlatL2(384)
+                index = faiss.IndexIVFFlat(quantizer, 384, 100)  # 100 is number of centroids
 
-    def add_to_tier(
-        self,
-        tier: str,
-        data: Any,
-        key: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        **kwargs
-    ) -> bool:
-        """Add data to a specific memory tier with appropriate handling for each type.
-        
-        Args:
-            tier: Memory tier to add data to ('red_hot', 'hot', 'warm', 'cold', or 'glacier')
-            data: Data to store. Format depends on tier:
-                - red_hot: vector data (numpy array or torch tensor)
-                - hot: dictionary data for Redis
-                - warm: dictionary data for DuckDB
-                - cold: dictionary data or path to Parquet file
-                - glacier: dictionary data or path to file for remote storage
-            key: Optional key for the data (required for red_hot tier)
-            metadata: Optional metadata to store with the data
-            **kwargs: Additional arguments specific to each tier:
-                red_hot:
-                    - vector_dim: dimension of the vector
-                hot:
-                    - expiry: optional TTL in seconds
-                warm:
-                    - table_name: optional custom table name
-                cold:
-                    - parquet_path: path to Parquet file if adding external file
-                    - theme: optional theme for organizing data
-                    - tag: optional tag for organizing data
-                glacier:
-                    - bucket: optional override for S3 bucket
-                    - prefix: optional override for S3 prefix
-                    
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        try:
-            # Validate tier
-            if tier not in ['red_hot', 'hot', 'warm', 'cold', 'glacier']:
-                self.logger.error(f"Invalid memory tier: {tier}")
-                return False
+            # Move to GPU if requested
+            if use_gpu and faiss.get_num_gpus() > 0:
+                res = faiss.StandardGpuResources()
+                index = faiss.index_cpu_to_gpu(res, 0, index)
 
-            # Ensure metadata has timestamp
-            if metadata is None:
-                metadata = {}
-            if 'timestamp' not in metadata:
-                metadata['timestamp'] = datetime.now().isoformat()
-
-            # Handle each tier appropriately
-            if tier == 'red_hot':
-                if not key:
-                    self.logger.error("Key is required for red_hot tier")
-                    return False
-                if self.red_hot:
-                    self.red_hot.store(key=key, vector_data=data, metadata=metadata)
-                    return True
-
-            elif tier == 'hot':
-                if not isinstance(data, dict):
-                    self.logger.error("Data must be a dictionary for hot tier")
-                    return False
-                if self.hot:
-                    self.hot.store(data)
-                    return True
-
-            elif tier == 'warm':
-                if not isinstance(data, dict):
-                    self.logger.error("Data must be a dictionary for warm tier")
-                    return False
-                if self.warm:
-                    table_name = kwargs.get('table_name', 'warm_data')
-                    self.warm.store(data, metadata=metadata)
-                    return True
-
-            elif tier == 'cold':
-                if self.cold:
-                    if isinstance(data, (str, Path)):  # Parquet file path
-                        return self.cold.query_storage(
-                            query="SELECT 1",  # Validate file is readable
-                            additional_files=[data]
-                        ) is not None
-                    elif isinstance(data, dict):
-                        self.cold.store(data)
-                        return True
-                    else:
-                        self.logger.error("Data must be a dictionary or path to Parquet file for cold tier")
-                        return False
-
-            elif tier == 'glacier':
-                if self.glacier:
-                    if isinstance(data, dict):
-                        self.glacier.store(data, metadata=metadata)
-                        return True
-                    elif isinstance(data, (str, Path)):  # File path
-                        path = Path(data)
-                        if not path.exists():
-                            self.logger.error(f"File not found: {path}")
-                            return False
-                        # Add file-specific metadata
-                        file_metadata = {
-                            'filename': path.name,
-                            'size': path.stat().st_size,
-                            'last_modified': datetime.fromtimestamp(path.stat().st_mtime).isoformat(),
-                            **metadata
-                        }
-                        self.glacier.store(
-                            data={'file_path': str(path)},
-                            metadata=file_metadata
-                        )
-                        return True
-                    else:
-                        self.logger.error("Data must be a dictionary or file path for glacier tier")
-                        return False
-
-            return False
+            self.indexes['red_hot'] = index
+            self.logger.info(f"Initialized FAISS index of type {index_type}")
 
         except Exception as e:
-            self.logger.error(f"Failed to add data to {tier} tier: {e}")
-            return False
-
-    def batch_import_parquet(
-        self,
-        folder_path: Union[str, Path],
-        theme: Optional[str] = None,
-        tag: Optional[str] = None,
-        recursive: bool = True,
-        pattern: str = "*.parquet"
-    ) -> Dict[str, Any]:
-        """Import multiple parquet files into cold storage.
-        
-        Args:
-            folder_path: Path to folder containing parquet files
-            theme: Optional theme tag for the data
-            tag: Optional additional tag for the data
-            recursive: Whether to search subdirectories
-            pattern: File pattern to match
+            self.logger.error(f"Failed to initialize FAISS index: {str(e)}")
+            raise
             
-        Returns:
-            Dict containing:
-                files_processed: Number of files processed
-                records_imported: Total number of records imported
-                total_size: Total size of imported data in bytes
-                errors: List of files that had errors
-        """
-        if not self.cold:
-            raise RuntimeError("Cold memory is not enabled. Enable it by setting enable_cold=True")
-
+    def _init_storage_backends(self) -> None:
+        """Initialize storage backends for different memory tiers."""
         try:
-            # Delegate to cold memory's implementation
-            results = self.cold.batch_import_parquet(
-                folder_path=folder_path,
-                theme=theme,
-                tag=tag,
-                recursive=recursive,
-                pattern=pattern
-            )
+            self.storage_backends = {}
             
-            # Log the results
-            logger.info(
-                f"Parquet import complete - "
-                f"Processed: {results['files_processed']} files, "
-                f"Imported: {results['records_imported']} records, "
-                f"Size: {results['total_size'] / (1024*1024):.2f} MB"
-            )
+            # Initialize Redis for hot tier if configured
+            if 'hot' in self.config['memory'] and 'redis_url' in self.config['memory']['hot']:
+                import redis
+                hot_config = self.config['memory']['hot']
+                self.storage_backends['hot'] = redis.from_url(
+                    hot_config['redis_url'],
+                    db=hot_config.get('redis_db', 0)
+                )
+                self.logger.info("Redis initialized for hot tier")
             
-            if results['errors']:
-                logger.warning(f"Errors occurred in {len(results['errors'])} files")
+            # Initialize remote storage for glacier tier if configured
+            if 'glacier' in self.config['memory'] and 'remote_storage' in self.config['memory']['glacier']:
+                glacier_config = self.config['memory']['glacier']['remote_storage']
+                storage_type = glacier_config['type']
                 
-            return results
-            
+                if storage_type == 's3':
+                    import boto3
+                    
+                    # Extract AWS credentials
+                    credentials = glacier_config.get('credentials', {})
+                    client_kwargs = {
+                        'region_name': glacier_config['region']
+                    }
+                    
+                    # Add credentials if provided
+                    if 'aws_access_key_id' in credentials:
+                        client_kwargs['aws_access_key_id'] = credentials['aws_access_key_id']
+                    if 'aws_secret_access_key' in credentials:
+                        client_kwargs['aws_secret_access_key'] = credentials['aws_secret_access_key']
+                    if 'aws_session_token' in credentials:
+                        client_kwargs['aws_session_token'] = credentials['aws_session_token']
+                    
+                    self.storage_backends['glacier'] = boto3.client('s3', **client_kwargs)
+                    
+                elif storage_type == 'gcs':
+                    from google.cloud import storage
+                    self.storage_backends['glacier'] = storage.Client()
+                elif storage_type == 'azure':
+                    from azure.storage.blob import BlobServiceClient
+                    self.storage_backends['glacier'] = BlobServiceClient.from_connection_string(
+                        glacier_config['connection_string']
+                    )
+                    
+                self.logger.info(f"Remote storage initialized for glacier tier: {storage_type}")
+                
         except Exception as e:
-            logger.error(f"Failed to import parquet files: {e}")
+            self.logger.error(f"Error initializing storage backends: {e}")
             raise
 
     def cleanup_cold_memory(self, remove_storage: bool = True) -> None:
@@ -733,52 +246,167 @@ class MemoryManager:
             return
             
         try:
-            storage_dir = self.config['memory']['base_path']
-            if not storage_dir.exists():
-                self.logger.info("No existing storage directory found")
-                return
-                
-            cold_dir = storage_dir / self.config['memory']['cold']['path']
-            if not cold_dir.exists():
-                self.logger.info("No existing cold storage directory found")
-                return
-                
-            # Clear all tables and their data
-            self.logger.info("Clearing cold memory tables and data...")
-            self.cold.clear_tables(keep_files=False)
+            # Get storage directory paths
+            storage_dir = Path(self.config['memory']['base_path'])
+            data_storage_dir = Path(self.config['data']['storage'])
             
-            # Close DuckDB connection if it exists
-            if hasattr(self, 'con'):
-                self.con.close()
-                self.logger.info("Closed cold DuckDB connection")
+            # Cleanup cold memory
+            if hasattr(self.cold, 'cleanup'):
+                self.cold.cleanup()
             
-            # Optionally remove the entire storage directory
-            if remove_storage and storage_dir.exists():
-                self.logger.info("Removing storage directory...")
-                import shutil
-                shutil.rmtree(storage_dir)
-                self.logger.info("Storage directory removed")
-                
-            self.logger.info("Cold memory cleanup completed successfully")
+            # Remove storage directories if requested
+            if remove_storage:
+                if storage_dir.exists():
+                    import shutil
+                    shutil.rmtree(storage_dir)
+                    self.logger.info(f"Removed storage directory {storage_dir}")
+                    
+                if data_storage_dir.exists():
+                    import shutil
+                    shutil.rmtree(data_storage_dir)
+                    self.logger.info(f"Removed data storage directory {data_storage_dir}")
             
         except Exception as e:
             self.logger.error(f"Error during cold memory cleanup: {e}")
             raise 
 
-    def add_to_hot_memory(self, vector: np.ndarray, metadata: dict):
-        """Add item to red-hot memory."""
-        self.red_hot.add_vector(vector, metadata)
+    def get_data_source_path(self, source_type: str) -> Path:
+        """Get configured path for a specific data source.
+        
+        Args:
+            source_type: Type of data source ('sentinel', 'landsat', 'planetary', 'osm', 'overture')
+            
+        Returns:
+            Path: Configured path for the data source
+        """
+        try:
+            base_path = Path(self.config['data']['storage'])
+            source_path = base_path / source_type
+            source_path.mkdir(parents=True, exist_ok=True)
+            return source_path
+        except Exception as e:
+            self.logger.error(f"Error getting data source path for {source_type}: {e}")
+            raise
 
-    def search_hot_memory(self, query_vector: np.ndarray, k: int = 5):
-        """Search red-hot memory."""
-        return self.red_hot.search(query_vector, k) 
+    def get_cache_path(self, source_type: str) -> Path:
+        """Get cache path for a specific data source.
+        
+        Args:
+            source_type: Type of data source ('sentinel', 'landsat', 'planetary', 'osm', 'overture')
+            
+        Returns:
+            Path: Cache path for the data source
+        """
+        try:
+            base_path = Path(self.config['data']['cache'])
+            cache_path = base_path / source_type
+            cache_path.mkdir(parents=True, exist_ok=True)
+            return cache_path
+        except Exception as e:
+            self.logger.error(f"Error getting cache path for {source_type}: {e}")
+            raise
+
+    def get_duckdb_connection(self) -> duckdb.DuckDBPyConnection:
+        """Get shared DuckDB connection.
+        
+        Returns:
+            duckdb.DuckDBPyConnection: Shared DuckDB connection
+        """
+        return self.con
+
+    def get_faiss_index(self, tier: str = 'red_hot') -> faiss.Index:
+        """Get FAISS index for specified tier.
+        
+        Args:
+            tier: Memory tier to get index for (default: 'red_hot')
+            
+        Returns:
+            faiss.Index: FAISS index for the specified tier
+
+        Raises:
+            ValueError: If the index type is invalid
+        """
+        # Re-validate index type in case it was changed after initialization
+        if tier == 'red_hot' and 'red_hot' in self.config['memory']:
+            index_type = self.config['memory']['red_hot'].get('index_type', 'Flat')
+            valid_index_types = ['Flat', 'IVF']
+            if index_type not in valid_index_types:
+                raise ValueError(f"Invalid FAISS index type: {index_type}. Must be one of {valid_index_types}")
+
+        # Initialize indexes if not already done
+        if not hasattr(self, 'indexes'):
+            self.indexes = {}
+            self._init_faiss()
+
+        return self.indexes.get(tier)
+        
+    def get_storage_backend(self, tier: str) -> Any:
+        """Get storage backend for specified tier.
+        
+        Args:
+            tier: Memory tier to get storage backend for
+            
+        Returns:
+            Any: Storage backend for the specified tier
+        """
+        if tier not in self.storage_backends:
+            raise ValueError(f"No storage backend initialized for tier: {tier}")
+        return self.storage_backends[tier]
+
+    def get_connector(self, source_type: str, **kwargs) -> Any:
+        """Get initialized connector for a data source.
+        
+        Args:
+            source_type: Type of data source ('sentinel', 'landsat', 'planetary', 'osm', 'overture')
+            **kwargs: Additional configuration options for the connector
+                - keep_files (bool): Whether to keep downloaded files
+                - store_in_cold (bool): Whether to use cold storage
+                - data_dir (Path): Optional override for data directory
+                - cache_dir (Path): Optional override for cache directory
+        
+        Returns:
+            Initialized connector instance
+        """
+        try:
+            # Get data and cache directories
+            data_dir = kwargs.pop('data_dir', None) or self.get_data_source_path(source_type)
+            cache_dir = kwargs.pop('cache_dir', None) or self.get_cache_path(source_type)
+            
+            # Initialize appropriate connector
+            if source_type == 'sentinel':
+                from memories.core.glacier.artifacts.sentinel import SentinelConnector
+                return SentinelConnector(
+                    data_dir=data_dir,
+                    keep_files=kwargs.get('keep_files', False),
+                    store_in_cold=kwargs.get('store_in_cold', True)
+                )
+            elif source_type == 'landsat':
+                from memories.core.glacier.artifacts.landsat import LandsatConnector
+                return LandsatConnector()
+            elif source_type == 'planetary':
+                from memories.core.glacier.artifacts.planetary import PlanetaryConnector
+                return PlanetaryConnector(cache_dir=str(cache_dir))
+            elif source_type == 'osm':
+                from memories.core.glacier.artifacts.osm import OSMConnector
+                return OSMConnector(config=kwargs.get('config', {}), cache_dir=str(cache_dir))
+            elif source_type == 'overture':
+                from memories.core.glacier.artifacts.overture import OvertureConnector
+                return OvertureConnector(data_dir=str(data_dir))
+            else:
+                raise ValueError(f"Unsupported source type: {source_type}")
+                
+        except Exception as e:
+            self.logger.error(f"Error initializing {source_type} connector: {e}")
+            raise
+
+    def add_to_hot_memory(self, vector: np.ndarray, metadata: dict):
+        # Implementation of add_to_hot_memory method
+        pass 
 
     def get_cold_memory(self):
-        """Get or create cold memory instance."""
-        if not self.cold:
-            try:
-                self.cold = ColdMemory()
-            except Exception as e:
-                logger.error(f"Failed to initialize cold memory: {e}")
-                raise
+        """Get cold memory instance.
+        
+        Returns:
+            ColdMemory: Cold memory instance or None if not initialized
+        """
         return self.cold 
