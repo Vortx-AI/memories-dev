@@ -341,3 +341,36 @@ class OSMConnector(APIConnector, DataSource):
         except Exception as e:
             logger.error(f"Error querying OSM data: {str(e)}")
             return None
+
+    async def get_data(self, spatial_input: Union[str, List[float], Dict], spatial_input_type: str = "bbox", tags: List[str] = None) -> Dict[str, Any]:
+        """Get OSM data for the given spatial input.
+        
+        Args:
+            spatial_input: Either a bounding box [south, west, north, east], address string, or dict with bbox
+            spatial_input_type: Type of spatial input ("bbox" or "address")
+            tags: List of OSM tags to filter by
+            
+        Returns:
+            Dictionary containing OSM data or None if error
+            
+        Raises:
+            ValueError: If spatial_input_type is not supported
+        """
+        if spatial_input_type not in ["bbox", "address"]:
+            raise ValueError(f"Unsupported spatial input type: {spatial_input_type}")
+            
+        # Convert input format if needed
+        if isinstance(spatial_input, dict):
+            if "bbox" in spatial_input:
+                bbox = spatial_input["bbox"]
+            else:
+                bbox = [
+                    spatial_input.get("ymin", 0),  # south
+                    spatial_input.get("xmin", 0),  # west
+                    spatial_input.get("ymax", 0),  # north
+                    spatial_input.get("xmax", 0)   # east
+                ]
+        else:
+            bbox = spatial_input
+            
+        return await self.get_osm_data(bbox, tags if tags else "all")

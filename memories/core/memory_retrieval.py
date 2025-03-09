@@ -98,57 +98,100 @@ class MemoryRetrieval:
         Args:
             from_tier: Memory tier to retrieve from ("glacier", "cold", "warm", "hot", "sensory")
             source: Data source type ("osm", "sentinel", "overture", etc.)
-            spatial_input_type: Type of spatial input ("bbox", "address", "coords")
-            spatial_input: The spatial input data
-            tags: Additional source-specific parameters
-            temporal_input: Dictionary with start_date and end_date for temporal queries (Sentinel)
+            spatial_input_type: Type of spatial input ("bbox", "address", etc.)
+            spatial_input: Spatial input data
+            tags: Optional tags for filtering
+            temporal_input: Optional temporal input for filtering
+
+        Returns:
+            Retrieved data
+
+        Raises:
+            ValueError: If the tier is invalid or if the spatial input type is unsupported
         """
+        valid_tiers = ["glacier", "cold", "warm", "hot", "sensory"]
+        if from_tier not in valid_tiers:
+            raise ValueError(f"Invalid tier: {from_tier}. Must be one of {valid_tiers}")
+
         try:
-            # Validate tier
-            valid_tiers = ["glacier", "cold", "warm", "hot", "sensory"]
-            if from_tier not in valid_tiers:
-                raise ValueError(f"Invalid tier: {from_tier}. Must be one of {valid_tiers}")
-
-            # Initialize appropriate memory tier
-            if from_tier == "cold":
-                self._init_cold()
+            if from_tier == "glacier":
+                result = await self._retrieve_from_glacier(source, spatial_input_type, spatial_input, tags, temporal_input)
+                if result is None:
+                    logger.error(f"Failed to retrieve data from {from_tier} tier")
+                return result
+            elif from_tier == "cold":
                 return await self._retrieve_from_cold(spatial_input_type, spatial_input, tags)
-                
-            elif from_tier == "hot":
-                self._init_hot()
-                return await self._retrieve_from_hot(spatial_input_type, spatial_input, tags)
-                
             elif from_tier == "warm":
-                self._init_warm()
                 return await self._retrieve_from_warm(spatial_input_type, spatial_input, tags)
-                
+            elif from_tier == "hot":
+                return await self._retrieve_from_hot(spatial_input_type, spatial_input, tags)
             elif from_tier == "sensory":
-                self._init_red_hot()
                 return await self._retrieve_from_red_hot(spatial_input_type, spatial_input, tags)
-                
-            elif from_tier == "glacier":
-                connector = self._get_glacier_connector(source)
-                return await self._retrieve_from_glacier(connector, source, spatial_input_type, spatial_input, tags, temporal_input)
-
+        except ValueError as e:
+            # Re-raise ValueError exceptions (like unsupported spatial input type)
+            raise
         except Exception as e:
             logger.error(f"Error retrieving from {from_tier} tier: {e}")
-            raise
+            return None
 
     async def _retrieve_from_glacier(
-        self, 
-        connector, 
+        self,
         source: str,
-        spatial_input_type: str, 
-        spatial_input: Any, 
+        spatial_input_type: str,
+        spatial_input: Union[List[float], str, Dict[str, float]],
         tags: Any = None,
         temporal_input: Dict[str, datetime] = None
     ) -> Any:
-        """Retrieve data from glacier storage using appropriate connector."""
+        """
+        Retrieve data from glacier storage.
+
+        Args:
+            source: Data source type ("osm", "sentinel", "overture", etc.)
+            spatial_input_type: Type of spatial input ("bbox", "address", etc.)
+            spatial_input: Spatial input data
+            tags: Optional tags for filtering
+            temporal_input: Optional temporal input for filtering
+
+        Returns:
+            Retrieved data
+
+        Raises:
+            ValueError: If the source is invalid or if the spatial input type is unsupported
+        """
         try:
-            if source == "planetary":
+            connector = self._get_glacier_connector(source)
+            if not connector:
+                raise ValueError(f"Failed to initialize connector for source: {source}")
+
+            if source == "osm":
+                if spatial_input_type not in ["bbox", "address"]:
+                    logger.error(f"Unsupported spatial input type for OSM: {spatial_input_type}")
+                    raise ValueError(f"Unsupported spatial input type for OSM: {spatial_input_type}")
+
+                # Convert spatial input to bbox format if needed
+                if isinstance(spatial_input, (list, tuple)):
+                    bbox = {
+                        "xmin": spatial_input[0],  # West
+                        "ymin": spatial_input[1],  # South
+                        "xmax": spatial_input[2],  # East
+                        "ymax": spatial_input[3]   # North
+                    }
+                else:
+                    bbox = spatial_input
+
+                # Get data
+                result = await connector.get_data(
+                    spatial_input=bbox,
+                    spatial_input_type=spatial_input_type,
+                    tags=tags
+                )
+
+                return result
+
+            elif source == "planetary":
                 if spatial_input_type != "bbox":
                     logger.error(f"Unsupported spatial input type for Planetary: {spatial_input_type}")
-                    return None
+                    raise ValueError(f"Unsupported spatial input type for Planetary: {spatial_input_type}")
 
                 # Convert spatial input to bbox format if needed
                 if isinstance(spatial_input, (list, tuple)):
@@ -221,7 +264,7 @@ class MemoryRetrieval:
             elif source == "sentinel":
                 if spatial_input_type != "bbox":
                     logger.error(f"Unsupported spatial input type for Sentinel: {spatial_input_type}")
-                    return None
+                    raise ValueError(f"Unsupported spatial input type for Sentinel: {spatial_input_type}")
 
                 # Convert spatial input to bbox format if needed
                 if isinstance(spatial_input, (list, tuple)):
@@ -266,7 +309,7 @@ class MemoryRetrieval:
             elif source == "landsat":
                 if spatial_input_type != "bbox":
                     logger.error(f"Unsupported spatial input type for Landsat: {spatial_input_type}")
-                    return None
+                    raise ValueError(f"Unsupported spatial input type for Landsat: {spatial_input_type}")
 
                 # Convert spatial input to bbox format if needed
                 if isinstance(spatial_input, (list, tuple)):
@@ -344,11 +387,11 @@ class MemoryRetrieval:
 
                 else:
                     logger.error(f"Unsupported spatial input type for Overture: {spatial_input_type}")
-                    return None
+                    raise ValueError(f"Unsupported spatial input type for Overture: {spatial_input_type}")
 
             else:
                 logger.error(f"Unsupported source: {source}")
-                return None
+                raise ValueError(f"Unsupported source: {source}")
 
         except Exception as e:
             logger.error(f"Error retrieving from glacier tier: {e}")
