@@ -51,6 +51,7 @@ class MemoryCatalog:
                     size BIGINT,
                     tags VARCHAR,
                     data_type VARCHAR,
+                    table_name VARCHAR,
                     additional_meta JSON
                 )
             """)
@@ -97,7 +98,8 @@ class MemoryCatalog:
         size: int,
         data_type: str,
         tags: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
+        table_name: Optional[str] = None
     ) -> str:
         """Register data in the catalog.
         
@@ -108,6 +110,7 @@ class MemoryCatalog:
             data_type: Type of the data
             tags: Optional tags for categorizing the data
             metadata: Optional additional metadata
+            table_name: Optional name of the table where data is stored
             
         Returns:
             str: Generated data ID
@@ -132,15 +135,18 @@ class MemoryCatalog:
             # Convert metadata to JSON string
             meta_json = json.dumps(metadata) if metadata else '{}'
             
+            # Use table_name if provided, otherwise use location
+            actual_table_name = table_name if table_name else location
+            
             # Insert into catalog
             self.con.execute("""
                 INSERT INTO memory_catalog (
                     data_id, primary_tier, location, created_at, last_accessed,
-                    access_count, size, tags, data_type, additional_meta
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    access_count, size, tags, data_type, table_name, additional_meta
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, [
                 data_id, tier, location, now, now,
-                0, size, tags_str, data_type, meta_json
+                0, size, tags_str, data_type, actual_table_name, meta_json
             ])
             
             self.logger.info(f"Registered data {data_id} in {tier} tier")
@@ -185,7 +191,7 @@ class MemoryCatalog:
                 # Convert row to dictionary
                 columns = ['data_id', 'primary_tier', 'location', 'created_at',
                           'last_accessed', 'access_count', 'size', 'tags',
-                          'data_type', 'additional_meta']
+                          'data_type', 'table_name', 'additional_meta']
                 return dict(zip(columns, result))
             return None
             
@@ -218,7 +224,7 @@ class MemoryCatalog:
             # Convert rows to dictionaries
             columns = ['data_id', 'primary_tier', 'location', 'created_at',
                       'last_accessed', 'access_count', 'size', 'tags',
-                      'data_type', 'additional_meta']
+                      'data_type', 'table_name', 'additional_meta']
             return [dict(zip(columns, row)) for row in results]
             
         except Exception as e:
@@ -253,7 +259,7 @@ class MemoryCatalog:
             # Convert rows to dictionaries
             columns = ['data_id', 'primary_tier', 'location', 'created_at',
                       'last_accessed', 'access_count', 'size', 'tags',
-                      'data_type', 'additional_meta']
+                      'data_type', 'table_name', 'additional_meta']
             return [dict(zip(columns, row)) for row in results]
             
         except Exception as e:

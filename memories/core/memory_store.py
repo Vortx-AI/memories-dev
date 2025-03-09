@@ -119,8 +119,16 @@ class MemoryStore:
                 location = f"cold/{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             elif to_tier == "warm":
                 self._init_warm()
-                success = await self._warm_memory.store(data, metadata=metadata, tags=tags)
-                location = str(self._warm_memory.storage_path / f"warm_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+                result = await self._warm_memory.store(data, metadata=metadata, tags=tags)
+                
+                if result["success"]:
+                    # Use the table name as the location
+                    location = result["table_name"]
+                    data_id = result["data_id"]
+                    success = True
+                else:
+                    success = False
+                    location = None
             elif to_tier == "hot":
                 self._init_hot()
                 success = await self._hot_memory.store(data, metadata=metadata, tags=tags)
@@ -133,14 +141,26 @@ class MemoryStore:
             # Register in catalog if storage was successful
             if success and location:
                 try:
-                    await memory_catalog.register_data(
-                        tier=to_tier,
-                        location=location,
-                        size=size,
-                        data_type=data_type,
-                        tags=tags,
-                        metadata=metadata
-                    )
+                    # For warm memory, use the table_name parameter
+                    if to_tier == "warm" and 'data_id' in locals():
+                        await memory_catalog.register_data(
+                            tier=to_tier,
+                            location=location,
+                            size=size,
+                            data_type=data_type,
+                            tags=tags,
+                            metadata=metadata,
+                            table_name=location  # Use the table name as both location and table_name
+                        )
+                    else:
+                        await memory_catalog.register_data(
+                            tier=to_tier,
+                            location=location,
+                            size=size,
+                            data_type=data_type,
+                            tags=tags,
+                            metadata=metadata
+                        )
                 except Exception as e:
                     self.logger.error(f"Failed to register in catalog: {e}")
                     # Don't fail the operation if catalog registration fails
@@ -180,6 +200,209 @@ class MemoryStore:
     def __del__(self):
         """Destructor to ensure cleanup is performed."""
         self.cleanup()
+
+    async def retrieve_from_warm(
+        self,
+        table_name: str,
+        db_name: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve data from a specific table in warm memory.
+        
+        Args:
+            table_name: Name of the table to retrieve data from
+            db_name: Optional name of the database file (without .duckdb extension)
+            
+        Returns:
+            Retrieved data or None if not found
+        """
+        try:
+            self._init_warm()
+            return await self._warm_memory.retrieve(table_name=table_name, db_name=db_name)
+        except Exception as e:
+            self.logger.error(f"Error retrieving from warm memory table {table_name}: {e}")
+            return None
+
+    async def import_parquet_to_warm(
+        self,
+        parquet_file: str,
+        metadata: Optional[Dict[str, Any]] = None,
+        tags: Optional[List[str]] = None,
+        db_name: Optional[str] = None,
+        table_name: Optional[str] = None
+    ) -> bool:
+        """
+        Import data from a parquet file into warm memory.
+        
+        Args:
+            parquet_file: Path to the parquet file
+            metadata: Optional metadata about the data
+            tags: Optional tags for categorizing the data
+            db_name: Optional name of the database file to store in (without .duckdb extension)
+            table_name: Optional name for the table to create. If None, a name will be generated.
+            
+        Returns:
+            bool: True if import was successful, False otherwise
+        """
+        try:
+            self._init_warm()
+            
+            # Get data size for catalog
+            size = os.path.getsize(parquet_file)
+            data_type = "parquet"
+            
+            # Import the parquet file
+            result = await self._warm_memory.import_from_parquet(
+                parquet_file=parquet_file,
+                metadata=metadata,
+                tags=tags,
+                db_name=db_name,
+                table_name=table_name
+            )
+            
+            if result["success"]:
+                # Register in catalog
+                try:
+                    await memory_catalog.register_data(
+                        tier="warm",
+                        location=result["table_name"],
+                        size=size,
+                        data_type=data_type,
+                        tags=tags,
+                        metadata=metadata,
+                        table_name=result["table_name"]
+                    )
+                except Exception as e:
+                    self.logger.error(f"Failed to register parquet import in catalog: {e}")
+                
+                return True
+            else:
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"Error importing parquet to warm memory: {e}")
+            return False
+    
+    async def import_duckdb_to_warm(
+        self,
+        source_db_file: str,
+        tables: Optional[List[str]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        tags: Optional[List[str]] = None,
+        db_name: Optional[str] = None
+    ) -> bool:
+        """
+        Import tables from another DuckDB database into warm memory.
+        
+        Args:
+            source_db_file: Path to the source DuckDB database file
+            tables: Optional list of table names to import. If None, imports all tables.
+            metadata: Optional metadata about the data
+            tags: Optional tags for categorizing the data
+            db_name: Optional name of the database file to store in (without .duckdb extension)
+            
+        Returns:
+            bool: True if import was successful, False otherwise
+        """
+        try:
+            self._init_warm()
+            
+            # Get data size for catalog
+            size = os.path.getsize(source_db_file)
+            data_type = "duckdb"
+            
+            # Import from the DuckDB file
+            result = await self._warm_memory.import_from_duckdb(
+                source_db_file=source_db_file,
+                tables=tables,
+                metadata=metadata,
+                tags=tags,
+                db_name=db_name
+            )
+            
+            if result["success"]:
+                # Register each imported table in catalog
+                for table_name, data_id in result["data_ids"].items():
+                    try:
+                        await memory_catalog.register_data(
+                            tier="warm",
+                            location=table_name,
+                            size=size // len(result["imported_tables"]),  # Approximate size per table
+                            data_type=data_type,
+                            tags=tags,
+                            metadata=metadata,
+                            table_name=table_name
+                        )
+                    except Exception as e:
+                        self.logger.error(f"Failed to register table {table_name} in catalog: {e}")
+                
+                return True
+            else:
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"Error importing DuckDB to warm memory: {e}")
+            return False
+
+    async def import_csv_to_warm(
+        self,
+        csv_file: str,
+        metadata: Optional[Dict[str, Any]] = None,
+        tags: Optional[List[str]] = None,
+        db_name: Optional[str] = None,
+        table_name: Optional[str] = None
+    ) -> bool:
+        """
+        Import data from a CSV file into warm memory.
+        
+        Args:
+            csv_file: Path to the CSV file
+            metadata: Optional metadata about the data
+            tags: Optional tags for categorizing the data
+            db_name: Optional name of the database file to store in (without .duckdb extension)
+            table_name: Optional name for the table to create. If None, a name will be generated.
+            
+        Returns:
+            bool: True if import was successful, False otherwise
+        """
+        try:
+            self._init_warm()
+            
+            # Get data size for catalog
+            size = os.path.getsize(csv_file)
+            data_type = "csv"
+            
+            # Import the CSV file
+            result = await self._warm_memory.import_from_csv(
+                csv_file=csv_file,
+                metadata=metadata,
+                tags=tags,
+                db_name=db_name,
+                table_name=table_name
+            )
+            
+            if result["success"]:
+                # Register in catalog
+                try:
+                    await memory_catalog.register_data(
+                        tier="warm",
+                        location=result["table_name"],
+                        size=size,
+                        data_type=data_type,
+                        tags=tags,
+                        metadata=metadata,
+                        table_name=result["table_name"]
+                    )
+                except Exception as e:
+                    self.logger.error(f"Failed to register CSV import in catalog: {e}")
+                
+                return True
+            else:
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"Error importing CSV to warm memory: {e}")
+            return False
 
 # Create singleton instance
 memory_store = MemoryStore()
