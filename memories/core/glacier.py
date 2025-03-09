@@ -4,6 +4,8 @@ import os
 import logging
 from typing import Dict, Any, Optional, List, Union
 import json
+import pandas as pd
+import geopandas as gpd
 
 from .glacier.factory import GlacierConnectorFactory
 from .glacier.base import GlacierConnector
@@ -219,3 +221,95 @@ class GlacierMemory:
     def __del__(self):
         """Destructor to ensure cleanup is called."""
         self.cleanup()
+
+    async def get_schema(self, source: str, spatial_input: Union[List[float], str], spatial_input_type: str = "bbox") -> Optional[Dict[str, Any]]:
+        """Get schema information for data from a specific source.
+        
+        Args:
+            source: Source type ('sentinel', 'landsat', 'osm', 'overture', etc.)
+            spatial_input: Spatial input (bounding box coordinates or address)
+            spatial_input_type: Type of spatial input ('bbox' or 'address')
+            
+        Returns:
+            Dictionary containing schema information or None if not found
+        """
+        try:
+            if not self.connectors:
+                raise ValueError("No connectors configured")
+                
+            # Get appropriate connector
+            connector = None
+            if source == "sentinel":
+                from .glacier.artifacts.sentinel import SentinelConnector
+                connector = SentinelConnector(data_dir=self.storage_path)
+            elif source == "landsat":
+                from .glacier.artifacts.landsat import LandsatConnector
+                connector = LandsatConnector()
+            elif source == "osm":
+                from .glacier.artifacts.osm import OSMConnector
+                connector = OSMConnector(config={}, cache_dir=self.storage_path)
+            elif source == "overture":
+                from .glacier.artifacts.overture import OvertureConnector
+                connector = OvertureConnector(data_dir=self.storage_path)
+            else:
+                raise ValueError(f"Unsupported source: {source}")
+                
+            # Get a small sample of data to determine schema
+            if spatial_input_type == "bbox":
+                if isinstance(spatial_input, list):
+                    # Use a very small bounding box for quick schema retrieval
+                    bbox = [
+                        spatial_input[0],  # south
+                        spatial_input[1],  # west
+                        spatial_input[0] + 0.001,  # north (tiny area)
+                        spatial_input[1] + 0.001   # east (tiny area)
+                    ]
+                else:
+                    raise ValueError("Invalid bbox format")
+            else:
+                bbox = spatial_input  # For address-based queries
+                
+            # Get sample data
+            data = await connector.get_data(bbox, spatial_input_type)
+            if not data:
+                return None
+                
+            # Determine schema based on data type
+            if isinstance(data, pd.DataFrame):
+                schema = {
+                    'columns': list(data.columns),
+                    'dtypes': {col: str(dtype) for col, dtype in data.dtypes.items()},
+                    'type': 'dataframe',
+                    'source': source
+                }
+            elif isinstance(data, dict):
+                schema = {
+                    'fields': list(data.keys()),
+                    'types': {k: type(v).__name__ for k, v in data.items()},
+                    'type': 'dict',
+                    'source': source
+                }
+            elif isinstance(data, gpd.GeoDataFrame):
+                schema = {
+                    'columns': list(data.columns),
+                    'dtypes': {col: str(dtype) for col, dtype in data.dtypes.items()},
+                    'geometry_type': str(data.geometry.geom_type.iloc[0]),
+                    'crs': str(data.crs),
+                    'type': 'geodataframe',
+                    'source': source
+                }
+            else:
+                schema = {
+                    'type': type(data).__name__,
+                    'source': source
+                }
+                
+            # Add metadata from connector if available
+            if hasattr(connector, 'get_metadata'):
+                schema['metadata'] = connector.get_metadata()
+                
+            return schema
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get schema for {source}: {e}")
+            return None

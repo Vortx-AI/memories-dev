@@ -145,3 +145,70 @@ class HotMemory:
     def __del__(self):
         """Destructor to ensure cleanup is performed."""
         self.cleanup()
+
+    async def get_schema(self, key: str) -> Optional[Dict[str, Any]]:
+        """Get schema information for stored data.
+        
+        Args:
+            key: Key of the data to get schema for
+            
+        Returns:
+            Dictionary containing schema information or None if not found
+        """
+        if not self.using_redis:
+            logger.error("Redis not available")
+            return None
+            
+        try:
+            # Get data from Redis
+            data = self.redis_client.get(key)
+            if not data:
+                return None
+                
+            # Parse stored data
+            stored_data = json.loads(data)
+            data_value = stored_data.get('data')
+            
+            if isinstance(data_value, dict):
+                schema = {
+                    'fields': list(data_value.keys()),
+                    'types': {k: type(v).__name__ for k, v in data_value.items()},
+                    'type': 'dict',
+                    'source': 'redis'
+                }
+            elif isinstance(data_value, list):
+                if data_value:
+                    if all(isinstance(x, dict) for x in data_value):
+                        # List of dictionaries - combine all keys
+                        all_keys = set().union(*(d.keys() for d in data_value))
+                        schema = {
+                            'fields': list(all_keys),
+                            'types': {k: type(next(d[k] for d in data_value if k in d)).__name__ 
+                                    for k in all_keys},
+                            'type': 'list_of_dicts',
+                            'source': 'redis'
+                        }
+                    else:
+                        schema = {
+                            'type': 'list',
+                            'element_type': type(data_value[0]).__name__,
+                            'length': len(data_value),
+                            'source': 'redis'
+                        }
+                else:
+                    schema = {
+                        'type': 'list',
+                        'length': 0,
+                        'source': 'redis'
+                    }
+            else:
+                schema = {
+                    'type': type(data_value).__name__,
+                    'source': 'redis'
+                }
+                
+            return schema
+            
+        except Exception as e:
+            logger.error(f"Failed to get schema for {key}: {e}")
+            return None

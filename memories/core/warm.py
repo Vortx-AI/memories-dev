@@ -155,3 +155,71 @@ class WarmMemory:
     def __del__(self):
         """Destructor to ensure cleanup is performed."""
         self.cleanup()
+
+    async def get_schema(self, filename: str) -> Optional[Dict[str, Any]]:
+        """Get schema information for stored data.
+        
+        Args:
+            filename: Name of the file to get schema for
+            
+        Returns:
+            Dictionary containing schema information or None if not found
+        """
+        try:
+            filepath = self.storage_path / filename
+            if not filepath.exists():
+                return None
+                
+            # Read JSON file
+            with open(filepath, 'r') as f:
+                stored_data = json.load(f)
+                
+            data_value = stored_data.get('data')
+            
+            if isinstance(data_value, dict):
+                schema = {
+                    'fields': list(data_value.keys()),
+                    'types': {k: type(v).__name__ for k, v in data_value.items()},
+                    'type': 'dict',
+                    'source': 'json_file'
+                }
+            elif isinstance(data_value, list):
+                if data_value:
+                    if all(isinstance(x, dict) for x in data_value):
+                        # List of dictionaries - combine all keys
+                        all_keys = set().union(*(d.keys() for d in data_value))
+                        schema = {
+                            'fields': list(all_keys),
+                            'types': {k: type(next(d[k] for d in data_value if k in d)).__name__ 
+                                    for k in all_keys},
+                            'type': 'list_of_dicts',
+                            'source': 'json_file'
+                        }
+                    else:
+                        schema = {
+                            'type': 'list',
+                            'element_type': type(data_value[0]).__name__,
+                            'length': len(data_value),
+                            'source': 'json_file'
+                        }
+                else:
+                    schema = {
+                        'type': 'list',
+                        'length': 0,
+                        'source': 'json_file'
+                    }
+            else:
+                schema = {
+                    'type': type(data_value).__name__,
+                    'source': 'json_file'
+                }
+                
+            # Add metadata if available
+            if 'metadata' in stored_data:
+                schema['metadata'] = stored_data['metadata']
+                
+            return schema
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get schema for {filename}: {e}")
+            return None

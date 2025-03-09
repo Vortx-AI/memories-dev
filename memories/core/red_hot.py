@@ -183,4 +183,47 @@ class RedHotMemory:
 
     def __del__(self):
         """Destructor to ensure cleanup is performed."""
-        self.cleanup() 
+        self.cleanup()
+
+    async def get_schema(self, vector_id: Union[str, int]) -> Optional[Dict[str, Any]]:
+        """Get schema information for stored vector.
+        
+        Args:
+            vector_id: ID of the vector to get schema for
+            
+        Returns:
+            Dictionary containing:
+                - dimension: Vector dimension
+                - type: Type of data ('vector')
+                - source: Source of the schema ('faiss')
+                - metadata: Additional metadata if available
+            Returns None if vector not found
+        """
+        try:
+            # Convert string ID to int if needed
+            if isinstance(vector_id, str):
+                vector_id = int(vector_id)
+                
+            # Check if vector exists in metadata
+            if str(vector_id) not in self.metadata:
+                return None
+                
+            schema = {
+                'dimension': self.dimension,
+                'type': 'vector',
+                'source': 'faiss',
+                'index_type': type(self.index).__name__
+            }
+            
+            # Add metadata if available
+            meta = self.metadata[str(vector_id)]
+            if meta:
+                schema['metadata'] = meta.get('metadata', {})
+                schema['tags'] = meta.get('tags', [])
+                schema['stored_at'] = meta.get('stored_at')
+                
+            return schema
+            
+        except Exception as e:
+            logger.error(f"Failed to get schema for vector {vector_id}: {e}")
+            return None 

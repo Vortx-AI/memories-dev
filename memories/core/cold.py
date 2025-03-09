@@ -20,6 +20,7 @@ from datetime import datetime
 import subprocess
 import gzip
 import shutil
+from memories.core.memory_catalog import memory_catalog
 
 # Initialize GPU support flags
 HAS_GPU_SUPPORT = False
@@ -154,7 +155,6 @@ class ColdMemory:
     
     def __init__(self):
         """Initialize cold memory storage."""
-        self.config = Config()
         self.logger = logging.getLogger(__name__)
         
         # Set up storage path in project root
@@ -174,17 +174,6 @@ class ColdMemory:
     def _initialize_schema(self):
         """Initialize database schema."""
         try:
-            # Create metadata table if it doesn't exist with BIGINT for size
-            self.con.execute("""
-                CREATE TABLE IF NOT EXISTS cold_metadata (
-                    id VARCHAR PRIMARY KEY,
-                    timestamp TIMESTAMP,
-                    data_type VARCHAR,
-                    size BIGINT,
-                    additional_meta JSON
-                )
-            """)
-
             # Create data table if it doesn't exist
             self.con.execute("""
                 CREATE TABLE IF NOT EXISTS cold_data (
@@ -198,7 +187,7 @@ class ColdMemory:
             self.logger.error(f"Failed to initialize database schema: {e}")
             raise
 
-    def register_external_file(self, file_path: str) -> None:
+    async def register_external_file(self, file_path: str) -> None:
         """Register an external file in the cold storage metadata."""
         try:
             file_path = Path(file_path)
@@ -209,43 +198,17 @@ class ColdMemory:
             file_stats = file_path.stat()
             file_type = file_path.suffix.lstrip('.')
 
-            # Create sequence if it doesn't exist
-            self.con.execute("""
-                CREATE SEQUENCE IF NOT EXISTS cold_metadata_id_seq;
-            """)
-
-            # Create table if it doesn't exist
-            self.con.execute("""
-                CREATE TABLE IF NOT EXISTS cold_metadata (
-                    id INTEGER PRIMARY KEY,
-                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    path VARCHAR,
-                    size BIGINT,
-                    data_type VARCHAR,
-                    additional_meta JSON
-                )
-            """)
-
-            # Check if file is already registered
-            existing = self.con.execute(
-                "SELECT id FROM cold_metadata WHERE path = ?",
-                [str(file_path)]
-            ).fetchone()
-
-            if existing:
-                self.logger.info(f"File already registered: {file_path}")
-                return
-
-            # Insert new file metadata using nextval from sequence
-            self.con.execute("""
-                INSERT INTO cold_metadata (id, path, size, data_type, additional_meta)
-                VALUES (nextval('cold_metadata_id_seq'), ?, ?, ?, ?)
-            """, [
-                str(file_path),
-                file_stats.st_size,
-                file_type,
-                '{}'  # Empty JSON object for additional metadata
-            ])
+            # Register in memory catalog
+            await memory_catalog.register_data(
+                tier="cold",
+                location=str(file_path),
+                size=file_stats.st_size,
+                data_type=file_type,
+                metadata={
+                    "is_external": True,
+                    "file_path": str(file_path)
+                }
+            )
 
             self.logger.info(f"Registered external file: {file_path}")
 
@@ -279,25 +242,21 @@ class ColdMemory:
                 logger.error("Data must be a dictionary or DataFrame for cold storage")
                 return False
 
-            # Add metadata columns if provided
-            if metadata:
-                for key, value in metadata.items():
-                    df[f"meta_{key}"] = value
+            # Generate unique ID
+            data_id = await memory_catalog.register_data(
+                tier="cold",
+                location=f"cold_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                size=df.memory_usage(deep=True).sum(),
+                data_type="dataframe",
+                tags=tags,
+                metadata=metadata
+            )
 
-            # Add tags if provided
-            if tags:
-                df["tags"] = ",".join(tags)
-
-            # Add timestamp
-            df["stored_at"] = datetime.now()
-
-            # Create table name from tags or use default
-            table_name = f"cold_data_{tags[0]}" if tags else "cold_data"
-            table_name = table_name.replace("-", "_").lower()
-
-            # Store in DuckDB
-            self.con.execute(f"CREATE TABLE IF NOT EXISTS {table_name} AS SELECT * FROM df LIMIT 0")
-            self.con.execute(f"INSERT INTO {table_name} SELECT * FROM df")
+            # Store data in DuckDB
+            self.con.execute(
+                "INSERT INTO cold_data (id, data) VALUES (?, ?)",
+                [data_id, df.to_json()]
+            )
 
             return True
 
@@ -305,50 +264,54 @@ class ColdMemory:
             logger.error(f"Error storing in cold storage: {e}")
             return False
 
-    def retrieve(self, query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def retrieve(self, query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Retrieve data from cold storage."""
         try:
-            conditions = []
-            params = []
-            for key, value in query.items():
-                conditions.append(f"data->>'$.{key}' = ?")
-                params.append(str(value))
-                
-            where_clause = " AND ".join(conditions)
-            
-            result = self.con.execute(f"""
-                SELECT d.data
-                FROM cold_data d
-                WHERE {where_clause}
+            # Get data info from catalog
+            data_info = await memory_catalog.get_data_info(query.get('data_id'))
+            if not data_info:
+                return None
+
+            # Get data from cold storage
+            result = self.con.execute("""
+                SELECT data FROM cold_data
+                WHERE id = ?
                 LIMIT 1
-            """, params).fetchone()
+            """, [data_info['data_id']]).fetchone()
             
-            return json.loads(result[0]) if result else None
+            if result:
+                data = pd.read_json(result[0])
+                return {
+                    "data": data,
+                    "metadata": json.loads(data_info['additional_meta'])
+                }
+            return None
             
         except Exception as e:
             logger.error(f"Failed to retrieve data: {e}")
             return None
 
-    def clear(self) -> None:
-        """Clear all data and metadata from cold storage."""
+    async def clear(self) -> None:
+        """Clear all data from cold storage."""
         try:
-            # Drop all registered views first
-            views = self.con.execute("""
-                SELECT name FROM sqlite_master 
-                WHERE type='view' AND name LIKE 'file_%'
-            """).fetchall()
+            # Get all cold tier data from catalog
+            cold_data = await memory_catalog.get_tier_data("cold")
             
-            for (view_name,) in views:
-                self.con.execute(f"DROP VIEW IF EXISTS {view_name}")
-            
-            # Clear all metadata
-            self.con.execute("DELETE FROM cold_metadata")
+            # Clear data table
             self.con.execute("DELETE FROM cold_data")
-            logger.info("Cleared all cold storage metadata")
+            
+            # Remove files if they exist
+            for item in cold_data:
+                if json.loads(item['additional_meta']).get('is_external', False):
+                    file_path = Path(item['location'])
+                    if file_path.exists():
+                        file_path.unlink()
+                        
+            logger.info("Cleared all cold storage data")
         except Exception as e:
             logger.error(f"Failed to clear cold storage: {e}")
 
-    def unregister_file(self, file_id: str) -> bool:
+    async def unregister_file(self, file_id: str) -> bool:
         """Unregister a specific file from cold storage.
         
         Args:
@@ -358,11 +321,19 @@ class ColdMemory:
             bool: True if successful, False otherwise
         """
         try:
-            # Drop the view if it exists
-            self.con.execute(f"DROP VIEW IF EXISTS file_{file_id}")
+            # Get file info from catalog
+            file_info = await memory_catalog.get_data_info(file_id)
+            if not file_info:
+                return False
+                
+            # Remove data if exists
+            self.con.execute("DELETE FROM cold_data WHERE id = ?", [file_id])
             
-            # Remove metadata
-            self.con.execute("DELETE FROM cold_metadata WHERE id = ?", [file_id])
+            # Remove file if it's external
+            if json.loads(file_info['additional_meta']).get('is_external', False):
+                file_path = Path(file_info['location'])
+                if file_path.exists():
+                    file_path.unlink()
             
             logger.info(f"Successfully unregistered file: {file_id}")
             return True
@@ -370,26 +341,25 @@ class ColdMemory:
             logger.error(f"Failed to unregister file {file_id}: {e}")
             return False
 
-    def list_registered_files(self) -> List[Dict]:
+    async def list_registered_files(self) -> List[Dict]:
         """List all registered files and their metadata."""
         try:
-            result = self.con.execute("""
-                SELECT * FROM cold_metadata 
-                WHERE data_type = 'parquet'
-                ORDER BY timestamp DESC
-            """).fetchall()
+            # Get all cold tier data from catalog
+            cold_data = await memory_catalog.get_tier_data("cold")
             
+            # Filter and format results
             files = []
-            for row in result:
-                meta = json.loads(row[4])  # additional_meta column
-                files.append({
-                    'id': row[0],
-                    'timestamp': row[1],
-                    'size': row[2],
-                    'file_path': meta.get('file_path'),
-                    'table_name': meta.get('table_name'),
-                    **meta
-                })
+            for item in cold_data:
+                meta = json.loads(item['additional_meta'])
+                if meta.get('is_external', False):
+                    files.append({
+                        'id': item['data_id'],
+                        'timestamp': item['created_at'],
+                        'size': item['size'],
+                        'file_path': meta.get('file_path'),
+                        'data_type': item['data_type'],
+                        **meta
+                    })
             
             return files
             
@@ -410,41 +380,37 @@ class ColdMemory:
         """Ensure cleanup is called when object is destroyed."""
         self.cleanup()
 
-    def get_all_schemas(self):
+    async def get_all_schemas(self):
         """Get all file paths from cold storage metadata and extract their schemas."""
         try:
-            # Query cold metadata table to get both id and path
-            query = """
-            SELECT id, path 
-            FROM cold_metadata
-            """
-            result = self.con.execute(query).fetchdf()
-            
-            logger.info(f"Found {len(result)} entries in cold metadata")
+            # Get all cold tier data from catalog
+            cold_data = await memory_catalog.get_tier_data("cold")
             
             # Extract schema for each file
             schemas = []
-            for _, row in result.iterrows():
-                file_path = row['path']
-                try:
-                    # Use DuckDB to get schema information
-                    schema_query = f"""
-                    DESCRIBE SELECT * FROM parquet_scan('{file_path}')
-                    """
-                    schema_df = self.con.execute(schema_query).fetchdf()
-                    
-                    schema = {
-                        'file_path': file_path,
-                        'columns': list(schema_df['column_name']),
-                        'dtypes': dict(zip(schema_df['column_name'], schema_df['column_type'])),
-                        'type': 'schema'
-                    }
-                    schemas.append(schema)
-                    logger.debug(f"Extracted schema from {file_path}")
-                    
-                except Exception as e:
-                    logger.error(f"Error extracting schema from {file_path}: {e}")
-                    continue
+            for item in cold_data:
+                meta = json.loads(item['additional_meta'])
+                if meta.get('is_external', False):
+                    file_path = item['location']
+                    try:
+                        # Use DuckDB to get schema information
+                        schema_query = f"""
+                        DESCRIBE SELECT * FROM parquet_scan('{file_path}')
+                        """
+                        schema_df = self.con.execute(schema_query).fetchdf()
+                        
+                        schema = {
+                            'file_path': file_path,
+                            'columns': list(schema_df['column_name']),
+                            'dtypes': dict(zip(schema_df['column_name'], schema_df['column_type'])),
+                            'type': 'schema'
+                        }
+                        schemas.append(schema)
+                        logger.debug(f"Extracted schema from {file_path}")
+                        
+                    except Exception as e:
+                        logger.error(f"Error extracting schema from {file_path}: {e}")
+                        continue
             
             logger.info(f"Extracted schemas from {len(schemas)} files")
             return schemas
@@ -452,6 +418,47 @@ class ColdMemory:
         except Exception as e:
             logger.error(f"Error getting file paths from cold storage: {e}")
             return []
+
+    async def get_schema(self, data_id: str) -> Optional[Dict[str, Any]]:
+        """Get schema information for stored data.
+        
+        Args:
+            data_id: ID of the data to get schema for
+            
+        Returns:
+            Dictionary containing:
+                - columns: List of column names
+                - dtypes: Dictionary mapping column names to their data types
+                - type: Type of schema (e.g., 'table', 'file', 'dataframe')
+                - source: Source of the schema (e.g., 'duckdb', 'parquet', 'json')
+            Returns None if data not found or schema cannot be determined
+        """
+        try:
+            # Get data from cold storage
+            result = self.con.execute("""
+                SELECT data FROM cold_data
+                WHERE id = ?
+                LIMIT 1
+            """, [data_id]).fetchone()
+            
+            if not result:
+                return None
+                
+            # Convert JSON to DataFrame
+            df = pd.read_json(result[0])
+            
+            schema = {
+                'columns': list(df.columns),
+                'dtypes': {col: str(dtype) for col, dtype in df.dtypes.items()},
+                'type': 'dataframe',
+                'source': 'duckdb'
+            }
+            
+            return schema
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get schema for {data_id}: {e}")
+            return None
 
 
 
