@@ -567,7 +567,7 @@ async def test_landsat_memory_retrieval():
             cold_results = await memory._retrieve_from_cold(
                 spatial_input_type="bbox",
                 spatial_input=bbox,
-                tags=None
+                tags=["landsat"]
             )
             
             assert cold_results is not None, "Failed to retrieve from cold storage"

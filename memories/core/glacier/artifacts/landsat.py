@@ -2,7 +2,7 @@
 
 import os
 import asyncio
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Union
 from datetime import datetime, timedelta
 import planetary_computer as pc
 import pystac_client
@@ -14,8 +14,22 @@ from memories.core.cold import ColdMemory
 import uuid
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    force=True  # Force reconfiguration of the root logger
+)
 logger = logging.getLogger(__name__)
+
+# Add a stream handler if none exists
+if not logger.handlers:
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+logger.info("Starting Landsat module initialization")
 
 class LandsatConnector(DataSource):
     """Interface for Landsat data access through Planetary Computer."""
@@ -129,9 +143,14 @@ class LandsatConnector(DataSource):
         limit: int = 5
     ) -> List[Any]:
         """Search for Landsat scenes."""
-        logger.info(f"Searching for scenes between {start_date} and {end_date}")
-        logger.info(f"Bbox: {bbox}")
-        logger.info(f"Cloud cover limit: {max_cloud_cover}%")
+        logger.info("=" * 80)
+        logger.info("Starting Landsat scene search")
+        logger.info(f"Search parameters:")
+        logger.info(f"- Time range: {start_date} to {end_date}")
+        logger.info(f"- Bbox: {bbox}")
+        logger.info(f"- Cloud cover limit: {max_cloud_cover}%")
+        logger.info(f"- Result limit: {limit}")
+        logger.info("=" * 80)
         
         search = self.catalog.search(
             collections=["landsat-c2-l2"],  # Updated collection name
@@ -141,23 +160,45 @@ class LandsatConnector(DataSource):
             limit=limit
         )
         
-        scenes = list(search.get_items())
-        logger.info(f"Found {len(scenes)} scenes")
+        # Use items() instead of get_items()
+        scenes = list(search.items())
+        logger.info(f"\nFound {len(scenes)} scenes matching criteria")
         
         # Save search results to cold storage
         for scene in scenes:
-            logger.info(f"Processing scene {scene.id}")
-            self._save_to_cold_storage(scene.id, {
+            logger.info(f"\nProcessing scene: {scene.id}")
+            logger.info(f"- Cloud cover: {scene.properties.get('eo:cloud_cover', 'N/A')}%")
+            logger.info(f"- Date: {scene.datetime.isoformat() if scene.datetime else 'N/A'}")
+            logger.info(f"- Platform: {scene.properties.get('platform', 'N/A')}")
+            
+            success = self._save_to_cold_storage(scene.id, {
                 "id": scene.id,
                 "properties": scene.properties,
                 "bbox": scene.bbox,
                 "datetime": scene.datetime.isoformat() if scene.datetime else None
             })
+            
+            if success:
+                logger.info(f"Successfully saved scene {scene.id} to cold storage")
+            else:
+                logger.warning(f"Failed to save scene {scene.id} to cold storage")
         
+        logger.info("=" * 80)
         return scenes
 
-    async def get_metadata(self, scene_id: str) -> Optional[Dict[str, Any]]:
-        """Get metadata for a specific scene."""
+    def get_metadata(self, *args, **kwargs) -> Dict[str, Any]:
+        """Get metadata about a data source or specific item."""
+        # Create a new event loop for this synchronous method
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            # Call the async method and run it in the event loop
+            return loop.run_until_complete(self._get_metadata_async(*args, **kwargs))
+        finally:
+            loop.close()
+
+    async def _get_metadata_async(self, scene_id: str) -> Optional[Dict[str, Any]]:
+        """Async implementation of get_metadata."""
         # Try to load from cold storage first
         cached_data = self._load_from_cold_storage(scene_id)
         if cached_data:
@@ -236,7 +277,7 @@ class LandsatConnector(DataSource):
             
             # Get metadata for first scene
             first_scene = scenes[0]
-            metadata = await self.get_metadata(first_scene.id)
+            metadata = await self._get_metadata_async(first_scene.id)
             
             if not metadata:
                 return {
@@ -279,20 +320,30 @@ class LandsatConnector(DataSource):
                 "message": str(e)
             }
 
+    async def search(self, *args, **kwargs) -> Union[List[Dict], Dict]:
+        """Search for data matching specified criteria."""
+        return await self.search_scenes(*args, **kwargs)
+
+    async def download(self, *args, **kwargs) -> Path:
+        """Download data to local storage."""
+        result = await self.get_data(*args, **kwargs)
+        if result["status"] == "success":
+            # Save the data to a file and return the path
+            output_path = self.storage_dir / f"{result['data']['metadata']['id']}.json"
+            with open(output_path, 'w') as f:
+                json.dump(result['data'], f, indent=2)
+            return output_path
+        raise Exception(result.get("message", "Download failed"))
+
 async def main():
     """Test the Landsat API functionality."""
-    import asyncio
-    import logging
-    from datetime import datetime, timedelta
-    
-    # Configure logging with more detail
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
+    logger.info("\n" + "="*80)
+    logger.info("STARTING LANDSAT API TEST")
+    logger.info("="*80 + "\n")
     
     # Initialize API
     api = LandsatConnector()
+    logger.info("LandsatConnector initialized")
     
     # Test bounding box (San Francisco area)
     bbox = {
@@ -306,14 +357,14 @@ async def main():
     end_date = datetime.now()
     start_date = end_date - timedelta(days=90)
     
-    logger.info("Starting Landsat API test...")
-    logger.info(f"Search area: San Francisco")
-    logger.info(f"Bounding box: {bbox}")
-    logger.info(f"Date range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+    logger.info("Test Configuration:")
+    logger.info(f"- Search area: San Francisco")
+    logger.info(f"- Bounding box: {bbox}")
+    logger.info(f"- Date range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
     
     try:
         # Test data retrieval
-        logger.info("Starting data retrieval...")
+        logger.info("\nStarting data retrieval...")
         result = await api.get_data(
             spatial_input={"bbox": bbox},
             other_inputs={
@@ -346,7 +397,7 @@ async def main():
                 
                 # Test cold storage retrieval
                 logger.info("\nTesting cold storage retrieval...")
-                cached_data = await api.get_metadata(first_scene['id'])
+                cached_data = await api._get_metadata_async(first_scene['id'])
                 if cached_data:
                     logger.info("Successfully retrieved data from cold storage")
                     logger.info(f"Cached Scene ID: {cached_data.get('id')}")
@@ -359,7 +410,10 @@ async def main():
     except Exception as e:
         logger.error(f"Error in main: {str(e)}", exc_info=True)
     finally:
+        logger.info("\n" + "="*80)
         logger.info("Test completed")
+        logger.info("="*80)
 
 if __name__ == "__main__":
+    logger.info("Script started - calling main()")
     asyncio.run(main()) 
