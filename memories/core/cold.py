@@ -253,36 +253,56 @@ class ColdMemory:
             self.logger.error(f"Error registering external file: {e}")
             raise
 
-    def store(self, data: Dict[str, Any], metadata: Optional[Dict[str, Any]] = None) -> bool:
-        """Store data in cold storage."""
+    async def store(
+        self,
+        data: Any,
+        metadata: Optional[Dict[str, Any]] = None,
+        tags: Optional[List[str]] = None
+    ) -> bool:
+        """Store data in cold storage.
+        
+        Args:
+            data: Data to store (DataFrame or dictionary)
+            metadata: Optional metadata about the data
+            tags: Optional tags for categorizing the data
+            
+        Returns:
+            bool: True if storage was successful, False otherwise
+        """
         try:
-            if not isinstance(data, dict):
-                raise ValueError("Data must be a dictionary")
-                
-            data_id = metadata.get('id') if metadata else str(uuid.uuid4())
-            
-            # Store metadata
-            self.con.execute("""
-                INSERT INTO cold_metadata (id, timestamp, data_type, size, additional_meta)
-                VALUES (?, ?, ?, ?, ?)
-            """, (
-                data_id,
-                datetime.now(),
-                metadata.get('type', 'unknown'),
-                len(str(data)),
-                json.dumps(metadata) if metadata else None
-            ))
-            
-            # Store data
-            self.con.execute("""
-                INSERT INTO cold_data (id, data)
-                VALUES (?, ?)
-            """, (data_id, json.dumps(data)))
-            
+            # Convert data to DataFrame if needed
+            if isinstance(data, dict):
+                df = pd.DataFrame.from_dict(data)
+            elif isinstance(data, pd.DataFrame):
+                df = data
+            else:
+                logger.error("Data must be a dictionary or DataFrame for cold storage")
+                return False
+
+            # Add metadata columns if provided
+            if metadata:
+                for key, value in metadata.items():
+                    df[f"meta_{key}"] = value
+
+            # Add tags if provided
+            if tags:
+                df["tags"] = ",".join(tags)
+
+            # Add timestamp
+            df["stored_at"] = datetime.now()
+
+            # Create table name from tags or use default
+            table_name = f"cold_data_{tags[0]}" if tags else "cold_data"
+            table_name = table_name.replace("-", "_").lower()
+
+            # Store in DuckDB
+            self.con.execute(f"CREATE TABLE IF NOT EXISTS {table_name} AS SELECT * FROM df LIMIT 0")
+            self.con.execute(f"INSERT INTO {table_name} SELECT * FROM df")
+
             return True
-            
+
         except Exception as e:
-            logger.error(f"Failed to store data: {e}")
+            logger.error(f"Error storing in cold storage: {e}")
             return False
 
     def retrieve(self, query: Dict[str, Any]) -> Optional[Dict[str, Any]]:
