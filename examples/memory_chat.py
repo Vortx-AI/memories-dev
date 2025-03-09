@@ -1,127 +1,66 @@
 """
-Memory query implementation for handling different types of queries.
+Memory Chat Example - Azure AI Model Integration
+
+This module provides a simple interface to interact with Azure AI models
+for chat completion functionality using the LoadModel class.
 """
 
-from typing import Dict, Any, Union, Optional
-import logging
-from logging.handlers import RotatingFileHandler
 import os
 import json
-from pathlib import Path
-from datetime import datetime, date
+import logging
+from typing import Dict, Any, List, Optional
 from dotenv import load_dotenv
-import sys
-import pandas as pd
-import numpy as np
-
-
-from memories.models.load_model import LoadModel
-from memories.utils.text.context_utils import classify_query
-from memories.utils.earth.location_utils import (
-    get_bounding_box_from_address,
-    get_bounding_box_from_coords,
-    get_address_from_coords,
-    get_coords_from_address,
-    expand_bbox_with_radius
-)
-from memories.core.memory_retrieval import MemoryRetrieval
-from memories.utils.code.code_execution import CodeExecution
-from memories.data_acquisition.sources.osm_api import OSMDataAPI
-
-# Configure logging with both file and console handlers
-def setup_logging():
-    """Set up logging configuration with both file and console output."""
-    # Create logs directory if it doesn't exist
-    log_dir = Path("logs")
-    log_dir.mkdir(exist_ok=True)
-    
-    # Create a logger
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-    
-    # Create formatters
-    file_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    console_formatter = logging.Formatter(
-        '%(message)s'  # Simpler format for console
-    )
-    
-    # File handler with rotation
-    file_handler = RotatingFileHandler(
-        log_dir / "memory_chat.log",
-        maxBytes=10*1024*1024,  # 10MB
-        backupCount=5
-    )
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(file_formatter)
-    
-    # Console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(console_formatter)
-    
-    # Add handlers to logger
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
-    
-    return logger
-
-# Set up logging
-logger = setup_logging()
 
 # Load environment variables
-env_path = Path(__file__).parent.parent / '.env'
-load_dotenv(env_path)
-logger.info(f"Loading environment from {env_path}")
+load_dotenv()
 
-# Initialize GPU support flags
-HAS_GPU_SUPPORT = False
-HAS_CUDF = False
-HAS_CUSPATIAL = False
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("examples/memory_chat.log")
+    ]
+)
+logger = logging.getLogger(__name__)
 
-try:
-    import cudf
-    HAS_CUDF = True
-except ImportError:
-    logging.warning("cudf not available. GPU acceleration for dataframes will be disabled.")
+# Import LoadModel
+from memories.models.load_model import LoadModel
 
-try:
-    import cuspatial
-    HAS_CUSPATIAL = True
-except ImportError:
-    logging.warning("cuspatial not available. GPU acceleration for spatial operations will be disabled.")
-
-if HAS_CUDF and HAS_CUSPATIAL:
-    HAS_GPU_SUPPORT = True
-    logging.info("GPU support enabled with cudf and cuspatial.")
-
-class MemoryQuery:
-    """Memory query handler for processing different types of queries."""
+class MemoryChat:
+    """
+    A class to interact with Azure AI models for chat completion.
+    """
     
     def __init__(
         self,
-        model_provider: str = "",
-        deployment_type: str = "",
-        model_name: str = "",
-       api_key="", 
-       endpoint="",
-       tools: str = "tool_definitions.json",
-        use_gpu: bool = True,
-
+        endpoint: str = os.getenv("MODEL_ENDPOINT"),
+        api_key: str = os.getenv("MODEL_API_KEY"),
+        model_name: str = os.getenv("MODEL_NAME"),
+        model_provider: str = os.getenv("MODEL_PROVIDER"),
+        deployment_type: str = os.getenv("MODEL_DEPLOYMENT_TYPE")
     ):
         """
-        Initialize the memory query handler with LoadModel.
+        Initialize the MemoryChat with Azure AI configuration.
         
         Args:
-            model_provider (str): The model provider (e.g., "openai")
+            endpoint (str): The Azure AI endpoint URL
+            api_key (str): The API key for authentication
+            model_name (str): The name of the model to use
+            model_provider (str): The model provider (e.g., "azure-ai")
             deployment_type (str): Type of deployment (e.g., "api")
-            model_name (str): Name of the model to use
-            api_key (Optional[str]): API key for the model provider
-            tools (str): Path to the JSON file containing tools definitions
-            use_gpu (bool): Whether to use GPU acceleration if available
         """
-        logger.info("Initializing MemoryQuery...")
+        self.endpoint = endpoint
+        self.api_key = api_key
+        self.model_name = model_name
+        
+        # Validate required configuration
+        if not self.endpoint or not self.api_key:
+            logger.error("Missing required environment variables: AZURE_AI_ENDPOINT or AZURE_AI_API_KEY")
+            raise ValueError("Missing required environment variables. Please check your .env file.")
+        
+        # Initialize LoadModel
         try:
             self.model = LoadModel(
                 model_provider=model_provider,
@@ -130,464 +69,163 @@ class MemoryQuery:
                 api_key=api_key,
                 endpoint=endpoint
             )
-            logger.info(f"Successfully initialized LoadModel with {model_name}")
-            
-            # Initialize memory manager
-            from memories.core.memory_manager import MemoryManager
-            self.memory_manager = MemoryManager()
-            logger.info("Memory manager initialized")
-            
-            # Initialize memory retrieval
-            self.memory_retrieval = MemoryRetrieval()
-            #self.memory_retrieval.cold = self.memory_manager.cold_memory
-            
-            # Set GPU support flags
-            self.memory_retrieval.HAS_GPU_SUPPORT = HAS_GPU_SUPPORT
-            self.memory_retrieval.HAS_CUDF = HAS_CUDF
-            self.memory_retrieval.HAS_CUSPATIAL = HAS_CUSPATIAL
-            
-            # Initialize code execution
-            self.code_execution = CodeExecution()
-            
-            # Initialize OvertureAPI and OSM API
-            from memories.data_acquisition.sources.overture_api import OvertureAPI
-            self.overture_api = OvertureAPI(data_dir="data/overture")
-            self.osm_api = OSMDataAPI(cache_dir="data/osm")
-            
-            # Check GPU availability
-            self.use_gpu = use_gpu and HAS_GPU_SUPPORT
-            if use_gpu and not HAS_GPU_SUPPORT:
-                logger.warning("GPU acceleration requested but not available. Using CPU instead.")
-            elif self.use_gpu:
-                logger.info("GPU acceleration enabled for spatial operations.")
-            
-            # Load tool definitions
-            self.tools_mapping = {
-                "get_bounding_box": get_bounding_box_from_address,
-                "get_bounding_box_from_coords": get_bounding_box_from_coords,
-                "get_address_from_coords": get_address_from_coords,
-                "get_coords_from_address": get_coords_from_address,
-                "expand_bbox_with_radius": expand_bbox_with_radius,
-                "search_geospatial_data_in_bbox": self.search_geospatial_data_in_bbox_wrapper,
-                "download_theme_type": self.overture_api.download_theme_type,
-                "get_data_by_bbox": self.get_data_by_bbox_wrapper,
-                "get_data_by_bbox_and_value": self.get_data_by_bbox_and_value_wrapper,
-                "get_data_by_fuzzy_search": self.get_data_by_fuzzy_search_wrapper,
-                "execute_code": self.code_execution.execute_code,
-                "analyze_geospatial_data": self.analyze_geospatial_data_wrapper
-            }
-            
-            # Load tools from JSON file
-            tools_path = Path(__file__).parent / tools
-            try:
-                with open(tools_path, 'r') as f:
-                    tool_data = json.load(f)
-                self.tools = tool_data.get("location_tools", [])
-                logger.info(f"Successfully loaded {len(self.tools)} tools from {tools}")
-            except Exception as e:
-                logger.error(f"Error loading tools from {tools}: {e}")
-                self.tools = []
-                
+            logger.info(f"Successfully initialized LoadModel with {model_name} at {endpoint}")
         except Exception as e:
-            logger.error(f"Failed to initialize MemoryQuery: {e}", exc_info=True)
+            logger.error(f"Failed to initialize LoadModel: {e}")
             raise
-
-    def get_data_by_bbox_wrapper(self, min_lon: float, min_lat: float, max_lon: float, max_lat: float, 
-                                lon_column: str = "longitude", lat_column: str = "latitude", 
-                                geom_column: str = "geometry", limit: int = 1000) -> Dict[str, Any]:
-        """Wrapper for get_data_by_bbox to handle initialization and return format."""
-        try:
-            # Call get_data_by_bbox
-            results = self.memory_retrieval.get_data_by_bbox(
-                min_lon=min_lon,
-                min_lat=min_lat,
-                max_lon=max_lon,
-                max_lat=max_lat,
-                lon_column=lon_column,
-                lat_column=lat_column,
-                geom_column=geom_column,
-                limit=limit
-            )
-
-            # Convert results to dictionary format
-            return {
-                "status": "success" if not results.empty else "no_results",
-                "data": results.to_dict('records') if not results.empty else [],
-                "count": len(results) if not results.empty else 0
-            }
-        except Exception as e:
-            logger.error(f"Error in get_data_by_bbox: {e}")
-            return {
-                "status": "error",
-                "message": str(e),
-                "data": []
-            }
-
-    def get_data_by_bbox_and_value_wrapper(
-        self, 
-        min_lon: float, 
-        min_lat: float, 
-        max_lon: float, 
-        max_lat: float,
-        search_value: str,
-        case_sensitive: bool = False,
-        lon_column: str = "longitude",
-        lat_column: str = "latitude",
-        geom_column: str = "geometry",
-        limit: int = 1000
-    ) -> Dict[str, Any]:
-        """Wrapper for get_data_by_bbox_and_value to handle initialization and return format."""
-        try:
-            # Call get_data_by_bbox_and_value
-            results = self.memory_retrieval.get_data_by_bbox_and_value(
-                min_lon=min_lon,
-                min_lat=min_lat,
-                max_lon=max_lon,
-                max_lat=max_lat,
-                search_value=search_value,
-                case_sensitive=case_sensitive,
-                lon_column=lon_column,
-                lat_column=lat_column,
-                geom_column=geom_column,
-                limit=limit
-            )
-
-            # Convert results to dictionary format
-            return {
-                "status": "success" if not results.empty else "no_results",
-                "data": results.to_dict('records') if not results.empty else [],
-                "count": len(results) if not results.empty else 0
-            }
-        except Exception as e:
-            logger.error(f"Error in get_data_by_bbox_and_value: {e}")
-            return {
-                "status": "error",
-                "message": str(e),
-                "data": []
-            }
-
-    def get_data_by_fuzzy_search_wrapper(
+    
+    def chat_completion(
         self,
-        search_term: str,
-        similarity_threshold: float = 0.3,
-        case_sensitive: bool = False,
-        limit: int = 10
+        messages: List[Dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: int = 1000,
+        tools: Optional[List[Dict[str, Any]]] = None,
+        tool_choice: str = "auto"
     ) -> Dict[str, Any]:
-        """Wrapper for get_data_by_fuzzy_search to handle initialization and return format."""
-        try:
-            # Call get_data_by_fuzzy_search
-            results = self.memory_retrieval.get_data_by_fuzzy_search(
-                search_term=search_term,
-                similarity_threshold=similarity_threshold,
-                case_sensitive=case_sensitive,
-                limit=limit
-            )
-
-            # Convert results to dictionary format
-            return {
-                "status": "success" if not results.empty else "no_results",
-                "data": results.to_dict('records') if not results.empty else [],
-                "count": len(results) if not results.empty else 0
-            }
-        except Exception as e:
-            logger.error(f"Error in get_data_by_fuzzy_search: {e}")
-            return {
-                "status": "error",
-                "message": str(e),
-                "data": []
-            }
-
-    def process_query(self, query: str) -> Dict[str, Any]:
         """
-        Process a query by letting the model decide the approach and tool sequence.
+        Send a chat completion request to the Azure AI model.
         
         Args:
-            query (str): The user's query
+            messages (List[Dict[str, str]]): List of message objects with role and content
+            temperature (float): Controls randomness (0-1)
+            max_tokens (int): Maximum number of tokens to generate
+            tools (Optional[List[Dict[str, Any]]]): List of tools/functions available to the model
+            tool_choice (str): How the model should use tools ("auto", "none", or specific tool)
             
         Returns:
-            Dict containing response and results
+            Dict[str, Any]: The model's response
         """
-        logger.info(f"Processing query: {query}")
         try:
-            system_message = {
-                "role": "system",
-                "content": """You are an intelligent assistant that helps with location-based queries.
-                Based on the query, decide what information you need and which tools to call.
-                
-                You have access to these tools:
-                - get_bounding_box: Convert a text address into a geographic bounding box
-                - expand_bbox_with_radius: Expand a bounding box by radius or create box around point
-                - get_bounding_box_from_coords: Convert coordinates into a geographic bounding box
-                - get_address_from_coords: Get address details from coordinates using reverse geocoding
-                - get_coords_from_address: Get coordinates from an address using forward geocoding
-                - search_geospatial_data_in_bbox: Search for geospatial features within a bounding box
-                - download_theme_type: Download data for a specific theme and type within a bounding box
-                - execute_code: Execute custom Python code with pandas and numpy
-                
-                You can:
-                1. Use any combination of tools in any order
-                2. Make multiple calls if needed
-                3. Decide based on the available data
-                4. Skip unnecessary steps
-                
-                Always explain your reasoning before making tool calls."""
-            }
+            logger.info(f"Sending chat completion request with {len(messages)} messages")
             
-            def serialize_result(obj):
-                """Helper tool to make results JSON serializable."""
-                if isinstance(obj, bytearray):
-                    return obj.hex()  # Convert bytearray to hex string
-                elif isinstance(obj, bytes):
-                    return obj.hex()
-                elif isinstance(obj, pd.DataFrame):
-                    return obj.to_dict('records')
-                elif isinstance(obj, np.ndarray):
-                    return obj.tolist()
-                elif isinstance(obj, (datetime, date)):
-                    return obj.isoformat()
-                elif isinstance(obj, (int, float, str, bool, type(None))):
-                    return obj
-                elif isinstance(obj, (list, tuple)):
-                    return [serialize_result(item) for item in obj]
-                elif isinstance(obj, dict):
-                    return {k: serialize_result(v) for k, v in obj.items()}
-                else:
-                    return str(obj)  # Convert any other type to string
-
-            messages = [
-                system_message,
-                {"role": "user", "content": query}
-            ]
-            results = []
-            
-            while True:
-                response = self.model.chat_completion(
-                    messages=messages,
-                    tools=self.tools,
-                    tool_choice="auto"
-                )
-                
-                if response.get("error"):
-                    return {
-                        "response": f"Error in chat completion: {response['error']}",
-                        "status": "error"
-                    }
-                
-                assistant_message = response.get("message", {})
-                tool_calls = response.get("tool_calls", [])
-                
-                if not tool_calls and assistant_message.get("content"):
-                    return {
-                        "response": assistant_message.get("content"),
-                        "status": "success",
-                        "results": results
-                    }
-                
-                if tool_calls:
-                    for tool_call in tool_calls:
-                        tool_name = tool_call.get("tool", {}).get("name")
-                        logger.info(f"Executing tool: {tool_name}")
-                        try:
-                            args = json.loads(tool_call["tool"]["arguments"])
-                            
-                            if tool_name in self.tool_mapping:
-                                tool_result = self.tool_mapping[tool_name](**args)
-                                # Serialize the result before storing or sending to model
-                                serialized_result = serialize_result(tool_result)
-                            else:
-                                return {
-                                    "response": f"Unknown tool: {tool_name}",
-                                    "status": "error"
-                                }
-                            
-                            if isinstance(serialized_result, dict) and serialized_result.get("status") == "error":
-                                error_msg = serialized_result.get("message", f"Unknown error in {tool_name}")
-                                return {
-                                    "response": f"Error in {tool_name}: {error_msg}",
-                                    "status": "error"
-                                }
-                            
-                            results.append({
-                                "tool_name": tool_name,
-                                "args": args,
-                                "result": serialized_result
-                            })
-                            
-                            messages.append({
-                                "role": "assistant",
-                                "content": None,
-                                "tool_call": {
-                                    "name": tool_name,
-                                    "arguments": json.dumps(args)
-                                }
-                            })
-                            messages.append({
-                                "role": "tool",
-                                "name": tool_name,
-                                "content": json.dumps(serialized_result)
-                            })
-                            
-                            logger.info(f"Successfully executed {tool_name}")
-                        except json.JSONDecodeError as e:
-                            logger.error(f"Error parsing arguments: {e}")
-                            return {
-                                "response": "Error parsing request",
-                                "status": "error"
-                            }
-                        except Exception as e:
-                            logger.error(f"Error processing tool call: {e}", exc_info=True)
-                            return {
-                                "response": f"Error: {str(e)}",
-                                "status": "error"
-                            }
-                    
-                    messages.append({
-                        "role": "system",
-                        "content": "Based on these results, decide if you need more information or can provide a final answer."
-                    })
-                    continue
-                
-        except Exception as e:
-            logger.error(f"Error processing query: {e}", exc_info=True)
-            return {
-                "response": f"Error processing query: {str(e)}",
-                "status": "error"
-            }
-
-    def search_geospatial_data_in_bbox_wrapper(
-        self,
-        query_word: str,
-        bbox: tuple,
-        similarity_threshold: float = 0.7,
-        max_workers: int = 4,
-        batch_size: int = 1000000
-    ) -> Dict[str, Any]:
-        """Wrapper for search_geospatial_data_in_bbox to handle initialization and return format."""
-        try:
-            # Call search_geospatial_data_in_bbox
-            results = self.memory_retrieval.search_geospatial_data_in_bbox(
-                query_word=query_word,
-                bbox=bbox,
-                
-            )
-
-            # Convert results to dictionary format
-            return {
-                "status": "success" if not results.empty else "no_results",
-                "data": results.to_dict('records') if not results.empty else [],
-                "count": len(results) if not results.empty else 0
-            }
-        except Exception as e:
-            logger.error(f"Error in search_geospatial_data_in_bbox: {e}")
-            return {
-                "status": "error",
-                "message": str(e),
-                "data": []
-            }
-
-    def analyze_geospatial_data_wrapper(
-        self,
-        query_word: str,
-        bbox: list,
-        analysis_action: str = "summary",
-        similarity_threshold: float = 0.7,
-        max_tokens: int = 15000
-    ) -> Dict[str, Any]:
-        """Wrapper for analyze_geospatial_data to handle initialization and return format."""
-        try:
-            # Convert bbox list to tuple
-            bbox_tuple = tuple(bbox)
-            
-            # Call analyze_geospatial_data
-            results = self.memory_retrieval.analyze_geospatial_data(
-                query_word=query_word,
-                bbox=bbox_tuple,
-                analysis_action=analysis_action,
-                similarity_threshold=similarity_threshold,
+            # Call LoadModel's chat_completion method
+            response = self.model.chat_completion(
+                messages=messages,
+                tools=tools,
+                tool_choice=tool_choice,
+                temperature=temperature,
                 max_tokens=max_tokens
             )
-
-            return results
+            
+            if "error" in response and response["error"]:
+                logger.error(f"Error in chat completion: {response['error']}")
+                return {"error": response["error"]}
+            
+            logger.info("Successfully received response from model")
+            return response
             
         except Exception as e:
-            logger.error(f"Error in analyze_geospatial_data: {e}")
-            return {
-                "status": "error",
-                "message": str(e)
-            }
+            logger.error(f"Error in chat completion: {e}")
+            return {"error": str(e)}
+    
+    def cleanup(self):
+        """Clean up model resources."""
+        try:
+            self.model.cleanup()
+            logger.info("Model resources cleaned up")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+    
+    def display_config(self):
+        """Display the current configuration (without sensitive information)."""
+        config = {
+            "endpoint": self.endpoint,
+            "api_key": "****" + (self.api_key[-4:] if self.api_key else ""),
+            "model_name": self.model_name,
+        }
+        return config
 
 def main():
-    """Example usage of MemoryQuery"""
+    """
+    Main function to demonstrate the usage of MemoryChat.
+    """
     try:
-        # Initialize MemoryQuery with OpenAI API key
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            logger.error("OPENAI_API_KEY environment variable not set")
-            return
+        # Initialize MemoryChat
+        memory_chat = MemoryChat()
+        logger.info("Memory Chat initialized. Type 'exit' to quit.")
+        
+        # Log configuration
+        logger.info(f"Using configuration: {memory_chat.display_config()}")
+        
+        # Set up conversation history
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant. " + 
+            """Analyze the following query and classify it into one of these categories:
+    N: Query has NO location component and can be answered by any AI model
+    L0: Query HAS location component but can still be answered without additional data
+    L1_2: Query HAS location component and NEEDS additional geographic data
 
-        logger.info("=" * 80)
-        logger.info("Starting Memory Chat")
-        logger.info("=" * 80)
+    Examples:
+    "What is the capital of France?" -> L0 (has location but needs no additional data)
+    "What restaurants are near me?" -> L1_2 (needs actual location data)
+    "How do I write a Python function?" -> N (no location component)
+    "Tell me about Central Park" -> L0 (has location but needs no additional data)
+    "Find cafes within 2km of Times Square" -> L1_2 (needs additional geographic data)
+    
+    For each user query, first classify it and then respond accordingly."""}
+        ]
         
-        memory_query = MemoryQuery(
-            model_provider="openai",
-            deployment_type="api",
-            model_name="gpt-4",
-            api_key=api_key
-        )
+        # Interactive chat loop
+        print("\nWelcome to Memory Chat!")
+        print("Type 'exit' to quit the conversation.")
+        print("-" * 50)
         
-        # Check if query was provided
-        if len(sys.argv) < 2:
-            logger.error("No query provided. Usage: python3 memory_chat.py 'your query here'")
-            return
+        while True:
+            # Get user input
+            user_input = input("\nYou: ")
             
-        # Join all arguments after the script name to form the complete query
-        query = ' '.join(sys.argv[1:])
-        logger.info("-" * 80)
-        logger.info(f"Processing query: {query}")
-        logger.info("-" * 80)
+            # Check if user wants to exit
+            if user_input.lower() in ['exit', 'quit', 'bye']:
+                print("Goodbye!")
+                break
+            
+            # Add user message to conversation
+            messages.append({"role": "user", "content": user_input})
+            
+            # Get response
+            response = memory_chat.chat_completion(messages)
+            
+            # Debug: Print full response structure
+            logger.debug(f"Full response: {json.dumps(response, indent=2)}")
+            
+            # Process and display the response
+            if "error" in response and response["error"]:
+                print(f"Error: {response['error']}")
+                continue
+            
+            # Extract assistant's message
+            assistant_message = None
+            
+            # Try different ways to extract the message based on the response structure
+            if "message" in response:
+                message_obj = response["message"]
+                if isinstance(message_obj, dict) and "content" in message_obj:
+                    assistant_message = message_obj["content"]
+                elif isinstance(message_obj, str):
+                    assistant_message = message_obj
+            
+            # If we still don't have a message, print the response structure
+            if not assistant_message:
+                print("\nNo content found in response. Response structure:")
+                print(json.dumps(response, indent=2))
+                continue
+            
+            # Display the assistant's message
+            print(f"\nAssistant: {assistant_message}")
+            
+            # Add assistant's response to conversation history
+            messages.append({"role": "assistant", "content": assistant_message})
+            
+            # Display token usage if available
+            if "metadata" in response and "total_tokens" in response["metadata"]:
+                logger.info(f"Tokens used: {response['metadata']['total_tokens']}")
         
-        result = memory_query.process_query(query)
-        
-        # Log and print the results
-        logger.info("\nQuery Result:")
-        logger.info("=" * 80)
-        logger.info(f"Status: {result.get('status', 'unknown')}")
-        
-        # Log tool calls
-        if 'results' in result and result['results']:
-            logger.info("\ntool Call Sequence:")
-            logger.info("-" * 80)
-            for i, r in enumerate(result['results'], 1):
-                logger.info(f"\n{i}. tool: {r.get('tool_name')}")
-                logger.info(f"   Arguments: {json.dumps(r.get('args'), indent=2)}")
-                
-                # Format the result based on its type
-                result_data = r.get('result', {})
-                if isinstance(result_data, dict):
-                    if 'data' in result_data and isinstance(result_data['data'], list):
-                        logger.info(f"   Results: Found {len(result_data['data'])} items")
-                        if result_data['data']:
-                            logger.info("   Sample data:")
-                            logger.info(json.dumps(result_data['data'][0], indent=2))
-                    else:
-                        logger.info(f"   Result: {json.dumps(result_data, indent=2)}")
-                else:
-                    logger.info(f"   Result: {result_data}")
-                logger.info("   " + "-" * 70)
-        
-        # Log final response
-        logger.info("\nFinal Response:")
-        logger.info("-" * 80)
-        if isinstance(result.get('response'), dict):
-            logger.info(json.dumps(result['response'], indent=2))
-        else:
-            logger.info(result.get('response', 'No response generated'))
-        
-        logger.info("=" * 80)
-        
+        # Clean up resources
+        memory_chat.cleanup()
+    
     except Exception as e:
-        logger.error(f"Error in main: {str(e)}", exc_info=True)
+        logger.error(f"Error in main function: {e}", exc_info=True)
+        print(f"An error occurred: {e}")
 
 if __name__ == "__main__":
-    main() 
+    main()
