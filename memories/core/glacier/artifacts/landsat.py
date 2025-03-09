@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 from memories.core.glacier.artifacts.base import DataSource
 from memories.core.cold import ColdMemory
+import uuid
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -62,8 +63,11 @@ class LandsatConnector(DataSource):
             # Add microseconds to timestamp to ensure uniqueness
             if isinstance(timestamp, str):
                 timestamp = datetime.fromisoformat(timestamp)
+            
+            # Add random suffix to ensure uniqueness
+            unique_suffix = str(uuid.uuid4())[:8]  # Use first 8 chars of UUID
             unique_timestamp = timestamp.strftime('%Y-%m-%dT%H_%M_%S_%f')
-            data_id = f"landsat_{scene_id}_{unique_timestamp}"
+            data_id = f"landsat_{scene_id}_{unique_timestamp}_{unique_suffix}"
             
             # Prepare metadata
             metadata = {
