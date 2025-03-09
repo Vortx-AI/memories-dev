@@ -579,52 +579,55 @@ class WarmMemory:
         tags: Optional[List[str]] = None,
         db_name: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Import data from a DuckDB database file using direct table copying.
+        """Import tables from another DuckDB database using direct table copying.
         
         Args:
             source_db_file: Path to the source DuckDB database file
-            tables: Optional list of tables to import (imports all if None)
-            metadata: Optional metadata to store with the imported data
-            tags: Optional tags to associate with the imported data
-            db_name: Optional name of the database to import into (uses default if None)
+            tables: Optional list of table names to import. If None, imports all tables.
+            metadata: Optional metadata about the data
+            tags: Optional tags for categorizing the data
+            db_name: Optional name of the database file to store in (without .duckdb extension)
             
         Returns:
-            Dict with success status, imported tables, and their IDs
+            Dict containing success status and table information:
+                - success: True if import was successful, False otherwise
+                - imported_tables: List of imported table names
+                - data_ids: Dict mapping table names to data IDs
         """
-        if not os.path.exists(source_db_file):
-            return {"success": False, "error": f"Source database file not found: {source_db_file}"}
-        
-        # Get connection to target database
-        target_con = self.get_connection(db_name)
-        
-        # Result dictionary
-        result = {
-            "success": True,
-            "tables": {},
-            "db_name": db_name or "default"
-        }
-        
         try:
+            # Get connection to target database
+            target_con = self.get_connection(db_name)
+            
             # Attach the source database with an alias
             target_con.execute(f"ATTACH '{source_db_file}' AS source_db")
             
             # Get list of tables in source database
-            all_tables = target_con.execute("SHOW TABLES FROM source_db").fetchall()
-            all_table_names = [table[0] for table in all_tables]
+            source_tables = target_con.execute("SHOW TABLES FROM source_db").fetchall()
             
-            # If tables parameter is provided, filter to only those tables
+            source_table_names = [table[0] for table in source_tables]
+            
+            # Filter tables if specified
             if tables:
-                table_names = [t for t in tables if t in all_table_names]
-                if not table_names:
+                tables_to_import = [t for t in tables if t in source_table_names]
+                if not tables_to_import:
+                    self.logger.warning(f"None of the specified tables found in source database")
+                    # Detach the source database
                     target_con.execute("DETACH source_db")
-                    return {"success": False, "error": "None of the specified tables were found in the source database"}
+                    return {
+                        "success": False,
+                        "imported_tables": [],
+                        "data_ids": {}
+                    }
             else:
-                table_names = all_table_names
+                tables_to_import = source_table_names
             
             # Import each table
-            for table_name in table_names:
+            imported_tables = []
+            data_ids = {}
+            
+            for table_name in tables_to_import:
                 try:
-                    # Generate a unique ID for this data
+                    # Generate unique ID
                     data_id = str(uuid.uuid4())
                     
                     # Create table in target database directly from source
@@ -633,61 +636,77 @@ class WarmMemory:
                     # Get row count
                     row_count = target_con.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
                     
-                    # Store metadata about the import
-                    metadata_with_source = metadata.copy() if metadata else {}
-                    metadata_with_source["source_db"] = source_db_file
-                    metadata_with_source["source_table"] = table_name
-                    metadata_with_source["row_count"] = row_count
-                    metadata_json = json.dumps(metadata_with_source)
+                    # Create minimal metadata for the warm_data table
+                    meta_dict = metadata.copy() if metadata else {}
+                    meta_dict["source_db"] = source_db_file
+                    meta_dict["source_table"] = table_name
+                    meta_dict["row_count"] = row_count
+                    meta_dict["imported_at"] = datetime.now().isoformat()
                     
-                    # Store in warm_data table (with empty data since the actual data is in the table)
+                    # Convert to JSON - we store empty data since the actual data is in the table
+                    data_json = "[]"
+                    
+                    # Convert metadata to JSON
+                    metadata_json = json.dumps(meta_dict)
+                    
+                    # Convert tags to JSON
+                    tags_json = json.dumps(tags or [])
+                    
+                    # Store metadata in warm_data for backward compatibility
                     target_con.execute("""
-                        INSERT INTO warm_data (data_id, data, metadata)
-                        VALUES (?, ?, ?)
-                    """, [data_id, "[]", metadata_json])
+                        INSERT INTO warm_data (id, data, metadata, tags, stored_at)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, [data_id, data_json, metadata_json, tags_json, datetime.now()])
                     
-                    # Store tags
+                    # Store tags for indexing
                     if tags:
-                        tags_with_source = tags.copy()
-                    else:
-                        tags_with_source = []
+                        for tag in tags:
+                            target_con.execute("""
+                                INSERT INTO warm_tags (tag, data_id)
+                                VALUES (?, ?)
+                            """, [tag, data_id])
                     
-                    # Add source tags
-                    tags_with_source.append("duckdb_import")
-                    tags_with_source.append(f"table:{table_name}")
+                    # Add special tags for imported tables
+                    target_con.execute("""
+                        INSERT INTO warm_tags (tag, data_id)
+                        VALUES (?, ?)
+                    """, ["duckdb_import", data_id])
                     
-                    # Store in warm_tags table
-                    for tag in tags_with_source:
-                        target_con.execute("""
-                            INSERT INTO warm_tags (data_id, tag)
-                            VALUES (?, ?)
-                        """, [data_id, tag])
+                    target_con.execute("""
+                        INSERT INTO warm_tags (tag, data_id)
+                        VALUES (?, ?)
+                    """, [f"table:{table_name}", data_id])
                     
-                    # Add to result
-                    result["tables"][table_name] = {
-                        "data_id": data_id,
-                        "row_count": row_count
-                    }
+                    imported_tables.append(table_name)
+                    data_ids[table_name] = data_id
                     
                 except Exception as e:
-                    self.logger.error(f"Failed to import table {table_name}: {e}")
-                    result["tables"][table_name] = {
-                        "error": f"Failed to import table: {e}"
-                    }
+                    self.logger.error(f"Error importing table {table_name}: {e}")
             
             # Detach the source database
             target_con.execute("DETACH source_db")
             
+            if imported_tables:
+                self.logger.info(f"Imported {len(imported_tables)} tables from {source_db_file}")
+            
+            return {
+                "success": True,
+                "imported_tables": imported_tables,
+                "data_ids": data_ids
+            }
+            
         except Exception as e:
-            self.logger.error(f"Failed during DuckDB import: {e}")
+            self.logger.error(f"Error importing from DuckDB: {e}")
             # Make sure to detach in case of error
             try:
                 target_con.execute("DETACH source_db")
             except:
                 pass
-            return {"success": False, "error": f"Import failed: {e}"}
-        
-        return result
+            return {
+                "success": False,
+                "imported_tables": [],
+                "data_ids": {}
+            }
 
     async def import_from_csv(
         self,
