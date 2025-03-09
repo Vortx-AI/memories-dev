@@ -6,6 +6,7 @@ from pathlib import Path
 from datetime import datetime
 import sys
 import os
+import asyncio
 
 from memories.core.memory_manager import MemoryManager
 from memories.core.memory_catalog import memory_catalog
@@ -403,6 +404,67 @@ class MemoryStore:
         except Exception as e:
             self.logger.error(f"Error importing CSV to warm memory: {e}")
             return False
+
+async def main():
+    """Main function to demonstrate importing tables from DuckDB to warm memory."""
+    try:
+        # Initialize logging
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        logger = logging.getLogger(__name__)
+        
+        # Source database path
+        source_db = ""
+        
+        # Check if source database exists
+        if not os.path.exists(source_db):
+            logger.error(f"Source database not found: {source_db}")
+            return
+            
+        # Define metadata and tags
+        metadata = {
+           
+        }
+        
+        
+        # Import tables using memory_store
+        logger.info(f"Starting import from {source_db}")
+        
+        # Use the default configuration from memory manager
+        success = await memory_store.import_duckdb_to_warm(
+            source_db_file=source_db,
+            metadata=metadata,
+            #tags=tags
+            # No db_name specified - will use default from config
+        )
+        
+        if success:
+            logger.info("Import completed successfully!")
+            
+            # List all tables in the catalog
+            logger.info("Checking memory catalog entries...")
+            catalog_entries = await memory_catalog.get_tier_data("warm")
+            
+            if catalog_entries:
+                logger.info(f"Found {len(catalog_entries)} entries in memory catalog:")
+                for entry in catalog_entries:
+                    logger.info(f"- Table: {entry['table_name']}")
+                    logger.info(f"  Location: {entry['location']}")
+                    logger.info(f"  Tags: {entry['tags']}")
+                    logger.info(f"  Created: {entry['created_at']}")
+                    logger.info("---")
+            else:
+                logger.warning("No entries found in memory catalog")
+        else:
+            logger.error("Import failed")
+            
+    except Exception as e:
+        logger.exception(f"Error in main function: {e}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
 
 # Create singleton instance
 memory_store = MemoryStore()

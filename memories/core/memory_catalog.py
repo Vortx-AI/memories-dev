@@ -7,6 +7,7 @@ import duckdb
 import json
 import uuid
 import numpy as np
+from memories.core.memory_manager import MemoryManager
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +29,10 @@ class MemoryCatalog:
             self.initialized = True
             
             try:
-                # Use the same DuckDB connection as cold storage
-                self.con = duckdb.connect()
+                # Use the connection from memory manager
+                self.memory_manager = MemoryManager()
+                self.con = self.memory_manager.con
+                
                 self._initialize_schema()
                 self.logger.info("Successfully initialized memory catalog")
             except Exception as e:
