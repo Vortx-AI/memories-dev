@@ -59,14 +59,18 @@ class LandsatConnector(DataSource):
                 
             # Create a unique identifier for this data
             timestamp = data.get("datetime", datetime.now().isoformat())
-            data_id = f"landsat_{scene_id}_{timestamp}".replace(":", "_")
+            # Add microseconds to timestamp to ensure uniqueness
+            if isinstance(timestamp, str):
+                timestamp = datetime.fromisoformat(timestamp)
+            unique_timestamp = timestamp.strftime('%Y-%m-%dT%H_%M_%S_%f')
+            data_id = f"landsat_{scene_id}_{unique_timestamp}"
             
             # Prepare metadata
             metadata = {
                 "id": data_id,  # Required field for cold memory
                 "type": "landsat",
                 "collection": "landsat-c2-l2",
-                "datetime": timestamp,
+                "datetime": timestamp.isoformat(),
                 "bbox": data.get("bbox"),
                 "properties": data.get("properties", {}),
                 "cloud_cover": data.get("properties", {}).get("eo:cloud_cover"),

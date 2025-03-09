@@ -178,14 +178,14 @@ class MemoryQuery:
             }
             
             # Load tools from JSON file
-            tools_path = Path(__file__).parent / tools_file
+            tools_path = Path(__file__).parent / tools
             try:
                 with open(tools_path, 'r') as f:
                     tool_data = json.load(f)
                 self.tools = tool_data.get("location_tools", [])
-                logger.info(f"Successfully loaded {len(self.tools)} tools from {tools_file}")
+                logger.info(f"Successfully loaded {len(self.tools)} tools from {tools}")
             except Exception as e:
-                logger.error(f"Error loading tools from {tools_file}: {e}")
+                logger.error(f"Error loading tools from {tools}: {e}")
                 self.tools = []
                 
         except Exception as e:
