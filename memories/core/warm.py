@@ -602,7 +602,10 @@ class WarmMemory:
             target_con.execute(f"ATTACH '{source_db_file}' AS source_db")
             
             # Get list of tables in source database
-            source_tables = target_con.execute("SHOW TABLES FROM source_db").fetchall()
+            source_tables = target_con.execute("""
+                SELECT name FROM source_db.sqlite_master 
+                WHERE type='table' AND name NOT LIKE 'sqlite_%'
+            """).fetchall()
             
             source_table_names = [table[0] for table in source_tables]
             
