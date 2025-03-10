@@ -131,8 +131,7 @@ copybutton_remove_prompts = True
 
 # Add any custom CSS
 def setup(app):
-    if os.path.exists('_static/custom.css'):
-        app.add_css_file('custom.css')
+    app.add_css_file('custom.css')
 
 # These paths are either relative to html_static_path or fully qualified paths (eg. https://...)
 html_css_files = [
