@@ -1,48 +1,39 @@
-# Python
+# Python virtual environments
+venv*/
+env*/
+.env/
+.venv/
+
+# Python cache files
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
+
+# Distribution / packaging
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
+build/
 *.egg-info/
-*.egg-info/*
-.installed.cfg
-*.egg
+
+# Log files
+*.log
+parquet_errors.json
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db
 
 # Documentation
 docs/source/_build/
 docs/_build/
 docs/build/
-
-# Virtual Environment
-venv/
-env/
-ENV/
-.env
-.venv
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
 
 # Test coverage
 .coverage
@@ -54,7 +45,6 @@ htmlcov/
 .pytest_cache/
 
 # Logs
-*.log
 logs/
 
 # Project specific
@@ -75,8 +65,6 @@ schema_metadata.json
 
 # Distribution
 memories-dev.egg-info/
-dist/
-build/
 
 # Test data directories
 test_cache/
