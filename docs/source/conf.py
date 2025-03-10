@@ -131,11 +131,11 @@ copybutton_remove_prompts = True
 
 # Add any custom CSS
 def setup(app):
-    app.add_css_file('theme_fix.css')
+    app.add_css_file('enhanced_theme.css')
 
 # These paths are either relative to html_static_path or fully qualified paths (eg. https://...)
 html_css_files = [
-    'theme_fix.css',
+    'enhanced_theme.css',
 ]
 
 html_js_files = [
@@ -158,7 +158,7 @@ html_theme_options = {
     'display_version': True,
     'prev_next_buttons_location': 'both',
     'style_external_links': True,
-    'style_nav_header_background': '#2c3e50',
+    'style_nav_header_background': '#1e293b',
     'collapse_navigation': False,
     'sticky_navigation': True,
     'navigation_depth': 4,
