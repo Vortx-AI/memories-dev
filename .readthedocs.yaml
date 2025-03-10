@@ -1,28 +1,60 @@
 # .readthedocs.yaml
-# Read the Docs configuration file
+# Read the Docs configuration file for memories.dev v2.0.5 - Collective Memory Infrastructure for AGI
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
 # Required
 version: 2
 
-# Set the OS, Python version and other tools you might need
+# Build configuration
 build:
   os: ubuntu-22.04
   tools:
-    python: "3.11"
+    python: "3.12"
+  jobs:
+    pre_build:
+      # Core setup
+      - pip install -e .
+      - pip install -r docs/requirements.txt
+      # Additional setup for comprehensive documentation
+      - python -m pip install --upgrade pip setuptools wheel
+      - python -m pip install sphinx-rtd-theme sphinx-copybutton sphinx-tabs
+      # Generate API documentation
+      - sphinx-apidoc -o docs/source/api_reference memories/
 
-# Build documentation in the docs/ directory with Sphinx
+# Sphinx configuration
 sphinx:
   configuration: docs/source/conf.py
+  fail_on_warning: false
+  builder: html
 
-# Optionally build your docs in additional formats such as PDF and ePub
+# Documentation formats
 formats:
   - pdf
   - epub
+  - htmlzip
 
-# Optionally declare the Python requirements required to build your docs
+# Python package installation
 python:
   install:
-    - requirements: docs/requirements.txt
     - method: pip
-      path: . 
+      path: .
+      extra_requirements:
+        - docs
+        - examples
+        - dev
+    - requirements: docs/requirements.txt
+
+# Repository configuration
+submodules:
+  include: all
+  recursive: true
+
+# Search configuration
+search:
+  ranking:
+    getting_started/*: 5
+    user_guide/*: 4
+    api_reference/*: 3
+    examples/*: 4
+    advanced_topics/*: 3
+    contributing/*: 2 
