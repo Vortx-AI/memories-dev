@@ -8,6 +8,7 @@ import sys
 import platform
 from packaging import version as packaging_version
 import sphinx
+import sphinx_rtd_theme
 
 # Add the project root directory to the Python path
 sys.path.insert(0, os.path.abspath('../..'))
@@ -181,10 +182,10 @@ mermaid_init_js = """
 """
 
 def setup(app):
-    # Add critical fixes CSS - this is the only CSS file we need
+    # Add critical fixes CSS
     app.add_css_file('css/fixes.css')
     
-    # Add our book-style CSS
+    # Add book-style CSS
     app.add_css_file('css/book_style.css')
     
     # Add ReadTheDocs-specific fixes
@@ -197,13 +198,13 @@ def setup(app):
     app.add_css_file('https://fonts.googleapis.com/css2?family=Georgia:ital,wght@0,400;0,700;1,400;1,700&display=swap')
     app.add_css_file('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap')
     
-    # Add polyfills for older browsers (highest priority)
+    # Add polyfills for older browsers
     app.add_js_file('js/polyfills.js', priority=50)
     
-    # Add Mermaid library directly (not through CDN) - updated to version 10.6.1
+    # Add Mermaid library
     app.add_js_file('https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js', priority=200)
     
-    # Add our custom Mermaid initialization with higher priority
+    # Add custom Mermaid initialization
     app.add_js_file('js/mermaid.js', priority=201)
     
     # Add mobile navigation script
@@ -239,13 +240,17 @@ html_theme_options = {
     'logo_only': True,
     'display_version': True,
     'prev_next_buttons_location': 'bottom',
-    'style_external_links': False,
+    'style_external_links': True,
     'style_nav_header_background': '#1a2638',
-    'collapse_navigation': False,
+    'collapse_navigation': True,
     'sticky_navigation': True,
     'navigation_depth': 4,
     'includehidden': True,
-    'titles_only': False
+    'titles_only': False,
+    'canonical_url': '',
+    'analytics_id': '',
+    'analytics_anonymize_ip': False,
+    'vcs_pageview_mode': '',
 }
 
 # HTML context
@@ -255,6 +260,8 @@ html_context = {
     'github_repo': 'memories-dev',
     'github_version': 'main',
     'conf_py_path': '/docs/source/',
+    'READTHEDOCS': True,
+    'using_theme': 'sphinx_rtd_theme',
 }
 
 # Custom sidebar templates
