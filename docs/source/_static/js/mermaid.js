@@ -1,16 +1,14 @@
 /**
- * Mermaid initialization for Memories-Dev Documentation
+ * Simplified Mermaid initialization for ReadTheDocs
+ * Optimized for Mermaid 10.6.1 compatibility
  */
 (function() {
-    // Wait for DOM to be fully loaded
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('Initializing Mermaid');
+        console.log('Initializing Mermaid 10.6.1 for ReadTheDocs');
         
-        // Initialize Mermaid with a timeout to ensure it's loaded
         function initMermaid() {
             if (typeof window.mermaid !== 'undefined') {
                 try {
-                    console.log('Configuring Mermaid');
                     window.mermaid.initialize({
                         startOnLoad: false,
                         theme: 'neutral',
@@ -22,39 +20,31 @@
                         }
                     });
                     
-                    console.log('Rendering Mermaid diagrams');
-                    var diagrams = document.querySelectorAll('.mermaid');
-                    console.log('Found ' + diagrams.length + ' diagrams');
+                    var diagrams = document.querySelectorAll('.mermaid:not([data-processed="true"])');
+                    console.log('Found ' + diagrams.length + ' diagrams to process');
                     
                     if (diagrams.length > 0) {
-                        window.mermaid.init(undefined, diagrams);
+                        window.mermaid.run({
+                            nodes: Array.from(diagrams)
+                        }).catch(function(err) {
+                            console.error('Mermaid run error:', err);
+                        });
                     }
                 } catch (err) {
-                    console.error('Error initializing mermaid:', err);
-                    document.querySelectorAll('.mermaid').forEach(function(diagram) {
-                        if (!diagram.getAttribute('data-processed')) {
-                            diagram.innerHTML = '<div class="mermaid-error">Error rendering diagram: ' + err.message + '</div>';
-                        }
-                    });
+                    console.error('Mermaid initialization error:', err);
                 }
             } else {
-                console.log('Mermaid not loaded yet, retrying in 500ms');
+                // Retry after a delay
                 setTimeout(initMermaid, 500);
             }
         }
         
-        // Try to initialize immediately
-        initMermaid();
+        // Try to initialize after a short delay
+        setTimeout(initMermaid, 100);
         
-        // Also try again after a delay to ensure everything is loaded
-        setTimeout(initMermaid, 1000);
-        
-        // And once more after page is fully loaded
+        // Also try again after page is fully loaded
         window.addEventListener('load', function() {
             setTimeout(initMermaid, 500);
         });
-        
-        // Add a final attempt after 3 seconds
-        setTimeout(initMermaid, 3000);
     });
 })(); 

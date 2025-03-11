@@ -1,0 +1,112 @@
+/**
+ * ReadTheDocs-specific fixes for Memories-Dev Documentation
+ * These styles specifically target rendering issues on the ReadTheDocs platform
+ */
+
+/* Fix SVG rendering issues */
+svg {
+    max-width: 100% !important;
+    height: auto !important;
+}
+
+/* Fix logo sizing */
+.wy-side-nav-search > a img.logo {
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: 100px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+}
+
+/* Fix mobile navigation */
+@media screen and (max-width: 768px) {
+    .wy-nav-side {
+        width: 300px !important;
+        left: -300px !important;
+        transition: left 0.3s ease !important;
+    }
+    
+    .wy-nav-side.shift {
+        left: 0 !important;
+        z-index: 1000 !important;
+        box-shadow: 0 0 12px rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    .wy-nav-content-wrap {
+        margin-left: 0 !important;
+        transition: margin-left 0.3s ease !important;
+    }
+    
+    .wy-nav-content-wrap.shift {
+        position: relative !important;
+        left: 300px !important;
+        margin-left: 0 !important;
+    }
+    
+    .wy-nav-content {
+        padding: 1.5em !important;
+    }
+}
+
+/* Fix Mermaid diagram rendering */
+.mermaid {
+    overflow-x: auto !important;
+    text-align: center !important;
+    margin: 1.5em 0 !important;
+}
+
+.mermaid svg {
+    display: inline-block !important;
+    max-width: 100% !important;
+    height: auto !important;
+}
+
+/* Fix admonitions */
+.rst-content .admonition {
+    padding: 12px !important;
+    margin-bottom: 24px !important;
+    border-radius: 4px !important;
+}
+
+.rst-content .admonition .admonition-title {
+    margin: -12px -12px 12px -12px !important;
+    padding: 8px 12px !important;
+    border-top-left-radius: 4px !important;
+    border-top-right-radius: 4px !important;
+}
+
+/* Fix font loading issues */
+body, .wy-body-for-nav {
+    font-family: 'Georgia', 'Times New Roman', serif !important;
+}
+
+code, pre, .literal {
+    font-family: 'Source Code Pro', 'Courier New', monospace !important;
+}
+
+/* RTD version selector fix */
+.rst-versions {
+    width: 300px !important;
+}
+
+.mobile-view h1 {
+    font-size: 24px !important;
+}
+
+.mobile-view h2 {
+    font-size: 20px !important;
+}
+
+.mobile-view h3 {
+    font-size: 18px !important;
+}
+
+.mobile-view code {
+    font-size: 14px !important;
+}
+
+/* Fix image paths for RTD */
+img[src^="_static"] {
+    display: inline-block;
+} 
