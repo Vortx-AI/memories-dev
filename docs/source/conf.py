@@ -78,7 +78,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
-html_logo = '_static/logo.png'
+html_logo = '_static/logo-simple.svg'
 html_favicon = '_static/favicon.ico'
 
 # -- Extension configuration -------------------------------------------------
@@ -187,15 +187,27 @@ def setup(app):
     # Add our book-style CSS
     app.add_css_file('css/book_style.css')
     
+    # Add ReadTheDocs-specific fixes
+    app.add_css_file('css/readthedocs-fixes.css')
+    
+    # Add SVG-specific fixes
+    app.add_css_file('css/svg-fixes.css')
+    
     # Add web fonts
     app.add_css_file('https://fonts.googleapis.com/css2?family=Georgia:ital,wght@0,400;0,700;1,400;1,700&display=swap')
     app.add_css_file('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap')
+    
+    # Add polyfills for older browsers (highest priority)
+    app.add_js_file('js/polyfills.js', priority=50)
     
     # Add Mermaid library directly (not through CDN) - updated to version 10.6.1
     app.add_js_file('https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js', priority=200)
     
     # Add our custom Mermaid initialization with higher priority
     app.add_js_file('js/mermaid.js', priority=201)
+    
+    # Add mobile navigation script
+    app.add_js_file('js/mobile-nav.js', priority=100)
     
     return {
         'parallel_read_safe': True,
@@ -204,12 +216,12 @@ def setup(app):
 
 # These paths are either relative to html_static_path or fully qualified paths (eg. https://...)
 html_css_files = [
-    'css/fixes.css',
-    'css/book_style.css',
+    # CSS files are now added in the setup function to avoid duplication
 ]
 
 html_js_files = [
     'https://buttons.github.io/buttons.js',
+    # JS files are now added in the setup function to avoid duplication
 ]
 
 # The suffix of source filenames
