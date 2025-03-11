@@ -58,7 +58,6 @@ def get_core_deps():
         "mercantile>=1.2.1",
         "pyproj>=3.6.1",
         "pystac>=1.8.0",
-        "redis>=5.0.0",
         "nltk>=3.8.1",
         "diffusers>=0.25.0",
         "langchain>=0.1.0",

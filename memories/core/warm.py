@@ -12,7 +12,8 @@ import uuid
 import numpy as np
 import os
 
-from memories.core.memory_manager import MemoryManager
+# Remove direct import to avoid circular dependency
+# from memories.core.memory_manager import MemoryManager
 
 logger = logging.getLogger(__name__)
 
@@ -23,40 +24,27 @@ class WarmMemory:
         """Initialize warm memory.
         
         Args:
-            storage_path: Optional path override (not recommended, prefer using MemoryManager config)
+            storage_path: Optional path to store DuckDB files
         """
-        self.logger = logger
+        self.logger = logging.getLogger(__name__)
         
-        # Get memory manager for configuration
+        # Lazy import to avoid circular dependency
+        from memories.core.memory_manager import MemoryManager
         self.memory_manager = MemoryManager()
         
-        # Use the DuckDB connection from memory manager if available
-        if hasattr(self.memory_manager, 'con') and self.memory_manager.con:
-            self.default_con = self.memory_manager.con
-            self.logger.info("Using DuckDB connection from MemoryManager")
-        else:
-            # Initialize a new DuckDB connection
-            self.default_con = self._init_duckdb()
-            
-        # Store connections to different database files
-        self.connections = {}
-        
-        # Initialize tables in the default connection
-        self._init_tables(self.default_con)
-        
-        # Get storage path
-        if storage_path is None:
-            base_path = Path(self.memory_manager.config['memory']['base_path'])
-            warm_config = self.memory_manager.config['memory'].get('warm', {})
-            warm_path = warm_config.get('path', 'warm')
-            self.storage_path = base_path / warm_path
-        else:
+        # Set up storage path
+        if storage_path:
             self.storage_path = Path(storage_path)
-            
-        # Create storage directory if it doesn't exist
-        self.storage_path.mkdir(parents=True, exist_ok=True)
+        else:
+            # Use default path from memory manager
+            self.storage_path = Path(self.memory_manager.get_warm_path())
         
-        self.logger.info("Initialized warm memory storage")
+        self.storage_path.mkdir(parents=True, exist_ok=True)
+        self.logger.info(f"Warm memory storage path: {self.storage_path}")
+        
+        # Initialize DuckDB connection
+        self.con = self._init_duckdb()
+        self._init_tables(self.con)
 
     def _init_duckdb(self, db_file: Optional[str] = None) -> duckdb.DuckDBPyConnection:
         """Initialize DuckDB connection.
@@ -352,8 +340,8 @@ class WarmMemory:
         """Clear all data from warm memory."""
         try:
             # Delete all data from tables
-            self.default_con.execute("DELETE FROM warm_tags")
-            self.default_con.execute("DELETE FROM warm_data")
+            self.con.execute("DELETE FROM warm_tags")
+            self.con.execute("DELETE FROM warm_data")
             self.logger.info("Cleared warm memory")
         except Exception as e:
             self.logger.error(f"Failed to clear warm memory: {e}")
@@ -362,10 +350,10 @@ class WarmMemory:
         """Clean up resources."""
         try:
             # Don't close the connection if it's from the memory manager
-            if not hasattr(self.memory_manager, 'con') or self.memory_manager.con != self.default_con:
-                if hasattr(self, 'default_con') and self.default_con:
-                    self.default_con.close()
-                    self.default_con = None
+            if not hasattr(self.memory_manager, 'con') or self.memory_manager.con != self.con:
+                if hasattr(self, 'con') and self.con:
+                    self.con.close()
+                    self.con = None
                     
             self.logger.info("Cleaned up warm memory resources")
         except Exception as e:
@@ -386,7 +374,7 @@ class WarmMemory:
         """
         try:
             # Get data by ID
-            result = self.default_con.execute("""
+            result = self.con.execute("""
                 SELECT data, metadata FROM warm_data
                 WHERE id = ?
             """, [data_id]).fetchone()
@@ -460,7 +448,7 @@ class WarmMemory:
             DuckDB connection
         """
         if not db_name:
-            return self.default_con
+            return self.con
             
         # Check if connection already exists
         if db_name in self.connections:

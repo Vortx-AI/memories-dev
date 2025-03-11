@@ -6,21 +6,24 @@ import pandas as pd
 import os
 from pathlib import Path
 import duckdb
-from memories.core.cold import Config
+# Move this to a lazy import to avoid circular dependency
+# from memories.core.cold import Config
 import json
 import glob
 import time
 import numpy as np
-from memories.core.red_hot import RedHotMemory
+# Remove direct imports to avoid circular dependencies
+# from memories.core.red_hot import RedHotMemory
 from sentence_transformers import SentenceTransformer
 from memories.core.memory_manager import MemoryManager
 from memories.core.glacier.factory import create_connector
-from memories.core.hot import HotMemory
-from memories.core.warm import WarmMemory
-from memories.core.red_hot import RedHotMemory
-from memories.core.cold import ColdMemory
-from memories.core.glacier.artifacts.overture import OvertureConnector
-from memories.core.glacier.artifacts.sentinel import SentinelConnector
+# Remove direct imports to avoid circular dependencies
+# from memories.core.hot import HotMemory
+# from memories.core.warm import WarmMemory
+# from memories.core.red_hot import RedHotMemory
+# from memories.core.cold import ColdMemory
+# from memories.core.glacier.artifacts.overture import OvertureConnector
+# from memories.core.glacier.artifacts.sentinel import SentinelConnector
 from datetime import datetime, timedelta
 
 # Initialize GPU support flags
@@ -48,40 +51,65 @@ class MemoryRetrieval:
     
     def __init__(self):
         """Initialize memory retrieval system."""
+        self.logger = logging.getLogger(__name__)
         self.memory_manager = MemoryManager()
         
-        # Initialize connectors as None - will be created on demand
-        self._cold_memory = None
+        # Lazy imports to avoid circular dependencies
+        from memories.core.cold import Config
+        self.config = Config()
+        
+        # Initialize memory tiers as None - will be created on demand
         self._hot_memory = None
         self._warm_memory = None
+        self._cold_memory = None
         self._red_hot_memory = None
-        self._glacier_connectors = {}
+        self._glacier_memory = None
+        
+        # Initialize connectors as None - will be created on demand
+        self._overture_connector = None
+        self._sentinel_connector = None
 
-    def _init_cold(self):
-        """Initialize cold memory on demand."""
-        if not self._cold_memory:
-            self._cold_memory = ColdMemory()
-
-    def _init_hot(self):
+    def _init_hot(self) -> None:
         """Initialize hot memory on demand."""
         if not self._hot_memory:
+            from memories.core.hot import HotMemory
             self._hot_memory = HotMemory()
 
-    def _init_warm(self):
+    def _init_warm(self) -> None:
         """Initialize warm memory on demand."""
         if not self._warm_memory:
+            from memories.core.warm import WarmMemory
             self._warm_memory = WarmMemory()
 
-    def _init_red_hot(self):
-        """Initialize sensory memory on demand."""
+    def _init_cold(self) -> None:
+        """Initialize cold memory on demand."""
+        if not self._cold_memory:
+            from memories.core.cold import ColdMemory
+            self._cold_memory = ColdMemory()
+
+    def _init_red_hot(self) -> None:
+        """Initialize red hot memory on demand."""
         if not self._red_hot_memory:
+            from memories.core.red_hot import RedHotMemory
             self._red_hot_memory = RedHotMemory()
+            
+    def _init_overture_connector(self) -> None:
+        """Initialize Overture connector on demand."""
+        if not self._overture_connector:
+            from memories.core.glacier.artifacts.overture import OvertureConnector
+            self._overture_connector = OvertureConnector()
+            
+    def _init_sentinel_connector(self) -> None:
+        """Initialize Sentinel connector on demand."""
+        if not self._sentinel_connector:
+            from memories.core.glacier.artifacts.sentinel import SentinelConnector
+            self._sentinel_connector = SentinelConnector()
 
     def _get_glacier_connector(self, source: str):
         """Get or create glacier connector for specific source."""
-        if source not in self._glacier_connectors:
-            self._glacier_connectors[source] = create_connector(source)
-        return self._glacier_connectors[source]
+        if source not in self._glacier_memory:
+            self._glacier_memory[source] = create_connector(source)
+        return self._glacier_memory[source]
 
     async def retrieve(
         self,

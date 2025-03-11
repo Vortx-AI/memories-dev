@@ -112,3 +112,10 @@ tests/model/test_azure_ai.py
 test_venv/
 a.py
 memory_chat.py
+
+# Import scripts
+import_dubai_osm.py
+
+# DuckDB files
+*.duckdb
+*.duckdb.wal

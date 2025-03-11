@@ -179,15 +179,20 @@ class MemoryManager:
         try:
             self.storage_backends = {}
             
-            # Initialize Redis for hot tier if configured
-            if 'hot' in self.config['memory'] and 'redis_url' in self.config['memory']['hot']:
-                import redis
+            # Initialize DuckDB for hot tier if configured
+            if 'hot' in self.config['memory']:
+                import duckdb
                 hot_config = self.config['memory']['hot']
-                self.storage_backends['hot'] = redis.from_url(
-                    hot_config['redis_url'],
-                    db=hot_config.get('redis_db', 0)
-                )
-                self.logger.info("Redis initialized for hot tier")
+                # Create in-memory DuckDB connection
+                self.storage_backends['hot'] = duckdb.connect(database=':memory:', read_only=False)
+                
+                # Configure DuckDB
+                memory_limit = hot_config.get('duckdb', {}).get('memory_limit', '2GB')
+                threads = hot_config.get('duckdb', {}).get('threads', 2)
+                self.storage_backends['hot'].execute(f"SET memory_limit='{memory_limit}'")
+                self.storage_backends['hot'].execute(f"SET threads={threads}")
+                
+                self.logger.info("DuckDB initialized for hot tier")
             
             # Initialize remote storage for glacier tier if configured
             if 'glacier' in self.config['memory'] and 'remote_storage' in self.config['memory']['glacier']:
