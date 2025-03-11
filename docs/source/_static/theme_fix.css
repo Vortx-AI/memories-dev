@@ -1,0 +1,367 @@
+/* Basic theme fixes for memories-dev documentation */
+
+/* Fix sidebar width and appearance */
+.wy-nav-side {
+    background: #343131;
+    width: 300px;
+}
+
+.wy-side-nav-search {
+    background-color: #2c3e50;
+    padding: 1rem;
+}
+
+.wy-menu-vertical {
+    width: 100%;
+}
+
+/* Fix sidebar navigation items */
+.wy-menu-vertical header, 
+.wy-menu-vertical p.caption {
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 1em;
+    padding: 0.5em 1em;
+    margin: 0;
+    background-color: #2c3e50;
+}
+
+.wy-menu-vertical a {
+    color: #d9d9d9;
+    padding: 0.5em 1.5em;
+    display: block;
+}
+
+.wy-menu-vertical li.current {
+    background-color: #272525;
+}
+
+.wy-menu-vertical li.current > a {
+    color: #ffffff;
+    border-top: none;
+    border-bottom: none;
+}
+
+.wy-menu-vertical li.toctree-l1.current > a {
+    border-bottom: none;
+    border-top: none;
+}
+
+/* Fix content width and padding */
+.wy-nav-content {
+    max-width: 900px;
+    padding: 2em;
+}
+
+.wy-nav-content-wrap {
+    margin-left: 300px;
+    background-color: #ffffff;
+}
+
+/* Fix navigation depth indentation */
+.wy-menu-vertical li.toctree-l2 a {
+    padding-left: 2.5em;
+}
+
+.wy-menu-vertical li.toctree-l3 a {
+    padding-left: 3.5em;
+}
+
+.wy-menu-vertical li.toctree-l4 a {
+    padding-left: 4.5em;
+}
+
+/* Fix mobile navigation */
+@media screen and (max-width: 768px) {
+    .wy-nav-side {
+        left: -300px;
+    }
+    
+    .wy-nav-side.shift {
+        width: 85%;
+        left: 0;
+    }
+    
+    .wy-nav-content-wrap {
+        margin-left: 0;
+    }
+    
+    .wy-nav-content-wrap .wy-nav-content {
+        padding: 1.5em;
+    }
+    
+    .wy-nav-top {
+        display: block;
+        background: #2c3e50;
+        padding: 0.5em 1em;
+        text-align: center;
+    }
+    
+    .wy-nav-top a {
+        color: #fff;
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+}
+
+/* Fix admonitions */
+.admonition {
+    padding: 12px;
+    margin-bottom: 24px;
+    border-radius: 4px;
+}
+
+.admonition-title {
+    margin: -12px -12px 12px;
+    padding: 8px 12px;
+    font-weight: bold;
+    border-radius: 4px 4px 0 0;
+}
+
+/* Fix code blocks */
+pre {
+    padding: 12px;
+    background: #f8f8f8;
+    border: 1px solid #e1e4e5;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+code {
+    background: #f8f8f8;
+    border: 1px solid #e1e4e5;
+    border-radius: 3px;
+    padding: 0 5px;
+}
+
+/* Fix headings */
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Roboto Slab", "ff-tisa-web-pro", "Georgia", Arial, sans-serif;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 0.5em;
+}
+
+h1 {
+    font-size: 175%;
+    margin-bottom: 0.8em;
+}
+
+h2 {
+    font-size: 150%;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+h3 {
+    font-size: 125%;
+    margin-top: 1.2em;
+}
+
+/* Fix tables */
+table.docutils {
+    border: 1px solid #e1e4e5;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+    width: 100%;
+}
+
+table.docutils td, table.docutils th {
+    padding: 8px 16px;
+    border: 1px solid #e1e4e5;
+}
+
+table.docutils thead th {
+    background: #f0f0f0;
+    font-weight: bold;
+}
+
+/* Fix search box */
+.wy-side-nav-search input[type="text"] {
+    border-radius: 4px;
+    padding: 0.5em;
+    border-color: #ccc;
+    width: 100%;
+}
+
+/* Fix logo */
+.wy-side-nav-search > a img.logo {
+    max-width: 70%;
+    height: auto;
+    margin: 0.5em auto;
+}
+
+/* Fix footer */
+footer {
+    margin-top: 2em;
+    padding-top: 1em;
+    border-top: 1px solid #e1e4e5;
+}
+
+/* Fix breadcrumbs */
+.wy-breadcrumbs {
+    padding: 0.5em 0;
+    margin-bottom: 1em;
+}
+
+.wy-breadcrumbs li {
+    display: inline-block;
+    margin-right: 0.5em;
+}
+
+.wy-breadcrumbs li::after {
+    content: "›";
+    margin-left: 0.5em;
+}
+
+.wy-breadcrumbs li:last-child::after {
+    content: "";
+    margin-left: 0;
+}
+
+/* Fix version selector */
+.rst-versions {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 300px;
+    background: #1f1d1d;
+    border-top: 1px solid #e1e4e5;
+    font-size: 0.9em;
+}
+
+.rst-versions .rst-current-version {
+    padding: 0.5em 1em;
+    background: #272525;
+    color: #fff;
+    cursor: pointer;
+}
+
+/* Fix next/prev navigation */
+.rst-footer-buttons {
+    margin-top: 2em;
+}
+
+.rst-footer-buttons .btn {
+    padding: 0.5em 1em;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.rst-footer-buttons .btn-neutral {
+    background: #f3f6f6;
+    color: #404040;
+    border: 1px solid #ccc;
+}
+
+.rst-footer-buttons .btn-neutral:hover {
+    background: #e5ebeb;
+}
+
+/* Fix API documentation */
+dl.class, dl.function, dl.method, dl.attribute {
+    margin-bottom: 2em;
+    padding-bottom: 1em;
+    border-bottom: 1px solid #e1e4e5;
+}
+
+dl.class dt, dl.function dt, dl.method dt, dl.attribute dt {
+    background: #f8f8f8;
+    padding: 0.5em;
+    border-radius: 4px;
+    margin-bottom: 1em;
+}
+
+/* Fix notes and warnings */
+.rst-content .note,
+.rst-content .warning,
+.rst-content .tip,
+.rst-content .important,
+.rst-content .hint,
+.rst-content .seealso,
+.rst-content .caution,
+.rst-content .danger {
+    margin: 1em 0;
+    padding: 1em;
+    border-radius: 4px;
+}
+
+.rst-content .note {
+    background: #e7f2fa;
+}
+
+.rst-content .warning {
+    background: #ffedcc;
+}
+
+.rst-content .tip {
+    background: #dbfaf4;
+}
+
+.rst-content .important {
+    background: #ffcccb;
+}
+
+.rst-content .hint {
+    background: #ececec;
+}
+
+.rst-content .seealso {
+    background: #e4ffdf;
+}
+
+.rst-content .caution {
+    background: #ffe4cc;
+}
+
+.rst-content .danger {
+    background: #ffd6d6;
+}
+
+/* Fix admonition titles */
+.rst-content .admonition-title {
+    margin: -1em -1em 0.5em -1em;
+    padding: 0.5em 1em;
+    font-weight: bold;
+    border-radius: 4px 4px 0 0;
+}
+
+.rst-content .note .admonition-title {
+    background: #6ab0de;
+    color: #fff;
+}
+
+.rst-content .warning .admonition-title {
+    background: #f0b37e;
+    color: #fff;
+}
+
+.rst-content .tip .admonition-title {
+    background: #1abc9c;
+    color: #fff;
+}
+
+.rst-content .important .admonition-title {
+    background: #e74c3c;
+    color: #fff;
+}
+
+.rst-content .hint .admonition-title {
+    background: #777;
+    color: #fff;
+}
+
+.rst-content .seealso .admonition-title {
+    background: #1abc9c;
+    color: #fff;
+}
+
+.rst-content .caution .admonition-title {
+    background: #f39c12;
+    color: #fff;
+}
+
+.rst-content .danger .admonition-title {
+    background: #e74c3c;
+    color: #fff;
+} 

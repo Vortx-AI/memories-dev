@@ -1,7 +1,7 @@
 .. memories-dev documentation master file, version 2.0.5
 
 ==================================================
-Memory Codex: Earth-Grounded AI Memory Systems
+memories-dev: Earth-Grounded AI Memory Systems
 ==================================================
 
 .. raw:: html
@@ -16,14 +16,14 @@ Memory Codex: Earth-Grounded AI Memory Systems
 .. image:: _static/images/memory_codex_cover.png
    :align: center
    :width: 600px
-   :alt: Memory Codex - Bridging AI and Human Memory
+   :alt: memories-dev - Bridging AI and Human Memory
 
 .. raw:: html
 
    <div class="version-banner">
      <div class="version-info">
        <span class="version-number">v2.0.5</span>
-       <span class="version-date">Released: February 28, 2025</span>
+       <span class="version-date">Released: March 2023</span>
      </div>
      <div class="version-badges">
        <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License: Apache 2.0">
@@ -33,46 +33,104 @@ Memory Codex: Earth-Grounded AI Memory Systems
      </div>
    </div>
 
-Welcome to Memory Codex, a framework that reimagines how artificial intelligence understands, stores, and retrieves information. This book guides you through the journey of creating AI systems with deep understanding of Earth's systems through scientifically rigorous memory.
+Welcome to memories-dev, a framework that reimagines how artificial intelligence understands, stores, and retrieves information. This book guides you through the journey of creating AI systems with deep understanding of Earth's systems through scientifically rigorous memory.
 
-.. admonition:: What is Memory Codex?
+.. admonition:: What is memories-dev?
    :class: note
 
-   Memory Codex is a comprehensive framework for building AI systems with Earth-grounded memory. It provides:
+   memories-dev is a framework for building AI systems with enhanced memory capabilities. It provides:
    
-   * **Structured Memory Architecture**: Multi-tiered memory system for efficient data management
-   * **Scientific Foundations**: Earth science principles for reliable AI reasoning
-   * **Temporal & Spatial Understanding**: Comprehensive analysis across time and space
+   * **Structured Memory Architecture**: Organized memory system for efficient data management
+   * **Environmental Context**: Integration with environmental and geospatial data
+   * **Temporal Analysis**: Tools for understanding changes over time
    * **Practical Implementation**: Ready-to-use components for real-world applications
    * **Extensible Design**: Flexible architecture for custom memory systems
-   * **Enterprise Integration**: Seamless connection with existing data ecosystems
-   * **Real-time Processing**: High-performance computing for time-critical applications
-   * **Regulatory Compliance**: Built-in features for data governance and compliance
+   * **Integration Capabilities**: Connection with external data sources and AI systems
+   * **Performance Optimization**: Efficient processing for various workloads
+   * **Developer Tools**: Utilities for monitoring and managing memory systems
+
+.. admonition:: What's New in Version 2.0.5
+   :class: tip
+
+   Version 2.0.5 brings significant enhancements to the memories-dev framework:
+   
+   * **New Examples**: Added examples for real estate analysis, property analysis, multimodal AI integration, code intelligence, and more
+   * **Enhanced Schema Management**: Improved schema handling and metadata extraction for better data organization
+   * **System Improvements**: Better dependency handling, error management, and resource optimization
+   * **Memory Optimization**: Optimized data handling and batch processing for improved performance
+   * **API Connectors**: Enhanced integration with various LLM providers
+   * **Bug Fixes**: Resolved issues in test suite, memory retrieval, and data handling
+   
+   See the :doc:`changelog` for a complete list of changes.
+
+.. raw:: html
+
+   <div class="feature-grid">
+     <div class="feature-card">
+       <div class="feature-icon">🧠</div>
+       <h3>Memory Architecture</h3>
+       <p>Multi-tiered memory system with efficient storage and retrieval capabilities.</p>
+     </div>
+     <div class="feature-card">
+       <div class="feature-icon">🌍</div>
+       <h3>Earth Grounding</h3>
+       <p>Connect AI systems to Earth's observable reality through environmental data integration.</p>
+     </div>
+     <div class="feature-card">
+       <div class="feature-icon">⏱️</div>
+       <h3>Temporal Understanding</h3>
+       <p>Track and analyze changes over time with temporal memory management.</p>
+     </div>
+     <div class="feature-card">
+       <div class="feature-icon">🔍</div>
+       <h3>Semantic Search</h3>
+       <p>Find relevant memories using natural language queries and embedding techniques.</p>
+     </div>
+     <div class="feature-card">
+       <div class="feature-icon">🤖</div>
+       <h3>AI Integration</h3>
+       <p>Connect with language models and AI systems for enhanced capabilities.</p>
+     </div>
+     <div class="feature-card">
+       <div class="feature-icon">📊</div>
+       <h3>Data Analysis</h3>
+       <p>Extract insights and patterns from environmental and geospatial datasets.</p>
+     </div>
+     <div class="feature-card">
+       <div class="feature-icon">🏙️</div>
+       <h3>Real Estate Analysis</h3>
+       <p>Property analysis with environmental context and risk assessment.</p>
+     </div>
+     <div class="feature-card">
+       <div class="feature-icon">🖼️</div>
+       <h3>Multimodal Processing</h3>
+       <p>Process and understand different types of data in a unified framework.</p>
+     </div>
+   </div>
 
 .. mermaid::
 
    graph TD
-      A[Memory Codex] --> B[Earth Observation]
+      A[memories-dev] --> B[Data Sources]
       A --> C[Memory Architecture]
       A --> D[AI Integration]
       
-      B --> B1[Data Sources]
-      B --> B2[Scientific Analysis]
+      B --> B1[Environmental Data]
+      B --> B2[Geospatial Data]
       
       C --> C1[Hot Memory]
       C --> C2[Warm Memory]
       C --> C3[Cold Memory]
-      C --> C4[Glacier Memory]
       
       D --> D1[Query Interface]
-      D --> D2[Reasoning Engine]
+      D --> D2[Analysis Tools]
       D --> D3[Application APIs]
       
       style A fill:#0066cc,stroke:#004080,stroke-width:2px,color:#ffffff
       style B fill:#4db8ff,stroke:#0099ff,stroke-width:1px
       style C fill:#4db8ff,stroke:#0099ff,stroke-width:1px
       style D fill:#4db8ff,stroke:#0099ff,stroke-width:1px
-      style B1,B2,C1,C2,C3,C4,D1,D2,D3 fill:#e6f5ff,stroke:#80ccff,stroke-width:1px
+      style B1,B2,C1,C2,C3,D1,D2,D3 fill:#e6f5ff,stroke:#80ccff,stroke-width:1px
 
 .. raw:: html
 
@@ -147,8 +205,8 @@ We recommend reading the chapters in sequence, as each builds upon concepts intr
 
 * **New Users**: Start with :doc:`preface` and follow the :doc:`getting_started/index` guide
 * **AI Developers**: Focus on :doc:`integration/models` and :doc:`api_reference/index`
-* **Earth Scientists**: Explore :doc:`earth_memory/scientific_foundations` and :doc:`earth_memory/analyzers`
-* **System Architects**: Deep dive into :doc:`memory_architecture/index` and :doc:`memory_types/index`
+* **Data Scientists**: Explore :doc:`memory_types/index` and :doc:`memory_architecture/index`
+* **System Architects**: Deep dive into :doc:`memory_architecture/index` and :doc:`applications/index`
 
 Learning Path
 ------------
@@ -161,8 +219,8 @@ The following diagram illustrates the recommended learning path through the docu
       A[Getting Started] --> B[Core Concepts]
       B --> C[Memory Architecture]
       C --> D[Memory Types]
-      D --> E[Earth Memory]
-      E --> F[Integration]
+      D --> E[Data Integration]
+      E --> F[AI Integration]
       F --> G[Applications]
       
       style A fill:#e6f7ff,stroke:#1890ff,stroke-width:2px
@@ -180,174 +238,105 @@ Quick Start
 
 .. code-block:: python
 
-   from memories.earth import Observatory
+   from memories import MemoryStore
    
-   # Create an Earth Observatory
-   observatory = Observatory(name="my-observatory")
+   # Initialize a memory store
+   store = MemoryStore()
    
-   # Configure observation sources
-   observatory.add_source(
-       name="satellite-imagery",
-       source_type="remote-sensing",
-       provider="sentinel-2",
-       update_frequency="5d"
+   # Create a memory with location data
+   memory = store.create_memory(
+       location=(40.7128, -74.0060),  # New York City
+       timestamp="2023-03-15T12:00:00",
+       data={
+           "temperature": 22.5,
+           "humidity": 65,
+           "air_quality_index": 42
+       }
    )
    
-   # Initialize memory systems
-   hot_memory = observatory.create_memory_tier(
-       name="real-time",
-       tier_type="hot",
-       retention_period="30d"
+   # Query memories in an area
+   memories = store.query(
+       center=(40.7128, -74.0060),
+       radius=5000,  # meters
+       time_range=("2023-01-01", "2023-03-15")
    )
    
-   warm_memory = observatory.create_memory_tier(
-       name="seasonal",
-       tier_type="warm",
-       retention_period="5y"
+   # Analyze patterns
+   analysis = store.analyze(
+       memories=memories,
+       metrics=["temperature_trend", "air_quality"]
    )
    
-   # Begin observation collection
-   observatory.start()
-   
-   # Query Earth Memory
-   vegetation_trends = observatory.query(
-       observation_type="ndvi",
-       region="amazon-basin",
-       time_range=("2020-01-01", "present"),
-       aggregation="monthly-mean"
-   )
-   
-   # Visualize results
-   observatory.visualize(
-       data=vegetation_trends,
-       plot_type="time-series",
-       overlay="precipitation",
-       title="Amazon Vegetation Response to Rainfall Patterns"
-   )
+   # Print results
+   print(f"Found {len(memories)} memories")
+   print(f"Analysis results: {analysis}")
 
 .. note::
 
-   The Memory Codex framework is designed to be a foundational technology for Earth-grounded AI. This documentation serves both as a practical guide to implementation and as a conceptual exploration of how AI can develop deeper understanding of our planet.
+   The memories-dev framework provides tools for building AI systems with improved understanding of real-world data. This documentation serves as a guide to implementation and explores how AI can develop better understanding through structured memory systems.
 
-The Journey to Earth-Grounded AI
+The Journey to Better AI Systems
 ================================
 
-This codex is more than documentation—it's a comprehensive guide to creating AI that truly understands our world. As you progress through these chapters, you'll discover how to bridge the gap between artificial intelligence and Earth's observable reality.
+This documentation guides you through creating AI systems with improved understanding of real-world data. As you progress through these chapters, you'll discover how to bridge the gap between artificial intelligence and real-world information.
 
-.. raw:: html
+You'll learn about:
 
-   <div class="journey-map">
-      <div class="journey-stage">
-         <div class="stage-icon">🌱</div>
-         <div class="stage-title">Foundation</div>
-         <div class="stage-desc">Understand the core principles</div>
-      </div>
-      <div class="journey-connector"></div>
-      <div class="journey-stage">
-         <div class="stage-icon">🏗️</div>
-         <div class="stage-title">Architecture</div>
-         <div class="stage-desc">Design memory systems</div>
-      </div>
-      <div class="journey-connector"></div>
-      <div class="journey-stage">
-         <div class="stage-icon">🔄</div>
-         <div class="stage-title">Integration</div>
-         <div class="stage-desc">Connect with Earth data</div>
-      </div>
-      <div class="journey-connector"></div>
-      <div class="journey-stage">
-         <div class="stage-icon">✨</div>
-         <div class="stage-title">Application</div>
-         <div class="stage-desc">Create grounded AI</div>
-      </div>
-   </div>
-
-You'll discover:
-
-- How to eliminate AI hallucinations through Earth-based memory systems
-- Techniques for integrating satellite imagery, environmental data, and sensor networks
+- How to improve AI accuracy through structured memory systems
+- Techniques for integrating environmental data and contextual information
 - Methods for building temporal understanding in AI
-- Practical implementations across diverse domains
+- Practical implementations across various domains
 
 Core Components
 ==============
 
-The Memory Codex framework consists of several core components that work together to create Earth-grounded AI memory systems:
+The memories-dev framework consists of several core components:
 
-.. mermaid::
+* **Memory Store**: Central system for storing and retrieving memories
+* **Memory Types**: Different types of memory for various data formats
+* **Query Engine**: System for searching and retrieving relevant memories
+* **Analysis Tools**: Components for analyzing and extracting insights
+* **Integration APIs**: Interfaces for connecting with external systems
+* **Data Connectors**: Tools for importing and exporting data
+* **Visualization Tools**: Components for visualizing memory contents
+* **Developer Utilities**: Helpers for monitoring and debugging
 
-   classDiagram
-      class Observatory {
-          +name: str
-          +region: GeoRegion
-          +sources: List[DataSource]
-          +add_source()
-          +create_memory_tier()
-          +start()
-          +query()
-          +visualize()
-      }
-      
-      class MemoryTier {
-          +name: str
-          +tier_type: TierType
-          +retention_period: str
-          +store()
-          +retrieve()
-          +analyze()
-      }
-      
-      class DataSource {
-          +name: str
-          +source_type: str
-          +provider: str
-          +update_frequency: str
-          +connect()
-          +fetch_data()
-      }
-      
-      class Analyzer {
-          +name: str
-          +metrics: List[str]
-          +analyze()
-          +detect_patterns()
-          +generate_insights()
-      }
-      
-      Observatory "1" *-- "many" DataSource
-      Observatory "1" *-- "many" MemoryTier
-      Observatory "1" *-- "many" Analyzer
-      MemoryTier "1" -- "many" Analyzer
+These components work together to create a flexible and powerful memory system for AI applications.
 
 Use Cases
 =========
 
-Memory Codex enables a wide range of Earth-grounded AI applications:
+memories-dev enables a wide range of applications:
 
-1. **Environmental Monitoring**
-   - Real-time air quality analysis
-   - Forest health assessment
-   - Water quality monitoring
+1. **Environmental Analysis**
+   - Air quality monitoring
+   - Weather pattern analysis
+   - Environmental change tracking
 
-2. **Climate Intelligence**
-   - Climate pattern recognition
-   - Extreme weather prediction
-   - Climate change impact assessment
+2. **Data Management**
+   - Structured data organization
+   - Temporal data analysis
+   - Efficient information retrieval
 
-3. **Resource Management**
-   - Agricultural optimization
-   - Water resource planning
-   - Energy demand forecasting
+3. **Resource Planning**
+   - Resource allocation optimization
+   - Usage pattern analysis
+   - Forecasting and prediction
 
-4. **Urban Planning**
-   - Smart city development
-   - Traffic optimization
-   - Urban heat island mitigation
+4. **Urban Development**
+   - Urban pattern analysis
+   - Traffic flow optimization
+   - Development impact assessment
 
-5. **Biodiversity Conservation**
-   - Species habitat monitoring
-   - Ecosystem health assessment
-   - Conservation planning
+5. **Property Analysis**
+   - Property evaluation
+   - Environmental context assessment
+   - Neighborhood analysis
+
+6. **AI Enhancement**
+   - Multimodal data processing
+   - Code analysis and optimization
+   - Training process improvement
 
 Indices and tables
 ================
@@ -383,8 +372,15 @@ Indices and tables
    :hidden:
    :caption: Examples & Applications
 
-   examples/biodiversity_monitoring
+   examples/index
+   examples/environmental_monitoring
    examples/advanced_memory_retrieval
+   examples/real_estate_agent
+   examples/property_analyzer
+   examples/multimodal_ai_assistant
+   examples/code_intelligence_agent
+   examples/llm_training_optimizer
+   examples/ambience_analyzer
    applications/index
 
 .. toctree::
@@ -433,15 +429,17 @@ Indices and tables
      <div class="installation-options">
        <div class="installation-option">
          <h4>Using pip</h4>
-         <pre><code>pip install memories-dev==2.0.5</code></pre>
+         <pre><code>pip install memories-dev</code></pre>
        </div>
        <div class="installation-option">
-         <h4>Using conda</h4>
-         <pre><code>conda install -c conda-forge memories-dev=2.0.5</code></pre>
+         <h4>From source</h4>
+         <pre><code>git clone https://github.com/Vortx-AI/memories-dev.git
+cd memories-dev
+pip install -e .</code></pre>
        </div>
        <div class="installation-option">
-         <h4>Using Docker</h4>
-         <pre><code>docker pull vortxai/memories-dev:2.0.5</code></pre>
+         <h4>With extras</h4>
+         <pre><code>pip install memories-dev[all]</code></pre>
        </div>
      </div>
    </div>
@@ -455,29 +453,29 @@ Indices and tables
          <tr>
            <th>Feature</th>
            <th>memories-dev</th>
-           <th>Traditional AI Systems</th>
+           <th>Traditional Systems</th>
          </tr>
        </thead>
        <tbody>
          <tr>
-           <td>Scientific Grounding</td>
-           <td>✅ Built-in physical laws</td>
-           <td>❌ Often violates physical principles</td>
-         </tr>
-         <tr>
            <td>Memory Architecture</td>
-           <td>✅ Multi-tiered, optimized</td>
-           <td>❌ Flat, inefficient</td>
+           <td>✅ Multi-tiered memory system</td>
+           <td>❌ Often limited or single-tier</td>
          </tr>
          <tr>
-           <td>Earth System Integration</td>
-           <td>✅ Comprehensive</td>
-           <td>❌ Limited or non-existent</td>
+           <td>Environmental Context</td>
+           <td>✅ Integrated environmental data</td>
+           <td>❌ Limited environmental awareness</td>
          </tr>
          <tr>
-           <td>Uncertainty Quantification</td>
-           <td>✅ Rigorous</td>
-           <td>❌ Often missing</td>
+           <td>Temporal Analysis</td>
+           <td>✅ Time-based data processing</td>
+           <td>❌ Often static or limited</td>
+         </tr>
+         <tr>
+           <td>Data Organization</td>
+           <td>✅ Structured memory management</td>
+           <td>❌ Often unstructured</td>
          </tr>
        </tbody>
      </table>
@@ -486,7 +484,7 @@ Indices and tables
 Community & Support
 ==================
 
-Memory Codex is more than just a framework—it's a growing community of researchers, developers, and Earth scientists working together to create more grounded AI systems.
+memories-dev is more than just a framework—it's a growing community of researchers, developers, and Earth scientists working together to create more grounded AI systems.
 
 .. raw:: html
 
@@ -494,21 +492,21 @@ Memory Codex is more than just a framework—it's a growing community of researc
       <div class="community-card">
          <div class="card-icon"><i class="fas fa-users"></i></div>
          <h3>Join the Community</h3>
-         <p>Connect with other Memory Codex users and contributors in our community forums and chat channels.</p>
+         <p>Connect with other memories-dev users and contributors in our community forums and chat channels.</p>
          <a href="https://community.memories.dev" class="btn btn-primary">Join Now</a>
       </div>
       
       <div class="community-card">
          <div class="card-icon"><i class="fas fa-code-branch"></i></div>
          <h3>Contribute</h3>
-         <p>Help improve Memory Codex by contributing code, documentation, or examples to our open-source repository.</p>
+         <p>Help improve memories-dev by contributing code, documentation, or examples to our open-source repository.</p>
          <a href="https://github.com/Vortx-AI/memories-dev" class="btn btn-primary">Contribute</a>
       </div>
       
       <div class="community-card">
          <div class="card-icon"><i class="fas fa-question-circle"></i></div>
          <h3>Get Support</h3>
-         <p>Need help with Memory Codex? Our support team and community are here to assist you.</p>
+         <p>Need help with memories-dev? Our support team and community are here to assist you.</p>
          <a href="https://support.memories.dev" class="btn btn-primary">Get Help</a>
       </div>
    </div>
@@ -516,23 +514,19 @@ Memory Codex is more than just a framework—it's a growing community of researc
 Roadmap & Future Development
 ===========================
 
-Memory Codex is continuously evolving. Here's what you can expect in upcoming releases:
+memories-dev is continuously evolving. Here's what you can expect in upcoming releases:
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 30 50
+   :widths: 20 80
    
    * - Version
-     - Expected Release
      - Key Features
    * - **2.1.0**
-     - Q2 2025
      - Enhanced temporal reasoning, improved uncertainty quantification, expanded Earth system models
    * - **2.2.0**
-     - Q3 2025
      - Advanced cross-domain integration, new visualization tools, expanded API capabilities
    * - **3.0.0**
-     - Q1 2026
      - Next-generation memory architecture, real-time Earth system monitoring, comprehensive model integration
 
 We welcome community input on our roadmap. If you have suggestions for future features or improvements, please share them in our `GitHub discussions <https://github.com/Vortx-AI/memories-dev/discussions>`_.
@@ -540,34 +534,46 @@ We welcome community input on our roadmap. If you have suggestions for future fe
 Case Studies
 ===========
 
-Memory Codex is already being used in a variety of real-world applications. Here are some examples:
+memories-dev can be applied to a variety of real-world applications:
 
 .. raw:: html
 
    <div class="case-studies">
       <div class="case-study">
-         <h3>Climate Resilience Planning</h3>
-         <p>A municipal government using Memory Codex to develop climate adaptation strategies based on historical patterns and future projections.</p>
-         <a href="examples/climate_intelligence.html">Read More →</a>
+         <h3>Environmental Analysis</h3>
+         <p>Track and analyze environmental conditions to support monitoring and assessment efforts.</p>
+         <a href="examples/environmental_monitoring.html">Learn More →</a>
       </div>
       
       <div class="case-study">
-         <h3>Agricultural Optimization</h3>
-         <p>Precision agriculture company leveraging Earth memory to optimize crop yields while minimizing environmental impact.</p>
-         <a href="examples/resource_management.html">Read More →</a>
+         <h3>Resource Management</h3>
+         <p>Optimize resource allocation and planning using comprehensive data analysis.</p>
+         <a href="examples/resource_management.html">Learn More →</a>
       </div>
       
       <div class="case-study">
-         <h3>Disaster Response</h3>
-         <p>Emergency management agency using Memory Codex to improve disaster prediction and response coordination.</p>
-         <a href="examples/environmental_monitoring.html">Read More →</a>
+         <h3>Urban Development</h3>
+         <p>Analyze urban patterns and development trends to support planning efforts.</p>
+         <a href="examples/urban_growth.html">Learn More →</a>
+      </div>
+      
+      <div class="case-study">
+         <h3>Property Analysis</h3>
+         <p>Evaluate properties based on various factors and contextual information.</p>
+         <a href="examples/real_estate_agent.html">Learn More →</a>
+      </div>
+      
+      <div class="case-study">
+         <h3>AI Applications</h3>
+         <p>Build more effective AI systems with enhanced memory and data integration.</p>
+         <a href="examples/multimodal_ai_assistant.html">Learn More →</a>
       </div>
    </div>
 
 Ready to Begin?
 ==============
 
-Start your journey with Memory Codex by following our :doc:`getting_started/index` guide. Whether you're an AI researcher, Earth scientist, or developer, Memory Codex provides the tools you need to create more grounded, scientifically rigorous AI systems.
+Start your journey with memories-dev by following our :doc:`getting_started/index` guide. Whether you're an AI developer, data scientist, or system architect, memories-dev provides the tools you need to create more effective memory systems for your applications.
 
 .. raw:: html
 

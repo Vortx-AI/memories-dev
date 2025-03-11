@@ -1,14 +1,72 @@
 Examples
 ========
 
+This section provides practical examples of how to use the memories-dev framework in various applications. Each example demonstrates different aspects of the framework's capabilities.
+
 🌍 Environmental Monitoring
 ===========================
+
+Environmental monitoring examples demonstrate how to use the memories-dev framework to track and analyze environmental conditions.
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Environmental Examples
+
+   environmental_monitoring
+   climate_analysis
+   water_bodies_monitor
+   biodiversity_assessment
 
 🏙️ Urban Development
 ====================
 
+Urban development examples show how to analyze urban environments and patterns.
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Urban Examples
+
+   urban_growth
+   traffic_patterns
+
 🔍 Advanced Analysis
 ====================
+
+Advanced analysis examples demonstrate sophisticated analytical capabilities.
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Analysis Examples
+
+   location_ambience
+   temporal_patterns
+   spatial_analysis
+
+🏠 Real Estate & Property Analysis
+=================================
+
+New in version 2.0.5, our real estate and property analysis tools provide comprehensive insights into properties using Earth memory data.
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Real Estate Examples
+
+   real_estate_agent
+   property_analyzer
+
+🤖 AI Integration
+================
+
+New in version 2.0.5, these examples demonstrate advanced AI integration capabilities.
+
+.. toctree::
+   :maxdepth: 1
+   :caption: AI Examples
+
+   multimodal_ai_assistant
+   code_intelligence_agent
+   llm_training_optimizer
+   ambience_analyzer
 
 Basic Examples
 -------------
@@ -16,52 +74,7 @@ Basic Examples
 Memory Formation
 ^^^^^^^^^^^^^^
 
-Query and Analysis
-^^^^^^^^^^^^^^^
-
-Advanced Usage
--------------
-
-Multi-Source Integration
-^^^^^^^^^^^^^^^^^^^^
-
-Custom Analysis
-^^^^^^^^^^^^
-
-Performance Tips
---------------
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Examples
-
-   math_examples
-   climate_analysis
-   water_bodies_monitor
-   urban_growth
-   biodiversity_assessment
-   disaster_response
-
-.. toctree::
-   :maxdepth: 1
-
-   water_bodies_monitor
-   climate_analysis
-   vegetation_tracking
-
-.. toctree::
-   :maxdepth: 1
-
-   property_analyzer
-   traffic_patterns
-   urban_growth
-
-.. toctree::
-   :maxdepth: 1
-
-   location_ambience
-   temporal_patterns
-   spatial_analysis
+The following example demonstrates how to create basic memories:
 
 .. code-block:: python
 
@@ -81,6 +94,11 @@ Performance Tips
         }
     )
 
+Query and Analysis
+^^^^^^^^^^^^^^^
+
+This example shows how to query memories and analyze patterns:
+
 .. code-block:: python
 
     # Query memories in area
@@ -96,6 +114,14 @@ Performance Tips
         metrics=["temperature_trend", "urban_development"]
     )
 
+Advanced Usage
+-------------
+
+Multi-Source Integration
+^^^^^^^^^^^^^^^^^^^^
+
+This example demonstrates how to integrate multiple data sources:
+
 .. code-block:: python
 
     from memories.sources import SatelliteSource, SensorSource
@@ -110,6 +136,11 @@ Performance Tips
         sources=[satellite, sensors],
         integration_method="temporal_fusion"
     )
+
+Custom Analysis
+^^^^^^^^^^^^
+
+This example shows how to create custom analyzers:
 
 .. code-block:: python
 
@@ -127,6 +158,9 @@ Performance Tips
     # Use custom analyzer
     analyzer = UrbanGrowthAnalyzer()
     results = analyzer.analyze(memories)
+
+Performance Tips
+--------------
 
 1. **Memory Management**
    - Use appropriate batch sizes
