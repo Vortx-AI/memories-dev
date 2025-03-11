@@ -184,11 +184,11 @@ def setup(app):
     app.add_css_file('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400;1,700&display=swap')
     app.add_css_file('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap')
     
-    # Add Mermaid library
-    app.add_js_file('https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js')
+    # Add Mermaid library directly (not through CDN)
+    app.add_js_file('https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js', priority=200)
     
-    # Add our custom Mermaid initialization
-    app.add_js_file('js/mermaid.js')
+    # Add our custom Mermaid initialization with higher priority
+    app.add_js_file('js/mermaid.js', priority=201)
     
     return {
         'parallel_read_safe': True,
