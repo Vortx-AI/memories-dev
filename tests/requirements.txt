@@ -12,7 +12,6 @@ mapbox-vector-tile>=2.0.1
 shapely>=2.0.0,<3.0.0
 pyproj>=3.6.1
 pystac>=1.8.0
-redis>=5.0.0
 nltk>=3.8.1
 diffusers>=0.25.0
 langchain>=0.1.0

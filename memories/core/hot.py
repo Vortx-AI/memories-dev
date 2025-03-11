@@ -1,41 +1,94 @@
 """
-Hot memory implementation using Redis.
+Hot memory implementation using DuckDB for in-memory storage.
 """
 
 import logging
 from typing import Dict, Any, Optional, List, Union
-import redis
+import duckdb
 import json
 from datetime import datetime
+import uuid
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
 class HotMemory:
-    """Hot memory layer using Redis for fast in-memory storage."""
+    """Hot memory layer using DuckDB for fast in-memory storage."""
     
-    def __init__(self, redis_url: str = 'redis://localhost:6379', redis_db: int = 0):
-        """Initialize hot memory.
+    def __init__(self):
+        """Initialize hot memory with in-memory DuckDB."""
+        self.logger = logging.getLogger(__name__)
+        
+        # Lazy import to avoid circular dependency
+        from memories.core.memory_manager import MemoryManager
+        self.memory_manager = MemoryManager()
+        
+        # Initialize in-memory DuckDB connection
+        self.con = self._init_duckdb()
+        self._init_tables(self.con)
+        
+        self.logger.info("Initialized hot memory with in-memory DuckDB")
+    
+    def _init_duckdb(self) -> duckdb.DuckDBPyConnection:
+        """Initialize in-memory DuckDB connection.
+        
+        Returns:
+            DuckDB connection
+        """
+        try:
+            # Get DuckDB configuration from memory manager if available
+            hot_config = self.memory_manager.config.get('memory', {}).get('hot', {})
+            duckdb_config = hot_config.get('duckdb', {})
+            
+            # Set memory limit and threads
+            memory_limit = duckdb_config.get('memory_limit', '2GB')
+            threads = duckdb_config.get('threads', 2)
+            
+            # Create in-memory connection
+            con = duckdb.connect(database=':memory:', read_only=False)
+            
+            # Set configuration
+            con.execute(f"SET memory_limit='{memory_limit}'")
+            con.execute(f"SET threads={threads}")
+            
+            return con
+            
+        except Exception as e:
+            self.logger.error(f"Error initializing DuckDB for hot storage: {e}")
+            raise
+    
+    def _init_tables(self, con: duckdb.DuckDBPyConnection) -> None:
+        """Initialize database tables.
         
         Args:
-            redis_url: Redis connection URL (optional, default: redis://localhost:6379)
-            redis_db: Redis database number (optional, default: 0)
+            con: DuckDB connection to initialize tables in
         """
-        self.redis_url = redis_url
-        self.redis_db = redis_db
-        self.max_size = 100 * 1024 * 1024  # 100MB default
-        self.using_redis = True
-        
         try:
-            self.redis_client = redis.from_url(
-                url=redis_url,
-                db=redis_db,
-                decode_responses=True
-            )
-            logger.info(f"Connected to Redis at {redis_url}, db={redis_db}")
+            # Create tables if they don't exist
+            con.execute("""
+                CREATE TABLE IF NOT EXISTS hot_data (
+                    id VARCHAR PRIMARY KEY,
+                    data JSON,
+                    metadata JSON,
+                    tags JSON,
+                    stored_at TIMESTAMP
+                )
+            """)
+            
+            con.execute("""
+                CREATE TABLE IF NOT EXISTS hot_tags (
+                    tag VARCHAR,
+                    data_id VARCHAR,
+                    PRIMARY KEY (tag, data_id),
+                    FOREIGN KEY (data_id) REFERENCES hot_data(id)
+                )
+            """)
+            
+            self.logger.info("Initialized hot memory tables")
+            
         except Exception as e:
-            logger.error(f"Failed to connect to Redis: {e}")
-            self.using_redis = False
-            self.redis_client = None
+            self.logger.error(f"Error initializing tables for hot storage: {e}")
+            raise
     
     async def store(
         self,
@@ -53,34 +106,52 @@ class HotMemory:
         Returns:
             bool: True if storage was successful, False otherwise
         """
-        if not self.using_redis or not self.redis_client:
-            logger.error("Redis client not initialized")
-            return False
-
         try:
-            # Generate key from tags or timestamp
-            key = f"{tags[0]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}" if tags else f"hot_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-
+            # Generate unique ID
+            data_id = str(uuid.uuid4())
+            
             # Prepare data for storage
-            storage_data = {
-                "data": data,
-                "metadata": metadata or {},
-                "tags": tags or [],
-                "stored_at": datetime.now().isoformat()
-            }
-
-            # Store in Redis
-            self.redis_client.set(key, json.dumps(storage_data))
-
-            # Add to tag index if tags provided
-            if tags:
-                for tag in tags:
-                    self.redis_client.sadd(f"tag:{tag}", key)
-
+            metadata = metadata or {}
+            tags_list = tags or []
+            
+            # Convert data to JSON if needed
+            if isinstance(data, (dict, list)):
+                data_json = json.dumps(data)
+            elif isinstance(data, np.ndarray):
+                data_json = json.dumps(data.tolist())
+            else:
+                data_json = json.dumps(str(data))
+            
+            # Store in hot_data table
+            self.con.execute(
+                """
+                INSERT INTO hot_data (id, data, metadata, tags, stored_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                [
+                    data_id,
+                    data_json,
+                    json.dumps(metadata),
+                    json.dumps(tags_list),
+                    datetime.now()
+                ]
+            )
+            
+            # Store tags in hot_tags table
+            if tags_list:
+                for tag in tags_list:
+                    self.con.execute(
+                        """
+                        INSERT INTO hot_tags (tag, data_id)
+                        VALUES (?, ?)
+                        """,
+                        [tag, data_id]
+                    )
+            
             return True
-
+            
         except Exception as e:
-            logger.error(f"Failed to store in hot memory: {e}")
+            self.logger.error(f"Failed to store in hot memory: {e}")
             return False
     
     async def retrieve(
@@ -91,124 +162,178 @@ class HotMemory:
         """Retrieve data from hot memory.
         
         Args:
-            query: Query parameters
+            query: Query parameters (can contain 'id' to retrieve specific data)
             tags: Optional tags to filter by
             
         Returns:
             Retrieved data or None if not found
         """
-        if not self.using_redis:
-            logger.error("Redis not available")
-            return None
-            
         try:
             if tags:
-                # Get keys by tags
-                keys = set()
-                for tag in tags:
-                    tag_keys = self.redis_client.smembers(f"tag:{tag}")
-                    keys.update(tag_keys)
+                # Get data by tags
+                tag_placeholders = ', '.join(['?'] * len(tags))
+                result = self.con.execute(
+                    f"""
+                    SELECT hd.id, hd.data, hd.metadata, hd.tags, hd.stored_at
+                    FROM hot_data hd
+                    JOIN hot_tags ht ON hd.id = ht.data_id
+                    WHERE ht.tag IN ({tag_placeholders})
+                    GROUP BY hd.id, hd.data, hd.metadata, hd.tags, hd.stored_at
+                    """,
+                    tags
+                ).fetchall()
                 
-                # Get data for each key
+                if not result:
+                    return None
+                
+                # Convert to list of dictionaries
                 results = []
-                for key in keys:
-                    data = self.redis_client.get(key)
-                    if data:
-                        results.append(json.loads(data))
+                for row in result:
+                    results.append({
+                        'id': row[0],
+                        'data': json.loads(row[1]),
+                        'metadata': json.loads(row[2]),
+                        'tags': json.loads(row[3]),
+                        'stored_at': row[4].isoformat() if row[4] else None
+                    })
                 return results
+                
+            elif 'id' in query:
+                # Get data by ID
+                result = self.con.execute(
+                    """
+                    SELECT id, data, metadata, tags, stored_at
+                    FROM hot_data
+                    WHERE id = ?
+                    """,
+                    [query['id']]
+                ).fetchone()
+                
+                if not result:
+                    return None
+                
+                return {
+                    'id': result[0],
+                    'data': json.loads(result[1]),
+                    'metadata': json.loads(result[2]),
+                    'tags': json.loads(result[3]),
+                    'stored_at': result[4].isoformat() if result[4] else None
+                }
             else:
-                # Get data by query
-                data = self.redis_client.get(query.get("key", "hot_data"))
-                return json.loads(data) if data else None
+                # Get most recent data
+                result = self.con.execute(
+                    """
+                    SELECT id, data, metadata, tags, stored_at
+                    FROM hot_data
+                    ORDER BY stored_at DESC
+                    LIMIT 1
+                    """
+                ).fetchone()
+                
+                if not result:
+                    return None
+                
+                return {
+                    'id': result[0],
+                    'data': json.loads(result[1]),
+                    'metadata': json.loads(result[2]),
+                    'tags': json.loads(result[3]),
+                    'stored_at': result[4].isoformat() if result[4] else None
+                }
+                
         except Exception as e:
-            logger.error(f"Failed to retrieve from hot memory: {e}")
+            self.logger.error(f"Failed to retrieve from hot memory: {e}")
             return None
     
     def clear(self) -> None:
         """Clear hot memory."""
-        if not self.using_redis:
-            return
-            
         try:
-            self.redis_client.flushdb()
+            self.con.execute("DELETE FROM hot_tags")
+            self.con.execute("DELETE FROM hot_data")
+            self.logger.info("Cleared hot memory")
         except Exception as e:
-            logger.error(f"Failed to clear hot memory: {e}")
+            self.logger.error(f"Failed to clear hot memory: {e}")
     
     def cleanup(self) -> None:
         """Clean up resources."""
-        if self.using_redis and hasattr(self, 'redis_client') and self.redis_client:
-            try:
-                self.redis_client.close()
-            except Exception as e:
-                logger.error(f"Failed to cleanup hot memory: {e}")
+        try:
+            if hasattr(self, 'con') and self.con:
+                self.con.close()
+                self.con = None
+            self.logger.info("Cleaned up hot memory resources")
+        except Exception as e:
+            self.logger.error(f"Failed to cleanup hot memory: {e}")
     
     def __del__(self):
         """Destructor to ensure cleanup is performed."""
         self.cleanup()
 
-    async def get_schema(self, key: str) -> Optional[Dict[str, Any]]:
+    async def get_schema(self, data_id: str) -> Optional[Dict[str, Any]]:
         """Get schema information for stored data.
         
         Args:
-            key: Key of the data to get schema for
+            data_id: ID of the data to get schema for
             
         Returns:
             Dictionary containing schema information or None if not found
         """
-        if not self.using_redis:
-            logger.error("Redis not available")
-            return None
-            
         try:
-            # Get data from Redis
-            data = self.redis_client.get(key)
-            if not data:
+            # Get data from DuckDB
+            result = self.con.execute(
+                """
+                SELECT data
+                FROM hot_data
+                WHERE id = ?
+                """,
+                [data_id]
+            ).fetchone()
+            
+            if not result:
                 return None
                 
             # Parse stored data
-            stored_data = json.loads(data)
-            data_value = stored_data.get('data')
+            data_value = json.loads(result[0])
             
             if isinstance(data_value, dict):
                 schema = {
                     'fields': list(data_value.keys()),
                     'types': {k: type(v).__name__ for k, v in data_value.items()},
                     'type': 'dict',
-                    'source': 'redis'
+                    'source': 'hot_memory'
                 }
             elif isinstance(data_value, list):
                 if data_value:
                     if all(isinstance(x, dict) for x in data_value):
                         # List of dictionaries - combine all keys
-                        all_keys = set().union(*(d.keys() for d in data_value))
+                        all_keys = set().union(*(d.keys() for d in data_value if isinstance(d, dict)))
                         schema = {
                             'fields': list(all_keys),
-                            'types': {k: type(next(d[k] for d in data_value if k in d)).__name__ 
+                            'types': {k: type(next((d[k] for d in data_value if isinstance(d, dict) and k in d), None)).__name__ 
                                     for k in all_keys},
                             'type': 'list_of_dicts',
-                            'source': 'redis'
+                            'source': 'hot_memory'
                         }
                     else:
                         schema = {
                             'type': 'list',
                             'element_type': type(data_value[0]).__name__,
                             'length': len(data_value),
-                            'source': 'redis'
+                            'source': 'hot_memory'
                         }
                 else:
                     schema = {
                         'type': 'list',
                         'length': 0,
-                        'source': 'redis'
+                        'source': 'hot_memory'
                     }
             else:
                 schema = {
                     'type': type(data_value).__name__,
-                    'source': 'redis'
+                    'source': 'hot_memory'
                 }
                 
             return schema
             
         except Exception as e:
-            logger.error(f"Failed to get schema for {key}: {e}")
+            self.logger.error(f"Failed to get schema for {data_id}: {e}")
             return None

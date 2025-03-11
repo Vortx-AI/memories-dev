@@ -44,7 +44,7 @@ Now, let's retrieve historical satellite imagery for a specific location. We'll 
 
    # Define the location and time range
    location = (37.7749, -122.4194)  # San Francisco coordinates (latitude, longitude)
-   time_range = ("2000-01-01", "2023-01-01")
+   time_range = ("2000-01-01", "2025-03-11")
    
    # Initialize the satellite imagery client
    imagery = SatelliteImagery(api_key=os.environ.get("SATELLITE_API_KEY"))
@@ -117,7 +117,7 @@ Finally, let's visualize our results to better understand the changes:
    change_map = visualizer.create_change_map(
        changes=changes,
        base_map="satellite",  # Options: satellite, streets, terrain
-       title="San Francisco Urban Changes (2000-2023)"
+       title="San Francisco Urban Changes (2000-2025)"
    )
    
    # Add a time slider to the map
@@ -156,7 +156,7 @@ Here's the complete code for the quickstart example:
    
    # Define location and time range
    location = (37.7749, -122.4194)  # San Francisco
-   time_range = ("2000-01-01", "2023-01-01")
+   time_range = ("2000-01-01", "2025-03-11")
    
    # Initialize components
    imagery = SatelliteImagery(api_key=os.environ.get("SATELLITE_API_KEY"))
@@ -199,7 +199,7 @@ Here's the complete code for the quickstart example:
        change_map = visualizer.create_change_map(
            changes=changes,
            base_map="satellite",
-           title="San Francisco Urban Changes (2000-2023)"
+           title="San Francisco Urban Changes (2000-2025)"
        )
        
        change_map.add_time_slider()

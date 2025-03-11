@@ -69,11 +69,19 @@ class Config:
                     'cold_size': 1000,
                     'vector_dim': 384,  # Default vector dimension
                     'gpu_id': 0,  # Default GPU device
-                    'faiss_index_type': 'IVFFlat'  # Default FAISS index type
-                },
-                'redis': {
-                    'url': 'redis://localhost:6379',
-                    'db': 0
+                    'faiss_index_type': 'IVFFlat',  # Default FAISS index type
+                    'hot': {
+                        'duckdb': {
+                            'memory_limit': '2GB',
+                            'threads': 2
+                        }
+                    },
+                    'warm': {
+                        'duckdb': {
+                            'memory_limit': '8GB',
+                            'threads': 4
+                        }
+                    }
                 }
             }
             
@@ -91,14 +99,20 @@ class Config:
         return Path(self.config['database']['path'])
         
     @property
-    def redis_url(self) -> str:
-        """Get the Redis URL."""
-        return self.config['redis']['url']
+    def hot_duckdb_config(self) -> dict:
+        """Get the hot memory DuckDB configuration."""
+        return self.config['memory'].get('hot', {}).get('duckdb', {
+            'memory_limit': '2GB',
+            'threads': 2
+        })
         
     @property
-    def redis_db(self) -> int:
-        """Get the Redis database number."""
-        return self.config['redis']['db']
+    def warm_duckdb_config(self) -> dict:
+        """Get the warm memory DuckDB configuration."""
+        return self.config['memory'].get('warm', {}).get('duckdb', {
+            'memory_limit': '8GB',
+            'threads': 4
+        })
         
     @property
     def hot_memory_size(self) -> int:

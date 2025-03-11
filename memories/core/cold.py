@@ -20,7 +20,6 @@ from datetime import datetime
 import subprocess
 import gzip
 import shutil
-from memories.core.memory_catalog import memory_catalog
 
 # Initialize GPU support flags
 HAS_GPU_SUPPORT = False
@@ -151,30 +150,30 @@ class Config:
 logger = logging.getLogger(__name__)
 
 class ColdMemory:
-    """Cold memory storage for infrequently accessed data using DuckDB."""
+    """Cold memory layer using DuckDB for persistent storage."""
     
     def __init__(self):
-        """Initialize cold memory storage."""
+        """Initialize cold memory."""
         self.logger = logging.getLogger(__name__)
+        self.config = Config()
         
-        # Set up storage path in project root
-        project_root = os.getenv("PROJECT_ROOT", os.path.expanduser("~"))
-        self.storage_path = Path(project_root)
-        self.storage_path.mkdir(parents=True, exist_ok=True)
-
-        # Initialize DuckDB connection
-        try:
-            self.con = duckdb.connect()
-            self._initialize_schema()
-            self.logger.info("Successfully initialized DuckDB connection")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize DuckDB connection: {e}")
-            raise
+        # Lazy import to avoid circular dependency
+        from memories.core.memory_catalog import memory_catalog
+        self.memory_catalog = memory_catalog
+        
+        # Initialize database
+        self.db_path = self.config.database_path
+        self._initialize_schema()
+        
+        # Set up paths
+        self.raw_data_path = self.config.raw_data_path
+        os.makedirs(self.raw_data_path, exist_ok=True)
 
     def _initialize_schema(self):
         """Initialize database schema."""
         try:
             # Create data table if it doesn't exist
+            self.con = duckdb.connect()
             self.con.execute("""
                 CREATE TABLE IF NOT EXISTS cold_data (
                     id VARCHAR PRIMARY KEY,
@@ -199,7 +198,7 @@ class ColdMemory:
             file_type = file_path.suffix.lstrip('.')
 
             # Register in memory catalog
-            await memory_catalog.register_data(
+            await self.memory_catalog.register_data(
                 tier="cold",
                 location=str(file_path),
                 size=file_stats.st_size,
@@ -243,7 +242,7 @@ class ColdMemory:
                 return False
 
             # Generate unique ID
-            data_id = await memory_catalog.register_data(
+            data_id = await self.memory_catalog.register_data(
                 tier="cold",
                 location=f"cold_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
                 size=df.memory_usage(deep=True).sum(),
@@ -268,7 +267,7 @@ class ColdMemory:
         """Retrieve data from cold storage."""
         try:
             # Get data info from catalog
-            data_info = await memory_catalog.get_data_info(query.get('data_id'))
+            data_info = await self.memory_catalog.get_data_info(query.get('data_id'))
             if not data_info:
                 return None
 
@@ -295,7 +294,7 @@ class ColdMemory:
         """Clear all data from cold storage."""
         try:
             # Get all cold tier data from catalog
-            cold_data = await memory_catalog.get_tier_data("cold")
+            cold_data = await self.memory_catalog.get_tier_data("cold")
             
             # Clear data table
             self.con.execute("DELETE FROM cold_data")
@@ -322,7 +321,7 @@ class ColdMemory:
         """
         try:
             # Get file info from catalog
-            file_info = await memory_catalog.get_data_info(file_id)
+            file_info = await self.memory_catalog.get_data_info(file_id)
             if not file_info:
                 return False
                 
@@ -345,7 +344,7 @@ class ColdMemory:
         """List all registered files and their metadata."""
         try:
             # Get all cold tier data from catalog
-            cold_data = await memory_catalog.get_tier_data("cold")
+            cold_data = await self.memory_catalog.get_tier_data("cold")
             
             # Filter and format results
             files = []
@@ -384,7 +383,7 @@ class ColdMemory:
         """Get all file paths from cold storage metadata and extract their schemas."""
         try:
             # Get all cold tier data from catalog
-            cold_data = await memory_catalog.get_tier_data("cold")
+            cold_data = await self.memory_catalog.get_tier_data("cold")
             
             # Extract schema for each file
             schemas = []

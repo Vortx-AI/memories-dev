@@ -10,11 +10,12 @@ from datetime import datetime
 from sentence_transformers import SentenceTransformer
 
 from memories.core.memory_catalog import memory_catalog
-from memories.core.hot import HotMemory
-from memories.core.warm import WarmMemory
-from memories.core.cold import ColdMemory
-from memories.core.red_hot import RedHotMemory
-from memories.core.glacier import GlacierMemory
+# Remove direct imports to avoid circular dependencies
+# from memories.core.hot import HotMemory
+# from memories.core.warm import WarmMemory
+# from memories.core.cold import ColdMemory
+# from memories.core.red_hot import RedHotMemory
+# from memories.core.glacier import GlacierMemory
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,17 @@ class MemoryIndex:
             self.logger = logging.getLogger(__name__)
             self.initialized = True
             
-            # Initialize memory tiers
+            # Initialize model for vectorizing schema
+            self.model = SentenceTransformer('all-MiniLM-L6-v2')
+            
+            # Initialize FAISS index
+            self.dimension = 384  # Output dimension of the model
+            self.index = faiss.IndexFlatL2(self.dimension)
+            
+            # Store mapping from index to data ID
+            self.id_mapping = {}
+            
+            # Initialize memory tiers as None - will be created on demand
             self._hot_memory = None
             self._warm_memory = None
             self._cold_memory = None
@@ -46,44 +57,41 @@ class MemoryIndex:
             self.indexes = {}
             self.metadata = {}
             
-            # Initialize sentence transformer for vectorization
-            try:
-                self.model = SentenceTransformer('all-MiniLM-L6-v2')
-                self.vector_dim = 384  # Model output dimension
-                
-                # Create indexes for each tier
-                for tier in ["hot", "warm", "cold", "red_hot", "glacier"]:
-                    self.indexes[tier] = faiss.IndexFlatL2(self.vector_dim)
-                    self.metadata[tier] = {}
-                    
-                self.logger.info("Successfully initialized memory index")
-            except Exception as e:
-                self.logger.error(f"Failed to initialize memory index: {e}")
-                raise
+            # Create indexes for each tier
+            for tier in ["hot", "warm", "cold", "red_hot", "glacier"]:
+                self.indexes[tier] = faiss.IndexFlatL2(self.dimension)
+                self.metadata[tier] = {}
+            
+            self.logger.info("Successfully initialized memory index")
 
     def _init_hot(self) -> None:
         """Initialize hot memory on demand."""
         if not self._hot_memory:
+            from memories.core.hot import HotMemory
             self._hot_memory = HotMemory()
 
     def _init_warm(self) -> None:
         """Initialize warm memory on demand."""
         if not self._warm_memory:
+            from memories.core.warm import WarmMemory
             self._warm_memory = WarmMemory()
 
     def _init_cold(self) -> None:
         """Initialize cold memory on demand."""
         if not self._cold_memory:
+            from memories.core.cold import ColdMemory
             self._cold_memory = ColdMemory()
 
     def _init_red_hot(self) -> None:
         """Initialize red hot memory on demand."""
         if not self._red_hot_memory:
+            from memories.core.red_hot import RedHotMemory
             self._red_hot_memory = RedHotMemory()
 
     def _init_glacier(self) -> None:
         """Initialize glacier memory on demand."""
         if not self._glacier_memory:
+            from memories.core.glacier import GlacierMemory
             self._glacier_memory = GlacierMemory()
 
     def _vectorize_schema(self, schema: Dict[str, Any]) -> np.ndarray:
@@ -154,7 +162,7 @@ class MemoryIndex:
             self.logger.debug(f"Tier data: {tier_data}")
             
             # Create new index and metadata
-            index = faiss.IndexFlatL2(self.vector_dim)
+            index = faiss.IndexFlatL2(self.dimension)
             metadata = {}
             
             # Process each data item

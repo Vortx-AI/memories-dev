@@ -23,7 +23,7 @@ memories-dev: Earth-Grounded AI Memory Systems
    <div class="version-banner">
      <div class="version-info">
        <span class="version-number">v2.0.5</span>
-       <span class="version-date">Released: March 2023</span>
+       <span class="version-date">Released: March 11, 2025</span>
      </div>
      <div class="version-badges">
        <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License: Apache 2.0">
@@ -243,7 +243,7 @@ Quick Start
    # Create a memory with location data
    memory = store.create_memory(
        location=(40.7128, -74.0060),  # New York City
-       timestamp="2023-03-15T12:00:00",
+       timestamp="2025-03-11T12:00:00",
        data={
            "temperature": 22.5,
            "humidity": 65,
@@ -255,7 +255,7 @@ Quick Start
    memories = store.query(
        center=(40.7128, -74.0060),
        radius=5000,  # meters
-       time_range=("2023-01-01", "2023-03-15")
+       time_range=("2025-01-01", "2025-03-11")
    )
    
    # Analyze patterns

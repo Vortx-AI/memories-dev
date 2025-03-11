@@ -7,7 +7,8 @@ import duckdb
 import json
 import uuid
 import numpy as np
-from memories.core.memory_manager import MemoryManager
+# Remove direct import to avoid circular dependency
+# from memories.core.memory_manager import MemoryManager
 
 logger = logging.getLogger(__name__)
 
@@ -26,18 +27,15 @@ class MemoryCatalog:
         """Initialize memory catalog."""
         if not hasattr(self, 'initialized'):
             self.logger = logging.getLogger(__name__)
-            self.initialized = True
             
-            try:
-                # Use the connection from memory manager
-                self.memory_manager = MemoryManager()
-                self.con = self.memory_manager.con
-                
-                self._initialize_schema()
-                self.logger.info("Successfully initialized memory catalog")
-            except Exception as e:
-                self.logger.error(f"Failed to initialize memory catalog: {e}")
-                raise
+            # Lazy import to avoid circular dependency
+            from memories.core.memory_manager import MemoryManager
+            self.memory_manager = MemoryManager()
+            
+            # Initialize database
+            self.con = duckdb.connect(":memory:")
+            self._initialize_schema()
+            self.initialized = True
 
     def _initialize_schema(self):
         """Initialize database schema."""

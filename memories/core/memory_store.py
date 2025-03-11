@@ -10,7 +10,8 @@ import asyncio
 
 from memories.core.memory_manager import MemoryManager
 from memories.core.memory_catalog import memory_catalog
-from memories.core.warm import WarmMemory
+# Remove direct import to avoid circular dependency
+# from memories.core.warm import WarmMemory
 
 logger = logging.getLogger(__name__)
 
@@ -31,23 +32,28 @@ class MemoryStore:
     def _init_hot(self) -> None:
         """Initialize hot memory on demand."""
         if not self._hot_memory:
+            # Lazy import to avoid circular dependency
             from memories.core.hot import HotMemory
             self._hot_memory = HotMemory()
 
     def _init_warm(self) -> None:
         """Initialize warm memory on demand."""
         if not self._warm_memory:
+            # Lazy import to avoid circular dependency
+            from memories.core.warm import WarmMemory
             self._warm_memory = WarmMemory()
 
     def _init_cold(self) -> None:
         """Initialize cold memory on demand."""
         if not self._cold_memory:
+            # Lazy import to avoid circular dependency
             from memories.core.cold import ColdMemory
             self._cold_memory = ColdMemory()
 
     def _init_red_hot(self) -> None:
         """Initialize red hot memory on demand."""
         if not self._red_hot_memory:
+            # Lazy import to avoid circular dependency
             from memories.core.red_hot import RedHotMemory
             self._red_hot_memory = RedHotMemory()
 
@@ -416,7 +422,7 @@ async def main():
         logger = logging.getLogger(__name__)
         
         # Source database path
-        source_db = ""
+        source_db = "/home/jaya/dubai_osm.duckdb"
         
         # Check if source database exists
         if not os.path.exists(source_db):
@@ -425,9 +431,13 @@ async def main():
             
         # Define metadata and tags
         metadata = {
-           
+            "description": "Dubai OpenStreetMap data",
+            "source": "OpenStreetMap",
+            "region": "Dubai",
+            "imported_at": datetime.now().isoformat()
         }
         
+        tags = ["dubai", "osm", "geospatial", "openstreetmap"]
         
         # Import tables using memory_store
         logger.info(f"Starting import from {source_db}")
@@ -436,7 +446,7 @@ async def main():
         success = await memory_store.import_duckdb_to_warm(
             source_db_file=source_db,
             metadata=metadata,
-            #tags=tags
+            tags=tags
             # No db_name specified - will use default from config
         )
         

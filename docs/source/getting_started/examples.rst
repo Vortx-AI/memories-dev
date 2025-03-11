@@ -30,7 +30,7 @@ This example demonstrates how to retrieve and analyze historical satellite image
        
        # Define location and time range
        location = (37.7749, -122.4194)  # San Francisco
-       time_range = ("2000-01-01", "2023-01-01")
+       time_range = ("2000-01-01", "2025-03-11")
        
        # Fetch historical imagery
        images = await imagery.get_historical_imagery(
@@ -90,7 +90,7 @@ This example shows how to monitor environmental changes such as deforestation:
            "name": "Amazon Rainforest",
            "bbox": (-73.9872, -9.7889, -50.7929, 2.2869)  # (min_lon, min_lat, max_lon, max_lat)
        }
-       time_range = ("2010-01-01", "2023-01-01")
+       time_range = ("2010-01-01", "2025-03-11")
        
        # Fetch imagery for the region
        images = await imagery.get_regional_imagery(
@@ -118,7 +118,7 @@ This example shows how to monitor environmental changes such as deforestation:
        deforestation_map = visualizer.create_environmental_map(
            data=deforestation,
            base_map="satellite",
-           title=f"Deforestation in {region['name']} (2010-2023)"
+           title=f"Deforestation in {region['name']} (2010-2025)"
        )
        
        # Add time slider and legend
@@ -161,7 +161,7 @@ This example demonstrates how to analyze a property and its surroundings over ti
        # Analyze the property
        analysis = await agent.analyze_property(
            address=property_address,
-           time_range=("1990-01-01", "2023-01-01"),
+           time_range=("1990-01-01", "2025-03-11"),
            include_environmental=True,
            include_neighborhood=True,
            include_projections=True
@@ -224,7 +224,7 @@ This example shows how to analyze urban development patterns over time:
        
        # Define the city to analyze
        city = "Boston, MA"
-       time_range = ("1950-01-01", "2023-01-01")
+       time_range = ("1950-01-01", "2025-03-11")
        
        # Analyze urban development
        development = await planner.analyze_development(
@@ -305,7 +305,7 @@ This example demonstrates how to compare multiple locations over time:
            {"name": "Seattle", "coords": (47.6062, -122.3321)}
        ]
        
-       time_range = ("2000-01-01", "2023-01-01")
+       time_range = ("2000-01-01", "2025-03-11")
        
        # Fetch imagery for all locations concurrently
        fetch_tasks = []
@@ -390,7 +390,7 @@ This example shows how to create a custom analysis pipeline for specific needs:
        
        # Define location and time range
        location = (34.0522, -118.2437)  # Los Angeles
-       time_range = ("2000-01-01", "2023-01-01")
+       time_range = ("2000-01-01", "2025-03-11")
        
        # Fetch historical imagery
        images = await imagery.get_historical_imagery(
@@ -459,7 +459,7 @@ This example shows how to create a custom analysis pipeline for specific needs:
        pipeline_viz = visualizer.create_pipeline_visualization(
            results=results,
            base_map="satellite",
-           title="Los Angeles Urban and Vegetation Changes (2000-2023)"
+           title="Los Angeles Urban and Vegetation Changes (2000-2025)"
        )
        
        # Add components to visualization
@@ -499,7 +499,7 @@ This example demonstrates how to integrate external data sources with the framew
        
        # Define study area
        city = "Chicago, IL"
-       time_range = ("2010-01-01", "2023-01-01")
+       time_range = ("2010-01-01", "2025-03-11")
        
        # Get city boundary
        boundary = await gis.get_boundary(city)

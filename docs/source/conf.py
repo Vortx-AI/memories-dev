@@ -152,7 +152,7 @@ mathjax3_config = {
 }
 
 # Enable mermaid diagrams
-mermaid_version = "9.4.3"
+mermaid_version = "10.6.1"
 mermaid_init_js = """
     mermaid.initialize({
         startOnLoad: true,

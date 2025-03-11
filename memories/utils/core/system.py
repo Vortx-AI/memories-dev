@@ -86,16 +86,17 @@ def system_check() -> SystemStatus:
             
         # Check memory system
         try:
-            import redis
-            messages.append("✓ Redis client available")
-            # Try connecting to Redis
-            r = redis.from_url(config.redis_url, db=config.redis_db)
-            r.ping()
-            messages.append("✓ Redis server connection successful")
+            import duckdb
+            messages.append("✓ DuckDB client available")
+            # Try creating an in-memory DuckDB connection
+            con = duckdb.connect(database=':memory:')
+            con.execute("SELECT 1")
+            messages.append("✓ DuckDB in-memory database working correctly")
+            con.close()
         except ImportError:
-            warnings.append("⚠ Redis client not installed - hot memory tier will be disabled")
-        except redis.ConnectionError:
-            warnings.append("⚠ Redis server not available - hot memory tier will be disabled")
+            errors.append("✗ DuckDB not installed - memory system will not function correctly")
+        except Exception as e:
+            errors.append(f"✗ DuckDB error: {str(e)}")
             
     except Exception as e:
         errors.append(f"✗ Unexpected error during system check: {str(e)}")
