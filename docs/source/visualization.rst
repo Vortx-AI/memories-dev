@@ -11,7 +11,7 @@ Visualization Types
 ------------------
 
 Spatial Visualization
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -29,7 +29,7 @@ Spatial Visualization
     )
 
 Temporal Visualization
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -46,7 +46,7 @@ Temporal Visualization
     )
 
 Interactive Dashboards
-~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -70,7 +70,7 @@ Customization
 ------------
 
 Color Schemes
-~~~~~~~~~~~
+~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -87,7 +87,7 @@ Color Schemes
     plotter.set_palette(palette)
 
 Layout Options
-~~~~~~~~~~~~
+~~~~~~~~~~~~~
 
 .. code-block:: python
 

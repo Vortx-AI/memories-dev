@@ -5,7 +5,7 @@ Privacy Policy
 This Privacy Policy explains how the Earth Memory Project collects, uses, and protects information when you use the Memory Codex framework.
 
 Information Collection
---------------------
+----------------------
 
 The Memory Codex framework itself does not collect personal information. However, when you:
 
@@ -17,7 +17,7 @@ The Memory Codex framework itself does not collect personal information. However
 We may collect certain information such as email addresses, usernames, and system information for diagnostic purposes.
 
 Earth Observation Data
---------------------
+----------------------
 
 The Memory Codex framework is designed to work with Earth observation data. This data typically includes:
 
@@ -30,7 +30,7 @@ The Memory Codex framework is designed to work with Earth observation data. This
 This data does not typically contain personal information. However, in some cases, high-resolution data may include identifiable structures or patterns of human activity.
 
 Data Security
-------------
+--------------
 
 We implement reasonable security measures to protect information:
 
@@ -39,7 +39,7 @@ We implement reasonable security measures to protect information:
 * We regularly review and update our security practices
 
 Your Rights
-----------
+-----------
 
 Depending on your jurisdiction, you may have rights regarding your personal information:
 
@@ -49,11 +49,11 @@ Depending on your jurisdiction, you may have rights regarding your personal info
 * Right to restrict or object to processing
 
 Changes to This Policy
----------------------
+----------------------
 
 We may update this Privacy Policy from time to time. We will notify users of any significant changes by posting a notice on our website.
 
 Contact Us
----------
+----------
 
 If you have questions about this Privacy Policy, please contact us at privacy@earthmemoryproject.org. 
