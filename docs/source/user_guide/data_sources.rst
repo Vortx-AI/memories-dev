@@ -249,37 +249,38 @@ Example Output:
 
 .. code-block:: text
    
------------------
+   ENVIRONMENTAL METRICS:
+   -----------------
    - Vegetation Index (NDVI): 0.68 (Healthy)
    - Urban Density: 78% (High)
    - Water Bodies: 22% of area
    - Cloud Cover: 5%
    
    DETECTED FEATURES:
-------------------
+   ------------------
    - Buildings: 1,245 structures
    - Roads: 87 km total length
    - Water: San Francisco Bay
    - Parks: Golden Gate Park, other green spaces
    
 Change Detection Results
-----------------------
+------------------------
    - Vegetation: +2.3% increase
    - Urban Area: +0.8% increase
 
 Key Insights
------------
+-------------
    - Healthy vegetation in park areas
    - Moderate urban development in northern sectors
 
 Environmental Impact
-------------------
+--------------------
    - Reduced heat island effect
    - Improved air quality
    - Enhanced ecosystem resilience
 
 Recommendations
--------------
+---------------
    - Expand green infrastructure
    - Optimize urban density
    - Implement climate adaptation measures

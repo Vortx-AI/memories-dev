@@ -23,7 +23,7 @@ Foundations
     * Next Steps
 
 Core Concepts
-============
+=============
 
 * :doc:`core_concepts/index`
     * Memory Architecture
@@ -52,7 +52,7 @@ Core Concepts
     * Cross-domain Analysis
 
 Memory Architecture
-=================
+==================
 
 * :doc:`memory_architecture/index`
     * Overview of Memory Tiers
@@ -149,7 +149,7 @@ Implementation
     * Deployment Strategies
 
 Application Examples
-==================
+===================
 
 * :doc:`examples/index`
     * Overview of Case Studies
@@ -172,7 +172,7 @@ Application Examples
     * Impact Assessment
 
 Technical Reference
-=================
+==================
 
 * :doc:`api/index`
     * Complete API Reference

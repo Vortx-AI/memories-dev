@@ -66,6 +66,10 @@ extensions = [
     'myst_parser',
 ]
 
+# Make section labels unique by prefixing them with document name
+autosectionlabel_prefix_document = True
+autosectionlabel_maxdepth = 2
+
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 
@@ -177,15 +181,18 @@ mermaid_init_js = """
 """
 
 def setup(app):
-    # Add critical fixes CSS
+    # Add critical fixes CSS - this is the only CSS file we need
     app.add_css_file('css/fixes.css')
     
+    # Add our book-style CSS
+    app.add_css_file('css/book_style.css')
+    
     # Add web fonts
-    app.add_css_file('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400;1,700&display=swap')
+    app.add_css_file('https://fonts.googleapis.com/css2?family=Georgia:ital,wght@0,400;0,700;1,400;1,700&display=swap')
     app.add_css_file('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap')
     
-    # Add Mermaid library directly (not through CDN)
-    app.add_js_file('https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js', priority=200)
+    # Add Mermaid library directly (not through CDN) - updated to version 10.6.1
+    app.add_js_file('https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js', priority=200)
     
     # Add our custom Mermaid initialization with higher priority
     app.add_js_file('js/mermaid.js', priority=201)
@@ -197,8 +204,8 @@ def setup(app):
 
 # These paths are either relative to html_static_path or fully qualified paths (eg. https://...)
 html_css_files = [
-    'book_theme.css',
-    'css/custom.css',
+    'css/fixes.css',
+    'css/book_style.css',
 ]
 
 html_js_files = [
@@ -219,9 +226,9 @@ root_doc = 'index'
 html_theme_options = {
     'logo_only': True,
     'display_version': True,
-    'prev_next_buttons_location': 'both',
-    'style_external_links': True,
-    'style_nav_header_background': '#2980B9',
+    'prev_next_buttons_location': 'bottom',
+    'style_external_links': False,
+    'style_nav_header_background': '#1a2638',
     'collapse_navigation': False,
     'sticky_navigation': True,
     'navigation_depth': 4,

@@ -1,6 +1,6 @@
-==========================
+===========================
 Setting Up Your Observatory
-==========================
+===========================
 
 
 Introduction
@@ -9,7 +9,7 @@ Introduction
 The Observatory is the central component of the Memory Codex framework, serving as your connection to Earth's observable reality. This guide will help you set up and configure your observatory for optimal Earth memory collection.
 
 Installation Requirements
-------------------------
+--------------------------
 
 Before setting up your Observatory, ensure you have the following requirements:
 
@@ -19,7 +19,7 @@ Before setting up your Observatory, ensure you have the following requirements:
 - Adequate storage for Earth observation data
 
 Basic Observatory Setup
-----------------------
+------------------------
 
 Creating your first Observatory is straightforward:
 
@@ -42,7 +42,7 @@ Creating your first Observatory is straightforward:
    print(f"Observatory status: {status}")
 
 Configuration Options
---------------------
+----------------------
 
 The Observatory can be configured with various options:
 
@@ -68,7 +68,7 @@ The Observatory can be configured with various options:
      - Configuration for data storage backends
 
 Advanced Configuration
----------------------
+-----------------------
 
 For more advanced use cases, you can configure the Observatory with detailed parameters:
 
@@ -112,7 +112,7 @@ For more advanced use cases, you can configure the Observatory with detailed par
    )
 
 Connecting to Data Sources
--------------------------
+---------------------------
 
 Your Observatory needs to connect to Earth observation data sources. The following example shows how to connect to common sources:
 
@@ -136,7 +136,7 @@ Your Observatory needs to connect to Earth observation data sources. The followi
    )
 
 Testing Your Observatory
------------------------
+-------------------------
 
 After setup, you should test that your Observatory is functioning correctly:
 
@@ -156,7 +156,7 @@ After setup, you should test that your Observatory is functioning correctly:
        print(f"Error: {test_result.error_message}")
 
 Observatory Management
----------------------
+-----------------------
 
 Manage your Observatory's lifecycle with these commands:
 

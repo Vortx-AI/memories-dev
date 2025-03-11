@@ -28,7 +28,7 @@ The framework supports various memory types:
 * **Semantic Memory**: Conceptual knowledge with relationships
 
 Data Integration
-^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
 Data integration components provide connections to various data sources:
 
@@ -49,10 +49,10 @@ The framework provides integration with AI systems:
 * **Response Generation**: Structured response formatting
 
 Example Applications
-------------------
+-------------------
 
 Environmental Analysis
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 * :doc:`examples/environmental_monitoring`: Environmental monitoring and analysis
 * :doc:`examples/climate_analysis`: Climate data analysis and pattern recognition
@@ -64,13 +64,13 @@ Urban Development
 * :doc:`examples/traffic_patterns`: Traffic pattern analysis and prediction
 
 Property Analysis
-^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 * :doc:`examples/real_estate_agent`: Real estate agent with property analysis
 * :doc:`examples/property_analyzer`: Comprehensive property analysis
 
 AI Applications
-^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^
 
 * :doc:`examples/multimodal_ai_assistant`: AI assistant with multimodal understanding
 * :doc:`examples/code_intelligence_agent`: Code analysis and understanding
@@ -78,7 +78,7 @@ AI Applications
 * :doc:`examples/ambience_analyzer`: Environmental ambience analysis
 
 API Reference
------------
+------------
 
 Core APIs
 ^^^^^^^^
@@ -88,14 +88,14 @@ Core APIs
 * :doc:`api_reference/memory_formation`: Memory creation and storage
 
 Data APIs
-^^^^^^^^^^^^^^^
+^^^^^^^
 
 * :doc:`api_reference/data_connectors`: Data source connections
 * :doc:`api_reference/geospatial_api`: Geospatial data processing
 * :doc:`api_reference/environmental_api`: Environmental data access
 
 Integration APIs
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
 
 * :doc:`api_reference/llm_api`: Language model integration
 * :doc:`api_reference/embedding_api`: Vector embedding and similarity search
@@ -110,7 +110,7 @@ Deployment
 * :doc:`deployment/edge`: Edge computing deployment
 
 Performance Optimization
-----------------------
+-----------------------
 
 * :doc:`performance/memory_optimization`: Memory usage optimization
 * :doc:`performance/query_optimization`: Query performance tuning
@@ -465,23 +465,26 @@ Technical Reference
 This section provides detailed technical information about the algorithms and methods used in the memories-dev framework.
 
 System Architecture
------------------
+-------------------
 
-.. mermaid::
+The memories-dev framework is built on a modular architecture:
 
-   graph TD
-       Client[Client Applications] --> API[API Gateway]
-       API --> Server[Memories Server]
-       Server --> Models[Model System]
-       Server --> DataAcq[Data Acquisition]
-       Models --> LocalModels[Local Models]
-       Models --> APIModels[API-based Models]
-       DataAcq --> StructuredData[Structured Data]
-       DataAcq --> UnstructuredData[Unstructured Data]
-       Server --> Storage[Persistent Storage]
+.. code-block:: text
+
+    +---------------------+
+    |     Applications    |
+    +---------------------+
+    |    Integration API  |
+    +---------------------+
+    |   Memory Management |
+    +---------------------+
+    |    Data Processing  |
+    +---------------------+
+    |    Data Sources     |
+    +---------------------+
 
 Uncertainty Propagation
----------------------
+-----------------------
 
 .. mermaid::
 

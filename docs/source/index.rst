@@ -13,10 +13,10 @@ memories-dev: Earth-Grounded AI Memory Systems
      </div>
    </div>
 
-.. image:: _static/images/memory_codex_cover.png
+.. image:: _static/images/hero_image.png
    :align: center
-   :width: 600px
-   :alt: memories-dev - Bridging AI and Human Memory
+   :width: 100%
+   :alt: memories-dev - Earth-Grounded AI Memory Systems
 
 .. raw:: html
 
@@ -48,6 +48,13 @@ Welcome to memories-dev, a framework that reimagines how artificial intelligence
    * **Integration Capabilities**: Connection with external data sources and AI systems
    * **Performance Optimization**: Efficient processing for various workloads
    * **Developer Tools**: Utilities for monitoring and managing memory systems
+
+.. figure:: _static/images/architecture/system_architecture.png
+   :align: center
+   :width: 90%
+   :alt: Memories-Dev System Architecture
+   
+   **Figure 1**: The memories-dev system architecture showing data flow from sources through processing to storage and analysis.
 
 .. admonition:: What's New in Version 2.0.5
    :class: tip
@@ -108,29 +115,12 @@ Welcome to memories-dev, a framework that reimagines how artificial intelligence
      </div>
    </div>
 
-.. mermaid::
-
-   graph TD
-      A[memories-dev] --> B[Data Sources]
-      A --> C[Memory Architecture]
-      A --> D[AI Integration]
-      
-      B --> B1[Environmental Data]
-      B --> B2[Geospatial Data]
-      
-      C --> C1[Hot Memory]
-      C --> C2[Warm Memory]
-      C --> C3[Cold Memory]
-      
-      D --> D1[Query Interface]
-      D --> D2[Analysis Tools]
-      D --> D3[Application APIs]
-      
-      style A fill:#0066cc,stroke:#004080,stroke-width:2px,color:#ffffff
-      style B fill:#4db8ff,stroke:#0099ff,stroke-width:1px
-      style C fill:#4db8ff,stroke:#0099ff,stroke-width:1px
-      style D fill:#4db8ff,stroke:#0099ff,stroke-width:1px
-      style B1,B2,C1,C2,C3,D1,D2,D3 fill:#e6f5ff,stroke:#80ccff,stroke-width:1px
+.. figure:: _static/images/architecture/memory_tiers.png
+   :align: center
+   :width: 80%
+   :alt: Memory Tier Architecture
+   
+   **Figure 2**: The tiered memory architecture showing hot, warm, cold, and glacier memory layers with migration and retrieval paths.
 
 .. raw:: html
 
@@ -177,6 +167,13 @@ The documentation is organized into three main sections:
 1. **Foundations** (Chapters 1-3): Core concepts, installation, and basic setup
 2. **Implementation** (Chapters 4-7): Memory architecture, types, and integration
 3. **Applications** (Chapters 8-9): Real-world use cases and examples
+
+.. figure:: _static/images/diagrams/memory_codex.png
+   :align: center
+   :width: 80%
+   :alt: Memory Codex Structure
+   
+   **Figure 3**: The Memory Codex structure showing the relationships between different memory types, storage tiers, and query/analysis interfaces.
 
 Key Features
 ============
@@ -270,6 +267,13 @@ Quick Start
    # Print results
    print(f"Found {len(memories)} memories")
    print(f"Analysis results: {analysis}")
+
+.. figure:: _static/images/workflows/data_fusion_workflow.png
+   :align: center
+   :width: 80%
+   :alt: Data Fusion Workflow
+   
+   **Figure 4**: The data fusion workflow showing how different data sources are processed, features extracted, and combined using Bayesian fusion techniques.
 
 .. note::
 
@@ -443,6 +447,7 @@ pip install -e .</code></pre>
        </div>
      </div>
    </div>
+
 
 .. raw:: html
 

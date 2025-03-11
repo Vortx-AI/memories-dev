@@ -6,7 +6,7 @@ Preface
    *"The richness of Earth's observable reality represents the most complex, intricate dataset humanity has ever known. By structuring AI's memory to mirror Earth's systems, we can create intelligence that truly understands our planet."*
 
 The Challenge of Earth-Grounded AI
----------------------------------
+----------------------------------
 
 The challenge of creating artificial intelligence that truly understands our world is one of the most profound endeavors in computer science. While modern AI systems can process vast amounts of data, they often lack the grounded understanding that comes from systematic observation and scientific principles.
 
@@ -38,7 +38,7 @@ This book is written for:
 * **Students and academics** studying the intersection of AI and Earth science
 
 Prerequisites
-------------
+--------------
 
 To make the most of this book, you should have:
 
@@ -66,7 +66,7 @@ The examples in this book use standard Python libraries including:
    from memories.earth import Observatory, MemoryCodex
 
 Book Structure
--------------
+--------------
 
 The book is organized into three main parts:
 
@@ -92,7 +92,7 @@ Each chapter includes:
 * Exercises and projects to reinforce learning
 
 Learning Path
-------------
+--------------
 
 This diagram illustrates the recommended learning path through the book:
 
@@ -123,7 +123,7 @@ This diagram illustrates the recommended learning path through the book:
       style G fill:#f0f8ff,stroke:#4682b4,stroke-width:2px
 
 Code Examples
-------------
+--------------
 
 All code examples in this book are available in the accompanying GitHub repository. They are designed to be practical and immediately applicable to real-world problems.
 
@@ -134,7 +134,7 @@ Example repositories:
 - `earth-memory-examples <https://github.com/Vortx-AI/earth-memory-examples>`_: Application examples
 
 Acknowledgments
---------------
+---------------
 
 This book would not have been possible without the contributions of the memories-dev community, including researchers, developers, and practitioners who have helped shape and improve the framework.
 
