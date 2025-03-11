@@ -1,0 +1,413 @@
+/**
+ * Critical fixes for Memories-Dev Documentation
+ */
+
+/* Fix whitespace issues */
+.wy-nav-content {
+    max-width: 100% !important;
+    padding: 1.5em 3em !important;
+}
+
+.wy-nav-content-wrap {
+    background: #fcfcfc !important;
+}
+
+/* Ensure proper content width on larger screens */
+@media screen and (min-width: 1400px) {
+    .wy-nav-content {
+        max-width: 1200px !important;
+        margin: 0 auto !important;
+    }
+}
+
+/* Fix sidebar width and positioning */
+.wy-nav-side {
+    width: 300px !important;
+    background: #1a2638 !important;
+    z-index: 200 !important;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1) !important;
+}
+
+.wy-nav-content-wrap {
+    margin-left: 300px !important;
+}
+
+/* Fix mobile layout */
+@media screen and (max-width: 768px) {
+    .wy-nav-content-wrap {
+        margin-left: 0 !important;
+    }
+    
+    .wy-nav-side {
+        width: 85% !important;
+        left: -85% !important;
+        transition: left 0.3s ease !important;
+    }
+    
+    .wy-nav-side.shift {
+        left: 0 !important;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    .wy-nav-content {
+        padding: 1rem !important;
+    }
+    
+    .wy-nav-top {
+        display: block !important;
+        background: #1a2638 !important;
+        padding: 0.5em 1em !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 100 !important;
+    }
+    
+    .mermaid {
+        padding: 0.5rem !important;
+        margin: 1rem 0 !important;
+    }
+    
+    .mermaid svg text {
+        font-size: 12px !important;
+    }
+}
+
+/* Book-like typography with high specificity */
+body, .wy-body-for-nav, p, li, div {
+    font-family: "Lora", "Georgia", serif !important;
+    font-size: 16px !important;
+    line-height: 1.65 !important;
+    color: #333 !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Lora", "Georgia", serif !important;
+    color: #2c3e50 !important;
+    margin-top: 1.3em !important;
+    margin-bottom: 0.5em !important;
+    font-weight: normal !important;
+    line-height: 1.3 !important;
+}
+
+h1 {
+    font-size: 2.2em !important;
+    border-bottom: 1px solid #eee !important;
+    padding-bottom: 0.3em !important;
+}
+
+h2 {
+    font-size: 1.8em !important;
+    border-bottom: 1px solid #f3f3f3 !important;
+    padding-bottom: 0.2em !important;
+}
+
+h3 {
+    font-size: 1.5em !important;
+}
+
+p {
+    margin-bottom: 1.2em !important;
+}
+
+/* First paragraph styling for book-like appearance */
+.section > p:first-of-type::first-letter {
+    font-size: 3.5em !important;
+    line-height: 0.8em !important;
+    font-weight: bold !important;
+    float: left !important;
+    margin-right: 0.1em !important;
+    color: #2c3e50 !important;
+}
+
+/* Fix Mermaid diagrams */
+.mermaid {
+    display: block !important;
+    margin: 2rem auto !important;
+    text-align: center !important;
+    background-color: white !important;
+    padding: 1rem !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    min-height: 100px !important;
+}
+
+.mermaid svg {
+    max-width: 100% !important;
+    height: auto !important;
+    display: inline-block !important;
+}
+
+.mermaid svg text {
+    font-family: 'Source Code Pro', monospace !important;
+    font-size: 14px !important;
+}
+
+.mermaid-error {
+    color: #e74c3c;
+    padding: 1rem;
+    border: 1px solid #e74c3c;
+    border-radius: 4px;
+    background-color: #fdf3f2;
+    margin: 1rem 0;
+    font-family: monospace;
+}
+
+/* Fix math rendering */
+.math {
+    display: block !important;
+    margin: 1em 0 !important;
+    padding: 1em !important;
+    background-color: #f9f9f9 !important;
+    border-radius: 5px !important;
+    border: 1px solid #e1e1e1 !important;
+    overflow-x: auto !important;
+    text-align: center !important;
+}
+
+span.math {
+    display: inline-block !important;
+    margin: 0 0.2em !important;
+    padding: 0.1em 0.3em !important;
+    background-color: transparent !important;
+    border: none !important;
+}
+
+.math img {
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    display: block !important;
+}
+
+.MathJax {
+    outline: 0 !important;
+}
+
+.MathJax_Display {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    max-width: 100% !important;
+    padding: 0.5em 0 !important;
+    margin: 0 !important;
+}
+
+/* Fix MathJax display issues */
+.MathJax_Display > .MathJax {
+    max-width: 100% !important;
+    outline: none !important;
+}
+
+.MathJax[display="inline"] {
+    display: inline-block !important;
+}
+
+/* Fix table styling */
+table.docutils {
+    width: 100% !important;
+    margin-bottom: 1.5em !important;
+    border-collapse: collapse !important;
+    border: 1px solid #e1e1e1 !important;
+}
+
+table.docutils th {
+    background-color: #f5f5f5 !important;
+    color: #333 !important;
+    font-weight: bold !important;
+    padding: 0.5em 0.7em !important;
+    border: 1px solid #e1e1e1 !important;
+    text-align: left !important;
+}
+
+table.docutils td {
+    padding: 0.5em 0.7em !important;
+    border: 1px solid #e1e1e1 !important;
+    vertical-align: top !important;
+}
+
+/* Fix code block styling */
+pre {
+    background-color: #f8f8f8 !important;
+    border: 1px solid #e1e1e1 !important;
+    border-radius: 5px !important;
+    padding: 1em !important;
+    margin: 1.5em 0 !important;
+    overflow-x: auto !important;
+    font-family: 'Source Code Pro', monospace !important;
+    font-size: 0.9em !important;
+    line-height: 1.5 !important;
+    white-space: pre !important;
+}
+
+code {
+    background-color: #f0f0f0 !important;
+    border: 1px solid #e1e1e1 !important;
+    border-radius: 3px !important;
+    padding: 0.1em 0.3em !important;
+    font-family: 'Source Code Pro', monospace !important;
+    font-size: 0.9em !important;
+    color: #c7254e !important;
+}
+
+/* Fix admonition styling */
+.admonition {
+    margin: 1.5em 0 !important;
+    padding: 0 !important;
+    border-radius: 5px !important;
+    border-left: 5px solid #3498db !important;
+    background-color: #f8f8f8 !important;
+    overflow: hidden !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.admonition-title {
+    background-color: #3498db !important;
+    color: white !important;
+    font-weight: bold !important;
+    padding: 0.5em 1em !important;
+    margin: 0 !important;
+}
+
+.admonition .last {
+    padding: 1em !important;
+}
+
+.note {
+    border-left-color: #3498db !important;
+}
+
+.note .admonition-title {
+    background-color: #3498db !important;
+}
+
+.warning {
+    border-left-color: #e74c3c !important;
+}
+
+.warning .admonition-title {
+    background-color: #e74c3c !important;
+}
+
+/* Fix menu styling */
+.wy-menu-vertical {
+    font-size: 0.95em !important;
+}
+
+.wy-menu-vertical a {
+    color: #d9d9d9 !important;
+    padding: 0.5em 1.5em !important;
+}
+
+.wy-menu-vertical p.caption {
+    color: #55a5d9 !important;
+    font-weight: bold !important;
+    margin-top: 1em !important;
+    padding: 0.5em 1em !important;
+}
+
+/* Fix search box styling */
+.wy-side-nav-search {
+    background-color: #1a2638 !important;
+}
+
+.wy-side-nav-search input[type="text"] {
+    border-radius: 3px !important;
+    border: 1px solid #ccc !important;
+    padding: 0.5em !important;
+    box-shadow: none !important;
+    background-color: white !important;
+}
+
+/* Fix footer styling */
+footer {
+    color: #888 !important;
+    font-size: 0.9em !important;
+    margin-top: 3em !important;
+    padding-top: 1.5em !important;
+    border-top: 1px solid #eee !important;
+}
+
+/* Fix figure styling */
+.figure {
+    margin: 1.5em 0 !important;
+    text-align: center !important;
+}
+
+.figure img {
+    max-width: 100% !important;
+    height: auto !important;
+}
+
+.figure .caption {
+    font-style: italic !important;
+    color: #666 !important;
+    font-size: 0.9em !important;
+    margin-top: 0.5em !important;
+    text-align: center !important;
+}
+
+/* Add chapter styling */
+.chapter-label {
+    display: block !important;
+    font-size: 0.9em !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.1em !important;
+    color: #888 !important;
+    margin-bottom: 0.5em !important;
+}
+
+/* Add decorative line */
+.decorative-line {
+    display: block !important;
+    width: 50px !important;
+    height: 3px !important;
+    background-color: #3498db !important;
+    margin: 2em 0 !important;
+}
+
+/* Fix breadcrumbs */
+.wy-breadcrumbs {
+    font-size: 0.9em !important;
+    margin-bottom: 1.5em !important;
+}
+
+.wy-breadcrumbs li {
+    display: inline-block !important;
+}
+
+.wy-breadcrumbs li a {
+    color: #3498db !important;
+}
+
+/* Print optimization */
+@media print {
+    .wy-nav-content {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+    }
+    
+    .wy-nav-side, .wy-side-nav-search, .wy-side-scroll, .rst-versions {
+        display: none !important;
+    }
+    
+    .wy-nav-content-wrap {
+        margin-left: 0 !important;
+        background: white !important;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+        page-break-after: avoid !important;
+    }
+    
+    p, blockquote, table, pre, figure {
+        page-break-inside: avoid !important;
+    }
+    
+    a {
+        text-decoration: none !important;
+        color: #000 !important;
+    }
+} 

@@ -74,8 +74,8 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
-html_logo = '_static/logo.png' if os.path.exists('_static/logo.png') else None
-html_favicon = '_static/favicon.ico' if os.path.exists('_static/favicon.ico') else None
+html_logo = '_static/logo.png'
+html_favicon = '_static/favicon.ico'
 
 # -- Extension configuration -------------------------------------------------
 
@@ -129,13 +129,76 @@ copybutton_remove_prompts = True
 
 # -- Additional configuration ------------------------------------------------
 
-# Add any custom CSS
+# MathJax 3 configuration
+mathjax_path = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'
+mathjax3_config = {
+    'tex': {
+        'inlineMath': [['$', '$'], ['\\(', '\\)']],
+        'displayMath': [['$$', '$$'], ['\\[', '\\]']],
+        'processEscapes': True,
+        'processEnvironments': True,
+    },
+    'options': {
+        'ignoreHtmlClass': 'tex2jax_ignore',
+        'processHtmlClass': 'tex2jax_process',
+    },
+    'chtml': {
+        'scale': 1.1
+    }
+}
+
+# Enable mermaid diagrams
+mermaid_version = "9.4.3"
+mermaid_init_js = """
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'neutral',
+        securityLevel: 'loose',
+        flowchart: {
+            useMaxWidth: true,
+            htmlLabels: true,
+            curve: 'basis'
+        },
+        sequence: {
+            diagramMarginX: 50,
+            diagramMarginY: 10,
+            actorMargin: 50,
+            width: 150,
+            height: 65
+        },
+        gantt: {
+            titleTopMargin: 25,
+            barHeight: 20,
+            barGap: 4,
+            topPadding: 50,
+            leftPadding: 75
+        }
+    });
+"""
+
 def setup(app):
-    app.add_css_file('enhanced_theme.css')
+    # Add critical fixes CSS
+    app.add_css_file('css/fixes.css')
+    
+    # Add web fonts
+    app.add_css_file('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400;1,700&display=swap')
+    app.add_css_file('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap')
+    
+    # Add Mermaid library
+    app.add_js_file('https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js')
+    
+    # Add our custom Mermaid initialization
+    app.add_js_file('js/mermaid.js')
+    
+    return {
+        'parallel_read_safe': True,
+        'parallel_write_safe': True,
+    }
 
 # These paths are either relative to html_static_path or fully qualified paths (eg. https://...)
 html_css_files = [
-    'enhanced_theme.css',
+    'book_theme.css',
+    'css/custom.css',
 ]
 
 html_js_files = [
@@ -154,17 +217,16 @@ root_doc = 'index'
 
 # Theme options
 html_theme_options = {
-    'logo_only': False,
+    'logo_only': True,
     'display_version': True,
     'prev_next_buttons_location': 'both',
     'style_external_links': True,
-    'style_nav_header_background': '#1e293b',
+    'style_nav_header_background': '#2980B9',
     'collapse_navigation': False,
     'sticky_navigation': True,
     'navigation_depth': 4,
     'includehidden': True,
-    'titles_only': False,
-    'analytics_id': 'UA-XXXXXXXX-1',  # Replace with your Google Analytics ID
+    'titles_only': False
 }
 
 # HTML context
