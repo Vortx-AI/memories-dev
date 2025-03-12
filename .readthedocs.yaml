@@ -384,7 +384,7 @@ python:
     
 # Build documentation in additional formats
 formats:
-  - html
+  - htmlzip
   - pdf
 
 # Don't use submodules for documentation
