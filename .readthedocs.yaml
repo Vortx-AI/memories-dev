@@ -64,27 +64,86 @@ build:
       - sphinx-apidoc -o docs/source/api_reference memories/ || echo "API doc generation failed"
       # Clear any cached files to ensure fresh build
       - rm -rf docs/source/_build
-      # Ensure chapter_heading.html exists
+      # Ensure chapter_heading.html exists with simplified approach to avoid syntax errors
       - mkdir -p docs/source/_templates
       - |
         cat > docs/source/_templates/chapter_heading.html << 'EOL'
-        {# This template adds chapter headings based on page name #}
-        {% set chapters = {
-          'preface': 'Preface',
-          'getting_started/index': 'Chapter 1',
-          'core_concepts/index': 'Chapter 2',
-          'memory_architecture/index': 'Chapter 3',
-          'memory_types/index': 'Chapter 4',
-          'earth_memory/index': 'Chapter 5',
-          'integration/index': 'Chapter 6',
-          'applications/index': 'Chapter 7',
-          'api_reference/index': 'Chapter 8'
-        } %}
-        {% if pagename in chapters %}
+        {# Simple chapter heading template that avoids complex Jinja2 syntax #}
+        {% if pagename == 'preface' %}
         <div class="chapter-heading">
-            <div class="chapter-number">
-                {{ chapters[pagename] }}
+            <div class="chapter-number">Preface</div>
+            <div class="chapter-decoration">
+                <div class="chapter-line"></div>
+                <div class="chapter-ornament">❧</div>
+                <div class="chapter-line"></div>
             </div>
+        </div>
+        {% elif pagename == 'getting_started/index' %}
+        <div class="chapter-heading">
+            <div class="chapter-number">Chapter 1</div>
+            <div class="chapter-decoration">
+                <div class="chapter-line"></div>
+                <div class="chapter-ornament">❧</div>
+                <div class="chapter-line"></div>
+            </div>
+        </div>
+        {% elif pagename == 'core_concepts/index' %}
+        <div class="chapter-heading">
+            <div class="chapter-number">Chapter 2</div>
+            <div class="chapter-decoration">
+                <div class="chapter-line"></div>
+                <div class="chapter-ornament">❧</div>
+                <div class="chapter-line"></div>
+            </div>
+        </div>
+        {% elif pagename == 'memory_architecture/index' %}
+        <div class="chapter-heading">
+            <div class="chapter-number">Chapter 3</div>
+            <div class="chapter-decoration">
+                <div class="chapter-line"></div>
+                <div class="chapter-ornament">❧</div>
+                <div class="chapter-line"></div>
+            </div>
+        </div>
+        {% elif pagename == 'memory_types/index' %}
+        <div class="chapter-heading">
+            <div class="chapter-number">Chapter 4</div>
+            <div class="chapter-decoration">
+                <div class="chapter-line"></div>
+                <div class="chapter-ornament">❧</div>
+                <div class="chapter-line"></div>
+            </div>
+        </div>
+        {% elif pagename == 'earth_memory/index' %}
+        <div class="chapter-heading">
+            <div class="chapter-number">Chapter 5</div>
+            <div class="chapter-decoration">
+                <div class="chapter-line"></div>
+                <div class="chapter-ornament">❧</div>
+                <div class="chapter-line"></div>
+            </div>
+        </div>
+        {% elif pagename == 'integration/index' %}
+        <div class="chapter-heading">
+            <div class="chapter-number">Chapter 6</div>
+            <div class="chapter-decoration">
+                <div class="chapter-line"></div>
+                <div class="chapter-ornament">❧</div>
+                <div class="chapter-line"></div>
+            </div>
+        </div>
+        {% elif pagename == 'applications/index' %}
+        <div class="chapter-heading">
+            <div class="chapter-number">Chapter 7</div>
+            <div class="chapter-decoration">
+                <div class="chapter-line"></div>
+                <div class="chapter-ornament">❧</div>
+                <div class="chapter-line"></div>
+            </div>
+        </div>
+        {% elif pagename == 'api_reference/index' %}
+        <div class="chapter-heading">
+            <div class="chapter-number">Chapter 8</div>
             <div class="chapter-decoration">
                 <div class="chapter-line"></div>
                 <div class="chapter-ornament">❧</div>
