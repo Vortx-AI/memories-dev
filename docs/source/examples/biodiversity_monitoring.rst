@@ -5,16 +5,16 @@ Overview
 ========
 
 System Architecture
-===================
+==================
 
 Core Components
-===============
+==============
 
 Biodiversity Observatory
-=======================
+======================
 
 Species Diversity Analysis
-=========================
+========================
 
 Habitat Connectivity Analysis
 ===========================
@@ -557,7 +557,7 @@ Monitoring biodiversity in marine ecosystems:
 
 The Biodiversity Monitoring module includes an interactive dashboard for visualizing metrics:
 
-.. image:: /_static/metrics/analyzer_accuracy_dashboard.png
+.. image:: ../_static/images/diagrams/memory_codex.png
    :width: 100%
    :alt: Biodiversity Monitoring Dashboard
 
