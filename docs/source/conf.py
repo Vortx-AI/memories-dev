@@ -13,6 +13,14 @@ import sphinx_rtd_theme
 # Add the project root directory to the Python path
 sys.path.insert(0, os.path.abspath('../..'))
 
+# Import configuration overrides for handling problematic dependencies
+try:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from _conf_overrides import *
+    print("Successfully imported configuration overrides")
+except Exception as e:
+    print(f"Warning: Could not import configuration overrides: {e}")
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
@@ -46,18 +54,23 @@ elif python_version >= packaging_version.parse('3.12'):
 else:
     autodoc_typehints = 'none'
 
-extensions = [
+# Define mandatory extensions that should always be included
+mandatory_extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.autosectionlabel',
+    'sphinx_rtd_theme',
+]
+
+# Define optional extensions that could potentially fail
+optional_extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.githubpages',
-    'sphinx_rtd_theme',
     'sphinx_copybutton',
     'sphinx_tabs.tabs',
     'sphinxcontrib.mermaid',
@@ -66,6 +79,18 @@ extensions = [
     'nbsphinx',
     'myst_parser',
 ]
+
+# Initialize extensions list with mandatory extensions
+extensions = mandatory_extensions.copy()
+
+# Try to add optional extensions
+for ext in optional_extensions:
+    try:
+        __import__(ext.split('.')[0])
+        extensions.append(ext)
+        print(f"Added extension: {ext}")
+    except (ImportError, ModuleNotFoundError) as e:
+        print(f"Warning: Could not import extension {ext}: {e}")
 
 # Make section labels unique by prefixing them with document name
 autosectionlabel_prefix_document = True
