@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """
-Prioritized FAISS search that first searches the red_hot memory tier with a similarity threshold.
-If a match is found, provides detailed metadata about the results.
+Standalone script for prioritized FAISS search across memory tiers.
 """
 
 import os
@@ -9,7 +8,6 @@ import asyncio
 import logging
 import json
 import sys
-import argparse
 from typing import Dict, List, Any, Optional, Union, Tuple
 
 from memories.core.memory_index import memory_index
@@ -23,12 +21,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class SyntheticSearch:
-    """Class for performing prioritized FAISS searches across memory tiers with synthetic layer enhancements."""
+class PrioritizedSearch:
+    """Class for performing prioritized FAISS searches across memory tiers."""
     
     def __init__(self, similarity_threshold: float = 0.7):
         """
-        Initialize the synthetic search.
+        Initialize the prioritized search.
         
         Args:
             similarity_threshold: Threshold for considering a match relevant (0-1)
@@ -65,8 +63,7 @@ class SyntheticSearch:
     async def search(self, 
                     query: str, 
                     tiers: List[str] = ["red_hot", "hot", "warm", "cold", "glacier"], 
-                    k: int = 5,
-                    stop_on_first_match: bool = True
+                    k: int = 5
                    ) -> Dict[str, List[Dict[str, Any]]]:
         """
         Perform a prioritized search across memory tiers.
@@ -75,7 +72,6 @@ class SyntheticSearch:
             query: Search query string
             tiers: List of tiers to search, in priority order
             k: Number of results to return per tier
-            stop_on_first_match: Whether to stop searching once a match is found
             
         Returns:
             Dictionary with keys for each tier and values containing the search results
@@ -84,7 +80,7 @@ class SyntheticSearch:
         first_match_found = False
         
         for tier in tiers:
-            if first_match_found and stop_on_first_match:
+            if first_match_found:
                 logger.info(f"Skipping tier {tier} as match already found")
                 continue
                 
@@ -239,50 +235,29 @@ class SyntheticSearch:
         return capabilities
 
 async def main():
-    """Process command line arguments and run the search."""
-    # Set up argument parser
-    parser = argparse.ArgumentParser(description='Synthetic Search for FAISS indexes')
-    parser.add_argument('query', nargs='?', default="building", help='Search query term')
-    parser.add_argument('--threshold', '-t', type=float, default=0.7, 
-                        help='Similarity threshold (0-1, lower is more permissive)')
-    parser.add_argument('--all-tiers', '-a', action='store_true', 
-                        help='Search all tiers even after a match is found')
-    parser.add_argument('--max-results', '-k', type=int, default=5,
-                        help='Maximum results per tier')
-    parser.add_argument('--tiers', type=str, default="red_hot,hot,warm,cold,glacier",
-                        help='Comma-separated list of tiers to search')
-    
-    args = parser.parse_args()
-    
-    # Create search instance
-    search = SyntheticSearch(similarity_threshold=args.threshold)
+    """Run the search with a fixed query."""
+    # Create search instance with a 0.7 similarity threshold
+    search = PrioritizedSearch(similarity_threshold=0.7)
     
     # Initialize memory tiers
     await search.initialize_all_tiers()
     
-    # Split tiers string into list
-    tiers_list = args.tiers.split(',')
+    # Fixed search query
+    query = "building"
+    print(f"Running search for: '{query}'")
     
-    # Perform the search
-    print(f"Running search for: '{args.query}' with threshold {args.threshold}")
-    print(f"Searching tiers (in order): {', '.join(tiers_list)}")
-    
-    results = await search.search(
-        query=args.query,
-        tiers=tiers_list,
-        k=args.max_results,
-        stop_on_first_match=not args.all_tiers
-    )
+    # Perform the search across memory tiers, starting with red_hot
+    results = await search.search(query)
     
     if not results:
-        print(f"No results found for '{args.query}' that meet the similarity threshold.")
+        print(f"No results found for '{query}' that meet the similarity threshold.")
         return
     
     # Get enhanced metadata
     enhanced_results = await search.get_enhanced_metadata(results)
     
     # Print the results
-    print(f"\n===== SEARCH RESULTS FOR: '{args.query}' =====\n")
+    print(f"\n===== SEARCH RESULTS FOR: '{query}' =====\n")
     
     for tier, tier_results in enhanced_results.items():
         print(f"{tier.upper()} TIER: {len(tier_results)} results")

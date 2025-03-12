@@ -115,3 +115,4 @@ build_test_venv/
 debug_import.py
 llm_training_output/
 test_env/
+examples/memory_chat.py
