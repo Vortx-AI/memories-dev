@@ -7,6 +7,8 @@ from datetime import datetime
 import sys
 import os
 import asyncio
+import pickle
+import numpy as np
 
 from memories.core.memory_manager import MemoryManager
 from memories.core.memory_catalog import memory_catalog
@@ -409,6 +411,95 @@ class MemoryStore:
                 
         except Exception as e:
             self.logger.error(f"Error importing CSV to warm memory: {e}")
+            return False
+
+    async def import_pkl_to_red_hot(
+        self,
+        pkl_file: str,
+        metadata: Optional[Dict[str, Any]] = None,
+        tags: Optional[List[str]] = None,
+        vector_dimension: int = 384
+    ) -> bool:
+        """
+        Import vectors from a pickle file into red-hot memory.
+        
+        Args:
+            pkl_file: Path to the pickle file containing vectors
+            metadata: Optional metadata about the vectors
+            tags: Optional tags for categorizing the vectors
+            vector_dimension: Expected dimension of vectors (default: 384)
+            
+        Returns:
+            bool: True if import was successful, False otherwise
+        """
+        try:
+            self._init_red_hot()
+            
+            # Get data size for catalog
+            size = os.path.getsize(pkl_file)
+            data_type = "pkl_vectors"
+            
+            # Load vectors from pickle file
+            with open(pkl_file, 'rb') as f:
+                vectors = pickle.load(f)
+            
+            # Convert to numpy array if needed
+            if not isinstance(vectors, np.ndarray):
+                vectors = np.array(vectors, dtype=np.float32)
+            
+            # Ensure vectors are 2D with correct shape [n_samples, dimension]
+            if len(vectors.shape) == 1:
+                vectors = vectors.reshape(1, -1)
+            
+            # Validate vector dimensions
+            if vectors.shape[1] != vector_dimension:
+                raise ValueError(f"Vector dimension mismatch. Expected {vector_dimension}, got {vectors.shape[1]}")
+            
+            # Store vectors in red-hot memory
+            success = True
+            stored_vectors = 0
+            
+            for i, vector in enumerate(vectors):
+                vector_metadata = {
+                    "source_file": pkl_file,
+                    "vector_id": i,
+                    "original_shape": vectors.shape,
+                    **(metadata or {})
+                }
+                
+                # Store vector in red-hot memory
+                if not await self._red_hot_memory.store(vector, metadata=vector_metadata, tags=tags):
+                    success = False
+                    break
+                stored_vectors += 1
+            
+            if success:
+                # Register in catalog
+                try:
+                    location = str(self._red_hot_memory.storage_path / f"red_hot_vectors_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+                    await memory_catalog.register_data(
+                        tier="red_hot",
+                        location=location,
+                        size=size,
+                        data_type=data_type,
+                        tags=tags,
+                        metadata={
+                            "total_vectors": stored_vectors,
+                            "vector_dimension": vector_dimension,
+                            "source_file": pkl_file,
+                            **(metadata or {})
+                        }
+                    )
+                except Exception as e:
+                    self.logger.error(f"Failed to register pkl import in catalog: {e}")
+                
+                return True
+            else:
+                self.logger.error(f"Failed to store all vectors. Only stored {stored_vectors} out of {len(vectors)}")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"Error importing pkl to red-hot memory: {e}")
             return False
 
 async def main():

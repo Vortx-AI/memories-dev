@@ -15,6 +15,7 @@ from pathlib import Path
 import asyncio
 import importlib.util
 from unittest.mock import patch, MagicMock, AsyncMock
+from memories.core.memory_store import MemoryStore
 
 # Import Config and ColdMemory directly from the file to avoid initialization issues
 def import_module_from_path(module_name, file_path):
@@ -25,7 +26,7 @@ def import_module_from_path(module_name, file_path):
     return module
 
 # Import the Config and ColdMemory classes directly from the file
-cold_module = import_module_from_path("cold", "/Users/jaya/memories-dev/memories/core/cold.py")
+cold_module = import_module_from_path("cold", str(Path(__file__).parent.parent.parent / "memories/core/cold.py"))
 Config = cold_module.Config
 ColdMemory = cold_module.ColdMemory
 
@@ -397,4 +398,14 @@ class TestColdMemory:
         assert schema is not None
         assert schema["id"] == "test-data-id"
         assert schema["tier"] == "cold"
-        assert schema["data_type"] == "dataframe" 
+        assert schema["data_type"] == "dataframe"
+
+# Initialize memory store
+memory_store = MemoryStore()
+
+# Import vectors from a pickle file
+success = await memory_store.import_pkl_to_red_hot(
+    pkl_file="path/to/your/vectors.pkl",
+    tags=["embeddings", "v1"],
+    metadata={"description": "My vector embeddings"}
+) 
