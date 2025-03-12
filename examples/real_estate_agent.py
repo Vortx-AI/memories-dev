@@ -286,24 +286,24 @@ class RealEstateAgent(BaseModel):
         start_date = end_date - timedelta(days=365 * self.temporal_analysis_years)
         
         # Fetch historical satellite imagery
-        historical_imagery = await sentinel_client.get_historical_imagery(
-            area,
-            start_date,
-            end_date,
-            max_cloud_cover=20
-        )
+        #historical_imagery = await sentinel_client.get_historical_imagery(
+        #    area,
+        #    start_date,
+        #    end_date,
+        #    max_cloud_cover=20
+        #)
         
         # Analyze changes
-        land_use_changes = await land_use_classifier.analyze_changes(historical_imagery)
-        urban_development_changes = await urban_analyzer.analyze_historical_changes(area, start_date, end_date)
-        environmental_changes = await impact_analyzer.analyze_historical_impact(area, start_date, end_date)
-        climate_changes = await climate_fetcher.get_historical_trends(area, start_date, end_date)
+        #land_use_changes = await land_use_classifier.analyze_changes(historical_imagery)
+        #urban_development_changes = await urban_analyzer.analyze_historical_changes(area, start_date, end_date)
+        #environmental_changes = await impact_analyzer.analyze_historical_impact(area, start_date, end_date)
+        #climate_changes = await climate_fetcher.get_historical_trends(area, start_date, end_date)
         
         return {
-            "land_use_changes": land_use_changes,
-            "urban_development": urban_development_changes,
-            "environmental_impact": environmental_changes,
-            "climate_trends": climate_changes
+         #   "land_use_changes": land_use_changes,
+         #   "urban_development": urban_development_changes,
+         #   "environmental_impact": environmental_changes,
+         #   "climate_trends": climate_changes
         }
 
     async def _predict_future_trends(
@@ -314,15 +314,15 @@ class RealEstateAgent(BaseModel):
     ) -> Dict[str, Any]:
         """Predict future trends based on historical data and current plans."""
         # Get urban development plans
-        development_plans = await urban_analyzer.get_development_plans(area)
+        #development_plans = await urban_analyzer.get_development_plans(area)
         
         # Predict changes for the next 10 years
         predictions = {
             "urban_development": {
                 "density_change": self._predict_density_change(historical_analysis, development_plans),
                 "property_value_trend": self._predict_value_trend(historical_analysis, development_plans),
-                "infrastructure_improvements": development_plans["infrastructure_projects"],
-                "neighborhood_changes": development_plans["zoning_changes"]
+                #"infrastructure_improvements": development_plans["infrastructure_projects"],
+                #"neighborhood_changes": development_plans["zoning_changes"]
             },
             "environmental_changes": {
                 "green_space_trend": self._predict_green_space_trend(historical_analysis),
