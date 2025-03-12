@@ -43,7 +43,11 @@ class MemoryManager:
             Dict: Configuration dictionary
         """
         try:
-            config_path = Path(__file__).parent.parent.parent / 'config' / 'db_config.yml'
+            project_root = os.getenv("PROJECT_ROOT", str(Path(__file__).parent.parent.parent))
+            config_path = Path(project_root) / 'config' / 'db_config.yml'
+            if not config_path.exists():
+                # Fallback: try current working directory
+                config_path = Path.cwd() / 'config' / 'db_config.yml'
             if not config_path.exists():
                 raise FileNotFoundError(f"Configuration file not found at {config_path}")
                 
