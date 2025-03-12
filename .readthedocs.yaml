@@ -236,11 +236,11 @@ build:
             
             # Add code to completely disable autodoc for any diffusers modules
             if 'def setup(app):' in content:
-                if not 'BLOCK_DIFFUSERS_MODULES' in content:
+                if not 'block_diffusers_modules' in content.lower():
                     setup_pattern = r'def setup\(app\):'
                     setup_replacement = '''def setup(app):
     # Block any diffusers modules from being documented
-    BLOCK_DIFFUSERS_MODULES = True
+    block_diffusers_modules = True
     
     # Original setup code'''
                     content = re.sub(setup_pattern, setup_replacement, content)
@@ -249,7 +249,7 @@ build:
 # Added by conf_patch.py
 def setup(app):
     # Block any diffusers modules from being documented
-    BLOCK_DIFFUSERS_MODULES = True
+    block_diffusers_modules = True
 '''
             
             # Write updated conf.py
