@@ -578,8 +578,9 @@ class WarmMemory:
             # Get list of tables excluding system tables
             tables = con.execute("""
                 SELECT table_name 
-                FROM source.information_schema.tables 
-                WHERE table_schema = 'main'
+                FROM source.duckdb_tables() 
+                WHERE database_name = 'source' 
+                AND schema_name = 'main'
                 AND table_name NOT IN ('warm_data', 'warm_tags')
             """).fetchall()
             
