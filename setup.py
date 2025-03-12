@@ -1,204 +1,73 @@
-from setuptools import setup, find_packages
+#!/usr/bin/env python
+"""Setup script for memories-dev."""
+import os
 import sys
+from setuptools import setup, find_packages
 
-# Determine Python version and set appropriate dependencies
-python_version = sys.version_info
+# Check if we should disable diffusers
+DISABLE_DIFFUSERS = os.environ.get('DISABLE_DIFFUSERS', '0') == '1'
 
-def get_version_specific_deps():
-    """Get version-specific dependencies based on Python version."""
-    version = sys.version_info[:2]
-    
-    # Base dependencies common to all Python versions
-    base_deps = [
-        "numpy>=1.24.4,<2.0.0" if version < (3, 12) else "numpy>=1.26.0,<2.0.0",
-        "pandas>=2.0.0" if version < (3, 12) else "pandas>=2.2.0",
-        "matplotlib>=3.7.0" if version < (3, 12) else "matplotlib>=3.8.0",
-        "ipywidgets>=8.0.0",
-        "scikit-learn>=1.3.0",
-        "rasterio>=1.3.8",
-        "geopandas>=0.14.0",
-        "albumentations>=1.3.1",
-        "sentence-transformers>=2.2.0",
-        "xarray>=2023.0.0",
-        "dask>=2024.1.0",
-        "accelerate>=1.3.0",
-        "scipy>=1.11.0" if version < (3, 12) else "scipy>=1.12.0",
-        "noise>=1.2.2",
-        "faiss-cpu>=1.7.4"
-    ]
-    
-    # Add version-specific constraints
-    if version == (3, 9):
-        base_deps.extend([
-            "pandas<2.1.0",
-            "matplotlib<3.8.0",
-            "scikit-learn<1.4.0",
-            "albumentations<1.4.0",
-            "accelerate<1.4.0"
-        ])
-    
-    # Add Python 3.13+ specific dependencies
-    if version >= (3, 13):
-        base_deps.append("shapely>=2.0.0")  # Modern Shapely for 3.13+
-    
-    return base_deps
+# Base requirements
+install_requires = [
+    'numpy>=1.20.0',
+    'pandas>=1.3.0',
+    'pyyaml>=6.0',
+    'requests>=2.25.0',
+    'tqdm>=4.62.0',
+    'pillow>=9.0.0',
+    'python-dotenv>=0.19.0',
+]
 
-def get_core_deps():
-    """Get core dependencies with version-specific adjustments."""
-    version = sys.version_info[:2]
-    
-    deps = [
-        "transformers>=4.30.0",
-        "pillow>=10.0.0",
-        "requests>=2.31.0",
-        "pyyaml>=6.0.1",
-        "python-dotenv>=1.0.0",
-        "tqdm>=4.65.0",
-        "pyarrow>=14.0.1",
-        "mercantile>=1.2.1",
-        "pyproj>=3.6.1",
-        "pystac>=1.8.0",
-        "nltk>=3.8.1",
-        "diffusers>=0.25.0",
-        "langchain>=0.1.0",
-        "langchain-community>=0.0.1",
-        "duckdb>=0.9.0",
-        "geopy>=2.4.1",
-        "folium>=0.15.1",
-        "rtree>=1.1.0",
-        "owslib>=0.31.0",
-        "aiohttp>=3.9.0",
-        "fsspec>=2024.2.0",
-        "cryptography>=42.0.0",
-        "pyjwt>=2.8.0",
-        "pystac-client>=0.8.3",
-        "planetary-computer>=1.0.0",
-        "fastapi>=0.109.0",
-        "netCDF4>=1.6.5",
-        "earthengine-api>=0.1.390",
-        "typing-extensions>=4.9.0",
-        "pydantic>=2.6.0",
-        "uvicorn>=0.27.0",
-        "python-multipart>=0.0.9",
-        "osmnx>=1.9.0",
-        "py6s>=1.9.0",
-        "opencv-python>=4.8.0",
-        "matplotlib>=3.7.0"  # Required for visualization
-    ]
-    
-    # Add version-specific core dependencies
-    if version >= (3, 13):
-        deps.extend([
-            "mapbox-vector-tile>=2.0.1",  # Modern version compatible with Shapely 2.0+
-            "shapely>=2.0.0,<3.0.0"  # Modern version for Python 3.13+
-        ])
-    else:
-        deps.extend([
-            "mapbox-vector-tile>=1.2.0,<2.0.0",  # Older version compatible with Shapely 1.x
-            "shapely>=1.7.0,<2.0.0"  # Legacy version for older Python
-        ])
-    
-    return deps
+# Only add diffusers if not disabled
+if not DISABLE_DIFFUSERS:
+    install_requires.append('diffusers>=0.25.0')
 
-def get_gpu_packages():
-    """Get GPU packages based on Python version and availability."""
-    version = sys.version_info[:2]
-    packages = ["cupy-cuda12x>=12.0.0"]  # Updated for CUDA 12.x
-    
-    # Only include faiss-gpu for compatible Python versions
-    if version < (3, 12):  # faiss-gpu not yet available for 3.12+
-        packages.append("faiss-gpu==1.7.2")  # Fixed version that's known to work
-    
-    return packages
-
-def get_torch_packages():
-    """Get PyTorch related packages."""
-    return [
-        "torch>=2.2.0",
-        "torchvision>=0.17.0",
-        "torchaudio>=2.2.0"
-    ]
-
-def get_torch_geometric_packages():
-    """Get PyTorch Geometric packages - these need to be installed separately after PyTorch."""
-    return [
-        "torch-scatter>=2.1.2",
-        "torch-sparse>=0.6.18",
-        "torch-cluster>=1.6.3",
-        "torch-geometric>=2.4.0"
-    ]
-
-# Get all dependencies
-install_requires = get_core_deps() + get_version_specific_deps()
+# Extra requirements
+extras_require = {
+    'dev': [
+        'pytest>=7.0.0',
+        'pytest-cov>=3.0.0',
+        'black>=22.3.0',
+        'isort>=5.10.0',
+        'flake8>=4.0.0',
+        'mypy>=0.950',
+    ],
+    'docs': [
+        'sphinx>=7.1.2',
+        'sphinx-rtd-theme>=1.3.0',
+        'sphinx-copybutton>=0.5.0',
+        'sphinx-design>=0.5.0',
+        'sphinx-autodoc-typehints>=1.25.0',
+        'sphinx-tabs==3.4.1',
+        'sphinx-favicon>=1.0.1',
+        'sphinx-sitemap>=2.5.1',
+        'sphinx-last-updated-by-git>=0.3.5',
+        'sphinxcontrib-mermaid==0.9.2',
+        'sphinx-math-dollar>=1.2.1',
+        'myst-parser>=2.0.0',
+        'nbsphinx>=0.9.3',
+    ],
+}
 
 setup(
-    name="memories-dev",
-    version="2.0.5",
-    packages=find_packages(),
+    name='memories-dev',
+    version='2.0.5',
+    description='Earth-grounded AI memory systems',
+    author='Memories-dev',
+    author_email='info@memories-dev.org',
+    url='https://github.com/Vortx-AI/memories-dev',
+    packages=find_packages(exclude=['tests', 'tests.*']),
     install_requires=install_requires,
-    extras_require={
-        "docs": [
-            "sphinx>=8.2.1",
-            "sphinx-rtd-theme>=2.0.0",
-            "sphinx-copybutton>=0.5.2",
-            "sphinx-design>=0.5.0",
-            "sphinx-tabs>=3.4.1",
-            "sphinx-togglebutton>=0.3.2",
-            "sphinx-favicon>=1.0.1",
-            "sphinx-sitemap>=2.5.1",
-            "sphinx-last-updated-by-git>=0.3.6",
-            "sphinxcontrib-mermaid>=0.9.2",
-            "sphinx-math-dollar>=1.2.1",
-            "rst2pdf>=0.103.1",  # For PDF documentation generation
-            "myst-parser>=2.0.0",
-            "nbsphinx>=0.9.3",
-            "packaging>=23.2",
-        ],
-    },
-    python_requires=">=3.8",
+    extras_require=extras_require,
+    python_requires='>=3.9',
     classifiers=[
-        "License :: OSI Approved :: Apache Software License",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
-        "Programming Language :: Python :: 3.13",
-        "Topic :: Scientific/Engineering :: Artificial Intelligence",
-        "Topic :: Scientific/Engineering :: GIS",
-        "Development Status :: 5 - Production/Stable",
-        "Intended Audience :: Science/Research",
-        "Intended Audience :: Developers",
-        "Natural Language :: English"
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
     ],
-    entry_points={
-        "console_scripts": [
-            "memories=memories.cli:main",
-            "memories-gpu-setup=install_gpu:install_gpu_dependencies",
-            "memories-cuda-setup=cuda_setup:install_cuda_packages"
-        ]
-    },
-    package_data={
-        "memories": [
-            "config/*.yaml",
-            "data/*.json",
-            "models/config/*.json",
-            "utils/styles/*.json",
-            "test_data/**/*"
-        ],
-        "tests": [
-            "test_data/**/*.yaml",
-            "test_data/**/*.json"
-        ]
-    },
-    include_package_data=True,
-    zip_safe=False,
-    project_urls={
-        "Homepage": "https://memories.dev",
-        "Documentation": "https://docs.memories.dev",
-        "Repository": "https://github.com/Vortx-AI/memories-dev.git",
-        "Issues": "https://github.com/Vortx-AI/memories-dev/issues",
-        "Changelog": "https://github.com/Vortx-AI/memories-dev/blob/main/CHANGELOG.md"
-    }
 ) 

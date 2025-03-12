@@ -1,3 +1,13 @@
+# Import pre-import configuration before anything else
+try:
+    import os
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from conf_pre_import import *
+    print("Successfully imported pre-import configuration")
+except Exception as e:
+    print(f"Warning: Could not import pre-import configuration: {e}")
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
