@@ -1,4 +1,4 @@
-"""Memory index for vectorizing and indexing schema information across memory tiers."""
+"""Memory index for vectorizing and indexing column information across memory tiers."""
 
 import logging
 from typing import Dict, Any, Optional, List, Union, Tuple
@@ -20,7 +20,7 @@ from memories.core.memory_catalog import memory_catalog
 logger = logging.getLogger(__name__)
 
 class MemoryIndex:
-    """Memory index for vectorizing and searching schema information across memory tiers."""
+    """Memory index for vectorizing and searching column information across memory tiers."""
     
     _instance = None
     
@@ -41,10 +41,6 @@ class MemoryIndex:
             
             # Initialize FAISS index
             self.dimension = 384  # Output dimension of the model
-            self.index = faiss.IndexFlatL2(self.dimension)
-            
-            # Store mapping from index to data ID
-            self.id_mapping = {}
             
             # Initialize memory tiers as None - will be created on demand
             self._hot_memory = None
@@ -60,7 +56,7 @@ class MemoryIndex:
             # Create indexes for each tier
             for tier in ["hot", "warm", "cold", "red_hot", "glacier"]:
                 self.indexes[tier] = faiss.IndexFlatL2(self.dimension)
-                self.metadata[tier] = {}
+                self.metadata[tier] = []  # Changed to list for better indexing
             
             self.logger.info("Successfully initialized memory index")
 
@@ -94,45 +90,139 @@ class MemoryIndex:
             from memories.core.glacier import GlacierMemory
             self._glacier_memory = GlacierMemory()
 
-    def _vectorize_schema(self, schema: Dict[str, Any]) -> np.ndarray:
-        """Convert schema to vector representation.
+    def _vectorize_column(self, column_name: str, table_name: str = "", db_name: str = "") -> np.ndarray:
+        """Convert a single column name to vector representation.
         
         Args:
-            schema: Schema dictionary
+            column_name: Name of the column
+            table_name: Name of the table (optional)
+            db_name: Name of the database (optional)
             
         Returns:
-            Vector representation of schema (shape: [vector_dim])
+            Vector representation of column (shape: [vector_dim])
         """
         try:
-            text_parts = []
-            
-            # Add column names
-            if 'columns' in schema:
-                text_parts.extend(str(col) for col in schema['columns'])
-            elif 'fields' in schema:
-                text_parts.extend(str(field) for field in schema['fields'])
+            # Create a clean text representation of just the column name
+            # Optionally add minimal context to disambiguate common column names
+            if db_name and table_name:
+                text = f"column:{column_name} in {table_name} of {db_name}"
+            elif table_name:
+                text = f"column:{column_name} in {table_name}"
+            else:
+                text = f"column:{column_name}"
                 
-            # Add data type information
-            if 'type' in schema:
-                text_parts.append(f"type:{schema['type']}")
-                
-            # Add source information
-            if 'source' in schema:
-                text_parts.append(f"source:{schema['source']}")
-                
-            # Add geometry type for geodataframes
-            if 'geometry_type' in schema:
-                text_parts.append(f"geometry:{schema['geometry_type']}")
-                
-            # Combine all parts
-            text = " ".join(text_parts) if text_parts else "empty_schema"
-            
-            # Convert to vector using sentence transformer and reshape to [vector_dim]
+            # Convert to vector using sentence transformer
             vector = self.model.encode([text])  # Returns shape [1, 384]
             return vector.reshape(-1)  # Reshape to [vector_dim]
             
         except Exception as e:
-            self.logger.error(f"Failed to vectorize schema: {e}")
+            self.logger.error(f"Failed to vectorize column {column_name}: {e}")
+            # Return zero vector as fallback
+            return np.zeros(self.dimension)
+
+    def _extract_location_parts(self, location: str) -> Tuple[str, str]:
+        """Extract database and table names from location string.
+        
+        Args:
+            location: Location string (e.g., "db_name/table_name")
+            
+        Returns:
+            Tuple of (database_name, table_name)
+        """
+        if '/' in location:
+            parts = location.split('/', 1)
+            return parts[0], parts[1]
+        return "", location
+
+    async def add_to_index(
+        self,
+        tier: str,
+        data_id: str,
+        location: str,
+        schema: Dict[str, Any],
+        data_type: str,
+        schema_type: str,
+        tags: List[str] = None
+    ) -> None:
+        """Add a schema to the index, vectorizing each column separately.
+        
+        Args:
+            tier: Memory tier ("hot", "warm", "cold", "red_hot", "glacier")
+            data_id: Unique identifier for the data
+            location: Location of the data (e.g., "db_name/table_name")
+            schema: Schema dictionary
+            data_type: Type of data (e.g., "table", "dataframe")
+            schema_type: Type of schema (e.g., "duckdb_table", "pandas_dataframe")
+            tags: Optional list of tags
+        """
+        try:
+            # Extract database and table names from location
+            db_name, table_name = self._extract_location_parts(location)
+            
+            # Get columns from schema
+            columns = []
+            if 'columns' in schema:
+                columns = schema['columns']
+            elif 'fields' in schema:
+                columns = schema['fields']
+                
+            if not columns:
+                self.logger.warning(f"No columns found in schema for {data_id}")
+                # Add a placeholder vector for the entire schema
+                vector = self._vectorize_column("unknown_column", table_name, db_name)
+                self.indexes[tier].add(vector.reshape(1, -1))
+                
+                # Store metadata
+                self.metadata[tier].append({
+                    'data_id': data_id,
+                    'location': location,
+                    'database_name': db_name,
+                    'table_name': table_name,
+                    'column_name': "unknown_column",
+                    'schema': schema,
+                    'data_type': data_type,
+                    'schema_type': schema_type,
+                    'tags': tags or [],
+                    'query_path': f"{db_name}.{table_name}.unknown_column" if db_name else f"{table_name}.unknown_column"
+                })
+                return
+                
+            # Add each column as a separate vector
+            for column in columns:
+                # Vectorize column name with context
+                vector = self._vectorize_column(column, table_name, db_name)
+                
+                # Add to FAISS index
+                self.indexes[tier].add(vector.reshape(1, -1))
+                
+                # Determine column data type if available
+                column_type = "unknown"
+                if 'column_types' in schema and column in schema['column_types']:
+                    column_type = schema['column_types'][column]
+                
+                # Store comprehensive metadata for this column
+                self.metadata[tier].append({
+                    'data_id': data_id,
+                    'location': location,
+                    'database_name': db_name,
+                    'table_name': table_name,
+                    'column_name': column,
+                    'column_type': column_type,
+                    'schema': schema,  # Store full schema for reference
+                    'data_type': data_type,
+                    'schema_type': schema_type,
+                    'tags': tags or [],
+                    # Include query paths for different query formats
+                    'query_path': f"{db_name}.{table_name}.{column}" if db_name else f"{table_name}.{column}",
+                    'sql_reference': f'"{db_name}"."{table_name}"."{column}"' if db_name else f'"{table_name}"."{column}"',
+                    'dot_notation': f"{db_name}.{table_name}.{column}" if db_name else f"{table_name}.{column}",
+                    'bracket_notation': f'["{db_name}"]["{table_name}"]["{column}"]' if db_name else f'["{table_name}"]["{column}"]'
+                })
+                
+            self.logger.info(f"Added {len(columns)} columns from {location} to {tier} index")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to add schema to index: {e}")
             raise
 
     async def update_index(self, tier: str) -> None:
@@ -163,7 +253,7 @@ class MemoryIndex:
             
             # Create new index and metadata
             index = faiss.IndexFlatL2(self.dimension)
-            metadata = {}
+            metadata = []
             
             # Process each data item
             for item in tier_data:
@@ -199,28 +289,77 @@ class MemoryIndex:
                     if not schema:
                         schema = {'type': 'unknown', 'source': tier}
                     
-                    # Vectorize schema - returns shape [vector_dim]
-                    vector = self._vectorize_schema(schema)
-                    self.logger.debug(f"Vectorized schema for {item['data_id']}, shape: {vector.shape}")
+                    # Extract database and table names from location
+                    db_name, table_name = self._extract_location_parts(item['location'])
                     
-                    # Add to FAISS index - reshape to [1, vector_dim] for faiss.add
-                    index.add(vector.reshape(1, -1))
-                    self.logger.debug(f"Added vector to index, total entries: {index.ntotal}")
-                    
-                    # Store metadata
-                    idx = index.ntotal - 1
-                    metadata[idx] = {
-                        'data_id': item['data_id'],
-                        'location': item['location'],
-                        'created_at': item['created_at'],
-                        'last_accessed': item['last_accessed'],
-                        'access_count': item['access_count'],
-                        'size': item['size'],
-                        'tags': item['tags'].split(',') if item['tags'] else [],
-                        'data_type': item['data_type'],
-                        'schema': schema,
-                        'additional_meta': json.loads(item['additional_meta'])
-                    }
+                    # Get columns from schema
+                    columns = []
+                    if 'columns' in schema:
+                        columns = schema['columns']
+                    elif 'fields' in schema:
+                        columns = schema['fields']
+                        
+                    if not columns:
+                        # Add a placeholder vector for the entire schema
+                        vector = self._vectorize_column("unknown_column", table_name, db_name)
+                        index.add(vector.reshape(1, -1))
+                        
+                        # Store metadata
+                        metadata.append({
+                            'data_id': item['data_id'],
+                            'location': item['location'],
+                            'database_name': db_name,
+                            'table_name': table_name,
+                            'column_name': "unknown_column",
+                            'schema': schema,
+                            'data_type': item['data_type'],
+                            'schema_type': schema.get('type', 'unknown'),
+                            'tags': item['tags'].split(',') if item['tags'] else [],
+                            'created_at': item['created_at'],
+                            'last_accessed': item['last_accessed'],
+                            'access_count': item['access_count'],
+                            'size': item['size'],
+                            'additional_meta': json.loads(item['additional_meta']) if item['additional_meta'] else {},
+                            'query_path': f"{db_name}.{table_name}.unknown_column" if db_name else f"{table_name}.unknown_column"
+                        })
+                        continue
+                        
+                    # Add each column as a separate vector
+                    for column in columns:
+                        # Vectorize column name with context
+                        vector = self._vectorize_column(column, table_name, db_name)
+                        
+                        # Add to FAISS index
+                        index.add(vector.reshape(1, -1))
+                        
+                        # Determine column data type if available
+                        column_type = "unknown"
+                        if 'column_types' in schema and column in schema['column_types']:
+                            column_type = schema['column_types'][column]
+                        
+                        # Store comprehensive metadata for this column
+                        metadata.append({
+                            'data_id': item['data_id'],
+                            'location': item['location'],
+                            'database_name': db_name,
+                            'table_name': table_name,
+                            'column_name': column,
+                            'column_type': column_type,
+                            'schema': schema,  # Store full schema for reference
+                            'data_type': item['data_type'],
+                            'schema_type': schema.get('type', 'unknown'),
+                            'tags': item['tags'].split(',') if item['tags'] else [],
+                            'created_at': item['created_at'],
+                            'last_accessed': item['last_accessed'],
+                            'access_count': item['access_count'],
+                            'size': item['size'],
+                            'additional_meta': json.loads(item['additional_meta']) if item['additional_meta'] else {},
+                            # Include query paths for different query formats
+                            'query_path': f"{db_name}.{table_name}.{column}" if db_name else f"{table_name}.{column}",
+                            'sql_reference': f'"{db_name}"."{table_name}"."{column}"' if db_name else f'"{table_name}"."{column}"',
+                            'dot_notation': f"{db_name}.{table_name}.{column}" if db_name else f"{table_name}.{column}",
+                            'bracket_notation': f'["{db_name}"]["{table_name}"]["{column}"]' if db_name else f'["{table_name}"]["{column}"]'
+                        })
                     
                 except Exception as e:
                     self.logger.error(f"Failed to process item {item['data_id']} in {tier} tier: {e}")
@@ -247,7 +386,7 @@ class MemoryIndex:
         tiers: Optional[List[str]] = None,
         k: int = 5
     ) -> List[Dict[str, Any]]:
-        """Search for similar schemas across memory tiers.
+        """Search for similar columns across memory tiers.
         
         Args:
             query: Search query (will be vectorized)
@@ -274,17 +413,16 @@ class MemoryIndex:
                 
                 # Add results with metadata
                 for i, (dist, idx) in enumerate(zip(D[0], I[0])):
-                    if idx < 0:  # Invalid index
+                    if idx < 0 or idx >= len(self.metadata[tier]):  # Invalid index
                         continue
                         
-                    if idx in self.metadata[tier]:
-                        result = {
-                            'tier': tier,
-                            'distance': float(dist),
-                            'rank': i + 1,
-                            **self.metadata[tier][idx]
-                        }
-                        results.append(result)
+                    result = {
+                        'tier': tier,
+                        'distance': float(dist),
+                        'rank': i + 1,
+                        **self.metadata[tier][idx]
+                    }
+                    results.append(result)
             
             # Sort results by distance
             results.sort(key=lambda x: x['distance'])
