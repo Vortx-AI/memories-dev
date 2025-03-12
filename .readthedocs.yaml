@@ -61,12 +61,20 @@ build:
         sys.modules['diffusers.loaders'] = MagicMock()
         sys.modules['diffusers.loaders.single_file'] = MockClass()
         EOL
+      # Create a script to set up the Python path
+      - |
+        cat > setup_path.py << 'EOL'
+        import sys
+        sys.path.insert(0, '.')
+        from unittest.mock import MagicMock
+        sys.modules['diffusers'] = MagicMock()
+        print("Python path set up successfully")
+        EOL
       # Install the package itself in development mode with docs extras
-      - python -c "import sys; sys.path.insert(0, '.')"
-      - python -c "from unittest.mock import MagicMock; import sys; sys.modules['diffusers'] = MagicMock()"
+      - python setup_path.py
       - pip install -e ".[docs]" || pip install -e .
       # Generate API documentation with error handling
-      - python -c "import sys; sys.path.insert(0, '.')"
+      - python setup_path.py
       - sphinx-apidoc -o docs/source/api_reference memories/ || echo "API doc generation failed"
       # Clear any cached files to ensure fresh build
       - rm -rf docs/source/_build
