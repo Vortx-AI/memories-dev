@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """
-Prioritized FAISS search that first searches the red_hot memory tier with a similarity threshold.
-If a match is found, provides detailed metadata about the results.
+Synthetic search layer that enhances FAISS index searching capabilities.
+This layer prioritizes search across memory tiers, starting with red_hot,
+and provides detailed metadata about search results.
 """
 
 import os
@@ -14,7 +15,8 @@ from typing import Dict, List, Any, Optional, Union, Tuple
 
 from memories.core.memory_index import memory_index
 from memories.core.memory_catalog import memory_catalog
-from memories.core.warm import WarmMemory
+# Import memory_retrieval for future compatibility
+from memories.core.memory_retrieval import memory_retrieval
 
 # Configure logging
 logging.basicConfig(
@@ -24,11 +26,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class SyntheticSearch:
-    """Class for performing prioritized FAISS searches across memory tiers with synthetic layer enhancements."""
+    """
+    Synthetic search layer for enhancing FAISS index searches.
+    
+    This class adds a synthetic layer between the user query and the raw FAISS search,
+    prioritizing search across memory tiers and enhancing the results with metadata
+    and query capability information.
+    """
     
     def __init__(self, similarity_threshold: float = 0.7):
         """
-        Initialize the synthetic search.
+        Initialize the synthetic search layer.
         
         Args:
             similarity_threshold: Threshold for considering a match relevant (0-1)
@@ -51,25 +59,32 @@ class SyntheticSearch:
         memory_index._init_cold()
         memory_index._init_glacier()
         
-    async def update_red_hot_index(self):
-        """Update the red_hot memory index."""
+    async def update_tier_index(self, tier: str):
+        """
+        Update a specific memory tier's index.
+        
+        Args:
+            tier: Memory tier to update ("red_hot", "hot", "warm", "cold", "glacier")
+        """
         try:
-            await memory_index.update_index("red_hot")
-            if "red_hot" in memory_index.indexes:
-                logger.info(f"Red hot index updated with {memory_index.indexes['red_hot'].ntotal} vectors")
+            await memory_index.update_index(tier)
+            if tier in memory_index.indexes:
+                logger.info(f"{tier} index updated with {memory_index.indexes[tier].ntotal} vectors")
             else:
-                logger.warning("Red hot index was not created")
+                logger.warning(f"{tier} index was not created")
         except Exception as e:
-            logger.error(f"Error updating red_hot index: {e}")
+            logger.error(f"Error updating {tier} index: {e}")
             
-    async def search(self, 
+    async def synthetic_search(self, 
                     query: str, 
                     tiers: List[str] = ["red_hot", "hot", "warm", "cold", "glacier"], 
                     k: int = 5,
                     stop_on_first_match: bool = True
                    ) -> Dict[str, List[Dict[str, Any]]]:
         """
-        Perform a prioritized search across memory tiers.
+        Perform a synthetic search across memory tiers.
+        
+        This search adds a synthetic layer that prioritizes tiers and filters by similarity threshold.
         
         Args:
             query: Search query string
@@ -89,7 +104,7 @@ class SyntheticSearch:
                 continue
                 
             # Update the index for this tier
-            await memory_index.update_index(tier)
+            await self.update_tier_index(tier)
                 
             # Search this tier
             logger.info(f"Searching tier: {tier}")
@@ -122,7 +137,7 @@ class SyntheticSearch:
             search_results: Results from the search method
             
         Returns:
-            Enhanced metadata dictionary
+            Enhanced metadata dictionary with additional information and query capabilities
         """
         enhanced_results = {}
         
@@ -174,12 +189,15 @@ class SyntheticSearch:
         """
         Infer the query capabilities based on the columns and data type.
         
+        This creates a synthetic layer that enriches the raw FAISS results with
+        inferred query capabilities based on column names and data types.
+        
         Args:
             columns: List of column names
             data_type: Type of data structure
             
         Returns:
-            Dictionary of query capabilities
+            Dictionary of query capabilities and example queries
         """
         capabilities = {
             "supports_filtering": True,
@@ -238,10 +256,11 @@ class SyntheticSearch:
         
         return capabilities
 
+
 async def main():
     """Process command line arguments and run the search."""
     # Set up argument parser
-    parser = argparse.ArgumentParser(description='Synthetic Search for FAISS indexes')
+    parser = argparse.ArgumentParser(description='Synthetic Search Layer for FAISS indexes')
     parser.add_argument('query', nargs='?', default="building", help='Search query term')
     parser.add_argument('--threshold', '-t', type=float, default=0.7, 
                         help='Similarity threshold (0-1, lower is more permissive)')
@@ -264,10 +283,10 @@ async def main():
     tiers_list = args.tiers.split(',')
     
     # Perform the search
-    print(f"Running search for: '{args.query}' with threshold {args.threshold}")
+    print(f"Running synthetic search for: '{args.query}' with threshold {args.threshold}")
     print(f"Searching tiers (in order): {', '.join(tiers_list)}")
     
-    results = await search.search(
+    results = await search.synthetic_search(
         query=args.query,
         tiers=tiers_list,
         k=args.max_results,
@@ -282,7 +301,7 @@ async def main():
     enhanced_results = await search.get_enhanced_metadata(results)
     
     # Print the results
-    print(f"\n===== SEARCH RESULTS FOR: '{args.query}' =====\n")
+    print(f"\n===== SYNTHETIC SEARCH RESULTS FOR: '{args.query}' =====\n")
     
     for tier, tier_results in enhanced_results.items():
         print(f"{tier.upper()} TIER: {len(tier_results)} results")
@@ -322,6 +341,11 @@ async def main():
                     print(f"  - {query_example['type'].title()}: {query_example['example']}")
             
             print("\n" + "-"*50)
+
+
+# Create a singleton instance for easier importing
+synthetic_search = SyntheticSearch()
+
 
 if __name__ == "__main__":
     asyncio.run(main()) 

@@ -26,6 +26,13 @@ from memories.synthetic.data_sources import (
     save_synthetic_data
 )
 
+# Import synthetic search
+try:
+    from memories.synthetic.synthetic_search import SyntheticSearch, synthetic_search
+except ImportError:
+    # If importing fails, provide a stub implementation
+    synthetic_search = None
+
 __all__ = [
     "DataGenerator",
     "generate_synthetic_data",
@@ -38,5 +45,7 @@ __all__ = [
     "generate_air_quality_data",
     "SyntheticDataSource",
     "load_synthetic_data",
-    "save_synthetic_data"
+    "save_synthetic_data",
+    "SyntheticSearch",
+    "synthetic_search"
 ]
