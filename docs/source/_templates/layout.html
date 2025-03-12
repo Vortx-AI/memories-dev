@@ -29,7 +29,7 @@
 
 {%- block content %}
   {# Add chapter heading before content #}
-  {% include "chapter_heading.html" %}
+  {% include "chapter_heading.html" ignore missing %}
   {{ super() }}
 {% endblock %}
 
