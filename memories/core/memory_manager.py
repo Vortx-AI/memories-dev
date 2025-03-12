@@ -36,38 +36,31 @@ class MemoryManager:
             self._init_faiss()
             self._init_storage_backends()
 
-    def _load_config(self) -> Dict[str, Any]:
+    def _load_config(self):
         """Load configuration from file.
 
         Returns:
-            Dict: Configuration dictionary
+            Config: Configuration object
         """
         try:
+            # Import here to avoid circular imports
+            from memories.core.config import Config
+            
             project_root = os.getenv("PROJECT_ROOT", str(Path(__file__).parent.parent.parent))
             config_path = Path(project_root) / 'config' / 'db_config.yml'
             if not config_path.exists():
                 # Fallback: try current working directory
                 config_path = Path.cwd() / 'config' / 'db_config.yml'
-            if not config_path.exists():
-                raise FileNotFoundError(f"Configuration file not found at {config_path}")
                 
-            with open(config_path, 'r') as f:
-                config = yaml.safe_load(f)
-
-            # Ensure memory section exists
-            if 'memory' not in config:
-                config['memory'] = {}
-
-            # Set default base path if not provided
-            if 'base_path' not in config['memory']:
-                config['memory']['base_path'] = './data/memory'
-
-            # Convert base path to absolute path
-            config['memory']['base_path'] = str(Path(config['memory']['base_path']).resolve())
-
-            return config
+            # Use the Config class instead of manually loading YAML
+            return Config(str(config_path))
+            
         except Exception as e:
-            raise RuntimeError(f"Error loading configuration: {e}")
+            self.logger.error(f"Error loading configuration: {e}")
+            # Import here to avoid circular imports
+            from memories.core.config import Config
+            # Return a default Config object
+            return Config()
             
     def _update_config_recursive(self, base_config: Dict, override_config: Dict) -> None:
         """Recursively update configuration with override values.
@@ -83,41 +76,51 @@ class MemoryManager:
                 base_config[key] = value
                 
     def _init_paths(self) -> None:
-        """Initialize and create necessary directory paths."""
+        """Initialize paths for memory storage."""
         try:
-            # Create base memory path
-            base_path = Path(self.config['memory']['base_path'])
+            # Get base path from config
+            base_path = Path(self.config.get_path('base_path', 'memory'))
             base_path.mkdir(parents=True, exist_ok=True)
             
             # Create paths for each memory tier
             for tier in ['red_hot', 'hot', 'warm', 'cold', 'glacier']:
-                if tier in self.config['memory']:
-                    tier_path = base_path / self.config['memory'][tier]['path']
-                    tier_path.mkdir(parents=True, exist_ok=True)
+                tier_path = base_path / tier
+                tier_path.mkdir(parents=True, exist_ok=True)
             
-            # Create data paths
-            for path_type in ['storage', 'models', 'cache']:
-                if path_type in self.config['data']:
-                    data_path = Path(self.config['data'][path_type])
-                    data_path.mkdir(parents=True, exist_ok=True)
+            # Create data paths if they exist in config
+            if hasattr(self.config, 'config') and 'data' in self.config.config:
+                for path_type in ['storage', 'models', 'cache']:
+                    if path_type in self.config.config['data']:
+                        data_path = Path(self.config.config['data'][path_type])
+                        data_path.mkdir(parents=True, exist_ok=True)
                     
         except Exception as e:
-            raise RuntimeError(f"Error initializing paths: {e}")
+            self.logger.error(f"Error initializing paths: {e}")
+            # Create default paths
+            base_path = Path('./data/memory')
+            base_path.mkdir(parents=True, exist_ok=True)
+            for tier in ['red_hot', 'hot', 'warm', 'cold', 'glacier']:
+                tier_path = base_path / tier
+                tier_path.mkdir(parents=True, exist_ok=True)
 
     def _init_duckdb(self):
         """Initialize DuckDB connection."""
         try:
             # Get base path for storage
-            base_path = Path(self.config['memory']['base_path'])
+            base_path = Path(self.config.get_path('base_path', 'memory'))
             
             # Create default database path
             db_path = base_path / 'memory.duckdb'
             os.makedirs(base_path, exist_ok=True)
             
             # Get DuckDB configuration
-            duckdb_config = self.config['memory'].get('duckdb', {})
-            memory_limit = duckdb_config.get('memory_limit', '8GB')
-            threads = duckdb_config.get('threads', 4)
+            memory_limit = '8GB'
+            threads = 4
+            
+            # If config has duckdb settings, use them
+            if hasattr(self.config, 'hot_duckdb_config'):
+                memory_limit = self.config.hot_duckdb_config.get('memory_limit', memory_limit)
+                threads = self.config.hot_duckdb_config.get('threads', threads)
             
             # Create persistent connection
             self.con = duckdb.connect(database=str(db_path), read_only=False)
@@ -130,7 +133,9 @@ class MemoryManager:
             
         except Exception as e:
             self.logger.error(f"Failed to initialize DuckDB: {e}")
-            raise
+            # Create in-memory connection as fallback
+            self.con = duckdb.connect(database=':memory:', read_only=False)
+            self.logger.info("Created in-memory DuckDB connection as fallback")
 
     def _init_cold_memory(self) -> None:
         """Initialize cold memory storage."""
@@ -148,66 +153,89 @@ class MemoryManager:
     def _init_faiss(self):
         """Initialize FAISS index for vector storage."""
         try:
-            if 'red_hot' not in self.config['memory']:
-                return None
-
-            use_gpu = self.config['memory']['red_hot'].get('use_gpu', False)
-            index_type = self.config['memory']['red_hot'].get('index_type', 'Flat')
+            # Get vector dimension from config
+            vector_dim = 384  # Default
+            if hasattr(self.config, 'vector_dim'):
+                vector_dim = self.config.vector_dim
+                
+            # Get index type from config
+            index_type = 'Flat'  # Default
+            if hasattr(self.config, 'faiss_index_type'):
+                index_type = self.config.faiss_index_type
+                
+            # Get GPU settings
+            use_gpu = False
+            gpu_id = 0
+            if hasattr(self.config, 'gpu_id'):
+                gpu_id = self.config.gpu_id
+                use_gpu = gpu_id >= 0
             
             # Validate index type
-            valid_index_types = ['Flat', 'IVF']
+            valid_index_types = ['Flat', 'IVF', 'IVFFlat']
             if index_type not in valid_index_types:
-                raise ValueError(f"Invalid FAISS index type: {index_type}. Must be one of {valid_index_types}")
+                self.logger.warning(f"Invalid FAISS index type: {index_type}. Using Flat instead.")
+                index_type = 'Flat'
 
             # Create index based on type
             if index_type == 'Flat':
-                index = faiss.IndexFlatL2(384)  # 384 is default vector dimension
-            elif index_type == 'IVF':
-                quantizer = faiss.IndexFlatL2(384)
-                index = faiss.IndexIVFFlat(quantizer, 384, 100)  # 100 is number of centroids
+                index = faiss.IndexFlatL2(vector_dim)
+            elif index_type in ['IVF', 'IVFFlat']:
+                quantizer = faiss.IndexFlatL2(vector_dim)
+                index = faiss.IndexIVFFlat(quantizer, vector_dim, 100)  # 100 is number of centroids
 
             # Move to GPU if requested
             if use_gpu and faiss.get_num_gpus() > 0:
-                res = faiss.StandardGpuResources()
-                index = faiss.index_cpu_to_gpu(res, 0, index)
+                try:
+                    res = faiss.StandardGpuResources()
+                    index = faiss.index_cpu_to_gpu(res, gpu_id, index)
+                    self.logger.info(f"Using GPU {gpu_id} for FAISS index")
+                except Exception as gpu_error:
+                    self.logger.warning(f"Failed to use GPU for FAISS: {gpu_error}")
 
             self.indexes['red_hot'] = index
-            self.logger.info(f"Initialized FAISS index of type {index_type}")
-
+            self.logger.info(f"Initialized FAISS index of type {index_type} with dimension {vector_dim}")
+            
         except Exception as e:
-            self.logger.error(f"Failed to initialize FAISS index: {str(e)}")
-            raise
+            self.logger.error(f"Error initializing FAISS index: {e}")
+            # Create a simple fallback index
+            self.indexes['red_hot'] = faiss.IndexFlatL2(384)
+            self.logger.info("Created fallback FAISS index")
             
     def _init_storage_backends(self) -> None:
         """Initialize storage backends for different memory tiers."""
         self.storage_backends = {}
         
         try:
-            glacier_config = self.config.get('glacier', {})
-            if glacier_config and glacier_config.get('enabled', False):
-                storage_type = glacier_config['type']
-                
-                if storage_type == 'gcs':
-                    try:
-                        from google.cloud import storage
-                        self.storage_backends['glacier'] = storage.Client()
-                        self.logger.info(f"Google Cloud Storage initialized for glacier tier")
-                    except ImportError:
-                        self.logger.warning("google-cloud-storage not available. GCS storage for glacier tier will be disabled.")
-                
-                elif storage_type == 'azure':
-                    try:
-                        from azure.storage.blob import BlobServiceClient
-                        self.storage_backends['glacier'] = BlobServiceClient.from_connection_string(
-                            glacier_config['connection_string']
-                        )
-                        self.logger.info(f"Azure Blob storage initialized for glacier tier")
-                    except ImportError:
-                        self.logger.warning("azure-storage-blob not available. Azure storage for glacier tier will be disabled.")
+            # Check if config has glacier settings
+            glacier_enabled = False
+            
+            # If config has the config attribute and glacier settings
+            if hasattr(self.config, 'config') and 'memory' in self.config.config:
+                memory_config = self.config.config['memory']
+                if 'glacier' in memory_config and memory_config['glacier'].get('enabled', False):
+                    glacier_enabled = True
                     
+                    # Import glacier storage backend
+                    from memories.storage.glacier import GlacierStorage
+                    
+                    # Get glacier settings
+                    glacier_config = memory_config['glacier']
+                    storage_type = glacier_config.get('type', 's3')
+                    
+                    if storage_type == 's3':
+                        # Initialize S3 glacier storage
+                        self.storage_backends['glacier'] = GlacierStorage(
+                            bucket=glacier_config.get('bucket', 'memories-glacier'),
+                            prefix=glacier_config.get('prefix', 'data/'),
+                            region=glacier_config.get('region', 'us-west-2')
+                        )
+                        self.logger.info("Initialized S3 glacier storage backend")
+            
+            if not glacier_enabled:
+                self.logger.info("Glacier storage not enabled in configuration")
+                
         except Exception as e:
             self.logger.error(f"Error initializing storage backends: {e}")
-            # Don't raise the exception, just log it for testing purposes
 
     def cleanup_cold_memory(self, remove_storage: bool = True) -> None:
         """Clean up cold memory data and optionally remove storage directory.

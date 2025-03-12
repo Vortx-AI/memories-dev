@@ -155,3 +155,24 @@ class Config:
             self.config['database']['path'],
             self.config['database']['name']
         )
+        
+    def get_path(self, config_key: str, default_filename: str = None) -> str:
+        """Get a path from the configuration, or use a default relative to the memory base path.
+        
+        Args:
+            config_key: The key in the config to look for
+            default_filename: Default filename to use if the key is not found
+            
+        Returns:
+            Resolved path as a string
+        """
+        # Check if the key exists in memory section
+        if 'memory' in self.config and config_key in self.config['memory']:
+            return self.config['memory'][config_key]
+            
+        # If not found, use the default filename relative to base_path
+        if default_filename and 'memory' in self.config and 'base_path' in self.config['memory']:
+            return os.path.join(self.config['memory']['base_path'], default_filename)
+            
+        # Last resort fallback
+        return os.path.join(self.project_root, 'data', 'memory', default_filename or '')
