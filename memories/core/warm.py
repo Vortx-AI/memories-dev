@@ -618,39 +618,45 @@ class WarmMemory:
             data_ids = {}
             
             for table_name in tables_to_import:
+                # If the table name contains a dot (indicating a prefix), strip the prefix for the target table name
+                original_name = table_name
+                if '.' in table_name:
+                    target_table_name = table_name.split('.')[-1]
+                else:
+                    target_table_name = table_name
+                    
                 try:
                     # Generate unique ID
                     data_id = str(uuid.uuid4())
                     
-                    # Create table in target database directly from source
-                    target_con.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" AS SELECT * FROM source_db."{table_name}"')
+                    # Create table in target database directly from source using original name in source reference,
+                    # but target table name without the prefix
+                    target_con.execute(
+                        f'CREATE TABLE IF NOT EXISTS "{target_table_name}" AS SELECT * FROM source_db."{original_name}"'
+                    )
                     
-                    # Get row count
-                    row_count = target_con.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
+                    # Get row count from the newly created target table
+                    row_count = target_con.execute(f'SELECT COUNT(*) FROM "{target_table_name}"').fetchone()[0]
                     
-                    # Create minimal metadata for the warm_data table
+                    # Create minimal metadata info
                     meta_dict = metadata.copy() if metadata else {}
                     meta_dict["source_db"] = source_db_file
-                    meta_dict["source_table"] = table_name
+                    meta_dict["source_table"] = original_name
                     meta_dict["row_count"] = row_count
                     meta_dict["imported_at"] = datetime.now().isoformat()
                     
-                    # Convert to JSON - we store empty data since the actual data is in the table
+                    # We store empty data as JSON (actual data remains in the table)
                     data_json = "[]"
-                    
-                    # Convert metadata to JSON
                     metadata_json = json.dumps(meta_dict)
-                    
-                    # Convert tags to JSON
                     tags_json = json.dumps(tags or [])
                     
-                    # Store metadata in warm_data for backward compatibility
+                    # Store metadata in warm_data table for backward compatibility
                     target_con.execute("""
                         INSERT INTO warm_data (id, data, metadata, tags, stored_at)
                         VALUES (?, ?, ?, ?, ?)
                     """, [data_id, data_json, metadata_json, tags_json, datetime.now()])
                     
-                    # Store tags for indexing
+                    # Store each tag for indexing
                     if tags:
                         for tag in tags:
                             target_con.execute("""
@@ -658,7 +664,7 @@ class WarmMemory:
                                 VALUES (?, ?)
                             """, [tag, data_id])
                     
-                    # Add special tags for imported tables
+                    # Add special tags for the imported table
                     target_con.execute("""
                         INSERT INTO warm_tags (tag, data_id)
                         VALUES (?, ?)
@@ -667,10 +673,10 @@ class WarmMemory:
                     target_con.execute("""
                         INSERT INTO warm_tags (tag, data_id)
                         VALUES (?, ?)
-                    """, [f"table:{table_name}", data_id])
+                    """, [f"table:{target_table_name}", data_id])
                     
-                    imported_tables.append(table_name)
-                    data_ids[table_name] = data_id
+                    imported_tables.append(target_table_name)
+                    data_ids[target_table_name] = data_id
                     
                 except Exception as e:
                     self.logger.error(f"Error importing table {table_name}: {e}")
