@@ -1,5 +1,6 @@
 /**
  * Critical fixes for Memories-Dev Documentation
+ * This file consolidates all necessary styles to fix UI/UX issues
  */
 
 /* Fix whitespace issues */
@@ -17,6 +18,7 @@
 .wy-nav-side {
     width: 300px !important;
     left: 0 !important;
+    background-color: #1a2638 !important;
 }
 
 /* Mobile responsiveness */
@@ -38,6 +40,25 @@
     .wy-nav-content {
         padding: 1.5em !important;
     }
+    
+    /* Fix headings on mobile */
+    h1 {
+        font-size: 1.8em !important;
+        margin-top: 0.7em !important;
+        margin-bottom: 0.7em !important;
+    }
+    
+    h2 {
+        font-size: 1.5em !important;
+        margin-top: 1.2em !important;
+        margin-bottom: 0.6em !important;
+    }
+    
+    h3 {
+        font-size: 1.2em !important;
+        margin-top: 1em !important;
+        margin-bottom: 0.5em !important;
+    }
 }
 
 /* Fix Mermaid diagrams */
@@ -51,63 +72,23 @@
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
     max-width: 100% !important;
     overflow-x: auto !important;
-    min-height: 100px !important;
 }
 
 .mermaid svg {
     max-width: 100% !important;
     height: auto !important;
-    display: inline-block !important;
 }
 
-.mermaid svg text {
-    font-family: 'Source Code Pro', monospace !important;
-    font-size: 14px !important;
-}
-
-/* Fix node styling */
-.mermaid svg .node rect,
-.mermaid svg .node circle,
-.mermaid svg .node ellipse,
-.mermaid svg .node polygon,
-.mermaid svg .node path {
-    fill: #f9f9f9 !important;
-    stroke: #2980B9 !important;
-    stroke-width: 1px !important;
-}
-
-/* Fix edge styling */
-.mermaid svg .edge path {
-    stroke: #2980B9 !important;
-    stroke-width: 1.5px !important;
-}
-
-/* Fix edge labels */
-.mermaid svg .edgeLabel {
-    background-color: white !important;
-    padding: 2px !important;
-}
-
-.mermaid-error {
-    color: #e74c3c;
-    padding: 1rem;
-    border: 1px solid #e74c3c;
-    border-radius: 4px;
-    background-color: #fdf3f2;
-    margin: 1rem 0;
-    font-family: monospace;
-}
-
-/* Book-like typography with high specificity */
+/* Typography */
 body, .wy-body-for-nav, p, li, div {
-    font-family: "Lora", "Georgia", serif !important;
+    font-family: "Georgia", serif !important;
     font-size: 16px !important;
     line-height: 1.65 !important;
     color: #333 !important;
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: "Lora", "Georgia", serif !important;
+    font-family: "Georgia", serif !important;
     color: #2c3e50 !important;
     margin-top: 1.3em !important;
     margin-bottom: 0.5em !important;
@@ -131,18 +112,14 @@ h3 {
     font-size: 1.5em !important;
 }
 
-p {
-    margin-bottom: 1.2em !important;
-}
-
-/* First paragraph styling for book-like appearance */
+/* Remove the first letter styling which is causing issues */
 .section > p:first-of-type::first-letter {
-    font-size: 3.5em !important;
-    line-height: 0.8em !important;
-    font-weight: bold !important;
-    float: left !important;
-    margin-right: 0.1em !important;
-    color: #2c3e50 !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    font-weight: inherit !important;
+    float: none !important;
+    margin-right: 0 !important;
+    color: inherit !important;
 }
 
 /* Fix math rendering */
@@ -163,35 +140,6 @@ span.math {
     padding: 0.1em 0.3em !important;
     background-color: transparent !important;
     border: none !important;
-}
-
-.math img {
-    max-width: 100% !important;
-    height: auto !important;
-    margin: 0 auto !important;
-    display: block !important;
-}
-
-.MathJax {
-    outline: 0 !important;
-}
-
-.MathJax_Display {
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    max-width: 100% !important;
-    padding: 0.5em 0 !important;
-    margin: 0 !important;
-}
-
-/* Fix MathJax display issues */
-.MathJax_Display > .MathJax {
-    max-width: 100% !important;
-    outline: none !important;
-}
-
-.MathJax[display="inline"] {
-    display: inline-block !important;
 }
 
 /* Fix table styling */
@@ -256,104 +204,115 @@ table.docutils td {
     background-color: #e74c3c !important;
 }
 
-/* Fix menu styling */
-.wy-menu-vertical {
-    font-size: 0.95em !important;
+/* Fix code blocks */
+pre {
+    padding: 1em !important;
+    background: #f8f8f8 !important;
+    border: 1px solid #e1e4e5 !important;
+    border-radius: 3px !important;
+    overflow-x: auto !important;
+    font-size: 0.9em !important;
+    line-height: 1.5 !important;
 }
 
+code {
+    background: #f8f8f8 !important;
+    padding: 0.2em 0.4em !important;
+    border-radius: 3px !important;
+    font-size: 0.9em !important;
+    border: 1px solid #e1e4e5 !important;
+}
+
+/* Fix sidebar styling */
 .wy-menu-vertical a {
+    padding-top: 0.5em !important;
+    padding-bottom: 0.5em !important;
+    font-size: 0.95em !important;
     color: #d9d9d9 !important;
-    padding: 0.5em 1.5em !important;
+}
+
+.wy-menu-vertical a:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.wy-menu-vertical li.current > a {
+    background-color: rgba(0, 0, 0, 0.15) !important;
+    color: #ffffff !important;
 }
 
 .wy-menu-vertical p.caption {
+    margin-top: 0.5em !important;
     color: #55a5d9 !important;
     font-weight: bold !important;
-    margin-top: 1em !important;
-    padding: 0.5em 1em !important;
 }
 
-/* Fix search box styling */
 .wy-side-nav-search {
     background-color: #1a2638 !important;
 }
 
-.wy-side-nav-search input[type="text"] {
-    border-radius: 3px !important;
-    border: 1px solid #ccc !important;
-    padding: 0.5em !important;
-    box-shadow: none !important;
-    background-color: white !important;
-}
-
-/* Fix footer styling */
-footer {
-    color: #888 !important;
-    font-size: 0.9em !important;
-    margin-top: 3em !important;
-    padding-top: 1.5em !important;
-    border-top: 1px solid #eee !important;
-}
-
-/* Fix figure styling */
-.figure {
-    margin: 1.5em 0 !important;
-    text-align: center !important;
-}
-
-.figure img {
+.wy-side-nav-search > a img.logo {
     max-width: 100% !important;
+    max-height: 100px !important;
     height: auto !important;
-}
-
-.figure .caption {
-    font-style: italic !important;
-    color: #666 !important;
-    font-size: 0.9em !important;
-    margin-top: 0.5em !important;
-    text-align: center !important;
-}
-
-/* Add chapter styling */
-.chapter-label {
+    width: auto !important;
     display: block !important;
-    font-size: 0.9em !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.1em !important;
-    color: #888 !important;
-    margin-bottom: 0.5em !important;
+    margin: 0 auto 0.5em !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border-radius: 0 !important;
 }
 
-/* Add decorative line */
-.decorative-line {
-    display: block !important;
-    width: 50px !important;
-    height: 3px !important;
-    background-color: #3498db !important;
-    margin: 2em 0 !important;
+.wy-side-nav-search input[type="text"] {
+    border-radius: 4px !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+
+/* Fix TOC styling */
+.toctree-wrapper ul {
+    margin-left: 1.5em !important;
+    line-height: 1.5 !important;
+}
+
+.toctree-wrapper li {
+    margin-bottom: 0.3em !important;
 }
 
 /* Fix breadcrumbs */
 .wy-breadcrumbs {
-    font-size: 0.9em !important;
     margin-bottom: 1.5em !important;
+    font-size: 0.9em !important;
 }
 
-.wy-breadcrumbs li {
-    display: inline-block !important;
+/* Fix footer */
+footer {
+    margin-top: 2em !important;
+    padding-top: 1em !important;
+    border-top: 1px solid #e1e4e5 !important;
+    color: #888 !important;
+    font-size: 0.9em !important;
 }
 
-.wy-breadcrumbs li a {
-    color: #3498db !important;
+/* Fix navigation buttons */
+.rst-footer-buttons {
+    margin-top: 2em !important;
 }
 
-/* Print optimization */
+.rst-footer-buttons .btn {
+    padding: 0.5em 1em !important;
+    font-size: 0.9em !important;
+    border-radius: 4px !important;
+}
+
+/* Print styles */
 @media print {
     .wy-nav-content {
-        max-width: 100% !important;
+        max-width: none !important;
         margin: 0 !important;
         padding: 0 !important;
-        background: white !important;
+        border: none !important;
+        box-shadow: none !important;
     }
     
     .wy-nav-side, .wy-side-nav-search, .wy-side-scroll, .rst-versions {

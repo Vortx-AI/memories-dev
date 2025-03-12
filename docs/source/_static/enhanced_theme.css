@@ -25,6 +25,7 @@
     --warning-color: #f39c12;     /* Warning orange */
     --error-color: #c0392b;       /* Error red */
     --info-color: #2980b9;        /* Info blue */
+    --border-color: #e1e4e5;      /* Border color */
 }
 
 /* Base Typography */
@@ -525,7 +526,7 @@ blockquote {
 }
 
 blockquote::before {
-    content: """;
+    content: "\201C";
     font-size: 4em;
     font-family: Georgia, serif;
     color: rgba(202, 103, 2, 0.2);
@@ -599,4 +600,34 @@ div[class^='highlight'] pre::before {
     text-align: center;
     margin-top: 0.5em;
     font-style: italic;
+}
+
+/* Override for RTD theme elements */
+.wy-nav-content {
+    max-width: 1000px;
+}
+
+/* Strong RTD theme overrides to ensure our styles win */
+.wy-nav-content-wrap {
+    background: var(--bg-light) !important;
+}
+
+.wy-nav-side {
+    background: var(--bg-dark) !important;
+}
+
+.wy-side-nav-search {
+    background: #0f172a !important;
+}
+
+/* Make TOC stand out more */
+.toctree-wrapper .caption {
+    font-weight: bold;
+    font-size: 1.2em;
+    color: var(--primary-color);
+    margin-bottom: 1em;
+}
+
+.toctree-wrapper ul {
+    margin-bottom: 2em;
 } 

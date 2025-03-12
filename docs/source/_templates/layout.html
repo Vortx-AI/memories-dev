@@ -5,76 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Memory Codex Documentation - Earth-grounded AI memory systems">
   <meta name="color-scheme" content="light">
-  <link rel="stylesheet" href="{{ pathto('_static/css/custom.css', 1) }}" type="text/css" />
-  
-  <!-- Force light theme as default -->
-  <script>
-    // Set light theme as default immediately
-    document.documentElement.classList.remove('dark-theme');
-    localStorage.setItem('theme', 'light');
-  </script>
-  
-  <!-- Book JavaScript -->
-  <script src="{{ pathto('_static/js/book.js', 1) }}"></script>
-  <script src="{{ pathto('_static/js/mermaid-init.js', 1) }}"></script>
   
   <!-- Font Awesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- Book Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,700;1,400&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
-  
   <style>
-    /* Essential styles */
-    body { 
-      visibility: hidden; 
-      margin: 0;
-      padding: 0;
-    }
-    .book-reader { 
-      visibility: visible !important; 
-    }
-
-    /* Theme toggle button - Inline styles for immediate effect */
-    .theme-toggle-container {
-      margin-top: 15px;
-      margin-bottom: 15px;
-      display: flex;
-      justify-content: center;
-      position: relative;
-    }
-    
-    .theme-toggle-button {
-      background: rgba(255, 255, 255, 0.25);
-      border: 2px solid rgba(255, 255, 255, 0.5);
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #ffffff;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-size: 18px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-      z-index: 100;
-    }
-    
-    .theme-toggle-button:hover {
-      background: rgba(255, 255, 255, 0.4);
-      transform: scale(1.05);
-    }
-    
-    .theme-toggle-label {
-      color: #ffffff;
-      font-size: 12px;
-      margin-top: 5px;
-      text-align: center;
-    }
-
     /* Mobile navigation */
     @media screen and (max-width: 768px) {
       .wy-nav-content-wrap {
@@ -89,209 +24,35 @@
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
       }
     }
-    
-    /* Custom sidebar section headers */
-    .sidebar-section-header {
-      font-weight: bold;
-      font-size: 1.1em;
-      padding: 10px 15px;
-      margin-top: 10px;
-      background-color: rgba(0, 0, 0, 0.2);
-      color: #ffffff;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .sidebar-section-header:hover {
-      background-color: rgba(0, 0, 0, 0.3);
-    }
-    
-    .sidebar-section-content {
-      display: none;
-    }
-    
-    .sidebar-section-content.expanded {
-      display: block;
-    }
-    
-    /* Sidebar section icon */
-    .section-icon {
-      margin-right: 8px;
-    }
-    
-    /* Expand/collapse icon */
-    .expand-icon {
-      transition: transform 0.3s ease;
-    }
-    
-    .expanded .expand-icon {
-      transform: rotate(180deg);
-    }
   </style>
-  
+{% endblock %}
+
+{%- block content %}
+  {# Add chapter heading before content #}
+  {% include "chapter_heading.html" %}
+  {{ super() }}
+{% endblock %}
+
+{%- block footer %}
+  {{ super() }}
   <script>
-    // Force light theme as default globally
-    document.documentElement.classList.remove('dark-theme');
-    localStorage.setItem('theme', 'light');
-    
+    // Simple script to improve mobile navigation
     document.addEventListener('DOMContentLoaded', function() {
-      // Force light theme as default
-      document.documentElement.classList.remove('dark-theme');
-      localStorage.setItem('theme', 'light');
-      
-      document.body.classList.add('book-reader');
-      document.body.style.visibility = 'visible';
-      
-      // Add theme toggle button with label
-      const themeToggle = document.createElement('div');
-      themeToggle.className = 'theme-toggle-container';
-      themeToggle.innerHTML = '<button class="theme-toggle-button" aria-label="Toggle dark mode"><i class="fas fa-moon"></i></button><div class="theme-toggle-label">Theme</div>';
-      
-      // Insert at the top of the search area for better visibility
-      const searchArea = document.querySelector('.wy-side-nav-search');
-      if (searchArea) {
-        // Insert after the logo but before the search box
-        const logo = searchArea.querySelector('a');
-        if (logo && logo.nextSibling) {
-          searchArea.insertBefore(themeToggle, logo.nextSibling);
-        } else {
-          searchArea.appendChild(themeToggle);
-        }
+      var menuButton = document.querySelector('.wy-nav-top i');
+      if (menuButton) {
+        menuButton.addEventListener('click', function() {
+          document.querySelector('.wy-nav-side').classList.toggle('shift');
+          document.querySelector('.wy-nav-content-wrap').classList.toggle('shift');
+        });
       }
       
-      // Theme toggle functionality
-      const toggleButton = themeToggle.querySelector('.theme-toggle-button');
-      toggleButton.addEventListener('click', function() {
-        const isDark = document.documentElement.classList.toggle('dark-theme');
-        toggleButton.querySelector('i').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-        
-        // Save preference
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        
-        // Dispatch event for other scripts
-        document.dispatchEvent(new CustomEvent('themeToggled', { 
-          detail: { 
-            theme: isDark ? 'dark' : 'light' 
-          }
-        }));
-      });
-      
-      // Always default to light theme, ignoring saved preference
-      document.documentElement.classList.remove('dark-theme');
-      toggleButton.querySelector('i').className = 'fas fa-moon';
-      localStorage.setItem('theme', 'light');
-      
-      // Setup collapsible sidebar sections
-      setTimeout(function() {
-        setupSidebarSections();
-      }, 500);
-    });
-    
-    function setupSidebarSections() {
-      // Get all top-level navigation sections
-      const topLevelItems = document.querySelectorAll('.wy-menu-vertical > ul > li');
-      
-      topLevelItems.forEach(function(item) {
-        // Skip items that don't have children
-        if (!item.querySelector('ul')) return;
-        
-        // Get the caption or link text
-        let sectionTitle = item.querySelector('a')?.textContent || 
-                          item.querySelector('.caption-text')?.textContent || 
-                          'Section';
-        
-        // Create section header
-        const sectionHeader = document.createElement('div');
-        sectionHeader.className = 'sidebar-section-header';
-        
-        // Add appropriate icon based on section title
-        let iconClass = 'fa-book';
-        if (sectionTitle.includes('Getting Started')) iconClass = 'fa-rocket';
-        else if (sectionTitle.includes('Core Concepts')) iconClass = 'fa-lightbulb';
-        else if (sectionTitle.includes('Memory')) iconClass = 'fa-database';
-        else if (sectionTitle.includes('API')) iconClass = 'fa-code';
-        else if (sectionTitle.includes('Examples')) iconClass = 'fa-flask';
-        
-        sectionHeader.innerHTML = `
-          <span><i class="fas ${iconClass} section-icon"></i>${sectionTitle}</span>
-          <i class="fas fa-chevron-down expand-icon"></i>
-        `;
-        
-        // Create content container
-        const sectionContent = document.createElement('div');
-        sectionContent.className = 'sidebar-section-content';
-        
-        // Move children into content container
-        const children = item.querySelectorAll(':scope > ul');
-        children.forEach(child => {
-          sectionContent.appendChild(child.cloneNode(true));
-        });
-        
-        // Replace original content with our new structure
-        item.innerHTML = '';
-        item.appendChild(sectionHeader);
-        item.appendChild(sectionContent);
-        
-        // Add click handler
-        sectionHeader.addEventListener('click', function() {
-          sectionContent.classList.toggle('expanded');
-          sectionHeader.classList.toggle('expanded');
-        });
-        
-        // Expand current section if it contains the active page
-        if (sectionContent.querySelector('li.current')) {
-          sectionContent.classList.add('expanded');
-          sectionHeader.classList.add('expanded');
+      // Close menu when clicking outside
+      document.querySelector('.wy-nav-content-wrap').addEventListener('click', function() {
+        if (document.querySelector('.wy-nav-side').classList.contains('shift')) {
+          document.querySelector('.wy-nav-side').classList.remove('shift');
+          document.querySelector('.wy-nav-content-wrap').classList.remove('shift');
         }
       });
-    }
+    });
   </script>
-{% endblock %}
-
-{% block content %}
-<div class="wy-nav-content-wrap">
-  <div class="wy-nav-content book-content">
-    <!-- Reading progress -->
-    <div class="reading-progress"></div>
-    
-    <div class="rst-content">
-      <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-        <div itemprop="articleBody">
-          <!-- Book content -->
-          <div class="book-page">
-            {% block document %}
-              {{ super() }}
-            {% endblock %}
-          </div>
-        </div>
-      </div>
-      
-      <!-- Chapter navigation -->
-      {% block navigation %}
-      <div class="book-navigation">
-        {%- if prev %}
-          <a href="{{ prev.link|e }}" class="prev-chapter" title="{{ prev.title|striptags|e }}" accesskey="p">
-            <span class="nav-text">{{ prev.title|striptags|e }}</span>
-          </a>
-        {%- endif %}
-        {%- if next %}
-          <a href="{{ next.link|e }}" class="next-chapter" title="{{ next.title|striptags|e }}" accesskey="n">
-            <span class="nav-text">{{ next.title|striptags|e }}</span>
-          </a>
-        {%- endif %}
-      </div>
-      {% endblock %}
-    </div>
-  </div>
-</div>
-{% endblock %}
-
-{% block footer %}
-<div class="book-footer">
-  <div class="book-copyright">
-    <p>&copy; 2023-2025 Memory Codex. All rights reserved.</p>
-  </div>
-</div>
 {% endblock %} 
