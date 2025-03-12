@@ -319,8 +319,8 @@ class RealEstateAgent(BaseModel):
         # Predict changes for the next 10 years
         predictions = {
             "urban_development": {
-                "density_change": self._predict_density_change(historical_analysis, development_plans),
-                "property_value_trend": self._predict_value_trend(historical_analysis, development_plans),
+                #"density_change": self._predict_density_change(historical_analysis, development_plans),
+                #"property_value_trend": self._predict_value_trend(historical_analysis, development_plans),
                 #"infrastructure_improvements": development_plans["infrastructure_projects"],
                 #"neighborhood_changes": development_plans["zoning_changes"]
             },
