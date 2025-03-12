@@ -205,17 +205,17 @@ class RealEstateAgent(BaseModel):
         tasks = [
             self._fetch_sentinel_data(location, area),
             self._fetch_overture_data(location, area),
-            terrain_analyzer.analyze_terrain(area),
-            climate_fetcher.get_climate_data(area),
-            impact_analyzer.analyze_environmental_impact(area),
-            water_analyzer.analyze_water_resources(area),
-            geological_fetcher.get_geological_data(area),
-            urban_analyzer.analyze_urban_development(area),
-            biodiversity_analyzer.analyze_biodiversity(area),
-            air_quality_monitor.get_air_quality(location),
-            noise_analyzer.analyze_noise_levels(area),
-            solar_calculator.calculate_solar_potential(area),
-            walkability_analyzer.analyze_walkability(location)
+            #terrain_analyzer.analyze_terrain(area),
+            #climate_fetcher.get_climate_data(area),
+            #impact_analyzer.analyze_environmental_impact(area),
+            #water_analyzer.analyze_water_resources(area),
+            #geological_fetcher.get_geological_data(area),
+            #urban_analyzer.analyze_urban_development(area),
+            #biodiversity_analyzer.analyze_biodiversity(area),
+            #air_quality_monitor.get_air_quality(location),
+            #noise_analyzer.analyze_noise_levels(area),
+            #solar_calculator.calculate_solar_potential(area),
+            #walkability_analyzer.analyze_walkability(location)
         ]
         
         results = await asyncio.gather(*tasks)
