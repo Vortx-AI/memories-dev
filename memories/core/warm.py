@@ -45,6 +45,7 @@ class WarmMemory:
         # Initialize DuckDB connection
         self.con = self._init_duckdb()
         self._init_tables(self.con)
+        self.connections = {}
 
     def _init_duckdb(self, db_file: Optional[str] = None) -> duckdb.DuckDBPyConnection:
         """Initialize DuckDB connection.
