@@ -349,12 +349,12 @@ class WarmMemory:
     def cleanup(self) -> None:
         """Clean up resources."""
         try:
-            # Don't close the connection if it's from the memory manager
-            if not hasattr(self.memory_manager, 'con') or self.memory_manager.con != self.con:
-                if hasattr(self, 'con') and self.con:
+            if hasattr(self, 'con') and self.con:
+                # Only close connection if it's not the one managed by memory_manager
+                if not (hasattr(self.memory_manager, 'con') and self.memory_manager.con == self.con):
                     self.con.close()
                     self.con = None
-                    
+
             self.logger.info("Cleaned up warm memory resources")
         except Exception as e:
             self.logger.error(f"Failed to cleanup warm memory: {e}")

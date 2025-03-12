@@ -276,6 +276,12 @@ class MemoryManager:
             self.logger.error(f"Error getting cache path for {source_type}: {e}")
             raise
 
+    def get_warm_path(self) -> str:
+        base_path = Path(self.config['memory']['base_path'])
+        if 'warm' in self.config['memory'] and 'path' in self.config['memory']['warm']:
+            return str(base_path / self.config['memory']['warm']['path'])
+        return str(base_path / 'warm')
+
     def get_duckdb_connection(self) -> duckdb.DuckDBPyConnection:
         """Get shared DuckDB connection.
         
