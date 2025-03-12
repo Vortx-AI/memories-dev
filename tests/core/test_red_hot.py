@@ -9,6 +9,7 @@ import tempfile
 import shutil
 from pathlib import Path
 import asyncio
+import pickle
 
 from memories.core.red_hot import RedHotMemory
 
@@ -185,4 +186,56 @@ class TestRedHotMemory:
         assert len(retrieved) == 1
         
         # Check that the distance is close to 0 (exact match)
-        assert retrieved[0]["distance"] < 1e-5 
+        assert retrieved[0]["distance"] < 1e-5
+
+    @pytest.mark.asyncio
+    async def test_import_pkl_to_red_hot(self, red_hot_memory, temp_storage_path):
+        """Test importing vectors from a pickle file."""
+        # Create a temporary pickle file with test vectors
+        with tempfile.NamedTemporaryFile(suffix='.pkl', delete=False) as tmp_file:
+            # Create test vectors (10 vectors of dimension 128 to match fixture)
+            test_vectors = np.random.randn(10, 128).astype(np.float32)
+            pickle.dump(test_vectors, tmp_file)
+            tmp_file_path = tmp_file.name
+
+        try:
+            # Initialize memory store with our test red_hot_memory
+            from memories.core.memory_store import MemoryStore
+            store = MemoryStore()
+            store._red_hot_memory = red_hot_memory
+            
+            # Import the vectors
+            success = await store.import_pkl_to_red_hot(
+                pkl_file=tmp_file_path,
+                tags=["test", "embeddings"],
+                metadata={"description": "Test vectors"},
+                vector_dimension=128  # Match the dimension from fixture
+            )
+            
+            # Check that the import was successful
+            assert success is True
+            
+            # Query one of the original vectors to verify storage
+            query_vector = test_vectors[0]
+            results = await red_hot_memory.retrieve(
+                query_vector=query_vector,
+                k=1,
+                tags=["test", "embeddings"]
+            )
+            
+            # Verify we got a result
+            assert results is not None
+            assert len(results) == 1
+            
+            # Verify the metadata
+            assert results[0]["metadata"]["description"] == "Test vectors"
+            assert results[0]["metadata"]["vector_id"] == 0
+            assert results[0]["metadata"]["source_file"] == tmp_file_path
+            
+            # Verify the distance is very small (should be exact match)
+            assert results[0]["distance"] < 1e-5
+            
+        finally:
+            # Clean up the temporary file
+            if os.path.exists(tmp_file_path):
+                os.unlink(tmp_file_path) 
