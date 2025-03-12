@@ -26,8 +26,8 @@ from PIL import Image, ImageDraw, ImageFont
 import random
 import numpy.typing as npt
 
-from memories.utils.exceptions import SyntheticDataError
-from memories.utils.validation import validate_parameters
+#from memories.utils.exceptions import SyntheticDataError
+#from memories.utils.validation import validate_parameters
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +114,7 @@ class SyntheticDataGenerator:
             self.atmospheric_model = self._load_atmospheric_model()
         except Exception as e:
             logger.error(f"Error initializing models: {str(e)}")
-            raise SyntheticDataError("Failed to initialize synthetic data models")
+            #raise SyntheticDataError("Failed to initialize synthetic data models")
             
     def _init_transforms(self):
         """Initialize data transformations"""
@@ -139,7 +139,7 @@ class SyntheticDataGenerator:
             Synthetic terrain raster
         """
         params = params or TerrainParams()
-        validate_parameters(params)
+        #validate_parameters(params)
         
         try:
             # Generate base terrain using Perlin noise
@@ -163,7 +163,7 @@ class SyntheticDataGenerator:
             
         except Exception as e:
             logger.error(f"Error generating terrain: {str(e)}")
-            raise SyntheticDataError("Failed to generate synthetic terrain")
+            #raise SyntheticDataError("Failed to generate synthetic terrain")
             
     def generate_landcover(
         self,
@@ -180,7 +180,7 @@ class SyntheticDataGenerator:
             Synthetic land cover raster
         """
         params = params or LandCoverParams()
-        validate_parameters(params)
+        #validate_parameters(params)
         
         try:
             # Generate base land cover classes
@@ -202,7 +202,7 @@ class SyntheticDataGenerator:
             
         except Exception as e:
             logger.error(f"Error generating land cover: {str(e)}")
-            raise SyntheticDataError("Failed to generate synthetic land cover")
+            #raise SyntheticDataError("Failed to generate synthetic land cover")
             
     def generate_multispectral(
         self,
@@ -241,7 +241,7 @@ class SyntheticDataGenerator:
             
         except Exception as e:
             logger.error(f"Error generating multispectral data: {str(e)}")
-            raise SyntheticDataError("Failed to generate synthetic multispectral data")
+            #raise SyntheticDataError("Failed to generate synthetic multispectral data")
             
     def _generate_perlin_terrain(
         self,
