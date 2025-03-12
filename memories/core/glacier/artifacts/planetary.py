@@ -54,7 +54,9 @@ class PlanetaryConnector(DataSource):
             self.logger.info("Successfully connected to Planetary Computer STAC API")
             
             self.cold_memory = ColdMemory()
-            self.logger.info(f"Initialized cold storage at: {self.cold_memory.storage_path}")
+            # Add cold attribute for backward compatibility
+            self.cold = self.cold_memory
+            self.logger.info(f"Initialized cold storage at: {self.cold_memory.raw_data_path}")
             
         except Exception as e:
             self.logger.error(f"Error initializing PlanetaryConnector: {e}", exc_info=True)
@@ -192,7 +194,7 @@ class PlanetaryConnector(DataSource):
             timestamp = item.get('datetime', datetime.now().isoformat())
             
             # Create planetary directory
-            planetary_dir = Path(self.cold_memory.storage_path) / "planetary"
+            planetary_dir = Path(self.cold_memory.raw_data_path) / "planetary"
             planetary_dir.mkdir(parents=True, exist_ok=True)
             
             # Create collection-specific directory
@@ -418,7 +420,7 @@ class PlanetaryConnector(DataSource):
             Dictionary containing file information
         """
         try:
-            storage_path = Path(self.cold_memory.storage_path) / "planetary"
+            storage_path = Path(self.cold_memory.raw_data_path) / "planetary"
             if not storage_path.exists():
                 return {
                     "storage_path": str(storage_path),

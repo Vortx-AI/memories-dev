@@ -14,27 +14,18 @@ logger = logging.getLogger(__name__)
 @dataclass
 class StorageConfig:
     """Configuration for storage system."""
-    storage_type: Literal["local", "s3"]
+    storage_type: Literal["local"]
     base_path: str
     cache_size_gb: float
-    bucket_name: Optional[str] = None
-    region: Optional[str] = None
-    credentials: Optional[Dict[str, str]] = None
     
     def __post_init__(self):
         """Validate storage configuration."""
-        if self.storage_type not in ["local", "s3"]:
-            raise ValueError("storage_type must be either 'local' or 's3'")
+        if self.storage_type != "local":
+            raise ValueError("storage_type must be 'local'")
             
-        if self.storage_type == "local":
-            # Convert and create base path
-            self.base_path = Path(self.base_path)
-            self.base_path.mkdir(parents=True, exist_ok=True)
-        elif self.storage_type == "s3":
-            if not self.bucket_name:
-                raise ValueError("bucket_name is required for S3 storage")
-            if not self.region:
-                raise ValueError("region is required for S3 storage")
+        # Convert and create base path
+        self.base_path = Path(self.base_path)
+        self.base_path.mkdir(parents=True, exist_ok=True)
 
 @dataclass
 class Config:
@@ -149,20 +140,14 @@ def set_backend(backend: str, **kwargs):
 def configure_storage(
     storage_type: str,
     base_path: str,
-    cache_size_gb: float,
-    bucket_name: Optional[str] = None,
-    region: Optional[str] = None,
-    credentials: Optional[Dict[str, str]] = None
+    cache_size_gb: float
 ) -> None:
     """Configure the storage system.
     
     Args:
-        storage_type: Type of storage ("local" or "s3")
+        storage_type: Type of storage (only "local" is supported)
         base_path: Base path for storage
         cache_size_gb: Size of cache in GB
-        bucket_name: S3 bucket name (required for S3 storage)
-        region: AWS region (required for S3 storage)
-        credentials: AWS credentials (optional for S3 storage)
     """
     config = get_config()  # This will create a default config if none exists
     
@@ -170,32 +155,15 @@ def configure_storage(
         storage_config = StorageConfig(
             storage_type=storage_type,
             base_path=base_path,
-            cache_size_gb=cache_size_gb,
-            bucket_name=bucket_name,
-            region=region,
-            credentials=credentials
+            cache_size_gb=cache_size_gb
         )
         
-        # Initialize storage system based on type
-        if storage_type == "local":
-            logger.info(f"Configuring local storage at {base_path}")
-            # Local storage initialization is handled in StorageConfig.__post_init__
-        elif storage_type == "s3":
-            logger.info(f"Configuring S3 storage in bucket {bucket_name}")
-            try:
-                import boto3
-                session = boto3.Session(**credentials) if credentials else boto3.Session()
-                s3 = session.client('s3', region_name=region)
-                # Verify bucket exists and is accessible
-                s3.head_bucket(Bucket=bucket_name)
-            except ImportError:
-                raise ImportError("boto3 is required for S3 storage. Install it with 'pip install boto3'")
-            except Exception as e:
-                raise RuntimeError(f"Error configuring S3 storage: {str(e)}")
+        # Initialize storage system
+        logger.info(f"Configuring local storage at {base_path}")
+        # Local storage initialization is handled in StorageConfig.__post_init__
         
         config.storage_config = storage_config
         logger.info("Storage configuration completed successfully")
         
     except Exception as e:
         logger.error(f"Error configuring storage: {str(e)}")
-        raise

@@ -43,12 +43,6 @@ def system_check() -> SystemStatus:
         # Check storage
         if config.storage_config:
             messages.append(f"✓ Storage configured ({config.storage_config.storage_type})")
-            if config.storage_config.storage_type == "s3":
-                try:
-                    import boto3
-                    messages.append("✓ AWS SDK (boto3) available")
-                except ImportError:
-                    warnings.append("⚠ AWS SDK (boto3) not installed - S3 storage will not be available")
         else:
             warnings.append("⚠ Storage not configured")
             

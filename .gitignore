@@ -107,3 +107,11 @@ import_dubai_osm.py
 # DuckDB files
 *.duckdb
 *.duckdb.wal
+.env
+
+# Additional build and temporary directories
+build_test_env/
+build_test_venv/
+debug_import.py
+llm_training_output/
+test_env/

@@ -79,6 +79,7 @@ data:
   storage: ./data/storage
   models: ./data/models
   cache: ./data/cache
+  raw_path: ./data/raw
 
 red_hot:
   vector_dim: 128

@@ -63,7 +63,7 @@ class MemoryRetrieval:
         self._warm_memory = None
         self._cold_memory = None
         self._red_hot_memory = None
-        self._glacier_memory = None
+        self._glacier_memory = {}  # Initialize as empty dictionary
         
         # Initialize connectors as None - will be created on demand
         self._overture_connector = None
@@ -246,6 +246,8 @@ class MemoryRetrieval:
                     end_date = temporal_input.get('end_date', datetime.now())
 
                 # Set default collection if not specified in tags
+                if tags is None:
+                    tags = ["sentinel-2-l2a"]
                 collection = tags[0] if tags else "sentinel-2-l2a"
 
                 # Search for items
@@ -358,6 +360,10 @@ class MemoryRetrieval:
                     start_date = temporal_input.get('start_date', datetime.now() - timedelta(days=90))
                     end_date = temporal_input.get('end_date', datetime.now())
 
+                # Ensure tags is not None before using it
+                if tags is None:
+                    tags = []
+
                 # Get data
                 result = await connector.get_data(
                     spatial_input={"bbox": bbox},
@@ -433,10 +439,14 @@ class MemoryRetrieval:
             if not self._cold_memory:
                 logger.error("Cold memory not initialized")
                 return None
+            
+            # Ensure tags is not None before using it
+            if tags is None:
+                tags = []
                 
             # Handle Landsat data format
             if tags and "landsat" in tags:
-                storage_path = Path(self._cold_memory.storage_path) / "data/cold_storage/landsat"
+                storage_path = Path(self._cold_memory.raw_data_path) / "cold_storage/landsat"
                 if not storage_path.exists():
                     logger.warning("No Landsat data found in cold storage")
                     return None
@@ -452,85 +462,67 @@ class MemoryRetrieval:
                         }
                     else:
                         bbox = spatial_input
-                else:
-                    logger.error(f"Unsupported spatial input type for Landsat data: {spatial_input_type}")
-                    return None
-                    
-                # Find matching files
-                results = []
-                for data_file in storage_path.glob("*.json"):
-                    try:
-                        with open(data_file, 'r') as f:
-                            data = json.load(f)
+                        
+                    # Find scenes that intersect with the bbox
+                    scenes = []
+                    for file_path in storage_path.glob("*.json"):
+                        try:
+                            with open(file_path, 'r') as f:
+                                scene_data = json.load(f)
+                                
+                            # Check if scene intersects with bbox
+                            scene_bbox = scene_data.get("bbox")
+                            if scene_bbox:
+                                if (bbox["xmin"] <= scene_bbox[2] and bbox["xmax"] >= scene_bbox[0] and
+                                    bbox["ymin"] <= scene_bbox[3] and bbox["ymax"] >= scene_bbox[1]):
+                                    scenes.append(scene_data)
+                        except Exception as e:
+                            logger.error(f"Error reading scene file {file_path}: {e}")
                             
-                        # Check if data intersects with bbox
-                        if data.get('bbox'):
-                            data_bbox = data['bbox']
-                            if (bbox['xmin'] <= data_bbox[2] and bbox['xmax'] >= data_bbox[0] and
-                                bbox['ymin'] <= data_bbox[3] and bbox['ymax'] >= data_bbox[1]):
-                                results.append({
-                                    "data": data,
-                                    "metadata": {
-                                        "id": data.get("id"),
-                                        "type": "landsat",
-                                        "datetime": data.get("datetime"),
-                                        "bbox": data.get("bbox"),
-                                        "properties": data.get("properties", {})
-                                    }
-                                })
-                    except Exception as e:
-                        logger.error(f"Error processing file {data_file}: {e}")
-                        continue
-                    
-                return results[0] if results else None
-                
-            # Handle planetary data format
-            elif tags and "sentinel-2-l2a" in tags:
-                storage_path = Path(self._cold_memory.storage_path) / "planetary" / "sentinel-2-l2a"
-                if not storage_path.exists():
-                    logger.warning("No planetary data found in cold storage")
-                    return None
-                    
-                # Convert spatial input to bbox format if needed
-                if spatial_input_type == "bbox":
-                    if isinstance(spatial_input, (list, tuple)):
-                        bbox = {
-                            "xmin": spatial_input[0],
-                            "ymin": spatial_input[1],
-                            "xmax": spatial_input[2],
-                            "ymax": spatial_input[3]
+                    return {
+                        "data": {
+                            "scenes": scenes,
+                            "total_scenes": len(scenes),
+                            "metadata": {
+                                "bbox": bbox,
+                                "storage_path": str(storage_path)
+                            }
                         }
-                    else:
-                        bbox = spatial_input
-                else:
-                    logger.error(f"Unsupported spatial input type for planetary data: {spatial_input_type}")
+                    }
+                    
+            # Handle Sentinel-2 data format
+            elif tags and "sentinel-2-l2a" in tags:
+                storage_path = Path(self._cold_memory.raw_data_path) / "planetary/sentinel-2-l2a"
+                if not storage_path.exists():
+                    logger.warning("No Sentinel-2 data found in cold storage")
                     return None
                     
-                # Find matching files
-                results = []
-                for data_file in storage_path.glob("*_data.npy"):
-                    metadata_file = data_file.parent / f"{data_file.stem.replace('_data', '')}_metadata.json"
-                    if metadata_file.exists():
-                        with open(metadata_file, 'r') as f:
+                # Find all stored scenes
+                scenes = []
+                for file_path in storage_path.glob("*_metadata.json"):
+                    try:
+                        with open(file_path, 'r') as f:
                             metadata = json.load(f)
                             
-                        # Check if data intersects with bbox
-                        if metadata.get('bbox'):
-                            meta_bbox = metadata['bbox']
-                            if (bbox['xmin'] <= meta_bbox[2] and bbox['xmax'] >= meta_bbox[0] and
-                                bbox['ymin'] <= meta_bbox[3] and bbox['ymax'] >= meta_bbox[1]):
-                                # Load data
-                                data = np.load(data_file)
-                                results.append({
-                                    "data": {
-                                        "array": data,
-                                        "shape": data.shape,
-                                        "bands": metadata.get('bands', [])
-                                    },
-                                    "metadata": metadata
-                                })
-                                
-                return results[0] if results else None
+                        # Get corresponding data file
+                        data_file = file_path.parent / file_path.name.replace("_metadata.json", "_data.npy")
+                        if data_file.exists():
+                            scenes.append({
+                                "metadata": metadata,
+                                "data_file": str(data_file)
+                            })
+                    except Exception as e:
+                        logger.error(f"Error reading scene file {file_path}: {e}")
+                        
+                return {
+                    "sentinel-2-l2a": {
+                        "data": scenes,
+                        "metadata": {
+                            "storage_path": str(storage_path),
+                            "total_scenes": len(scenes)
+                        }
+                    }
+                }
                 
             # Handle other data formats
             else:

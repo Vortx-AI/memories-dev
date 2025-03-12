@@ -37,13 +37,15 @@ class SentinelConnector:
         
         # Initialize cold memory first if enabled
         self.cold_memory = ColdMemory() if store_in_cold else None
+        # Add cold attribute for backward compatibility
+        self.cold = self.cold_memory
         
         if self.cold_memory:
-            logging.info(f"Cold storage location: {self.cold_memory.storage_path}")
+            logging.info(f"Cold storage location: {self.cold_memory.raw_data_path}")
         
         # Use default cold storage path if no data_dir provided
         if data_dir is None and self.cold_memory:
-            data_dir = self.cold_memory.storage_path / "sentinel"
+            data_dir = self.cold_memory.raw_data_path / "sentinel"
             logging.info(f"Using cold storage path for data: {data_dir}")
         else:
             data_dir = Path(data_dir) if data_dir else Path("data/sentinel")

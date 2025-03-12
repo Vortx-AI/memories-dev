@@ -4,6 +4,7 @@ Example script demonstrating the system check functionality.
 """
 
 import memories
+from memories.utils.core.system import system_check
 from memories.config import configure_storage
 
 def main():
@@ -19,7 +20,7 @@ def main():
     
     # Run system check
     print("\nRunning system check...")
-    status = memories.system_check()
+    status = system_check()
     
     # Print results
     print(f"\nSystem status: {'OK' if status.ok else 'Issues detected'}")

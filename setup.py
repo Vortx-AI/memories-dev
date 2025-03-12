@@ -47,6 +47,15 @@ extras_require = {
         'myst-parser>=2.0.0',
         'nbsphinx>=0.9.3',
     ],
+    's3': [
+        'boto3>=1.28.0',
+    ],
+    'gcs': [
+        'google-cloud-storage>=2.9.0',
+    ],
+    'azure': [
+        'azure-storage-blob>=12.16.0',
+    ]
 }
 
 setup(

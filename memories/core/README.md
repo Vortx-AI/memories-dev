@@ -156,10 +156,10 @@ memory_manager.store(
 
 # Configure glacier storage
 glacier_config = {
-    "provider": "s3",  # or "gcs", "azure", "local"
+    "provider": "gcs",  # or "azure", "local"
     "bucket": "memories-archive",
     "prefix": "archive/",
-    "region": "us-west-2",
+    "region": "us-west1",
     "encryption": "AES256"
 }
 
@@ -260,7 +260,7 @@ from memories.core.glacier_memory import GlacierMemory
 
 # Initialize glacier memory
 glacier_memory = GlacierMemory(
-    provider="local",  # Options: "local", "s3", "gcs", "azure"
+    provider="local",  # Options: "local", "gcs", "azure"
     config={
         "storage_path": "./glacier_storage"
     }
@@ -312,10 +312,10 @@ cold_config = {
 
 # Glacier Memory Configuration
 glacier_config = {
-    "provider": "s3",  # or "gcs", "azure", "local"
+    "provider": "gcs",  # or "azure", "local"
     "bucket": "memories-archive",
     "prefix": "archive/",
-    "region": "us-west-2",
+    "region": "us-west1",
     "encryption": "AES256"
 }
 ```

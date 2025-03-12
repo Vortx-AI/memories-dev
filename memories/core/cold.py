@@ -110,7 +110,13 @@ class Config:
     @property
     def raw_data_path(self) -> Path:
         """Get raw data directory path"""
-        data_path = self.config['data']['raw_path']
+        try:
+            data_path = self.config['data']['raw_path']
+        except KeyError:
+            # If raw_path is not defined, use a default path
+            data_path = os.path.join(self.project_root, 'data/raw')
+            self.logger.warning(f"raw_path not found in configuration. Using default: {data_path}")
+            
         if not os.path.isabs(data_path):
             data_path = os.path.join(self.project_root, data_path)
         return Path(data_path)
