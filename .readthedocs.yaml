@@ -1,6 +1,5 @@
 # .readthedocs.yaml
-# Read the Docs configuration file for memories.dev v2.0.5 - Collective Memory Infrastructure for AGI
-# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+# Read the Docs configuration file for memories-dev
 
 # Required
 version: 2
@@ -12,160 +11,60 @@ build:
     python: "3.12"
   jobs:
     pre_build:
-      # Install dependencies in the right order
+      # Install core dependencies
       - python -m pip install --upgrade pip setuptools wheel
-      # First uninstall any pre-installed docutils
-      - pip uninstall -y docutils
-      # Install docutils 0.18.1 which is compatible with sphinx and theme
       - pip install docutils==0.18.1
-      # Install Sphinx and theme directly
       - pip install sphinx==7.1.2 sphinx-rtd-theme==1.3.0 sphinxcontrib-jquery>=4.1
-      # Now install the rest of the requirements
       - pip install -r docs/requirements.txt
-      # Run the mock setup script with full permissions
-      - python setup_mocks.py
-      # Create any missing directories that might be referenced
-      - mkdir -p docs/source/getting_started
+      
+      # Create mock directories
+      - mkdir -p data/models data/cache config docs/source/api_reference
+      
+      # Create a simple patch for autodoc to exclude problematic modules
       - |
-        cat > docs/source/getting_started/index.rst << 'EOL'
-        ===============
-        Getting Started
-        ===============
-        This is a placeholder for the Getting Started guide.
-        
-        Installation
-        -----------
-        
-        Configuration
-        ------------
-        
-        Examples
-        --------
-        EOL
-      # Create a simplified mock interface for diffusers
-      - |
-        cat > mock_diffusers.py << 'EOL'
-        """Mock diffusers for documentation."""
+        cat > docs/source/conf_patch.py << 'EOL'
+        #!/usr/bin/env python
+        """Patch for conf.py to exclude problematic modules."""
+        import os
         import sys
-        from unittest.mock import MagicMock
         
-        # Define a class with required type params
-        class MockClass(MagicMock):
-            __type_params__ = tuple()
+        # Create directories
+        os.makedirs('data/models', exist_ok=True)
+        os.makedirs('data/cache', exist_ok=True)
+        os.makedirs('config', exist_ok=True)
         
-        # Mock critical modules
-        sys.modules['diffusers'] = MagicMock()
-        sys.modules['diffusers.pipelines'] = MagicMock()
-        sys.modules['diffusers.pipelines.stable_diffusion'] = MagicMock()
-        sys.modules['diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion'] = MockClass()
-        sys.modules['diffusers.loaders'] = MagicMock()
-        sys.modules['diffusers.loaders.single_file'] = MockClass()
+        # Create mock config
+        if not os.path.exists('config/db_config.yml'):
+            with open('config/db_config.yml', 'w') as f:
+                f.write('# Mock config\ndatabases:\n  memory_store:\n    host: localhost\n')
+        
+        # Update conf.py to exclude problematic modules
+        conf_path = 'docs/source/conf.py'
+        with open(conf_path, 'r') as f:
+            content = f.read()
+        
+        # Add diffusers to autodoc_mock_imports
+        if 'autodoc_mock_imports = [' in content:
+            content = content.replace(
+                'autodoc_mock_imports = [',
+                'autodoc_mock_imports = [\n    "diffusers.loaders.single_file",\n    "diffusers",\n'
+            )
+        
+        # Write updated conf.py
+        with open(conf_path, 'w') as f:
+            f.write(content)
+        
+        print("Updated conf.py to exclude problematic modules")
         EOL
-      # Create a script to set up the Python path
-      - |
-        cat > setup_path.py << 'EOL'
-        import sys
-        sys.path.insert(0, '.')
-        from unittest.mock import MagicMock
-        sys.modules['diffusers'] = MagicMock()
-        print("Python path set up successfully")
-        EOL
-      # Install the package itself in development mode with docs extras
-      - python setup_path.py
-      - pip install -e ".[docs]" || pip install -e .
-      # Generate API documentation with error handling
-      - python setup_path.py
-      - sphinx-apidoc -o docs/source/api_reference memories/ || echo "API doc generation failed"
-      # Clear any cached files to ensure fresh build
-      - rm -rf docs/source/_build
-      # Ensure chapter_heading.html exists with simplified approach to avoid syntax errors
-      - mkdir -p docs/source/_templates
-      - |
-        cat > docs/source/_templates/chapter_heading.html << 'EOL'
-        {# Simple chapter heading template that avoids complex Jinja2 syntax #}
-        {% if pagename == 'preface' %}
-        <div class="chapter-heading">
-            <div class="chapter-number">Preface</div>
-            <div class="chapter-decoration">
-                <div class="chapter-line"></div>
-                <div class="chapter-ornament">❧</div>
-                <div class="chapter-line"></div>
-            </div>
-        </div>
-        {% elif pagename == 'getting_started/index' %}
-        <div class="chapter-heading">
-            <div class="chapter-number">Chapter 1</div>
-            <div class="chapter-decoration">
-                <div class="chapter-line"></div>
-                <div class="chapter-ornament">❧</div>
-                <div class="chapter-line"></div>
-            </div>
-        </div>
-        {% elif pagename == 'core_concepts/index' %}
-        <div class="chapter-heading">
-            <div class="chapter-number">Chapter 2</div>
-            <div class="chapter-decoration">
-                <div class="chapter-line"></div>
-                <div class="chapter-ornament">❧</div>
-                <div class="chapter-line"></div>
-            </div>
-        </div>
-        {% elif pagename == 'memory_architecture/index' %}
-        <div class="chapter-heading">
-            <div class="chapter-number">Chapter 3</div>
-            <div class="chapter-decoration">
-                <div class="chapter-line"></div>
-                <div class="chapter-ornament">❧</div>
-                <div class="chapter-line"></div>
-            </div>
-        </div>
-        {% elif pagename == 'memory_types/index' %}
-        <div class="chapter-heading">
-            <div class="chapter-number">Chapter 4</div>
-            <div class="chapter-decoration">
-                <div class="chapter-line"></div>
-                <div class="chapter-ornament">❧</div>
-                <div class="chapter-line"></div>
-            </div>
-        </div>
-        {% elif pagename == 'earth_memory/index' %}
-        <div class="chapter-heading">
-            <div class="chapter-number">Chapter 5</div>
-            <div class="chapter-decoration">
-                <div class="chapter-line"></div>
-                <div class="chapter-ornament">❧</div>
-                <div class="chapter-line"></div>
-            </div>
-        </div>
-        {% elif pagename == 'integration/index' %}
-        <div class="chapter-heading">
-            <div class="chapter-number">Chapter 6</div>
-            <div class="chapter-decoration">
-                <div class="chapter-line"></div>
-                <div class="chapter-ornament">❧</div>
-                <div class="chapter-line"></div>
-            </div>
-        </div>
-        {% elif pagename == 'applications/index' %}
-        <div class="chapter-heading">
-            <div class="chapter-number">Chapter 7</div>
-            <div class="chapter-decoration">
-                <div class="chapter-line"></div>
-                <div class="chapter-ornament">❧</div>
-                <div class="chapter-line"></div>
-            </div>
-        </div>
-        {% elif pagename == 'api_reference/index' %}
-        <div class="chapter-heading">
-            <div class="chapter-number">Chapter 8</div>
-            <div class="chapter-decoration">
-                <div class="chapter-line"></div>
-                <div class="chapter-ornament">❧</div>
-                <div class="chapter-line"></div>
-            </div>
-        </div>
-        {% endif %}
-        EOL
+      
+      # Run the patch script
+      - python docs/source/conf_patch.py
+      
+      # Install the package in development mode
+      - pip install -e .
+      
+      # Generate API documentation with exclude pattern
+      - sphinx-apidoc -o docs/source/api_reference memories/ --exclude="*diffusers*" || echo "API doc generation failed"
 
 # Sphinx configuration
 sphinx:
@@ -178,24 +77,12 @@ python:
   install:
     - method: pip
       path: .
-    # Not using requirements.txt here since we handle it in pre_build
     
 # Build documentation in additional formats
 formats:
-  - pdf
-  - epub
+  - html
 
 # Don't use submodules for documentation
 submodules:
   include: []
-  recursive: false
-
-# Search configuration
-search:
-  ranking:
-    getting_started/*: 5
-    user_guide/*: 4
-    api_reference/*: 3
-    examples/*: 4
-    advanced_topics/*: 3
-    contributing/*: 2 
+  recursive: false 

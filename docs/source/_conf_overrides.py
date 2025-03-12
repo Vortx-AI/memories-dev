@@ -7,14 +7,6 @@ import sys
 import os
 from unittest.mock import MagicMock
 
-# Define a mock class with __type_params__ to avoid errors
-class MockClass(MagicMock):
-    __type_params__ = tuple()
-    
-    @classmethod
-    def from_pretrained(cls, *args, **kwargs):
-        return cls()
-
 # Create data directories
 data_dirs = [
     os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data'),
@@ -25,6 +17,18 @@ data_dirs = [
 for d in data_dirs:
     os.makedirs(d, exist_ok=True)
 
+# Create a custom dictionary-based mock class
+class DictBasedMock(dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__dict__ = self
+        self.__type_params__ = tuple()
+    
+    def __getattr__(self, name):
+        if name in self:
+            return self[name]
+        return MagicMock()
+
 # Create mock modules that are problematic
 MOCK_MODULES = [
     'diffusers',
@@ -32,7 +36,6 @@ MOCK_MODULES = [
     'diffusers.pipelines.stable_diffusion',
     'diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion',
     'diffusers.loaders',
-    'diffusers.loaders.single_file',
     'memories.utils.earth',
     'memories.utils.earth.advanced_analysis',
     'memories.utils.types',
@@ -47,15 +50,15 @@ MOCK_MODULES = [
 
 # Mock all modules
 for mod_name in MOCK_MODULES:
-    if mod_name in ('diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion', 'diffusers.loaders.single_file'):
-        sys.modules[mod_name] = MockClass()
-    else:
-        sys.modules[mod_name] = MagicMock()
+    sys.modules[mod_name] = MagicMock()
+
+# Special handling for the problematic module
+sys.modules['diffusers.loaders.single_file'] = DictBasedMock()
 
 # Set special attributes on mock modules
 if 'diffusers' in sys.modules:
     sys.modules['diffusers'].__version__ = '0.25.0'
 
 # Ensure Bounds type exists
-if 'memories.utils.types' in sys.modules and 'Bounds' not in dir(sys.modules['memories.utils.types']):
+if 'memories.utils.types' in sys.modules:
     sys.modules['memories.utils.types'].Bounds = type('Bounds', (), {}) 
