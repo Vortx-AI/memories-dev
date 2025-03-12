@@ -353,17 +353,20 @@ class MemoryStore:
                             else:
                                 meta_string = str(metadata)
                         
-                        await memory_catalog.register_data(
-                            tier="warm",
-                            data_id=data_id,  # Use the data_id from the import result
-                            location=table_name,
-                            size=table_size,
-                            data_type=data_type,
-                            tags=tag_string,
-                            additional_meta=meta_string,
-                            table_name=table_name
-                        )
-                        self.logger.info(f"Registered table {table_name} in catalog with data_id {data_id}")
+                        # Register in catalog
+                        try:
+                            await memory_catalog.register_data(
+                                tier="warm",
+                                location=table_name,
+                                size=table_size,
+                                data_type=data_type,
+                                tags=tag_string,
+                                additional_meta=meta_string,
+                                table_name=table_name
+                            )
+                            self.logger.info(f"Registered table {table_name} in catalog")
+                        except Exception as e:
+                            self.logger.error(f"Failed to register table {table_name} in catalog: {e}")
                     except Exception as e:
                         self.logger.error(f"Failed to register table {table_name} in catalog: {e}")
                 
