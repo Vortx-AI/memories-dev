@@ -22,8 +22,8 @@ build:
       - pip install sphinx==7.1.2 sphinx-rtd-theme==1.3.0 sphinxcontrib-jquery>=4.1
       # Now install the rest of the requirements
       - pip install -r docs/requirements.txt
-      # Create placeholder db_config.yml file for documentation build
-      - mkdir -p config
+      # Create data and config directories needed
+      - mkdir -p data/models data/cache data/datasets config
       - |
         cat > config/db_config.yml << 'EOL'
         # Mock database configuration for ReadTheDocs build
@@ -39,6 +39,26 @@ build:
             port: 6333
             collection: memories
         EOL
+      # Create diffusers mock module if it doesn't exist to avoid import errors
+      - |
+        DIFFUSERS_DIR="$(python -c 'import site; print(site.getsitepackages()[0])')/diffusers"
+        if [ ! -d "$DIFFUSERS_DIR" ]; then
+          mkdir -p "$DIFFUSERS_DIR/pipelines/stable_diffusion" "$DIFFUSERS_DIR/loaders"
+          cat > "$DIFFUSERS_DIR/__init__.py" << 'EOL'
+        """Mock diffusers package for documentation build."""
+        __version__ = "0.25.0"  # Mock version
+        from unittest.mock import MagicMock
+        import sys
+        class MockPipeline(MagicMock):
+            __type_params__ = tuple()
+            @classmethod
+            def from_pretrained(cls, *args, **kwargs): return cls()
+        sys.modules['diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion'] = MockPipeline()
+        sys.modules['diffusers.loaders.single_file'] = MockPipeline()
+        pipeline = MockPipeline
+        StableDiffusionPipeline = MockPipeline
+        EOL
+        fi
       # Create any missing directories that might be referenced
       - mkdir -p docs/source/getting_started
       - |
