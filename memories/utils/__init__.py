@@ -21,10 +21,11 @@ os.makedirs(MODEL_PATH, exist_ok=True)
 os.makedirs(CACHE_PATH, exist_ok=True)
 os.makedirs(CONFIG_PATH, exist_ok=True)
 
-# Create mock submodules
-sys.modules['memories.utils.types'] = MagicMock()
-sys.modules['memories.utils.earth'] = MagicMock()
-sys.modules['memories.utils.earth.advanced_analysis'] = MagicMock()
+# Create mock submodules only when BUILD_DOCUMENTATION is true (for documentation builds)
+if os.getenv("BUILD_DOCUMENTATION", "false").lower() == "true":
+    sys.modules['memories.utils.types'] = MagicMock()
+    sys.modules['memories.utils.earth'] = MagicMock()
+    sys.modules['memories.utils.earth.advanced_analysis'] = MagicMock()
 
 from .text import *
 

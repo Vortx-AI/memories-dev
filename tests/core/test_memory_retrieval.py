@@ -11,6 +11,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch, MagicMock, AsyncMock
+from memories.core.config import Config
 
 from memories.core.memory_retrieval import MemoryRetrieval
 
@@ -49,33 +50,10 @@ def mock_memory_manager():
 
 
 @pytest.fixture
-def memory_retrieval(mock_memory_manager):
-    """Create a MemoryRetrieval instance with mocked dependencies."""
-    # Create the retrieval instance
-    retrieval = MemoryRetrieval()
-    
-    # Set up the mock memory manager
-    retrieval._memory_manager = mock_memory_manager
-    
-    # Mock the retrieve method to handle our test cases
-    async def mock_retrieve(from_tier, source, spatial_input_type, spatial_input, tags=None, temporal_input=None):
-        if from_tier == "hot":
-            return mock_memory_manager._hot_memory.retrieve()
-        elif from_tier == "warm":
-            return mock_memory_manager._warm_memory.retrieve()
-        elif from_tier == "cold":
-            return mock_memory_manager._cold_memory.retrieve()
-        elif from_tier == "red_hot":
-            return mock_memory_manager._red_hot_memory.retrieve()
-        elif from_tier == "glacier":
-            if source not in ["overture", "sentinel"]:
-                raise ValueError(f"Invalid source for glacier tier: {source}")
-            return mock_memory_manager._glacier_memory.retrieve()
-        else:
-            raise ValueError(f"Invalid tier: {from_tier}")
-    
-    retrieval.retrieve = mock_retrieve
-    
+def memory_retrieval(test_config_path):
+    """Create a MemoryRetrieval instance for testing."""
+    with patch.dict(os.environ, {'PROJECT_ROOT': os.path.dirname(os.path.dirname(test_config_path))}):
+        retrieval = MemoryRetrieval(config_path=test_config_path)
     return retrieval
 
 

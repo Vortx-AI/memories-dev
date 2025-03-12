@@ -3,6 +3,10 @@ import os
 import sys
 from typing import Dict, Any
 from dotenv import load_dotenv
+import tempfile
+import shutil
+from pathlib import Path
+import yaml
 
 # Add the project root to the Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -92,4 +96,55 @@ def temp_test_dir(tmp_path) -> str:
 @pytest.fixture(scope="session")
 def test_data_dir() -> str:
     """Fixture for test data directory"""
-    return os.path.join(os.path.dirname(__file__), "test_data") 
+    return os.path.join(os.path.dirname(__file__), "test_data")
+
+@pytest.fixture(scope="session")
+def project_root():
+    """Get the project root directory."""
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+@pytest.fixture(scope="session")
+def test_config_dir(project_root):
+    """Create a temporary config directory for tests."""
+    # Use the actual config file as a base
+    base_config_path = os.path.join(project_root, 'config', 'db_config.yml')
+    
+    # Create temp directory
+    temp_dir = tempfile.mkdtemp()
+    temp_config_dir = os.path.join(temp_dir, 'config')
+    os.makedirs(temp_config_dir)
+    
+    # Copy and modify the config for testing
+    test_config_path = os.path.join(temp_config_dir, 'db_config.yml')
+    
+    # Read the base config
+    with open(base_config_path, 'r') as f:
+        config = yaml.safe_load(f)
+    
+    # Modify paths to use temp directory
+    config['database']['path'] = os.path.join(temp_dir, 'data', 'db')
+    config['data']['storage'] = os.path.join(temp_dir, 'data', 'storage')
+    config['data']['models'] = os.path.join(temp_dir, 'data', 'models')
+    config['data']['cache'] = os.path.join(temp_dir, 'data', 'cache')
+    config['data']['raw_path'] = os.path.join(temp_dir, 'data', 'raw')
+    config['memory']['base_path'] = os.path.join(temp_dir, 'data', 'memory')
+    
+    # Write the test config
+    with open(test_config_path, 'w') as f:
+        yaml.dump(config, f)
+    
+    # Set environment variable for tests
+    os.environ['PROJECT_ROOT'] = temp_dir
+    
+    yield temp_dir
+    
+    # Cleanup
+    try:
+        shutil.rmtree(temp_dir)
+    except Exception as e:
+        print(f"Warning: Failed to clean up temporary directory {temp_dir}: {e}")
+
+@pytest.fixture(scope="session")
+def test_config_path(test_config_dir):
+    """Get the path to the test config file."""
+    return os.path.join(test_config_dir, 'config', 'db_config.yml') 

@@ -13,6 +13,7 @@ from unittest.mock import patch, MagicMock, AsyncMock
 
 from memories.core.glacier import GlacierMemory
 from memories.core.glacier.base import DataSource
+from memories.core.config import Config
 
 
 class MockGlacierConnector(DataSource):
@@ -77,10 +78,11 @@ def mock_connector_factory():
 
 
 @pytest.fixture
-def glacier_memory(temp_storage_path, mock_connector_factory):
+def glacier_memory(temp_storage_path, mock_connector_factory, test_config_path):
     """Create a GlacierMemory instance with mocked dependencies."""
-    # Create a GlacierMemory instance directly
-    memory = GlacierMemory()
+    # Create a GlacierMemory instance with test config
+    with patch.dict(os.environ, {'PROJECT_ROOT': os.path.dirname(os.path.dirname(test_config_path))}):
+        memory = GlacierMemory(config_path=test_config_path)
     
     # Set properties directly
     memory.storage_path = temp_storage_path

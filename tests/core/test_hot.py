@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 import asyncio
 from unittest.mock import patch, MagicMock, AsyncMock
+from memories.core.config import Config
 
 from memories.core.hot import HotMemory
 
@@ -45,50 +46,11 @@ def mock_memory_manager():
 
 
 @pytest.fixture
-def hot_memory(mock_memory_manager):
-    """Create a HotMemory instance with mocked dependencies."""
-    # Create a mock DuckDB connection
-    mock_con = MagicMock()
-    mock_con.execute.return_value = mock_con
-    mock_con.fetchone.return_value = ["1", '{"key":"value","number":42}', '{"source":"test"}', '["test","example"]', "2023-01-01T00:00:00"]
-    mock_con.fetchall.return_value = [
-        ["1", '{"key":"value","number":42}', '{"source":"test"}', '["test","example"]', "2023-01-01T00:00:00"]
-    ]
-    
-    # Create the HotMemory instance with mocked dependencies
-    with patch('memories.core.hot.duckdb.connect', return_value=mock_con):
-        # Create a mock HotMemory instance
-        memory = HotMemory()
-        
-        # Replace the memory_manager with our mock
-        memory.memory_manager = mock_memory_manager
-        
-        # Replace the connection with our mock
-        memory.con = mock_con
-        
-        # Mock the retrieve method to handle tags
-        original_retrieve = memory.retrieve
-        
-        async def mock_retrieve(query=None, tags=None):
-            if tags:
-                return [
-                    {
-                        'id': "1",
-                        'data': {"key": "value", "number": 42} if tags[0] == "test" else {"name": "item1" if tags[0] == "tag1" else "item2"},
-                        'metadata': {"source": "test" if tags[0] == "test" else ("test1" if tags[0] == "tag1" else "test2")},
-                        'tags': tags,
-                        'stored_at': "2023-01-01T00:00:00"
-                    }
-                ]
-            else:
-                return await original_retrieve(query)
-                
-        memory.retrieve = mock_retrieve
-        
-        yield memory
-        
-        # Clean up
-        memory.cleanup()
+def hot_memory(test_config_path):
+    """Create a HotMemory instance for testing."""
+    with patch.dict(os.environ, {'PROJECT_ROOT': os.path.dirname(os.path.dirname(test_config_path))}):
+        memory = HotMemory(config_path=test_config_path)
+    return memory
 
 
 class TestHotMemory:
