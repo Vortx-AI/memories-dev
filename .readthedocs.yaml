@@ -28,6 +28,41 @@ build:
       - sphinx-apidoc -o docs/source/api_reference memories/
       # Clear any cached files to ensure fresh build
       - rm -rf docs/source/_build
+      # Ensure chapter_heading.html exists
+      - mkdir -p docs/source/_templates
+      - |
+        cat > docs/source/_templates/chapter_heading.html << 'EOL'
+        {% if pagename in ['preface', 'getting_started/index', 'core_concepts/index', 'memory_architecture/index', 'memory_types/index', 'earth_memory/index', 'integration/index', 'applications/index', 'api_reference/index'] %}
+        <div class="chapter-heading">
+            <div class="chapter-number">
+                {% if pagename == 'preface' %}
+                    Preface
+                {% elif pagename == 'getting_started/index' %}
+                    Chapter 1
+                {% elif pagename == 'core_concepts/index' %}
+                    Chapter 2
+                {% elif pagename == 'memory_architecture/index' %}
+                    Chapter 3
+                {% elif pagename == 'memory_types/index' %}
+                    Chapter 4
+                {% elif pagename == 'earth_memory/index' %}
+                    Chapter 5
+                {% elif pagename == 'integration/index' %}
+                    Chapter 6
+                {% elif pagename == 'applications/index' %}
+                    Chapter 7
+                {% elif pagename == 'api_reference/index' %}
+                    Chapter 8
+                {% endif %}
+            </div>
+            <div class="chapter-decoration">
+                <div class="chapter-line"></div>
+                <div class="chapter-ornament">❧</div>
+                <div class="chapter-line"></div>
+            </div>
+        </div>
+        {% endif %}
+        EOL
 
 # Sphinx configuration
 sphinx:
