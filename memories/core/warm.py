@@ -623,7 +623,7 @@ class WarmMemory:
                     data_id = str(uuid.uuid4())
                     
                     # Create table in target database directly from source
-                    target_con.execute(f"CREATE TABLE IF NOT EXISTS {table_name} AS SELECT * FROM source_db.{table_name}")
+                    target_con.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" AS SELECT * FROM source_db."{table_name}"')
                     
                     # Get row count
                     row_count = target_con.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
