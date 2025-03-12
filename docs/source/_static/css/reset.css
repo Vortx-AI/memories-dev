@@ -1,0 +1,135 @@
+/**
+ * Reset CSS for memories-dev documentation
+ * This file resets problematic styles and ensures consistent rendering
+ */
+
+/* Remove first letter styling */
+.section > p:first-of-type::first-letter {
+    font-size: inherit !important;
+    line-height: inherit !important;
+    font-weight: inherit !important;
+    float: none !important;
+    margin-right: 0 !important;
+    color: inherit !important;
+}
+
+/* Fix content width */
+.wy-nav-content {
+    max-width: 1200px !important;
+    margin: 0 auto !important;
+    padding: 2em 3em !important;
+}
+
+/* Fix sidebar width */
+.wy-nav-side {
+    width: 300px !important;
+}
+
+/* Fix content margin */
+.wy-nav-content-wrap {
+    margin-left: 300px !important;
+}
+
+/* Mobile fixes */
+@media screen and (max-width: 768px) {
+    .wy-nav-content-wrap {
+        margin-left: 0 !important;
+    }
+    
+    .wy-nav-content {
+        padding: 1.5em !important;
+    }
+}
+
+/* Fix admonition styling */
+.admonition {
+    margin: 1.5em 0 !important;
+    padding: 0 !important;
+    border-radius: 5px !important;
+    border-left: 5px solid #3498db !important;
+    background-color: #f8f8f8 !important;
+    overflow: hidden !important;
+}
+
+.admonition-title {
+    background-color: #3498db !important;
+    color: white !important;
+    font-weight: bold !important;
+    padding: 0.5em 1em !important;
+    margin: 0 !important;
+}
+
+.admonition .last {
+    padding: 1em !important;
+}
+
+.note {
+    border-left-color: #3498db !important;
+}
+
+.note .admonition-title {
+    background-color: #3498db !important;
+}
+
+.warning {
+    border-left-color: #e74c3c !important;
+}
+
+.warning .admonition-title {
+    background-color: #e74c3c !important;
+}
+
+/* Fix table styling */
+table.docutils {
+    width: 100% !important;
+    margin-bottom: 1.5em !important;
+    border-collapse: collapse !important;
+    border: 1px solid #e1e1e1 !important;
+}
+
+table.docutils th {
+    background-color: #f5f5f5 !important;
+    color: #333 !important;
+    font-weight: bold !important;
+    padding: 0.5em 0.7em !important;
+    border: 1px solid #e1e1e1 !important;
+    text-align: left !important;
+}
+
+table.docutils td {
+    padding: 0.5em 0.7em !important;
+    border: 1px solid #e1e1e1 !important;
+    vertical-align: top !important;
+}
+
+/* Fix code blocks */
+pre {
+    padding: 1em !important;
+    background: #f8f8f8 !important;
+    border: 1px solid #e1e4e5 !important;
+    border-radius: 3px !important;
+    overflow-x: auto !important;
+    font-size: 0.9em !important;
+    line-height: 1.5 !important;
+}
+
+code {
+    background: #f8f8f8 !important;
+    padding: 0.2em 0.4em !important;
+    border-radius: 3px !important;
+    font-size: 0.9em !important;
+    border: 1px solid #e1e4e5 !important;
+}
+
+/* Fix Mermaid diagrams */
+.mermaid {
+    margin: 1.5em auto !important;
+    text-align: center !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+}
+
+.mermaid svg {
+    max-width: 100% !important;
+    height: auto !important;
+} 

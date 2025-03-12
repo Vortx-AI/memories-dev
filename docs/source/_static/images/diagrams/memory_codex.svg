@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .box { fill: white; stroke: #3498db; stroke-width: 2; rx: 5; ry: 5; }
+    .memory-box { fill: #eaf2f8; stroke: #3498db; stroke-width: 2; rx: 5; ry: 5; }
+    .query-box { fill: #e8f8f5; stroke: #16a085; stroke-width: 2; rx: 5; ry: 5; }
+    .analysis-box { fill: #fef9e7; stroke: #f39c12; stroke-width: 2; rx: 5; ry: 5; }
+    .title-text { font: bold 16px Arial; fill: #2c3e50; text-anchor: middle; }
+    .subtitle-text { font: 14px Arial; fill: #7f8c8d; text-anchor: middle; }
+    .box-text { font: 14px Arial; fill: #34495e; text-anchor: middle; }
+    .arrow { stroke: #95a5a6; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+    .query-arrow { stroke: #16a085; stroke-width: 2; fill: none; marker-end: url(#greenarrowhead); }
+    .result-arrow { stroke: #f39c12; stroke-width: 2; fill: none; marker-end: url(#orangearrowhead); }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#95a5a6" />
+    </marker>
+    <marker id="greenarrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#16a085" />
+    </marker>
+    <marker id="orangearrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#f39c12" />
+    </marker>
+  </defs>
+  
+  <rect width="800" height="600" fill="#f9f9f9" />
+  
+  <!-- Title -->
+  <text x="400" y="40" font-family="Arial" font-size="24" font-weight="bold" fill="#2c3e50" text-anchor="middle">Memory Codex Structure</text>
+  <text x="400" y="70" font-family="Arial" font-size="16" fill="#7f8c8d" text-anchor="middle">Organizing and Accessing Earth Memory</text>
+  
+  <!-- Memory Codex Core -->
+  <rect x="300" y="100" width="200" height="80" class="box" />
+  <text x="400" y="130" class="title-text">Memory Codex</text>
+  <text x="400" y="155" class="subtitle-text">Central Index System</text>
+  
+  <!-- Memory Types -->
+  <rect x="100" y="240" width="150" height="60" class="memory-box" />
+  <text x="175" y="270" class="box-text">Spatial Memory</text>
+  
+  <rect x="325" y="240" width="150" height="60" class="memory-box" />
+  <text x="400" y="270" class="box-text">Temporal Memory</text>
+  
+  <rect x="550" y="240" width="150" height="60" class="memory-box" />
+  <text x="625" y="270" class="box-text">Contextual Memory</text>
+  
+  <!-- Memory Storage -->
+  <rect x="100" y="350" width="150" height="60" class="memory-box" />
+  <text x="175" y="380" class="box-text">Hot Memory</text>
+  
+  <rect x="325" y="350" width="150" height="60" class="memory-box" />
+  <text x="400" y="380" class="box-text">Warm Memory</text>
+  
+  <rect x="550" y="350" width="150" height="60" class="memory-box" />
+  <text x="625" y="380" class="box-text">Cold Memory</text>
+  
+  <!-- Query Interface -->
+  <rect x="100" y="460" width="250" height="60" class="query-box" />
+  <text x="225" y="490" class="box-text">Query Interface</text>
+  
+  <!-- Analysis Engine -->
+  <rect x="450" y="460" width="250" height="60" class="analysis-box" />
+  <text x="575" y="490" class="box-text">Analysis Engine</text>
+  
+  <!-- Arrows -->
+  <!-- Codex to Memory Types -->
+  <path d="M300,140 L175,240" class="arrow" />
+  <path d="M400,180 L400,240" class="arrow" />
+  <path d="M500,140 L625,240" class="arrow" />
+  
+  <!-- Memory Types to Storage -->
+  <path d="M175,300 L175,350" class="arrow" />
+  <path d="M400,300 L400,350" class="arrow" />
+  <path d="M625,300 L625,350" class="arrow" />
+  
+  <!-- Query Flow -->
+  <path d="M225,460 L225,410 L175,410" class="query-arrow" />
+  <path d="M225,460 L225,410 L400,410" class="query-arrow" />
+  <path d="M225,460 L225,410 L625,410" class="query-arrow" />
+  
+  <!-- Analysis Flow -->
+  <path d="M575,460 L575,410 L175,410" class="result-arrow" />
+  <path d="M575,460 L575,410 L400,410" class="result-arrow" />
+  <path d="M575,460 L575,410 L625,410" class="result-arrow" />
+  
+  <!-- Query to Analysis -->
+  <path d="M350,490 L450,490" class="arrow" />
+  
+  <!-- Labels -->
+  <text x="175" y="220" font-family="Arial" font-size="12" fill="#7f8c8d" text-anchor="middle">Geographic Data</text>
+  <text x="400" y="220" font-family="Arial" font-size="12" fill="#7f8c8d" text-anchor="middle">Time-Series Data</text>
+  <text x="625" y="220" font-family="Arial" font-size="12" fill="#7f8c8d" text-anchor="middle">Metadata &amp; Relations</text>
+  
+  <text x="175" y="330" font-family="Arial" font-size="12" fill="#7f8c8d" text-anchor="middle">Fast Access</text>
+  <text x="400" y="330" font-family="Arial" font-size="12" fill="#7f8c8d" text-anchor="middle">Medium Access</text>
+  <text x="625" y="330" font-family="Arial" font-size="12" fill="#7f8c8d" text-anchor="middle">Slow Access</text>
+  
+  <text x="225" y="530" font-family="Arial" font-size="12" fill="#7f8c8d" text-anchor="middle">Search &amp; Retrieval</text>
+  <text x="575" y="530" font-family="Arial" font-size="12" fill="#7f8c8d" text-anchor="middle">Processing &amp; Insights</text>
+</svg> 

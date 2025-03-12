@@ -1,0 +1,443 @@
+/* 
+ * Professional Book Theme for memories-dev documentation
+ * A simplified theme with careful attention to typography and layout
+ */
+
+/* Core theme colors */
+:root {
+    --primary-color: #2d6a4f;
+    --secondary-color: #184e77;
+    --accent-color: #ca6702;
+    --bg-dark: #1e293b;
+    --bg-light: #f8f9fa;
+    --bg-content: #fffef8;  /* Parchment/book paper color */
+    --text-dark: #1b263b;
+    --text-light: #f8f9fa;
+    --text-muted: #6c757d;
+    --border-color: #e1e4e5;
+    --heading-color: #19351f;
+    --link-color: #2b5d7d;
+    --link-hover: #ca6702;
+    --sidebar-item: #e8e8e8;
+    --sidebar-active: #ffffff;
+}
+
+/* Base Typography */
+body {
+    font-family: "Georgia", serif;
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--text-dark);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--bg-light);
+    letter-spacing: 0.01em;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Georgia", serif;
+    color: var(--heading-color);
+    margin-top: 1.3em;
+    margin-bottom: 0.5em;
+    font-weight: normal;
+    line-height: 1.3;
+}
+
+h1 {
+    font-size: 2em;
+    padding-bottom: 0.3em;
+    border-bottom: 1px solid #e1e4e5;
+    margin-top: 0;
+    margin-bottom: 0.8em;
+}
+
+h2 {
+    font-size: 1.6em;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 0.2em;
+    margin-top: 1.5em;
+}
+
+h3 {
+    font-size: 1.3em;
+    font-style: italic;
+    margin-top: 1.2em;
+}
+
+h4 {
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+/* Content Wrapper */
+.wy-nav-content-wrap {
+    background-color: var(--bg-light);
+}
+
+/* Content */
+.wy-nav-content {
+    background-color: var(--bg-content);
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2em 3em;
+    min-height: 100vh;
+}
+
+/* Sidebar styling */
+.wy-nav-side {
+    background-color: var(--bg-dark);
+    width: 300px;
+    padding-bottom: 0;
+    overflow-y: auto;
+    max-height: 100%;
+    z-index: 100;
+}
+
+/* Search box */
+.wy-side-nav-search {
+    background-color: var(--bg-dark);
+    padding: 1em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.wy-side-nav-search > a {
+    color: var(--text-light);
+    font-weight: normal;
+    font-size: 1.3em;
+    margin-bottom: 0.5em;
+    text-align: center;
+}
+
+.wy-side-nav-search > a img.logo {
+    max-width: 80%;
+    max-height: 80px;
+    margin: 0 auto 0.5em;
+    display: block;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+}
+
+/* Search input */
+.wy-side-nav-search input[type="text"] {
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 0.6em 1em;
+    box-shadow: none;
+    color: var(--text-light);
+    font-size: 0.9em;
+    width: 100%;
+}
+
+/* Navigation Menu */
+.wy-menu-vertical {
+    padding-top: 0.5em;
+}
+
+.wy-menu-vertical header, 
+.wy-menu-vertical p.caption {
+    color: var(--text-light);
+    font-weight: bold;
+    font-size: 0.9em;
+    margin: 1em 0 0.3em;
+    padding: 0 1.5em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+}
+
+/* Navigation items */
+.wy-menu-vertical a {
+    color: var(--sidebar-item);
+    padding: 0.5em 1.5em;
+    font-size: 0.95em;
+    transition: background 0.2s;
+    border-left: 2px solid transparent;
+}
+
+.wy-menu-vertical a:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-left: 2px solid var(--accent-color);
+}
+
+.wy-menu-vertical li.current {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.wy-menu-vertical li.current > a {
+    color: var(--sidebar-active);
+    border-left: 2px solid var(--accent-color);
+    background-color: rgba(0, 0, 0, 0.15);
+    font-weight: normal;
+}
+
+/* Submenu item styling */
+.wy-menu-vertical li.toctree-l2 a {
+    padding: 0.5em 1.5em 0.5em 2.5em;
+}
+
+.wy-menu-vertical li.toctree-l3 a {
+    padding: 0.5em 1.5em 0.5em 3.5em;
+}
+
+.wy-menu-vertical li.toctree-l4 a {
+    padding: 0.5em 1.5em 0.5em 4em;
+}
+
+/* Links */
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+a:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+}
+
+/* Breadcrumbs */
+.wy-breadcrumbs {
+    font-size: 0.9em;
+    margin-bottom: 1em;
+    color: var(--text-muted);
+}
+
+.wy-breadcrumbs li {
+    display: inline-block;
+}
+
+.wy-breadcrumbs li a {
+    color: var(--link-color);
+}
+
+/* Blockquotes */
+blockquote {
+    border-left: 4px solid var(--accent-color);
+    padding: 0.5em 1em;
+    margin: 1.5em 0;
+    background-color: rgba(0, 0, 0, 0.02);
+    font-style: italic;
+}
+
+/* Code blocks */
+pre {
+    background-color: #f8f8f8;
+    border: 1px solid #e1e1e1;
+    border-radius: 3px;
+    padding: 1em;
+    overflow-x: auto;
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+
+code {
+    background-color: #f5f5f5;
+    border-radius: 3px;
+    padding: 2px 4px;
+    font-size: 0.9em;
+    color: #c7254e;
+}
+
+/* Tables */
+table.docutils {
+    width: 100%;
+    margin: 1.5em 0;
+    border-collapse: collapse;
+    border: 1px solid #e1e1e1;
+}
+
+table.docutils th {
+    background-color: #f3f3f3;
+    padding: 0.7em;
+    font-weight: bold;
+}
+
+table.docutils td {
+    padding: 0.7em;
+    border: 1px solid #e1e1e1;
+}
+
+/* Admonitions */
+.admonition {
+    margin: 1.5em 0;
+    padding: 0;
+    border-radius: 4px;
+    border-left: 4px solid #e3e3e3;
+    overflow: hidden;
+}
+
+.admonition-title {
+    padding: 0.7em 1em;
+    font-weight: bold;
+    margin: 0;
+}
+
+.admonition > .last {
+    padding: 1em;
+}
+
+.note {
+    border-left-color: #3498db;
+}
+
+.note .admonition-title {
+    background-color: #3498db;
+    color: white;
+}
+
+.warning {
+    border-left-color: #e74c3c;
+}
+
+.warning .admonition-title {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.tip {
+    border-left-color: #2ecc71;
+}
+
+.tip .admonition-title {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.important {
+    border-left-color: #f39c12;
+}
+
+.important .admonition-title {
+    background-color: #f39c12;
+    color: white;
+}
+
+/* Footer */
+footer {
+    margin-top: 2em;
+    padding-top: 1em;
+    border-top: 1px solid #e1e4e5;
+    color: var(--text-muted);
+    font-size: 0.9em;
+}
+
+/* Mobile responsiveness */
+@media screen and (max-width: 768px) {
+    .wy-nav-side {
+        left: -300px;
+        width: 300px;
+    }
+    
+    .wy-nav-side.shift {
+        left: 0;
+        width: 85%;
+    }
+    
+    .wy-nav-content-wrap {
+        margin-left: 0;
+    }
+    
+    .wy-nav-content-wrap.shift {
+        position: relative;
+        left: 85%;
+    }
+    
+    .wy-nav-content {
+        padding: 1.5em;
+    }
+    
+    .wy-nav-top {
+        display: block;
+        background-color: var(--bg-dark);
+        padding: 0.7em 1em;
+        color: var(--text-light);
+    }
+    
+    .wy-nav-top a {
+        color: var(--text-light);
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+    
+    .wy-nav-top i {
+        font-size: 1.5em;
+        color: var(--text-light);
+    }
+    
+    table.docutils {
+        display: block;
+        overflow-x: auto;
+        width: 100%;
+    }
+    
+    pre {
+        font-size: 0.8em;
+    }
+    
+    h1 {
+        font-size: 1.8em;
+    }
+    
+    h2 {
+        font-size: 1.5em;
+    }
+}
+
+/* Print styles */
+@media print {
+    .wy-nav-side {
+        display: none;
+    }
+    
+    .wy-nav-content-wrap {
+        margin-left: 0;
+    }
+    
+    .wy-nav-content {
+        padding: 1.5em;
+        max-width: none;
+        margin: 0;
+        background: white;
+    }
+    
+    a {
+        color: #000;
+        text-decoration: none;
+    }
+    
+    .rst-footer-buttons {
+        display: none;
+    }
+    
+    .admonition {
+        page-break-inside: avoid;
+    }
+}
+
+/* TOC reference links */
+.toc-backref {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* TOC styling */
+.toc-wrapper ul {
+    list-style-type: none;
+}
+
+.toctree-wrapper ul {
+    list-style-type: none;
+}
+
+/* Version selector */
+.rst-versions {
+    background-color: var(--bg-dark);
+}
+
+.rst-versions .rst-current-version {
+    background-color: rgba(0, 0, 0, 0.2);
+} 

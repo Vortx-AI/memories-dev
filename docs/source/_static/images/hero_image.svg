@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="1200" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a2638;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2c3e50;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="globeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2980b9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3498db;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="glowGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0" />
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="400" fill="url(#bgGradient)" />
+  
+  <!-- Grid pattern -->
+  <g stroke="#ffffff" stroke-width="0.5" stroke-opacity="0.1">
+    <!-- Horizontal lines -->
+    <line x1="0" y1="50" x2="1200" y2="50" />
+    <line x1="0" y1="100" x2="1200" y2="100" />
+    <line x1="0" y1="150" x2="1200" y2="150" />
+    <line x1="0" y1="200" x2="1200" y2="200" />
+    <line x1="0" y1="250" x2="1200" y2="250" />
+    <line x1="0" y1="300" x2="1200" y2="300" />
+    <line x1="0" y1="350" x2="1200" y2="350" />
+    
+    <!-- Vertical lines -->
+    <line x1="100" y1="0" x2="100" y2="400" />
+    <line x1="200" y1="0" x2="200" y2="400" />
+    <line x1="300" y1="0" x2="300" y2="400" />
+    <line x1="400" y1="0" x2="400" y2="400" />
+    <line x1="500" y1="0" x2="500" y2="400" />
+    <line x1="600" y1="0" x2="600" y2="400" />
+    <line x1="700" y1="0" x2="700" y2="400" />
+    <line x1="800" y1="0" x2="800" y2="400" />
+    <line x1="900" y1="0" x2="900" y2="400" />
+    <line x1="1000" y1="0" x2="1000" y2="400" />
+    <line x1="1100" y1="0" x2="1100" y2="400" />
+  </g>
+  
+  <!-- Glow effect -->
+  <circle cx="300" cy="200" r="150" fill="url(#glowGradient)" />
+  
+  <!-- Earth Globe -->
+  <g transform="translate(300, 200)">
+    <circle cx="0" cy="0" r="100" fill="url(#globeGradient)" filter="url(#glow)" />
+    <path d="M-100,0 a100,100 0 0,1 200,0 a100,100 0 0,1 -200,0" fill="none" stroke="white" stroke-width="2" stroke-opacity="0.7" />
+    <path d="M0,-100 v200" stroke="white" stroke-width="2" stroke-opacity="0.7" />
+    <path d="M-70,-70 q70,40 140,0" stroke="white" stroke-width="1.5" fill="none" stroke-opacity="0.7" />
+    <path d="M-70,70 q70,-40 140,0" stroke="white" stroke-width="1.5" fill="none" stroke-opacity="0.7" />
+  </g>
+  
+  <!-- Memory Nodes -->
+  <g stroke="#3498db" stroke-width="2">
+    <circle cx="500" cy="150" r="15" fill="#2980b9" filter="url(#glow)" />
+    <circle cx="600" cy="100" r="10" fill="#2980b9" filter="url(#glow)" />
+    <circle cx="650" cy="200" r="20" fill="#2980b9" filter="url(#glow)" />
+    <circle cx="700" cy="300" r="12" fill="#2980b9" filter="url(#glow)" />
+    <circle cx="800" cy="150" r="18" fill="#2980b9" filter="url(#glow)" />
+    <circle cx="850" cy="250" r="15" fill="#2980b9" filter="url(#glow)" />
+    <circle cx="900" cy="180" r="10" fill="#2980b9" filter="url(#glow)" />
+    
+    <!-- Connection lines -->
+    <line x1="400" y1="200" x2="500" y2="150" stroke="#3498db" stroke-width="2" stroke-opacity="0.6" />
+    <line x1="500" y1="150" x2="600" y2="100" stroke="#3498db" stroke-width="2" stroke-opacity="0.6" />
+    <line x1="500" y1="150" x2="650" y2="200" stroke="#3498db" stroke-width="2" stroke-opacity="0.6" />
+    <line x1="650" y1="200" x2="700" y2="300" stroke="#3498db" stroke-width="2" stroke-opacity="0.6" />
+    <line x1="650" y1="200" x2="800" y2="150" stroke="#3498db" stroke-width="2" stroke-opacity="0.6" />
+    <line x1="800" y1="150" x2="850" y2="250" stroke="#3498db" stroke-width="2" stroke-opacity="0.6" />
+    <line x1="800" y1="150" x2="900" y2="180" stroke="#3498db" stroke-width="2" stroke-opacity="0.6" />
+  </g>
+  
+  <!-- Title and Tagline -->
+  <g font-family="Arial, sans-serif" fill="white" text-anchor="middle">
+    <text x="750" y="160" font-size="48" font-weight="bold">memories-dev</text>
+    <text x="750" y="210" font-size="24" font-style="italic">Earth-Grounded AI Memory Systems</text>
+    <text x="750" y="260" font-size="18">Building AI with deep understanding of Earth's systems</text>
+  </g>
+  
+  <!-- Decorative elements -->
+  <g fill="none" stroke="white" stroke-opacity="0.2">
+    <path d="M50,350 C150,300 250,380 350,320 C450,260 550,340 650,280 C750,220 850,300 950,240 C1050,180 1150,260 1250,200" stroke-width="3" />
+    <path d="M50,320 C150,270 250,350 350,290 C450,230 550,310 650,250 C750,190 850,270 950,210 C1050,150 1150,230 1250,170" stroke-width="2" />
+    <path d="M50,290 C150,240 250,320 350,260 C450,200 550,280 650,220 C750,160 850,240 950,180 C1050,120 1150,200 1250,140" stroke-width="1" />
+  </g>
+</svg> 

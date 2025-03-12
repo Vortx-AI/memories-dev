@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .box { fill: white; stroke: #3498db; stroke-width: 2; }
+    .box-title { font: bold 16px Arial; fill: #2c3e50; text-anchor: middle; }
+    .box-subtitle { font: 12px Arial; fill: #7f8c8d; text-anchor: middle; }
+    .arrow { stroke: #95a5a6; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+    .data-flow { stroke: #27ae60; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+    .module { fill: #ecf0f1; stroke: #3498db; stroke-width: 2; }
+    .module-title { font: bold 14px Arial; fill: #2c3e50; text-anchor: middle; }
+    .module-text { font: 12px Arial; fill: #34495e; text-anchor: middle; }
+    .layer-title { font: bold 18px Arial; fill: #2c3e50; text-anchor: middle; }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#95a5a6" />
+    </marker>
+    <marker id="greenarrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#27ae60" />
+    </marker>
+  </defs>
+  
+  <rect width="800" height="600" fill="#f9f9f9" />
+  
+  <!-- Title -->
+  <text x="400" y="40" font-family="Arial" font-size="24" font-weight="bold" fill="#2c3e50" text-anchor="middle">Memories-Dev System Architecture</text>
+  
+  <!-- Data Sources Layer -->
+  <text x="400" y="80" class="layer-title">Data Sources</text>
+  <rect x="100" y="100" width="150" height="80" rx="5" class="module" />
+  <text x="175" y="130" class="module-title">Satellite Imagery</text>
+  <text x="175" y="150" class="module-text">Sentinel, Landsat</text>
+  
+  <rect x="325" y="100" width="150" height="80" rx="5" class="module" />
+  <text x="400" y="130" class="module-title">Environmental Data</text>
+  <text x="400" y="150" class="module-text">Sensors, Climate</text>
+  
+  <rect x="550" y="100" width="150" height="80" rx="5" class="module" />
+  <text x="625" y="130" class="module-title">Historical Records</text>
+  <text x="625" y="150" class="module-text">Archives, Databases</text>
+  
+  <!-- Data Processing Layer -->
+  <text x="400" y="220" class="layer-title">Data Processing</text>
+  <rect x="150" y="240" width="500" height="100" rx="5" class="box" />
+  <text x="400" y="265" class="box-title">Memory Formation Pipeline</text>
+  
+  <rect x="180" y="285" width="120" height="40" rx="5" class="module" />
+  <text x="240" y="310" class="module-text">Data Acquisition</text>
+  
+  <rect x="340" y="285" width="120" height="40" rx="5" class="module" />
+  <text x="400" y="310" class="module-text">Processing</text>
+  
+  <rect x="500" y="285" width="120" height="40" rx="5" class="module" />
+  <text x="560" y="310" class="module-text">Validation</text>
+  
+  <!-- Memory Storage Layer -->
+  <text x="400" y="380" class="layer-title">Memory Storage</text>
+  <rect x="150" y="400" width="500" height="80" rx="5" class="box" />
+  <text x="400" y="425" class="box-title">Tiered Memory System</text>
+  
+  <rect x="180" y="440" width="80" height="30" rx="5" class="module" />
+  <text x="220" y="460" class="module-text">Hot</text>
+  
+  <rect x="290" y="440" width="80" height="30" rx="5" class="module" />
+  <text x="330" y="460" class="module-text">Warm</text>
+  
+  <rect x="400" y="440" width="80" height="30" rx="5" class="module" />
+  <text x="440" y="460" class="module-text">Cold</text>
+  
+  <rect x="510" y="440" width="80" height="30" rx="5" class="module" />
+  <text x="550" y="460" class="module-text">Glacier</text>
+  
+  <!-- Analysis & API Layer -->
+  <text x="400" y="520" class="layer-title">Analysis &amp; API</text>
+  
+  <rect x="150" y="540" width="200" height="40" rx="5" class="module" />
+  <text x="250" y="565" class="module-title">Memory Codex</text>
+  
+  <rect x="450" y="540" width="200" height="40" rx="5" class="module" />
+  <text x="550" y="565" class="module-title">API Endpoints</text>
+  
+  <!-- Arrows -->
+  <!-- Data Sources to Processing -->
+  <path d="M175,180 L175,240" class="arrow" />
+  <path d="M400,180 L400,240" class="arrow" />
+  <path d="M625,180 L625,240" class="arrow" />
+  
+  <!-- Processing Flow -->
+  <path d="M300,305 L340,305" class="data-flow" />
+  <path d="M460,305 L500,305" class="data-flow" />
+  
+  <!-- Processing to Storage -->
+  <path d="M400,340 L400,400" class="arrow" />
+  
+  <!-- Storage to Analysis -->
+  <path d="M250,480 L250,540" class="arrow" />
+  <path d="M550,480 L550,540" class="arrow" />
+  
+  <!-- Memory Codex to API -->
+  <path d="M350,560 L450,560" class="data-flow" />
+</svg> 
