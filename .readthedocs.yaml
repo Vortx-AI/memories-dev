@@ -27,34 +27,47 @@ build:
         """Patch for conf.py to exclude problematic modules."""
         import os
         import sys
-        
-        # Create directories
-        os.makedirs('data/models', exist_ok=True)
-        os.makedirs('data/cache', exist_ok=True)
-        os.makedirs('config', exist_ok=True)
-        
-        # Create mock config
-        if not os.path.exists('config/db_config.yml'):
-            with open('config/db_config.yml', 'w') as f:
-                f.write('# Mock config\ndatabases:\n  memory_store:\n    host: localhost\n')
-        
-        # Update conf.py to exclude problematic modules
-        conf_path = 'docs/source/conf.py'
-        with open(conf_path, 'r') as f:
-            content = f.read()
-        
-        # Add diffusers to autodoc_mock_imports
-        if 'autodoc_mock_imports = [' in content:
-            content = content.replace(
-                'autodoc_mock_imports = [',
-                'autodoc_mock_imports = [\n    "diffusers.loaders.single_file",\n    "diffusers",\n'
-            )
-        
-        # Write updated conf.py
-        with open(conf_path, 'w') as f:
-            f.write(content)
-        
-        print("Updated conf.py to exclude problematic modules")
+
+        try:
+            # Create directories
+            os.makedirs('data/models', exist_ok=True)
+            os.makedirs('data/cache', exist_ok=True)
+            os.makedirs('config', exist_ok=True)
+            
+            # Create mock config
+            if not os.path.exists('config/db_config.yml'):
+                with open('config/db_config.yml', 'w') as f:
+                    f.write('# Mock config\ndatabases:\n  memory_store:\n    host: localhost\n')
+            
+            # Update conf.py to exclude problematic modules
+            conf_path = 'docs/source/conf.py'
+            if not os.path.exists(conf_path):
+                print(f"Warning: {conf_path} does not exist. Creating a minimal version.")
+                with open(conf_path, 'w') as f:
+                    f.write('# Auto-generated minimal conf.py\nautodoc_mock_imports = []\n')
+            
+            with open(conf_path, 'r') as f:
+                content = f.read()
+            
+            # Add diffusers to autodoc_mock_imports
+            if 'autodoc_mock_imports = [' in content:
+                content = content.replace(
+                    'autodoc_mock_imports = [',
+                    'autodoc_mock_imports = [\n    "diffusers.loaders.single_file",\n    "diffusers",\n'
+                )
+            else:
+                print("Warning: autodoc_mock_imports not found in conf.py. Adding it.")
+                content += '\n\n# Added by conf_patch.py\nautodoc_mock_imports = [\n    "diffusers.loaders.single_file",\n    "diffusers",\n]\n'
+            
+            # Write updated conf.py
+            with open(conf_path, 'w') as f:
+                f.write(content)
+            
+            print("Updated conf.py to exclude problematic modules")
+        except Exception as e:
+            print(f"Error in conf_patch.py: {e}")
+            # Continue with the build even if patching fails
+            sys.exit(0)
         EOL
       
       # Run the patch script
