@@ -361,7 +361,7 @@ class MemoryStore:
                                 size=table_size,
                                 data_type=data_type,
                                 tags=tag_string,
-                                additional_meta=meta_string,
+                                metadata=json.loads(meta_string) if meta_string else None,
                                 table_name=table_name
                             )
                             self.logger.info(f"Registered table {table_name} in catalog")
