@@ -417,7 +417,7 @@ The Stratified Nature of Earth Memory
 
 Just as Earth itself preserves evidence of its history in stratified layers, The Memory Codex organizes planetary observations into temporal tiers. This graduated system enables AI to understand Earth across multiple timescales—from real-time environmental changes to geological epochs.
 
-.. image:: /_static/images/memory_tiers.png
+.. image:: ../_static/images/architecture/memory_tiers.png
    :alt: Earth Memory Tiers
    :align: center
    :width: 90%
