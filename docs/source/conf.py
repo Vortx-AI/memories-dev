@@ -262,6 +262,11 @@ html_context = {
     'conf_py_path': '/docs/source/',
     'READTHEDOCS': True,
     'using_theme': 'sphinx_rtd_theme',
+    'html_theme': 'sphinx_rtd_theme',
+    'current_version': '2.0.5',
+    'version': '2.0.5',
+    'build_id': '2025-03-11',
+    'build_url': 'https://readthedocs.org/projects/memories-dev/builds/',
 }
 
 # Custom sidebar templates

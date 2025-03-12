@@ -19,12 +19,15 @@ build:
       # Install docutils 0.18.1 which is compatible with sphinx and theme
       - pip install docutils==0.18.1
       # Install Sphinx and theme directly
-      - pip install sphinx==7.1.2 sphinx-rtd-theme==1.3.0
+      - pip install sphinx==7.1.2 sphinx-rtd-theme==1.3.0 sphinxcontrib-jquery>=4.1
       # Now install the rest of the requirements
       - pip install -r docs/requirements.txt
+      # Install the package itself
       - pip install -e .
       # Generate API documentation
       - sphinx-apidoc -o docs/source/api_reference memories/
+      # Clear any cached files to ensure fresh build
+      - rm -rf docs/source/_build
 
 # Sphinx configuration
 sphinx:
