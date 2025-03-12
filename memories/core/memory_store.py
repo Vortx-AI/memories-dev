@@ -7,6 +7,7 @@ from datetime import datetime
 import sys
 import os
 import asyncio
+import json
 
 from memories.core.memory_manager import MemoryManager
 from memories.core.memory_catalog import memory_catalog
@@ -319,8 +320,8 @@ class MemoryStore:
             data_type = "duckdb"
             
             # Import from the DuckDB file
-            result = await self._warm_memory.import_from_duckdb(
-                source_db_file=source_db_file,
+            result = self._warm_memory.import_from_duckdb(
+                source_path=source_db_file,
                 tables=tables,
                 metadata=metadata,
                 tags=tags,
@@ -331,15 +332,38 @@ class MemoryStore:
                 # Register each imported table in catalog
                 for table_name, data_id in result["data_ids"].items():
                     try:
+                        # Calculate approximate size per table
+                        table_size = size
+                        if len(result["imported_tables"]) > 0:
+                            table_size = size // len(result["imported_tables"])
+                            
+                        # Convert tags list to comma-separated string if needed
+                        tag_string = None
+                        if tags:
+                            if isinstance(tags, list):
+                                tag_string = ",".join(tags)
+                            else:
+                                tag_string = str(tags)
+                                
+                        # Convert metadata to JSON string if needed
+                        meta_string = None
+                        if metadata:
+                            if isinstance(metadata, dict):
+                                meta_string = json.dumps(metadata)
+                            else:
+                                meta_string = str(metadata)
+                        
                         await memory_catalog.register_data(
                             tier="warm",
+                            data_id=data_id,  # Use the data_id from the import result
                             location=table_name,
-                            size=size // len(result["imported_tables"]),  # Approximate size per table
+                            size=table_size,
                             data_type=data_type,
-                            tags=tags,
-                            metadata=metadata,
+                            tags=tag_string,
+                            additional_meta=meta_string,
                             table_name=table_name
                         )
+                        self.logger.info(f"Registered table {table_name} in catalog with data_id {data_id}")
                     except Exception as e:
                         self.logger.error(f"Failed to register table {table_name} in catalog: {e}")
                 

@@ -561,12 +561,28 @@ class WarmMemory:
                 "table_name": None
             }
     
-    def import_from_duckdb(self, source_path: Union[str, Path], db_name: Optional[str] = None) -> None:
+    def import_from_duckdb(
+        self, 
+        source_path: Union[str, Path], 
+        db_name: Optional[str] = None,
+        tables: Optional[List[str]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        tags: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
         """Import tables from another DuckDB database.
         
         Args:
             source_path: Path to source DuckDB database file
             db_name: Optional name for target database. If None, uses default connection.
+            tables: Optional list of table names to import. If None, imports all tables.
+            metadata: Optional metadata about the data
+            tags: Optional tags for categorizing the data
+            
+        Returns:
+            Dict containing success status and table information:
+                - success: True if import was successful, False otherwise
+                - data_ids: Dictionary mapping table names to their data IDs
+                - imported_tables: List of imported table names
         """
         con = self.get_connection(db_name)
         source_path = str(source_path)
@@ -576,16 +592,31 @@ class WarmMemory:
             con.execute(f"ATTACH '{source_path}' as source")
             
             # Get list of tables excluding system tables
-            tables = con.execute("""
-                SELECT name as table_name
-                FROM source.sqlite_master 
-                WHERE type='table' 
-                AND name NOT IN ('warm_data', 'warm_tags')
-                AND name NOT LIKE 'sqlite_%'
-                AND name NOT LIKE 'pg_%'
-            """).fetchall()
+            if tables:
+                # Filter to only the specified tables
+                tables_query = f"""
+                    SELECT name as table_name
+                    FROM source.sqlite_master 
+                    WHERE type='table' 
+                    AND name IN ({','.join(['?' for _ in tables])})
+                """
+                tables_result = con.execute(tables_query, tables).fetchall()
+            else:
+                # Get all non-system tables
+                tables_result = con.execute("""
+                    SELECT name as table_name
+                    FROM source.sqlite_master 
+                    WHERE type='table' 
+                    AND name NOT IN ('warm_data', 'warm_tags')
+                    AND name NOT LIKE 'sqlite_%'
+                    AND name NOT LIKE 'pg_%'
+                """).fetchall()
             
-            for (table,) in tables:
+            # Track imported tables and their IDs
+            imported_tables = []
+            data_ids = {}
+            
+            for (table,) in tables_result:
                 # Handle prefixed table names (e.g. dubai_memories.warm_data)
                 target_table = table.split('.')[-1] if '.' in table else table
                 source_table = f"source.{table}"
@@ -597,12 +628,16 @@ class WarmMemory:
                 """)
                 
                 # Store metadata about imported table
-                metadata = {
+                table_metadata = {
                     'source_path': source_path,
                     'source_table': table,
                     'imported_at': datetime.now().isoformat(),
                     'row_count': con.execute(f'SELECT COUNT(*) FROM "{target_table}"').fetchone()[0]
                 }
+                
+                # Add user-provided metadata if available
+                if metadata:
+                    table_metadata.update(metadata)
                 
                 # Generate unique ID for the table
                 table_id = str(uuid.uuid4())
@@ -614,18 +649,41 @@ class WarmMemory:
                 """, [
                     table_id,
                     None,  # No data payload for imported tables
-                    json.dumps(metadata),
-                    json.dumps([]),  # Empty tags initially
+                    json.dumps(table_metadata),
+                    json.dumps(tags or []),  # Use provided tags or empty list
                     datetime.now()
                 ])
+                
+                # Store tags for indexing
+                if tags:
+                    for tag in tags:
+                        con.execute("""
+                            INSERT INTO warm_tags (tag, data_id)
+                            VALUES (?, ?)
+                        """, [tag, table_id])
+                
+                # Track imported table
+                imported_tables.append(target_table)
+                data_ids[target_table] = table_id
                 
                 self.logger.info(f"Imported table {table} as {target_table}")
                 
             con.execute("DETACH source")
             
+            # Return success with table information
+            return {
+                "success": True,
+                "data_ids": data_ids,
+                "imported_tables": imported_tables
+            }
+            
         except Exception as e:
             self.logger.error(f"Error importing from DuckDB {source_path}: {e}")
-            raise
+            return {
+                "success": False,
+                "data_ids": {},
+                "imported_tables": []
+            }
             
         finally:
             # Always try to detach source database
