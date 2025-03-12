@@ -32,8 +32,12 @@ class MemoryCatalog:
             from memories.core.memory_manager import MemoryManager
             self.memory_manager = MemoryManager()
             
-            # Initialize database
-            self.con = duckdb.connect(":memory:")
+            # Get database path from memory manager
+            db_path = self.memory_manager.config.get_path('catalog_db_path', 'memory_catalog.duckdb')
+            
+            # Initialize database with persistent storage
+            self.logger.info(f"Connecting to memory catalog database at: {db_path}")
+            self.con = duckdb.connect(str(db_path))
             self._initialize_schema()
             self.initialized = True
 
