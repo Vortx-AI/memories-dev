@@ -40,8 +40,12 @@ MOCK_MODULES = [
     'pyproj',
     'shapely',
     'shapely.geometry',
+    'torch',
+    'transformers',
+    'sentence_transformers',
 ]
 
+# Mock all modules
 for mod_name in MOCK_MODULES:
     if mod_name in ('diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion', 'diffusers.loaders.single_file'):
         sys.modules[mod_name] = MockClass()
@@ -49,6 +53,9 @@ for mod_name in MOCK_MODULES:
         sys.modules[mod_name] = MagicMock()
 
 # Set special attributes on mock modules
-sys.modules['diffusers'].__version__ = '0.25.0'
-if 'Bounds' not in dir(sys.modules['memories.utils.types']):
+if 'diffusers' in sys.modules:
+    sys.modules['diffusers'].__version__ = '0.25.0'
+
+# Ensure Bounds type exists
+if 'memories.utils.types' in sys.modules and 'Bounds' not in dir(sys.modules['memories.utils.types']):
     sys.modules['memories.utils.types'].Bounds = type('Bounds', (), {}) 

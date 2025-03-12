@@ -32,7 +32,6 @@ build:
         ===============
         Getting Started
         ===============
-
         This is a placeholder for the Getting Started guide.
         
         Installation
@@ -64,10 +63,11 @@ build:
         sys.modules['diffusers.loaders.single_file'] = MockClass()
         EOL
       # Install the package itself in development mode with docs extras
-      - python -c "exec('try: import mock_diffusers\\nexcept: pass')"
+      - python -c "import sys; sys.path.insert(0, '.')"
+      - python -c "from unittest.mock import MagicMock; import sys; sys.modules['diffusers'] = MagicMock()"
       - pip install -e ".[docs]" || pip install -e .
       # Generate API documentation with error handling
-      - python -c "import sys; sys.path.insert(0, '.'); exec('try: import mock_diffusers\\nexcept: pass')"
+      - python -c "import sys; sys.path.insert(0, '.')"
       - sphinx-apidoc -o docs/source/api_reference memories/ || echo "API doc generation failed"
       # Clear any cached files to ensure fresh build
       - rm -rf docs/source/_build

@@ -9,6 +9,7 @@ import sys
 import site
 import importlib.util
 from pathlib import Path
+from unittest.mock import MagicMock
 
 
 def create_module_file(path, content):
@@ -17,90 +18,6 @@ def create_module_file(path, content):
     with open(path, 'w') as f:
         f.write(content)
     print(f"Created mock module: {path}")
-
-
-def setup_diffusers_mock():
-    """Set up mock diffusers package."""
-    # Determine the site-packages directory
-    site_packages = site.getsitepackages()[0]
-    diffusers_dir = os.path.join(site_packages, 'diffusers')
-    
-    # Check if the real package exists
-    if importlib.util.find_spec('diffusers') is not None:
-        print("Real diffusers package exists, not creating mock.")
-        return
-    
-    # Create the diffusers package directory structure
-    os.makedirs(os.path.join(diffusers_dir, 'pipelines', 'stable_diffusion'), exist_ok=True)
-    os.makedirs(os.path.join(diffusers_dir, 'loaders'), exist_ok=True)
-    
-    # Create __init__.py files
-    create_module_file(os.path.join(diffusers_dir, '__init__.py'), '''"""
-Mock diffusers package for documentation build.
-"""
-__version__ = "0.25.0"  # Mock version
-
-from unittest.mock import MagicMock
-import sys
-
-class MockPipeline(MagicMock):
-    """Mock pipeline class with proper type parameters."""
-    __type_params__ = tuple()
-    
-    @classmethod
-    def from_pretrained(cls, *args, **kwargs):
-        """Mock from_pretrained method."""
-        return cls()
-    
-    def __call__(self, *args, **kwargs):
-        """Mock pipeline call."""
-        return {"images": [MagicMock()], "nsfw_content_detected": [False]}
-
-# Set up mock modules
-sys.modules['diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion'] = MockPipeline()
-sys.modules['diffusers.loaders.single_file'] = MockPipeline()
-
-# Export mock components
-pipeline = MockPipeline
-StableDiffusionPipeline = MockPipeline
-''')
-
-    create_module_file(os.path.join(diffusers_dir, 'pipelines', '__init__.py'), '"""Mock pipelines package."""')
-    
-    create_module_file(os.path.join(diffusers_dir, 'pipelines', 'stable_diffusion', '__init__.py'), '''"""
-Mock stable_diffusion package.
-"""
-from unittest.mock import MagicMock
-
-class StableDiffusionPipeline(MagicMock):
-    """Mock StableDiffusionPipeline class."""
-    __type_params__ = tuple()
-''')
-    
-    create_module_file(os.path.join(diffusers_dir, 'loaders', '__init__.py'), '''"""
-Mock loaders package.
-"""
-from unittest.mock import MagicMock
-
-class SingleFileLoader(MagicMock):
-    """Mock SingleFileLoader class."""
-    __type_params__ = tuple()
-''')
-
-    create_module_file(os.path.join(diffusers_dir, 'loaders', 'single_file.py'), '''"""
-Mock single_file module.
-"""
-from unittest.mock import MagicMock
-
-# Fix for the __type_params__ error
-class SingleFileLoader(MagicMock):
-    """Mock SingleFileLoader class."""
-    __type_params__ = tuple()
-
-# Export mock components
-load_file = MagicMock()
-save_file = MagicMock()
-''')
 
 
 def ensure_directories():
@@ -150,6 +67,53 @@ def ensure_doc_directories():
         print(f"Ensured doc directory exists: {d}")
 
 
+def setup_mock_modules():
+    """Set up mock modules for problematic imports."""
+    # Define mock class with type_params
+    class MockClass(MagicMock):
+        __type_params__ = tuple()
+        
+        @classmethod
+        def from_pretrained(cls, *args, **kwargs):
+            return cls()
+    
+    # Create list of modules to mock
+    MOCK_MODULES = [
+        'diffusers',
+        'diffusers.pipelines',
+        'diffusers.pipelines.stable_diffusion',
+        'diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion',
+        'diffusers.loaders',
+        'diffusers.loaders.single_file',
+        'memories.utils.earth',
+        'memories.utils.earth.advanced_analysis',
+        'memories.utils.types',
+        'mercantile',
+        'pyproj',
+        'shapely',
+        'shapely.geometry',
+        'torch',
+        'transformers',
+        'sentence_transformers'
+    ]
+    
+    # Mock all modules
+    for mod_name in MOCK_MODULES:
+        if mod_name in ('diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion', 'diffusers.loaders.single_file'):
+            sys.modules[mod_name] = MockClass()
+        else:
+            sys.modules[mod_name] = MagicMock()
+    
+    # Set special attributes on mock modules
+    if 'diffusers' in sys.modules:
+        sys.modules['diffusers'].__version__ = '0.25.0'
+    
+    if 'memories.utils.types' in sys.modules and 'Bounds' not in dir(sys.modules['memories.utils.types']):
+        sys.modules['memories.utils.types'].Bounds = type('Bounds', (), {})
+    
+    print("Set up mock modules for documentation build")
+
+
 def main():
     """Main entry point."""
     print("Setting up mock packages for ReadTheDocs build...")
@@ -161,8 +125,8 @@ def main():
     # Create mock configuration
     create_mock_config()
     
-    # Set up mock packages
-    setup_diffusers_mock()
+    # Set up mock modules
+    setup_mock_modules()
     
     print("Mock packages setup complete!")
 
