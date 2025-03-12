@@ -23,7 +23,6 @@ build:
       # Now install the rest of the requirements
       - pip install -r docs/requirements.txt
       # Run the mock setup script with full permissions
-      - python -m pip install unittest.mock
       - python setup_mocks.py
       # Create any missing directories that might be referenced
       - mkdir -p docs/source/getting_started
