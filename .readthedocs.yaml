@@ -179,7 +179,7 @@ build:
             main()
         EOL
       
-      # Create a patch for conf.py to exclude problematic modules and use our mock diffusers
+      # Create a simplified patch script that doesn't use variable assignments
       - |
         cat > docs/source/conf_patch.py << 'EOL'
         #!/usr/bin/env python
@@ -234,13 +234,14 @@ build:
                     # Add at the beginning
                     content = "# Import mock diffusers\ntry:\n    import sys\n    sys.path.insert(0, os.path.abspath('../..'))\n    import mock_diffusers\n    mock_diffusers.setup_mock_diffusers()\n    print('Successfully loaded mock diffusers')\nexcept Exception as e:\n    print(f'Error loading mock diffusers: {e}')\n\n" + content
             
-            # Add code to completely disable autodoc for any diffusers modules
+            # Add a modified setup function without variable assignments
             if 'def setup(app):' in content:
-                if not 'block_diffusers_modules' in content.lower():
+                if not 'Block any diffusers modules from being documented' in content:
                     setup_pattern = r'def setup\(app\):'
                     setup_replacement = '''def setup(app):
     # Block any diffusers modules from being documented
-    block_diffusers_modules = True
+    # We use a function attribute instead of a variable
+    app._mock_diffusers_enabled = True
     
     # Original setup code'''
                     content = re.sub(setup_pattern, setup_replacement, content)
@@ -249,7 +250,8 @@ build:
 # Added by conf_patch.py
 def setup(app):
     # Block any diffusers modules from being documented
-    block_diffusers_modules = True
+    # We use a function attribute instead of a variable
+    app._mock_diffusers_enabled = True
 '''
             
             # Write updated conf.py
