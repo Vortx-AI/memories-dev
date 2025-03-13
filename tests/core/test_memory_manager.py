@@ -84,8 +84,8 @@ data:
 def memory_manager(temp_config_dir):
     """Create a MemoryManager instance with mocked dependencies."""
     # Create a mock MemoryManager
-    with patch('memories.core.memory_manager.duckdb.connect') as mock_connect, \
-         patch('memories.core.memory_manager.faiss.IndexFlatL2') as mock_index:
+    with patch('duckdb.connect') as mock_connect, \
+         patch('faiss.IndexFlatL2') as mock_index:
         
         # Configure the mocks
         mock_con = MagicMock()
