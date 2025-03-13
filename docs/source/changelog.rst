@@ -48,6 +48,17 @@ Fixed
 
 For a complete list of changes, please visit our `GitHub releases page <https://github.com/Vortx-AI/memories-dev/releases>`_.
 
+Version 2.0.6 (November 30, 2023)
+---------------------------------
+
+Added
+~~~~~
+- Added default configuration file for GlacierMemory
+
+Fixed
+~~~~~
+- Updated GlacierMemory to accept config_path parameter for better compatibility with tests
+
 Version 2.0.5 (March 7, 2025)
 ----------------------------
 

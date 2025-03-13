@@ -1,0 +1,97 @@
+database:
+  path: ./data/db
+  name: memories.db
+
+redis:
+  url: redis://localhost:6379
+  db: 0
+
+memory:
+  base_path: ./data/memory
+  enabled_tiers: ['red_hot', 'hot', 'warm', 'cold', 'glacier']
+  
+  red_hot_size: 1000000  # 1M vectors for GPU FAISS
+  hot_size: 50
+  warm_size: 200
+  cold_size: 1000
+  vector_dim: 384  # Default vector dimension
+  gpu_id: 0  # Default GPU device
+  faiss_index_type: 'IVFFlat'  # Default FAISS index type
+  
+  red_hot:
+    path: red_hot
+    max_size: 1000000  # 1M vectors
+    vector_dim: 384    # Default for all-MiniLM-L6-v2
+    gpu_id: 0
+    force_cpu: true    # Default to CPU for stability
+    index_type: Flat   # Simple Flat index
+    age_hours: 1
+    access_threshold: 100
+    promotion_threshold: 1000
+  
+  hot:
+    path: hot
+    max_size: 104857600  # 100MB
+    redis_url: redis://localhost:6379
+    redis_db: 0
+    age_days: 1
+    access_threshold: 50
+    promotion_threshold: 1000
+    duckdb:
+      memory_limit: 2GB
+      threads: 2
+  
+  warm:
+    path: warm
+    max_size: 1073741824  # 1GB
+    age_days: 7
+    access_threshold: 10
+    promotion_threshold: 500
+    duckdb:
+      memory_limit: 8GB
+      threads: 4
+      config:
+        enable_progress_bar: true
+        enable_object_cache: true
+  
+  cold:
+    path: cold
+    max_size: 10737418240  # 10GB
+    age_days: 30
+    access_threshold: 0
+    promotion_threshold: 100
+    duckdb:
+      db_file: cold.duckdb
+      memory_limit: 4GB
+      threads: 4
+      config:
+        enable_progress_bar: true
+        enable_external_access: true
+        enable_object_cache: true
+      parquet:
+        compression: zstd
+        row_group_size: 100000
+        enable_statistics: true
+  
+  glacier:
+    path: glacier
+    max_size: 107374182400  # 100GB
+    remote_storage:
+      type: s3  # or 'gcs', 'azure'
+      bucket: memories-glacier
+      prefix: data/
+      region: us-west-2
+      credentials:
+        profile: default
+      compression: zstd
+      archive_format: parquet
+
+data:
+  storage: ./data/storage
+  models: ./data/models
+  cache: ./data/cache
+  raw_path: ./data/raw
+  processed_path: ./data/processed
+  overture_path: ./data/overture
+  satellite_path: ./data/satellite
+  location_data_path: ./data/location_data 

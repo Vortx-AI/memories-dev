@@ -18,7 +18,7 @@ class GlacierMemory:
     architecture.
     """
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None, config_path: Optional[str] = None):
         """Initialize glacier memory.
         
         Args:
@@ -27,16 +27,71 @@ class GlacierMemory:
                 - max_size: Maximum size in bytes (0 for unlimited)
                 - connectors: Dictionary mapping connector names to their configurations
                 - default_connector: Name of the default connector to use
+            config_path: Optional path to a configuration file
         """
+        # Load configuration from file if provided
+        if config_path:
+            try:
+                import yaml
+                from pathlib import Path
+                
+                config_file = Path(config_path)
+                if config_file.exists():
+                    with open(config_file, 'r') as f:
+                        file_config = yaml.safe_load(f)
+                    
+                    # Extract glacier-specific configuration
+                    if 'memory' in file_config and 'glacier' in file_config['memory']:
+                        glacier_config = file_config['memory']['glacier']
+                        
+                        # Merge with provided config
+                        if config:
+                            for key, value in glacier_config.items():
+                                if key not in config:
+                                    config[key] = value
+                        else:
+                            config = glacier_config
+                else:
+                    self.logger = logging.getLogger(__name__)
+                    self.logger.warning(f"Config file not found at: {config_path}, using default configuration")
+                    
+                    # Try to load default configuration
+                    default_config_path = Path(__file__).parent / 'glacier' / 'default_config.yml'
+                    if default_config_path.exists():
+                        with open(default_config_path, 'r') as f:
+                            config = yaml.safe_load(f)
+                        self.logger.info(f"Loaded default configuration from {default_config_path}")
+            except Exception as e:
+                self.logger = logging.getLogger(__name__)
+                self.logger.error(f"Error loading config from {config_path}: {e}")
+                self.logger.info("Using default configuration")
+                
+                # Try to load default configuration
+                try:
+                    import yaml
+                    from pathlib import Path
+                    
+                    default_config_path = Path(__file__).parent / 'glacier' / 'default_config.yml'
+                    if default_config_path.exists():
+                        with open(default_config_path, 'r') as f:
+                            config = yaml.safe_load(f)
+                        self.logger.info(f"Loaded default configuration from {default_config_path}")
+                except Exception as e2:
+                    self.logger.error(f"Error loading default configuration: {e2}")
+        
+        # Use provided or default configuration
         config = config or {}
-        self.storage_path = config.get('storage_path', '/tmp/glacier')
+        
+        # Set up logging if not already done
+        if not hasattr(self, 'logger'):
+            self.logger = logging.getLogger(__name__)
+        
+        # Get storage path from config or use default
+        self.storage_path = config.get('storage_path', os.path.join(os.getcwd(), 'data', 'glacier'))
         self.max_size = config.get('max_size', 0)  # 0 means unlimited
         
         # Create storage directory if it doesn't exist
         os.makedirs(self.storage_path, exist_ok=True)
-        
-        # Set up logging
-        self.logger = logging.getLogger(__name__)
         
         # Initialize connectors
         self.connectors: Dict[str, GlacierConnector] = {}

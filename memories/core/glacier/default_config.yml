@@ -1,0 +1,39 @@
+# Default configuration for glacier memory
+storage_path: ./data/glacier
+max_size: 107374182400  # 100GB
+remote_storage:
+  type: s3  # or 'gcs', 'azure'
+  bucket: memories-glacier
+  prefix: data/
+  region: us-west-2
+  credentials:
+    profile: default
+  compression: zstd
+  archive_format: parquet
+connectors:
+  s3:
+    type: s3
+    bucket: memories-glacier
+    prefix: data/
+    region: us-west-2
+  gcs:
+    type: gcs
+    bucket: memories-glacier
+    prefix: data/
+  azure:
+    type: azure
+    container: memories-glacier
+    prefix: data/
+  osm:
+    type: osm
+    cache_dir: ./data/glacier/osm
+  overture:
+    type: overture
+    cache_dir: ./data/glacier/overture
+  sentinel:
+    type: sentinel
+    cache_dir: ./data/glacier/sentinel
+  landsat:
+    type: landsat
+    cache_dir: ./data/glacier/landsat
+default_connector: s3 

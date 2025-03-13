@@ -28,63 +28,117 @@ class Config:
             print(f"Added {self.project_root} to Python path")
             
         # Load configuration
-        self.config_path = config_path or os.path.join(self.project_root, 'config/db_config.yml')
+        self.config_path = config_path
         self.config = self._load_config()
         self._setup_directories()
         
     def _load_config(self) -> dict:
-        """Load configuration from YAML file."""
-        try:
-            with open(self.config_path, 'r') as f:
-                config = yaml.safe_load(f)
-                
-            # Convert relative paths to absolute
-            for section in ['database', 'data']:
-                if section in config:
-                    for key, value in config[section].items():
-                        if isinstance(value, str) and value.startswith('./'):
-                            config[section][key] = os.path.abspath(
-                                os.path.join(self.project_root, value.lstrip('./'))
-                            )
-                            
-            return config
-        except Exception as e:
-            print(f"Error loading config from {self.config_path}: {e}")
-            return {
-                'database': {
-                    'path': os.path.join(self.project_root, 'examples/data/db'),
-                    'name': 'location_ambience.db'
+        """Load configuration from file or use defaults."""
+        # Start with hardcoded defaults
+        config = self._get_hardcoded_defaults()
+        
+        # If config_path is provided, try to load from there
+        if self.config_path:
+            try:
+                with open(self.config_path, 'r') as f:
+                    user_config = yaml.safe_load(f)
+                    # Deep merge user_config into config
+                    self._deep_update(config, user_config)
+                print(f"Loaded user configuration from {self.config_path}")
+            except Exception as e:
+                print(f"Error loading user configuration from {self.config_path}: {e}")
+                print("Using default configuration")
+        else:
+            # Try to load from standard locations
+            standard_paths = [
+                os.path.join(self.project_root, 'config', 'db_config.yml'),
+                os.path.join(os.getcwd(), 'config', 'db_config.yml')
+            ]
+            
+            config_loaded = False
+            for path in standard_paths:
+                if os.path.exists(path):
+                    try:
+                        with open(path, 'r') as f:
+                            user_config = yaml.safe_load(f)
+                            # Deep merge user_config into config
+                            self._deep_update(config, user_config)
+                        print(f"Loaded user configuration from {path}")
+                        config_loaded = True
+                        break
+                    except Exception as e:
+                        print(f"Error loading user configuration from {path}: {e}")
+            
+            # If no config file was found, create a default one
+            if not config_loaded:
+                print("No configuration file found. Using default configuration.")
+                # Try to create a default config file
+                try:
+                    default_config_path = os.path.join(self.project_root, 'config', 'db_config.yml')
+                    os.makedirs(os.path.dirname(default_config_path), exist_ok=True)
+                    with open(default_config_path, 'w') as f:
+                        yaml.dump(config, f)
+                    print(f"Created default configuration file at {default_config_path}")
+                except Exception as e:
+                    print(f"Warning: Could not create default configuration file: {e}")
+        
+        # Convert relative paths to absolute
+        for section in ['database', 'data']:
+            if section in config:
+                for key, value in config[section].items():
+                    if isinstance(value, str) and value.startswith('./'):
+                        config[section][key] = os.path.abspath(
+                            os.path.join(self.project_root, value.lstrip('./'))
+                        )
+                        
+        return config
+    
+    def _deep_update(self, base_dict, update_dict):
+        """Recursively update a dictionary with another dictionary."""
+        for key, value in update_dict.items():
+            if isinstance(value, dict) and key in base_dict and isinstance(base_dict[key], dict):
+                self._deep_update(base_dict[key], value)
+            else:
+                base_dict[key] = value
+    
+    def _get_hardcoded_defaults(self) -> dict:
+        """Get hardcoded default configuration as a last resort."""
+        return {
+            'database': {
+                'path': os.path.join(self.project_root, 'data', 'db'),
+                'name': 'memories.db'
+            },
+            'data': {
+                'storage': os.path.join(self.project_root, 'data', 'storage'),
+                'models': os.path.join(self.project_root, 'data', 'models'),
+                'cache': os.path.join(self.project_root, 'data', 'cache'),
+                'raw_path': os.path.join(self.project_root, 'data', 'raw'),
+                'processed_path': os.path.join(self.project_root, 'data', 'processed')
+            },
+            'memory': {
+                'base_path': os.path.join(self.project_root, 'data', 'memory'),
+                'red_hot_size': 1000000,  # 1M vectors for GPU FAISS
+                'hot_size': 50,
+                'warm_size': 200,
+                'cold_size': 1000,
+                'vector_dim': 384,  # Default vector dimension
+                'gpu_id': 0,  # Default GPU device
+                'faiss_index_type': 'IVFFlat',  # Default FAISS index type
+                'hot': {
+                    'duckdb': {
+                        'memory_limit': '2GB',
+                        'threads': 2
+                    }
                 },
-                'data': {
-                    'raw_path': os.path.join(self.project_root, 'examples/data/raw'),
-                    'processed_path': os.path.join(self.project_root, 'examples/data/processed'),
-                    'overture_path': os.path.join(self.project_root, 'examples/data/overture'),
-                    'satellite_path': os.path.join(self.project_root, 'examples/data/satellite'),
-                    'location_data_path': os.path.join(self.project_root, 'examples/data/location_data')
-                },
-                'memory': {
-                    'red_hot_size': 1000000,  # 1M vectors for GPU FAISS
-                    'hot_size': 50,
-                    'warm_size': 200,
-                    'cold_size': 1000,
-                    'vector_dim': 384,  # Default vector dimension
-                    'gpu_id': 0,  # Default GPU device
-                    'faiss_index_type': 'IVFFlat',  # Default FAISS index type
-                    'hot': {
-                        'duckdb': {
-                            'memory_limit': '2GB',
-                            'threads': 2
-                        }
-                    },
-                    'warm': {
-                        'duckdb': {
-                            'memory_limit': '8GB',
-                            'threads': 4
-                        }
+                'warm': {
+                    'duckdb': {
+                        'memory_limit': '8GB',
+                        'threads': 4
                     }
                 }
             }
-            
+        }
+        
     def _setup_directories(self):
         """Create necessary directories if they don't exist."""
         for section in ['database', 'data']:

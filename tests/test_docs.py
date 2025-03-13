@@ -106,7 +106,7 @@ def test_example_code_validity():
 
 def test_version_consistency():
     """Test that version numbers are consistent across documentation."""
-    expected_version = "2.0.5"  # Set the expected version
+    expected_version = "2.0.6"  # Set the expected version
     
     # Check version in conf.py
     docs_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'docs'))
@@ -174,7 +174,7 @@ def test_changelog_entries():
     # Create CHANGELOG.md if it doesn't exist
     if not os.path.exists(changelog_file):
         with open(changelog_file, 'w') as f:
-            f.write("""## [2.0.5] - 2024-02-29
+            f.write("""## [2.0.6] - 2023-11-30
 Initial release
 """)
     
