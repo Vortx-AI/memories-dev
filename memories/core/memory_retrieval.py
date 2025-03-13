@@ -49,14 +49,16 @@ logger = logging.getLogger(__name__)
 class MemoryRetrieval:
     """Memory retrieval class for querying from different memory tiers."""
     
-    def __init__(self):
-        """Initialize memory retrieval system."""
-        self.logger = logging.getLogger(__name__)
-        self.memory_manager = MemoryManager()
+    def __init__(self, config_path: str = None):
+        """Initialize memory retrieval.
         
-        # Lazy imports to avoid circular dependencies
-        from memories.core.cold import Config
-        self.config = Config()
+        Args:
+            config_path: Optional path to configuration file
+        """
+        self.logger = logging.getLogger(__name__)
+        
+        # Initialize memory manager with config path
+        self._memory_manager = MemoryManager()
         
         # Initialize memory tiers as None - will be created on demand
         self._hot_memory = None
@@ -68,6 +70,11 @@ class MemoryRetrieval:
         # Initialize connectors as None - will be created on demand
         self._overture_connector = None
         self._sentinel_connector = None
+        
+        # Store config path for later use
+        self.config_path = config_path
+        
+        self.logger.info("Initialized memory retrieval")
 
     def _init_hot(self) -> None:
         """Initialize hot memory on demand."""

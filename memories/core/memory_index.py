@@ -99,24 +99,69 @@ class MemoryIndex:
             db_name: Name of the database (optional)
             
         Returns:
-            Vector representation of column (shape: [vector_dim])
+            Vector representation of the column
         """
-        try:
-            # Create a clean text representation of just the column name
-            # Optionally add minimal context to disambiguate common column names
-            if db_name and table_name:
-                text = f"column:{column_name} in {table_name} of {db_name}"
-            elif table_name:
-                text = f"column:{column_name} in {table_name}"
-            else:
-                text = f"column:{column_name}"
-                
-            # Convert to vector using sentence transformer
-            vector = self.model.encode([text])  # Returns shape [1, 384]
-            return vector.reshape(-1)  # Reshape to [vector_dim]
+        # Create a text representation of the column
+        if table_name and db_name:
+            text = f"{db_name}.{table_name}.{column_name}"
+        elif table_name:
+            text = f"{table_name}.{column_name}"
+        else:
+            text = column_name
             
+        try:
+            # Convert to vector and ensure it has shape (384,)
+            vector = self.model.encode(text)
+            
+            # If the vector has shape (1, 384), reshape it to (384,)
+            if len(vector.shape) > 1:
+                vector = vector.reshape(-1)
+                
+            return vector
         except Exception as e:
             self.logger.error(f"Failed to vectorize column {column_name}: {e}")
+            # Return zero vector as fallback
+            return np.zeros(self.dimension)
+
+    def _vectorize_schema(self, schema: Dict[str, Any]) -> np.ndarray:
+        """Convert a schema dictionary to vector representation.
+        
+        Args:
+            schema: Schema dictionary with columns, dtypes, and type information
+            
+        Returns:
+            Vector representation of the schema
+        """
+        # Extract schema information
+        columns = schema.get("columns", [])
+        dtypes = schema.get("dtypes", {})
+        schema_type = schema.get("type", "unknown")
+        
+        # Create a text representation of the schema
+        text_parts = []
+        
+        # Add schema type
+        text_parts.append(f"type: {schema_type}")
+        
+        # Add columns with their data types
+        for col in columns:
+            dtype = dtypes.get(col, "unknown")
+            text_parts.append(f"{col} ({dtype})")
+        
+        # Join all parts
+        schema_text = ", ".join(text_parts)
+        
+        try:
+            # Convert to vector and ensure it has shape (384,)
+            vector = self.model.encode(schema_text)
+            
+            # If the vector has shape (1, 384), reshape it to (384,)
+            if len(vector.shape) > 1:
+                vector = vector.reshape(-1)
+                
+            return vector
+        except Exception as e:
+            self.logger.error(f"Failed to vectorize schema: {e}")
             # Return zero vector as fallback
             return np.zeros(self.dimension)
 
