@@ -8,6 +8,8 @@ import sys
 import os
 import asyncio
 import json
+import pickle
+import numpy as np
 
 from memories.core.memory_manager import MemoryManager
 from memories.core.memory_catalog import memory_catalog
@@ -436,5 +438,86 @@ class MemoryStore:
                 
         except Exception as e:
             self.logger.error(f"Error importing CSV to warm memory: {e}")
+            return False
+
+    async def import_pkl_to_red_hot(
+        self,
+        pkl_file: str,
+        tags: Optional[List[str]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        vector_dimension: int = 384
+    ) -> bool:
+        """
+        Import vectors from a pickle file into red hot memory.
+        
+        Args:
+            pkl_file: Path to the pickle file containing vectors
+            tags: Optional tags to assign to the vectors
+            metadata: Optional metadata to associate with vectors
+            vector_dimension: Dimension of the vectors (default: 384)
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Initialize red hot memory
+            self._init_red_hot()
+            
+            if not self._red_hot_memory:
+                self.logger.error("Failed to initialize red hot memory")
+                return False
+            
+            # Load vectors from pickle file
+            with open(pkl_file, 'rb') as f:
+                vectors = pickle.load(f)
+                
+            # Validate vectors
+            if not isinstance(vectors, np.ndarray):
+                self.logger.error(f"Invalid vector format: {type(vectors)}")
+                return False
+                
+            # Check if we have a 2D array (multiple vectors)
+            if len(vectors.shape) == 2:
+                # Process each vector
+                for i, vector in enumerate(vectors):
+                    # Create metadata for each vector
+                    vector_metadata = {
+                        "vector_id": i,
+                        "source_file": pkl_file,
+                        **(metadata or {})
+                    }
+                    
+                    # Store vector in red hot memory
+                    success = await self._red_hot_memory.store(
+                        data=vector,
+                        metadata=vector_metadata,
+                        tags=tags
+                    )
+                    
+                    if not success:
+                        self.logger.warning(f"Failed to store vector {i}")
+            else:
+                # Single vector
+                vector_metadata = {
+                    "vector_id": 0,
+                    "source_file": pkl_file,
+                    **(metadata or {})
+                }
+                
+                # Store single vector
+                success = await self._red_hot_memory.store(
+                    data=vectors,
+                    metadata=vector_metadata,
+                    tags=tags
+                )
+                
+                if not success:
+                    self.logger.warning("Failed to store vector")
+            
+            self.logger.info(f"Successfully imported vectors from {pkl_file}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error importing vectors from {pkl_file}: {e}")
             return False
 
