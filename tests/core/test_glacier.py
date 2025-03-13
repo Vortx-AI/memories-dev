@@ -78,11 +78,10 @@ def mock_connector_factory():
 
 
 @pytest.fixture
-def glacier_memory(temp_storage_path, mock_connector_factory, test_config_path):
+def glacier_memory(temp_storage_path, mock_connector_factory):
     """Create a GlacierMemory instance with mocked dependencies."""
-    # Create a GlacierMemory instance with test config
-    with patch.dict(os.environ, {'PROJECT_ROOT': os.path.dirname(os.path.dirname(test_config_path))}):
-        memory = GlacierMemory(config_path=test_config_path)
+    # Create a GlacierMemory instance with default config
+    memory = GlacierMemory()  # No config_path specified, will use default_config.yml
     
     # Set properties directly
     memory.storage_path = temp_storage_path
