@@ -9,7 +9,8 @@ import pystac_client
 import logging
 import json
 from pathlib import Path
-from memories.core.glacier.artifacts.base import DataSource
+# Update import to correct path
+from memories.core.glacier.artifacts import DataSource
 from memories.core.cold import ColdMemory
 import uuid
 

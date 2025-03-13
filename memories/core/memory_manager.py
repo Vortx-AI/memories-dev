@@ -289,13 +289,27 @@ class MemoryManager:
             Path: Configured path for the data source
         """
         try:
-            base_path = Path(self.config['data']['storage'])
+            # Handle Config object correctly
+            if hasattr(self.config, 'config') and isinstance(self.config.config, dict):
+                # Access through the config dictionary if available
+                if 'data' in self.config.config and 'storage' in self.config.config['data']:
+                    base_path = Path(self.config.config['data']['storage'])
+                else:
+                    # Fallback to default path
+                    base_path = Path(os.path.join(self.project_root, 'data', source_type))
+            else:
+                # Fallback to default path
+                base_path = Path(os.path.join(self.project_root, 'data', source_type))
+                
             source_path = base_path / source_type
             source_path.mkdir(parents=True, exist_ok=True)
             return source_path
         except Exception as e:
             self.logger.error(f"Error getting data source path for {source_type}: {e}")
-            raise
+            # Use a default path as fallback
+            fallback_path = Path(os.path.join(self.project_root, 'data', source_type))
+            fallback_path.mkdir(parents=True, exist_ok=True)
+            return fallback_path
 
     def get_cache_path(self, source_type: str) -> Path:
         """Get cache path for a specific data source.
@@ -307,19 +321,48 @@ class MemoryManager:
             Path: Cache path for the data source
         """
         try:
-            base_path = Path(self.config['data']['cache'])
+            # Handle Config object correctly
+            if hasattr(self.config, 'config') and isinstance(self.config.config, dict):
+                # Access through the config dictionary if available
+                if 'data' in self.config.config and 'cache' in self.config.config['data']:
+                    base_path = Path(self.config.config['data']['cache'])
+                else:
+                    # Fallback to default path
+                    base_path = Path(os.path.join(self.project_root, 'data', 'cache'))
+            else:
+                # Fallback to default path
+                base_path = Path(os.path.join(self.project_root, 'data', 'cache'))
+                
             cache_path = base_path / source_type
             cache_path.mkdir(parents=True, exist_ok=True)
             return cache_path
         except Exception as e:
             self.logger.error(f"Error getting cache path for {source_type}: {e}")
-            raise
+            # Use a default path as fallback
+            fallback_path = Path(os.path.join(self.project_root, 'data', 'cache', source_type))
+            fallback_path.mkdir(parents=True, exist_ok=True)
+            return fallback_path
 
     def get_warm_path(self) -> str:
-        base_path = Path(self.config['memory']['base_path'])
-        if 'warm' in self.config['memory'] and 'path' in self.config['memory']['warm']:
-            return str(base_path / self.config['memory']['warm']['path'])
-        return str(base_path / 'warm')
+        """Get path for warm memory tier.
+        
+        Returns:
+            Path to warm memory storage
+        """
+        try:
+            # Handle Config object correctly
+            if hasattr(self.config, 'config') and isinstance(self.config.config, dict):
+                if 'memory' in self.config.config and 'base_path' in self.config.config['memory']:
+                    base_path = Path(self.config.config['memory']['base_path'])
+                    if 'warm' in self.config.config['memory'] and 'path' in self.config.config['memory']['warm']:
+                        return str(base_path / self.config.config['memory']['warm']['path'])
+                    return str(base_path / 'warm')
+            
+            # Default fallback path
+            return os.path.join(self.project_root, 'data', 'memory', 'warm')
+        except Exception as e:
+            self.logger.error(f"Error getting warm path: {e}")
+            return os.path.join(self.project_root, 'data', 'memory', 'warm')
 
     def get_duckdb_connection(self) -> duckdb.DuckDBPyConnection:
         """Get shared DuckDB connection.

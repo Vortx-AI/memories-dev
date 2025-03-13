@@ -11,7 +11,7 @@ import aiohttp
 from pathlib import Path
 
 from memories.core.glacier.api_connector import APIConnector
-from memories.core.glacier.base import DataSource
+from memories.core.glacier.artifacts import DataSource
 from memories.core.glacier.memory import GlacierMemory
 import asyncio
 

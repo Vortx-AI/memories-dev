@@ -17,7 +17,7 @@ from shapely.geometry import box, Polygon, mapping
 import xarray as xr
 from rasterio.warp import transform_bounds
 from pystac.item import Item
-from memories.core.glacier.artifacts.base import DataSource
+from memories.core.glacier.artifacts import DataSource
 from memories.core.cold import ColdMemory
 
 class DateTimeEncoder(json.JSONEncoder):
