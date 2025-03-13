@@ -40,13 +40,21 @@ class HotMemory:
             DuckDB connection
         """
         try:
-            # Get DuckDB configuration from memory manager if available
-            hot_config = self.memory_manager.config.get('memory', {}).get('hot', {})
-            duckdb_config = hot_config.get('duckdb', {})
+            # Set default values
+            memory_limit = '2GB'
+            threads = 2
             
-            # Set memory limit and threads
-            memory_limit = duckdb_config.get('memory_limit', '2GB')
-            threads = duckdb_config.get('threads', 2)
+            # Try to get config values safely
+            if hasattr(self.memory_manager, 'config'):
+                config = self.memory_manager.config
+                # Check if config has memory and hot attributes
+                if hasattr(config, 'config') and isinstance(config.config, dict):
+                    if 'memory' in config.config and 'hot' in config.config['memory']:
+                        hot_config = config.config['memory']['hot']
+                        if 'duckdb' in hot_config:
+                            duckdb_config = hot_config['duckdb']
+                            memory_limit = duckdb_config.get('memory_limit', memory_limit)
+                            threads = duckdb_config.get('threads', threads)
             
             # Create in-memory connection
             con = duckdb.connect(database=':memory:', read_only=False)
@@ -59,7 +67,11 @@ class HotMemory:
             
         except Exception as e:
             self.logger.error(f"Error initializing DuckDB for hot storage: {e}")
-            raise
+            # Create a basic connection as fallback
+            try:
+                return duckdb.connect(database=':memory:', read_only=False)
+            except:
+                raise
     
     def _init_tables(self, con: duckdb.DuckDBPyConnection) -> None:
         """Initialize database tables.

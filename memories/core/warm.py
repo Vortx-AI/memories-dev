@@ -62,13 +62,21 @@ class WarmMemory:
             DuckDB connection
         """
         try:
-            # Get DuckDB configuration from memory manager
-            warm_config = self.memory_manager.config['memory'].get('warm', {})
-            duckdb_config = warm_config.get('duckdb', {})
+            # Set default values
+            memory_limit = '8GB'
+            threads = 4
             
-            # Set memory limit and threads
-            memory_limit = duckdb_config.get('memory_limit', '8GB')
-            threads = duckdb_config.get('threads', 4)
+            # Try to get config values safely
+            if hasattr(self.memory_manager, 'config'):
+                config = self.memory_manager.config
+                # Check if config has memory and warm attributes
+                if hasattr(config, 'config') and isinstance(config.config, dict):
+                    if 'memory' in config.config and 'warm' in config.config['memory']:
+                        warm_config = config.config['memory']['warm']
+                        if 'duckdb' in warm_config:
+                            duckdb_config = warm_config['duckdb']
+                            memory_limit = duckdb_config.get('memory_limit', memory_limit)
+                            threads = duckdb_config.get('threads', threads)
             
             # Create connection
             if db_file:
@@ -84,7 +92,14 @@ class WarmMemory:
             
         except Exception as e:
             self.logger.error(f"Error initializing DuckDB for warm storage: {e}")
-            raise
+            # Create a basic connection as fallback
+            try:
+                if db_file:
+                    return duckdb.connect(database=db_file, read_only=False)
+                else:
+                    return duckdb.connect(database=':memory:', read_only=False)
+            except:
+                raise
             
     def _init_tables(self, con: duckdb.DuckDBPyConnection) -> None:
         """Initialize database tables.
