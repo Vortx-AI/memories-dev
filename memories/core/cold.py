@@ -55,22 +55,38 @@ import logging
 
 
 class Config:
-    def __init__(self, config_path: str = 'config/db_config.yml'):
+    def __init__(self, config_path: str = None):
         """Initialize configuration by loading the YAML file."""
+        # Try to find configuration in standard locations if not provided
+        if not config_path:
+            standard_paths = [
+                os.path.join(os.getcwd(), 'config', 'default_config.yml'),
+                os.path.join(os.path.dirname(__file__), '..', 'glacier', 'default_config.yml'),
+                os.path.join(os.getcwd(), 'config', 'db_config.yml')
+            ]
+            
+            for path in standard_paths:
+                if os.path.exists(path):
+                    config_path = path
+                    break
+        
+        # Load configuration
+        try:
+            if config_path and os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    self.config = yaml.safe_load(f)
+            else:
+                # Use default configuration
+                self.config = self._get_default_config()
+                
+        except Exception as e:
+            logger.error(f"Error loading configuration: {e}")
+            self.config = self._get_default_config()
+        
         # Store project root
         self.project_root = self._get_project_root()
         print(f"[Config] Project root: {self.project_root}")
 
-        # Make config_path absolute if it's not already
-        if not os.path.isabs(config_path):
-            config_path = os.path.join(self.project_root, config_path)
-        
-        # Load the configuration
-        if not os.path.exists(config_path):
-            raise FileNotFoundError(f"Config file not found at: {config_path}")
-            
-        self.config = self._load_config(config_path)
-        
         # Set default storage path if not specified
         if 'storage' not in self.config:
             self.config['storage'] = {}
@@ -158,29 +174,88 @@ logger = logging.getLogger(__name__)
 class ColdMemory:
     """Cold memory layer using DuckDB for persistent storage."""
     
-    def __init__(self):
-        """Initialize cold memory."""
+    def __init__(self, config_path: str = None):
+        """Initialize cold memory storage.
+        
+        Args:
+            config_path: Optional path to configuration file. If not provided,
+                        will look for default_config.yml in standard locations.
+        """
         self.logger = logging.getLogger(__name__)
-        self.config = Config()
         
-        # Lazy import to avoid circular dependency
-        from memories.core.memory_catalog import memory_catalog
-        self.memory_catalog = memory_catalog
+        # Set project root
+        self.project_root = os.getenv("PROJECT_ROOT") or os.path.abspath(os.getcwd())
         
-        # Initialize database
-        self.db_path = self.config.database_path
+        # Try to find configuration in standard locations if not provided
+        if not config_path:
+            standard_paths = [
+                os.path.join(os.getcwd(), 'config', 'default_config.yml'),
+                os.path.join(os.path.dirname(__file__), '..', 'glacier', 'default_config.yml'),
+                os.path.join(os.getcwd(), 'config', 'db_config.yml')
+            ]
+            
+            for path in standard_paths:
+                if os.path.exists(path):
+                    config_path = path
+                    break
+        
+        # Load configuration
+        try:
+            if config_path and os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    self.config = yaml.safe_load(f)
+            else:
+                # Use default configuration
+                self.config = self._get_default_config()
+                
+        except Exception as e:
+            self.logger.error(f"Error loading configuration: {e}")
+            self.config = self._get_default_config()
+        
+        # Initialize components
+        self._init_storage()
         self._initialize_schema()
         
-        # Set up paths
-        self.raw_data_path = self.config.raw_data_path
+    def _get_default_config(self) -> dict:
+        """Get default configuration."""
+        return {
+            'storage': {
+                'path': os.path.join(self.project_root, 'data', 'cold'),
+                'format': 'parquet',
+                'raw_data_path': os.path.join(self.project_root, 'data', 'raw')
+            },
+            'memory': {
+                'cold_size': 1000,
+                'vector_dim': 384
+            }
+        }
+
+    def _init_storage(self):
+        """Initialize storage components."""
+        # Lazy import to avoid circular dependency
+        from memories.core.memory_catalog import memory_catalog
+        
+        # Set up database path
+        storage_config = self.config.get('storage', {})
+        storage_path = storage_config.get('path', os.path.join(self.project_root, 'data', 'cold'))
+        self.db_path = os.path.join(storage_path, 'cold_memory.duckdb')
+        
+        # Set up raw data path
+        self.raw_data_path = storage_config.get('raw_data_path', os.path.join(self.project_root, 'data', 'raw'))
+        
+        # Create directories if they don't exist
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         os.makedirs(self.raw_data_path, exist_ok=True)
+        
+        # Initialize DuckDB connection
+        self.conn = duckdb.connect(self.db_path)
+        self.memory_catalog = memory_catalog
 
     def _initialize_schema(self):
         """Initialize database schema."""
         try:
             # Create data table if it doesn't exist
-            self.con = duckdb.connect()
-            self.con.execute("""
+            self.conn.execute("""
                 CREATE TABLE IF NOT EXISTS cold_data (
                     id VARCHAR PRIMARY KEY,
                     data JSON
@@ -258,7 +333,7 @@ class ColdMemory:
             )
 
             # Store data in DuckDB
-            self.con.execute(
+            self.conn.execute(
                 "INSERT INTO cold_data (id, data) VALUES (?, ?)",
                 [data_id, df.to_json()]
             )
@@ -278,7 +353,7 @@ class ColdMemory:
                 return None
 
             # Get data from cold storage
-            result = self.con.execute("""
+            result = self.conn.execute("""
                 SELECT data FROM cold_data
                 WHERE id = ?
                 LIMIT 1
@@ -303,7 +378,7 @@ class ColdMemory:
             cold_data = await self.memory_catalog.get_tier_data("cold")
             
             # Clear data table
-            self.con.execute("DELETE FROM cold_data")
+            self.conn.execute("DELETE FROM cold_data")
             
             # Remove files if they exist
             for item in cold_data:
@@ -332,7 +407,7 @@ class ColdMemory:
                 return False
                 
             # Remove data if exists
-            self.con.execute("DELETE FROM cold_data WHERE id = ?", [file_id])
+            self.conn.execute("DELETE FROM cold_data WHERE id = ?", [file_id])
             
             # Remove file if it's external
             if json.loads(file_info['additional_meta']).get('is_external', False):
@@ -375,8 +450,8 @@ class ColdMemory:
     def cleanup(self) -> None:
         """Cleanup resources."""
         try:
-            if hasattr(self, 'con') and self.con:
-                self.con.close()
+            if hasattr(self, 'conn') and self.conn:
+                self.conn.close()
                 self.logger.info("Closed DuckDB connection")
         except Exception as e:
             self.logger.error(f"Error during cleanup: {e}")
@@ -402,7 +477,7 @@ class ColdMemory:
                         schema_query = f"""
                         DESCRIBE SELECT * FROM parquet_scan('{file_path}')
                         """
-                        schema_df = self.con.execute(schema_query).fetchdf()
+                        schema_df = self.conn.execute(schema_query).fetchdf()
                         
                         schema = {
                             'file_path': file_path,
@@ -440,7 +515,7 @@ class ColdMemory:
         """
         try:
             # Get data from cold storage
-            result = self.con.execute("""
+            result = self.conn.execute("""
                 SELECT data FROM cold_data
                 WHERE id = ?
                 LIMIT 1

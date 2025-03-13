@@ -49,8 +49,11 @@ class Config:
                 print(f"Error loading user configuration from {self.config_path}: {e}")
                 print("Using default configuration")
         else:
-            # Try to load from standard locations
+            # Try to load from standard locations in order of priority
             standard_paths = [
+                os.path.join(self.project_root, 'config', 'default_config.yml'),
+                os.path.join(os.getcwd(), 'config', 'default_config.yml'),
+                os.path.join(os.path.dirname(__file__), 'glacier', 'default_config.yml'),
                 os.path.join(self.project_root, 'config', 'db_config.yml'),
                 os.path.join(os.getcwd(), 'config', 'db_config.yml')
             ]
@@ -63,24 +66,15 @@ class Config:
                             user_config = yaml.safe_load(f)
                             # Deep merge user_config into config
                             self._deep_update(config, user_config)
-                        print(f"Loaded user configuration from {path}")
+                        print(f"Loaded configuration from {path}")
                         config_loaded = True
                         break
                     except Exception as e:
-                        print(f"Error loading user configuration from {path}: {e}")
+                        print(f"Error loading configuration from {path}: {e}")
             
-            # If no config file was found, create a default one
+            # If no config file was found, use hardcoded defaults
             if not config_loaded:
                 print("No configuration file found. Using default configuration.")
-                # Try to create a default config file
-                try:
-                    default_config_path = os.path.join(self.project_root, 'config', 'db_config.yml')
-                    os.makedirs(os.path.dirname(default_config_path), exist_ok=True)
-                    with open(default_config_path, 'w') as f:
-                        yaml.dump(config, f)
-                    print(f"Created default configuration file at {default_config_path}")
-                except Exception as e:
-                    print(f"Warning: Could not create default configuration file: {e}")
         
         # Convert relative paths to absolute
         for section in ['database', 'data']:

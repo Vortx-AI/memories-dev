@@ -46,14 +46,21 @@ class MemoryManager:
             # Import here to avoid circular imports
             from memories.core.config import Config
             
-            project_root = os.getenv("PROJECT_ROOT", str(Path(__file__).parent.parent.parent))
-            config_path = Path(project_root) / 'config' / 'db_config.yml'
-            if not config_path.exists():
-                # Fallback: try current working directory
-                config_path = Path.cwd() / 'config' / 'db_config.yml'
-                
-            # Use the Config class instead of manually loading YAML
-            return Config(str(config_path))
+            # Try to find configuration in standard locations
+            config_paths = [
+                os.path.join(os.getcwd(), 'config', 'default_config.yml'),
+                os.path.join(os.path.dirname(__file__), '..', 'glacier', 'default_config.yml'),
+                os.path.join(os.getcwd(), 'config', 'db_config.yml')
+            ]
+            
+            # Use the first config file found
+            for config_path in config_paths:
+                if os.path.exists(config_path):
+                    return Config(config_path)
+            
+            # If no config file found, use default Config
+            self.logger.info("No configuration file found, using default configuration")
+            return Config()
             
         except Exception as e:
             self.logger.error(f"Error loading configuration: {e}")
