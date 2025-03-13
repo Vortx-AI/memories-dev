@@ -15,8 +15,12 @@ logger = logging.getLogger(__name__)
 class HotMemory:
     """Hot memory layer using DuckDB for fast in-memory storage."""
     
-    def __init__(self):
-        """Initialize hot memory with in-memory DuckDB."""
+    def __init__(self, config_path: str = None):
+        """Initialize hot memory with in-memory DuckDB.
+        
+        Args:
+            config_path: Optional path to configuration file (not used but kept for API compatibility)
+        """
         self.logger = logging.getLogger(__name__)
         
         # Lazy import to avoid circular dependency

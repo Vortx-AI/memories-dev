@@ -37,8 +37,13 @@ class WarmMemory:
             self.storage_path = Path(storage_path)
         else:
             # Use default path from memory manager
-            self.storage_path = Path(self.memory_manager.get_warm_path())
-        
+            try:
+                self.storage_path = Path(self.memory_manager.get_warm_path())
+            except Exception as e:
+                self.logger.warning(f"Error getting warm path from memory manager: {e}")
+                # Fallback to default path
+                self.storage_path = Path(os.path.join(os.getcwd(), 'data', 'memory', 'warm'))
+                
         self.storage_path.mkdir(parents=True, exist_ok=True)
         self.logger.info(f"Warm memory storage path: {self.storage_path}")
         
