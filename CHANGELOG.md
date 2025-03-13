@@ -9,47 +9,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **System Improvements**
-  - Added dependency version checks and compatibility validation
-  - Improved temporary directory handling and cleanup
-  - Enhanced DuckDB lock management and release mechanisms
-  - Better error handling and logging across core functions
-  - Added fallback configuration handling for test environments
-
-- **Memory Optimization**
-  - Optimized parquet file handling to reduce disk space usage
-  - Improved batch processing for large datasets
-  - Enhanced memory cleanup routines
+- **Core**
   - Enhanced schema transfer from cold to red hot memory
   - Added schema embeddings for semantic column search
   - Improved metadata extraction and storage for parquet files
+  - Optimized parquet file handling to reduce disk space usage
+  - Improved batch processing for large datasets
+  - Enhanced memory cleanup routines
+  - Better error handling and logging across core functions
 
-- **Testing Improvements**
-  - Enhanced test suite with better mocking and fixtures
-  - Added conditional test skipping for optional dependencies
-  - Improved documentation testing with mock imports
-  - Added comprehensive API connector tests
-  - Enhanced geospatial data testing
-  - Added test environment configuration handling
-
-- **API Connectors**
-  - Added robust error handling for OpenAI API
-  - Enhanced Deepseek API integration
+- **Models**
+  - Added robust error handling for models
+  - Enhanced API integration for models
   - Improved API key management from environment variables
   - Added comprehensive logging for API interactions
   - Enhanced chat completion functionality
 
+- **Utils**
+  - Added dependency version checks and compatibility validation
+  - Improved temporary directory handling and cleanup
+  - Enhanced DuckDB lock management and release mechanisms
+
+- **Deployment**
+  - Added test environment configuration handling
+  - Enhanced geospatial data testing
+  - Added comprehensive API connector tests
+
+- **Configuration**
+  - Added fallback configuration handling for test environments
+  - Improved config file path handling
+  - Added environment-aware configuration loading
+  - Enhanced error messages for missing configurations
+  - Added test-specific configuration defaults
+
 ### Fixed
 
-- **Test Suite Fixes**
+- **Core**
   - Fixed TypeError in batch parquet import tests related to 'enable_red_hot' parameter
   - Resolved multiple TypeErrors in memory retrieval tests related to 'vector_encoder' parameter
   - Fixed geospatial data querying test failures
-  - Updated test suite to match new API parameters
-  - Resolved documentation test dependencies
+
+- **Models**
   - Fixed API connector test reliability issues
+
+- **Utils**
+  - Enhanced test suite with better mocking and fixtures
+  - Added conditional test skipping for optional dependencies
+
+- **Deployment**
   - Fixed config file not found error in test environments
   - Added proper test configuration initialization
+
+- **Configuration**
+  - Updated test suite to match new API parameters
+  - Resolved documentation test dependencies
 
 ### Enhanced
 
@@ -61,13 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved license information consistency
   - Added test environment setup documentation
 
-- **Configuration Management**
-  - Improved config file path handling
-  - Added environment-aware configuration loading
-  - Enhanced error messages for missing configurations
-  - Added test-specific configuration defaults
-
-## [2.0.5] - 2023-11-28
+## [2.0.5] - 2025-03-05
 
 ### Added
 
@@ -97,8 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added test environment configuration handling
 
 - **API Connectors**
-  - Added robust error handling for OpenAI API
-  - Enhanced Deepseek API integration
+  - Added robust error handling for  API
+  - Enhanced API integration
   - Improved API key management from environment variables
   - Added comprehensive logging for API interactions
   - Enhanced chat completion functionality
@@ -406,7 +413,7 @@ Distributed Memory: Support for distributed memory across multiple nodes
 ## [1.1.4] - 2025-02-16
 
 ### Changed
-- Updated text processing to use LangChain and DeepSeek consistently
+- Updated text processing to use LangChain and model consistently
 - Improved dependency management and version compatibility
 - Enhanced error handling and logging
 
@@ -421,7 +428,7 @@ Distributed Memory: Support for distributed memory across multiple nodes
 - Added version-specific dependency management for Python 3.9-3.13
 - Added `diffusers>=0.25.0` to core dependencies
 - Enhanced version compatibility across different Python versions
-- Added LangChain and DeepSeek for advanced text processing
+- Added LangChain and model for advanced text processing
 
 ### Changed
 - Reorganized dependencies into core and version-specific groups
@@ -429,7 +436,7 @@ Distributed Memory: Support for distributed memory across multiple nodes
 - Improved Python version-specific package management
 - Pinned numpy to 1.26.x for Python 3.12 to ensure binary compatibility
 - Removed spacy/thinc dependencies for better compatibility
-- Updated text processing to use LangChain and DeepSeek
+- Updated text processing to use LangChain and model
 
 ### Fixed
 - Fixed dependency conflicts between different Python versions
