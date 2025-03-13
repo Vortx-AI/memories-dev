@@ -58,8 +58,11 @@ class MemoryRetrieval:
         """
         self.logger = logging.getLogger(__name__)
         
-        # Initialize memory manager with config path
-        self._memory_manager = MemoryManager(config_path=config_path)
+        # Initialize memory manager (singleton pattern, no parameters needed)
+        self._memory_manager = MemoryManager()
+        
+        # Store config path for later use if needed
+        self.config_path = config_path
         
         # Initialize memory tiers as None - will be created on demand
         self._hot_memory = None
@@ -85,9 +88,6 @@ class MemoryRetrieval:
         # Initialize connectors as None - will be created on demand
         self._overture_connector = None
         self._sentinel_connector = None
-        
-        # Store config path for later use
-        self.config_path = config_path
         
         self.logger.info("Initialized memory retrieval")
 
