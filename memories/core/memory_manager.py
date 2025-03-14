@@ -468,3 +468,640 @@ class MemoryManager:
             ColdMemory: Cold memory instance or None if not initialized
         """
         return self.cold 
+
+    def store(self, key: str, value: Any, tier: str = "warm", metadata: Optional[Dict[str, Any]] = None) -> str:
+        """Store data in the specified memory tier.
+        
+        Args:
+            key: Unique identifier for the data
+            value: Data to store
+            tier: Memory tier to use ("red_hot", "hot", "warm", "cold", "glacier")
+            metadata: Optional metadata to store with the data
+            
+        Returns:
+            str: The key used to store the data
+        """
+        self.logger.info(f"Storing data with key '{key}' in {tier} tier")
+        
+        if metadata is None:
+            metadata = {}
+            
+        # Store data in the appropriate tier
+        if tier == "red_hot":
+            try:
+                from memories.core.red_hot import RedHotMemory
+                red_hot = RedHotMemory()
+                # Check if store is an async method
+                if hasattr(red_hot, 'store'):
+                    store_method = red_hot.store
+                    if hasattr(store_method, '__await__'):
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            # Create a new event loop if one doesn't exist
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        return loop.run_until_complete(store_method(key, value, metadata))
+                    else:
+                        return store_method(key, value, metadata)
+                else:
+                    self.logger.warning("RedHotMemory does not have a store method")
+                    tier = "hot"
+            except Exception as e:
+                self.logger.error(f"Error storing data in red_hot tier: {e}")
+                # Fall back to hot tier
+                tier = "hot"
+                
+        if tier == "hot":
+            try:
+                from memories.core.hot import HotMemory
+                hot = HotMemory()
+                # Check if store is an async method
+                if hasattr(hot, 'store'):
+                    store_method = hot.store
+                    if hasattr(store_method, '__await__'):
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            # Create a new event loop if one doesn't exist
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        return loop.run_until_complete(store_method(key, value, metadata))
+                    else:
+                        return store_method(key, value, metadata)
+                else:
+                    self.logger.warning("HotMemory does not have a store method")
+                    tier = "warm"
+            except Exception as e:
+                self.logger.error(f"Error storing data in hot tier: {e}")
+                # Fall back to warm tier
+                tier = "warm"
+                
+        if tier == "warm":
+            try:
+                from memories.core.warm import WarmMemory
+                warm = WarmMemory()
+                # Check if store is an async method
+                if hasattr(warm, 'store'):
+                    store_method = warm.store
+                    if hasattr(store_method, '__await__'):
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            # Create a new event loop if one doesn't exist
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        return loop.run_until_complete(store_method(key, value, metadata))
+                    else:
+                        return store_method(key, value, metadata)
+                else:
+                    self.logger.warning("WarmMemory does not have a store method")
+                    tier = "cold"
+            except Exception as e:
+                self.logger.error(f"Error storing data in warm tier: {e}")
+                # Fall back to cold tier
+                tier = "cold"
+                
+        if tier == "cold":
+            try:
+                from memories.core.cold import ColdMemory
+                cold = ColdMemory()
+                # Check if store is an async method
+                if hasattr(cold, 'store'):
+                    store_method = cold.store
+                    if hasattr(store_method, '__await__'):
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            # Create a new event loop if one doesn't exist
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        return loop.run_until_complete(store_method(key, value, metadata))
+                    else:
+                        return store_method(key, value, metadata)
+                else:
+                    self.logger.warning("ColdMemory does not have a store method")
+                    # Fall back to glacier tier if enabled
+                    if self.config.get('glacier_enabled', False):
+                        tier = "glacier"
+                    else:
+                        raise ValueError("No available storage tier with store method")
+            except Exception as e:
+                self.logger.error(f"Error storing data in cold tier: {e}")
+                # Fall back to glacier tier if enabled
+                if self.config.get('glacier_enabled', False):
+                    tier = "glacier"
+                else:
+                    raise e
+                    
+        if tier == "glacier":
+            try:
+                from memories.core.glacier import GlacierMemory
+                glacier = GlacierMemory()
+                # Check if store is an async method
+                if hasattr(glacier, 'store'):
+                    store_method = glacier.store
+                    if hasattr(store_method, '__await__'):
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            # Create a new event loop if one doesn't exist
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        return loop.run_until_complete(store_method(key, value, metadata))
+                    else:
+                        return store_method(key, value, metadata)
+                else:
+                    self.logger.warning("GlacierMemory does not have a store method")
+                    raise ValueError("No available storage tier with store method")
+            except Exception as e:
+                self.logger.error(f"Error storing data in glacier tier: {e}")
+                raise e
+                
+        return key
+        
+    def retrieve(self, key: str, tier: Optional[str] = None) -> Any:
+        """Retrieve data from memory.
+        
+        Args:
+            key: Key of the data to retrieve
+            tier: Optional tier to retrieve from (if known)
+            
+        Returns:
+            Any: The retrieved data
+        """
+        self.logger.info(f"Retrieving data with key '{key}'")
+        
+        # If tier is specified, try that tier first
+        if tier is not None:
+            data = self._retrieve_from_tier(key, tier)
+            if data is not None:
+                return data
+                
+        # Otherwise, try all tiers in order of speed
+        for tier in ["red_hot", "hot", "warm", "cold", "glacier"]:
+            data = self._retrieve_from_tier(key, tier)
+            if data is not None:
+                return data
+                
+        self.logger.warning(f"Data with key '{key}' not found in any tier")
+        return None
+        
+    def _retrieve_from_tier(self, key: str, tier: str) -> Any:
+        """Helper method to retrieve data from a specific tier.
+        
+        Args:
+            key: Key of the data to retrieve
+            tier: Tier to retrieve from
+            
+        Returns:
+            Any: The retrieved data or None if not found
+        """
+        try:
+            if tier == "red_hot":
+                from memories.core.red_hot import RedHotMemory
+                red_hot = RedHotMemory()
+                if hasattr(red_hot, 'retrieve'):
+                    retrieve_method = red_hot.retrieve
+                    if hasattr(retrieve_method, '__await__'):
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        return loop.run_until_complete(retrieve_method(key))
+                    else:
+                        return retrieve_method(key)
+                else:
+                    self.logger.warning("RedHotMemory does not have a retrieve method")
+                    return None
+            elif tier == "hot":
+                from memories.core.hot import HotMemory
+                hot = HotMemory()
+                if hasattr(hot, 'retrieve'):
+                    retrieve_method = hot.retrieve
+                    if hasattr(retrieve_method, '__await__'):
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        return loop.run_until_complete(retrieve_method(key))
+                    else:
+                        return retrieve_method(key)
+                else:
+                    self.logger.warning("HotMemory does not have a retrieve method")
+                    return None
+            elif tier == "warm":
+                from memories.core.warm import WarmMemory
+                warm = WarmMemory()
+                if hasattr(warm, 'retrieve'):
+                    retrieve_method = warm.retrieve
+                    if hasattr(retrieve_method, '__await__'):
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        return loop.run_until_complete(retrieve_method(key))
+                    else:
+                        return retrieve_method(key)
+                else:
+                    self.logger.warning("WarmMemory does not have a retrieve method")
+                    return None
+            elif tier == "cold":
+                from memories.core.cold import ColdMemory
+                cold = ColdMemory()
+                if hasattr(cold, 'retrieve'):
+                    retrieve_method = cold.retrieve
+                    if hasattr(retrieve_method, '__await__'):
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        return loop.run_until_complete(retrieve_method(key))
+                    else:
+                        return retrieve_method(key)
+                else:
+                    self.logger.warning("ColdMemory does not have a retrieve method")
+                    return None
+            elif tier == "glacier":
+                from memories.core.glacier import GlacierMemory
+                glacier = GlacierMemory()
+                if hasattr(glacier, 'retrieve'):
+                    retrieve_method = glacier.retrieve
+                    if hasattr(retrieve_method, '__await__'):
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        return loop.run_until_complete(retrieve_method(key))
+                    else:
+                        return retrieve_method(key)
+                else:
+                    self.logger.warning("GlacierMemory does not have a retrieve method")
+                    return None
+        except Exception as e:
+            self.logger.error(f"Error retrieving data from {tier} tier: {e}")
+            return None
+            
+        return None
+            
+    def exists(self, key: str) -> bool:
+        """Check if data exists in any memory tier.
+        
+        Args:
+            key: Key to check
+            
+        Returns:
+            bool: True if data exists, False otherwise
+        """
+        self.logger.info(f"Checking if data with key '{key}' exists")
+        
+        # Check all tiers
+        for tier in ["red_hot", "hot", "warm", "cold", "glacier"]:
+            try:
+                if tier == "red_hot":
+                    from memories.core.red_hot import RedHotMemory
+                    red_hot = RedHotMemory()
+                    if hasattr(red_hot, 'exists'):
+                        exists_method = red_hot.exists
+                        if hasattr(exists_method, '__await__'):
+                            import asyncio
+                            try:
+                                loop = asyncio.get_event_loop()
+                            except RuntimeError:
+                                loop = asyncio.new_event_loop()
+                                asyncio.set_event_loop(loop)
+                            if loop.run_until_complete(exists_method(key)):
+                                return True
+                        else:
+                            if exists_method(key):
+                                return True
+                    else:
+                        # Fallback: try to retrieve the data
+                        if hasattr(red_hot, 'retrieve'):
+                            retrieve_method = red_hot.retrieve
+                            if hasattr(retrieve_method, '__await__'):
+                                import asyncio
+                                try:
+                                    loop = asyncio.get_event_loop()
+                                except RuntimeError:
+                                    loop = asyncio.new_event_loop()
+                                    asyncio.set_event_loop(loop)
+                                if loop.run_until_complete(retrieve_method(key)) is not None:
+                                    return True
+                            else:
+                                if retrieve_method(key) is not None:
+                                    return True
+                elif tier == "hot":
+                    from memories.core.hot import HotMemory
+                    hot = HotMemory()
+                    if hasattr(hot, 'exists'):
+                        exists_method = hot.exists
+                        if hasattr(exists_method, '__await__'):
+                            import asyncio
+                            try:
+                                loop = asyncio.get_event_loop()
+                            except RuntimeError:
+                                loop = asyncio.new_event_loop()
+                                asyncio.set_event_loop(loop)
+                            if loop.run_until_complete(exists_method(key)):
+                                return True
+                        else:
+                            if exists_method(key):
+                                return True
+                    else:
+                        # Fallback: try to retrieve the data
+                        if hasattr(hot, 'retrieve'):
+                            retrieve_method = hot.retrieve
+                            if hasattr(retrieve_method, '__await__'):
+                                import asyncio
+                                try:
+                                    loop = asyncio.get_event_loop()
+                                except RuntimeError:
+                                    loop = asyncio.new_event_loop()
+                                    asyncio.set_event_loop(loop)
+                                if loop.run_until_complete(retrieve_method(key)) is not None:
+                                    return True
+                            else:
+                                if retrieve_method(key) is not None:
+                                    return True
+                elif tier == "warm":
+                    from memories.core.warm import WarmMemory
+                    warm = WarmMemory()
+                    if hasattr(warm, 'exists'):
+                        exists_method = warm.exists
+                        if hasattr(exists_method, '__await__'):
+                            import asyncio
+                            try:
+                                loop = asyncio.get_event_loop()
+                            except RuntimeError:
+                                loop = asyncio.new_event_loop()
+                                asyncio.set_event_loop(loop)
+                            if loop.run_until_complete(exists_method(key)):
+                                return True
+                        else:
+                            if exists_method(key):
+                                return True
+                    else:
+                        # Fallback: try to retrieve the data
+                        if hasattr(warm, 'retrieve'):
+                            retrieve_method = warm.retrieve
+                            if hasattr(retrieve_method, '__await__'):
+                                import asyncio
+                                try:
+                                    loop = asyncio.get_event_loop()
+                                except RuntimeError:
+                                    loop = asyncio.new_event_loop()
+                                    asyncio.set_event_loop(loop)
+                                if loop.run_until_complete(retrieve_method(key)) is not None:
+                                    return True
+                            else:
+                                if retrieve_method(key) is not None:
+                                    return True
+                elif tier == "cold":
+                    from memories.core.cold import ColdMemory
+                    cold = ColdMemory()
+                    if hasattr(cold, 'exists'):
+                        exists_method = cold.exists
+                        if hasattr(exists_method, '__await__'):
+                            import asyncio
+                            try:
+                                loop = asyncio.get_event_loop()
+                            except RuntimeError:
+                                loop = asyncio.new_event_loop()
+                                asyncio.set_event_loop(loop)
+                            if loop.run_until_complete(exists_method(key)):
+                                return True
+                        else:
+                            if exists_method(key):
+                                return True
+                    else:
+                        # Fallback: try to retrieve the data
+                        if hasattr(cold, 'retrieve'):
+                            retrieve_method = cold.retrieve
+                            if hasattr(retrieve_method, '__await__'):
+                                import asyncio
+                                try:
+                                    loop = asyncio.get_event_loop()
+                                except RuntimeError:
+                                    loop = asyncio.new_event_loop()
+                                    asyncio.set_event_loop(loop)
+                                if loop.run_until_complete(retrieve_method(key)) is not None:
+                                    return True
+                            else:
+                                if retrieve_method(key) is not None:
+                                    return True
+                elif tier == "glacier":
+                    from memories.core.glacier import GlacierMemory
+                    glacier = GlacierMemory()
+                    if hasattr(glacier, 'exists'):
+                        exists_method = glacier.exists
+                        if hasattr(exists_method, '__await__'):
+                            import asyncio
+                            try:
+                                loop = asyncio.get_event_loop()
+                            except RuntimeError:
+                                loop = asyncio.new_event_loop()
+                                asyncio.set_event_loop(loop)
+                            if loop.run_until_complete(exists_method(key)):
+                                return True
+                        else:
+                            if exists_method(key):
+                                return True
+                    else:
+                        # Fallback: try to retrieve the data
+                        if hasattr(glacier, 'retrieve'):
+                            retrieve_method = glacier.retrieve
+                            if hasattr(retrieve_method, '__await__'):
+                                import asyncio
+                                try:
+                                    loop = asyncio.get_event_loop()
+                                except RuntimeError:
+                                    loop = asyncio.new_event_loop()
+                                    asyncio.set_event_loop(loop)
+                                if loop.run_until_complete(retrieve_method(key)) is not None:
+                                    return True
+                            else:
+                                if retrieve_method(key) is not None:
+                                    return True
+            except Exception as e:
+                self.logger.error(f"Error checking if data exists in {tier} tier: {e}")
+                
+        return False
+        
+    def delete(self, key: str, tier: Optional[str] = None) -> bool:
+        """Delete data from memory.
+        
+        Args:
+            key: Key of the data to delete
+            tier: Optional tier to delete from (if None, delete from all tiers)
+            
+        Returns:
+            bool: True if data was deleted, False otherwise
+        """
+        self.logger.info(f"Deleting data with key '{key}'")
+        
+        deleted = False
+        
+        # If tier is specified, delete from that tier only
+        if tier is not None:
+            return self._delete_from_tier(key, tier)
+            
+        # Otherwise, try to delete from all tiers
+        for t in ["red_hot", "hot", "warm", "cold", "glacier"]:
+            if self._delete_from_tier(key, t):
+                deleted = True
+                
+        return deleted
+        
+    def _delete_from_tier(self, key: str, tier: str) -> bool:
+        """Helper method to delete data from a specific tier.
+        
+        Args:
+            key: Key of the data to delete
+            tier: Tier to delete from
+            
+        Returns:
+            bool: True if data was deleted, False otherwise
+        """
+        try:
+            if tier == "red_hot":
+                from memories.core.red_hot import RedHotMemory
+                red_hot = RedHotMemory()
+                if hasattr(red_hot, 'delete'):
+                    delete_method = red_hot.delete
+                    if hasattr(delete_method, '__await__'):
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        return loop.run_until_complete(delete_method(key))
+                    else:
+                        return delete_method(key)
+                else:
+                    self.logger.warning("RedHotMemory does not have a delete method")
+                    return False
+            elif tier == "hot":
+                from memories.core.hot import HotMemory
+                hot = HotMemory()
+                if hasattr(hot, 'delete'):
+                    delete_method = hot.delete
+                    if hasattr(delete_method, '__await__'):
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        return loop.run_until_complete(delete_method(key))
+                    else:
+                        return delete_method(key)
+                else:
+                    self.logger.warning("HotMemory does not have a delete method")
+                    return False
+            elif tier == "warm":
+                from memories.core.warm import WarmMemory
+                warm = WarmMemory()
+                if hasattr(warm, 'delete'):
+                    delete_method = warm.delete
+                    if hasattr(delete_method, '__await__'):
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        return loop.run_until_complete(delete_method(key))
+                    else:
+                        return delete_method(key)
+                else:
+                    self.logger.warning("WarmMemory does not have a delete method")
+                    return False
+            elif tier == "cold":
+                from memories.core.cold import ColdMemory
+                cold = ColdMemory()
+                if hasattr(cold, 'delete'):
+                    delete_method = cold.delete
+                    if hasattr(delete_method, '__await__'):
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        return loop.run_until_complete(delete_method(key))
+                    else:
+                        return delete_method(key)
+                else:
+                    self.logger.warning("ColdMemory does not have a delete method")
+                    return False
+            elif tier == "glacier":
+                from memories.core.glacier import GlacierMemory
+                glacier = GlacierMemory()
+                if hasattr(glacier, 'delete'):
+                    delete_method = glacier.delete
+                    if hasattr(delete_method, '__await__'):
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        return loop.run_until_complete(delete_method(key))
+                    else:
+                        return delete_method(key)
+                else:
+                    self.logger.warning("GlacierMemory does not have a delete method")
+                    return False
+        except Exception as e:
+            self.logger.error(f"Error deleting data from {tier} tier: {e}")
+            return False
+            
+        return False 
+
+    async def delete(self, table_name: str) -> bool:
+        """Delete data from warm memory by dropping the table.
+        
+        Args:
+            table_name: Name of the table to delete
+            
+        Returns:
+            bool: True if deletion was successful, False otherwise
+        """
+        try:
+            # Get connection
+            con = self.get_connection()
+            
+            # Check if table exists
+            table_exists = con.execute(f"""
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='{table_name}'
+            """).fetchone()
+            
+            if not table_exists:
+                self.logger.warning(f"Table {table_name} does not exist")
+                return False
+            
+            # Drop the table
+            con.execute(f"DROP TABLE IF EXISTS {table_name}")
+            self.logger.info(f"Table {table_name} dropped")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error deleting table {table_name}: {e}")
+            return False 

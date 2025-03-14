@@ -804,3 +804,34 @@ class WarmMemory:
                 "data_id": None,
                 "table_name": None
             }
+
+    async def delete(self, table_name: str) -> bool:
+        """Delete data from warm memory by dropping the table.
+        
+        Args:
+            table_name: Name of the table to delete
+            
+        Returns:
+            bool: True if deletion was successful, False otherwise
+        """
+        try:
+            # Get connection
+            con = self.get_connection()
+            
+            # Check if table exists
+            table_exists = con.execute(f"""
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='{table_name}'
+            """).fetchone()
+            
+            if not table_exists:
+                self.logger.warning(f"Table {table_name} does not exist")
+                return False
+            
+            # Drop the table
+            con.execute(f"DROP TABLE IF EXISTS {table_name}")
+            self.logger.info(f"Table {table_name} dropped")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error deleting table {table_name}: {e}")
+            return False

@@ -10,6 +10,7 @@ import shutil
 from pathlib import Path
 import asyncio
 import pickle
+import json
 
 from memories.core.red_hot import RedHotMemory
 
@@ -238,4 +239,41 @@ class TestRedHotMemory:
         finally:
             # Clean up the temporary file
             if os.path.exists(tmp_file_path):
-                os.unlink(tmp_file_path) 
+                os.unlink(tmp_file_path)
+
+    @pytest.mark.asyncio
+    async def test_delete(self, red_hot_memory, temp_storage_path):
+        """Test deleting data from red hot memory."""
+        # Create test vector
+        test_vector = np.random.rand(128).astype(np.float32)
+        
+        # Store vector
+        key = 'test_delete_key'
+        metadata = {'test': 'metadata'}
+        
+        # Mock the metadata and index for testing
+        red_hot_memory.metadata = {
+            key: {
+                'index': 0,
+                'metadata': metadata
+            }
+        }
+        red_hot_memory.metadata_file = os.path.join(temp_storage_path, 'metadata.json')
+        
+        # Save metadata
+        with open(red_hot_memory.metadata_file, 'w') as f:
+            json.dump(red_hot_memory.metadata, f)
+        
+        # Delete vector
+        deleted = await red_hot_memory.delete(key)
+        assert deleted is True
+        
+        # Verify vector is marked as deleted in metadata
+        with open(red_hot_memory.metadata_file, 'r') as f:
+            updated_metadata = json.load(f)
+        
+        assert updated_metadata[key]['deleted'] is True
+        
+        # Try to delete non-existent key
+        deleted_non_existent = await red_hot_memory.delete('non_existent_key')
+        assert deleted_non_existent is False 

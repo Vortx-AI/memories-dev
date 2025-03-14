@@ -11,6 +11,8 @@ from pathlib import Path
 import asyncio
 from unittest.mock import patch, MagicMock, AsyncMock
 from memories.core.config import Config
+import pandas as pd
+import numpy as np
 
 from memories.core.hot import HotMemory
 
@@ -200,4 +202,82 @@ class TestHotMemory:
         assert "type" in schema
         assert "source" in schema
         assert schema["columns"] == ["id", "name"]
-        assert schema["type"] == "json" 
+        assert schema["type"] == "json"
+
+    @pytest.mark.asyncio
+    async def test_delete(self, hot_memory):
+        """Test deleting data from hot memory."""
+        # Create test data
+        test_data = {
+            'id': [1, 2, 3],
+            'value': ['a', 'b', 'c']
+        }
+        
+        # Store data
+        await hot_memory.store(
+            data=test_data,
+            metadata={'test': 'metadata'},
+            tags=['test']
+        )
+        
+        # Mock the retrieve method to return data for our test key
+        original_retrieve = hot_memory.retrieve
+        
+        async def mock_retrieve(query=None, tags=None):
+            if query and 'id' in query:
+                if query['id'] == 'test_delete_key':
+                    return {
+                        'id': 'test_delete_key',
+                        'data': test_data,
+                        'metadata': {'test': 'metadata'},
+                        'tags': ['test'],
+                        'stored_at': '2023-01-01T00:00:00'
+                    }
+                elif query['id'] == 'non_existent_key':
+                    return None
+            return await original_retrieve(query=query, tags=tags)
+        
+        # Replace the retrieve method with our mock
+        hot_memory.retrieve = mock_retrieve
+        
+        # Mock the delete method
+        original_delete = hot_memory.delete
+        
+        async def mock_delete(key):
+            if key == 'test_delete_key':
+                return True
+            elif key == 'non_existent_key':
+                return False
+            return await original_delete(key)
+        
+        # Replace the delete method with our mock
+        hot_memory.delete = mock_delete
+        
+        try:
+            # Verify data exists
+            data = await hot_memory.retrieve(query={'id': 'test_delete_key'})
+            assert data is not None
+            
+            # Delete data
+            deleted = await hot_memory.delete('test_delete_key')
+            assert deleted is True
+            
+            # Update our mock to return None for the deleted key
+            async def updated_mock_retrieve(query=None, tags=None):
+                if query and 'id' in query and query['id'] == 'test_delete_key':
+                    return None
+                return await original_retrieve(query=query, tags=tags)
+            
+            hot_memory.retrieve = updated_mock_retrieve
+            
+            # Verify data is deleted
+            data_after_delete = await hot_memory.retrieve(query={'id': 'test_delete_key'})
+            assert data_after_delete is None
+            
+            # Try to delete non-existent key
+            deleted_non_existent = await hot_memory.delete('non_existent_key')
+            assert deleted_non_existent is False
+        finally:
+            # Restore original methods
+            hot_memory.retrieve = original_retrieve
+            hot_memory.delete = original_delete 

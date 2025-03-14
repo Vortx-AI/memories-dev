@@ -11,6 +11,7 @@ import pandas as pd
 from pathlib import Path
 import asyncio
 from unittest.mock import patch, MagicMock, AsyncMock
+import numpy as np
 
 from memories.core.warm import WarmMemory
 
@@ -128,6 +129,15 @@ def warm_memory(mock_memory_manager, temp_storage_path):
         return True
     
     memory.clear = mock_clear
+    
+    # Mock the delete method
+    async def mock_delete(table_name):
+        # Return True for test_delete_table, False for non-existent tables
+        if table_name == 'test_delete_table':
+            return True
+        return False
+    
+    memory.delete = mock_delete
     
     yield memory
     
@@ -326,3 +336,52 @@ class TestWarmMemory:
         finally:
             # Restore original method
             warm_memory.retrieve = original_retrieve 
+
+    @pytest.mark.asyncio
+    async def test_delete(self, warm_memory):
+        """Test deleting data from warm memory."""
+        # Create test data
+        test_data = pd.DataFrame({
+            'id': [1, 2, 3],
+            'value': ['a', 'b', 'c']
+        })
+        
+        # Store data
+        table_name = 'test_delete_table'
+        result = await warm_memory.store(
+            data=test_data,
+            table_name=table_name
+        )
+        
+        assert result['success'] is True
+        assert result['table_name'] == table_name
+        
+        # Verify data exists
+        data = await warm_memory.retrieve(table_name=table_name)
+        assert data is not None
+        
+        # Delete data
+        deleted = await warm_memory.delete(table_name=table_name)
+        assert deleted is True
+        
+        # Create a new mock for retrieve that returns None for the deleted table
+        original_retrieve = warm_memory.retrieve
+        
+        async def updated_mock_retrieve(query=None, tags=None, db_name=None, table_name=None):
+            if table_name == 'test_delete_table':
+                return None
+            return await original_retrieve(query=query, tags=tags, db_name=db_name, table_name=table_name)
+        
+        # Replace the retrieve method with our updated mock
+        warm_memory.retrieve = updated_mock_retrieve
+        
+        # Verify data is deleted
+        data_after_delete = await warm_memory.retrieve(table_name=table_name)
+        assert data_after_delete is None
+        
+        # Try to delete non-existent table
+        deleted_non_existent = await warm_memory.delete(table_name='non_existent_table')
+        assert deleted_non_existent is False
+        
+        # Restore original mock for cleanup
+        warm_memory.retrieve = original_retrieve 

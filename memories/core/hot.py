@@ -372,3 +372,42 @@ class HotMemory:
         except Exception as e:
             self.logger.error(f"Failed to get schema for {data_id}: {e}")
             return None
+
+    async def delete(self, key: str) -> bool:
+        """Delete data from hot memory.
+        
+        Args:
+            key: Key of the data to delete
+            
+        Returns:
+            bool: True if deletion was successful, False otherwise
+        """
+        try:
+            # Check if the table exists
+            try:
+                self.con.execute("SELECT * FROM hot_data LIMIT 1")
+            except Exception:
+                self.logger.warning("Hot data table does not exist")
+                return False
+                
+            # Check if key exists
+            result = self.con.execute(f"""
+                SELECT COUNT(*) FROM hot_data 
+                WHERE id = '{key}'
+            """).fetchone()
+            
+            if result[0] == 0:
+                self.logger.warning(f"Key '{key}' does not exist in hot memory")
+                return False
+            
+            # Delete the data
+            self.con.execute(f"""
+                DELETE FROM hot_data 
+                WHERE id = '{key}'
+            """)
+            
+            self.logger.info(f"Data with key '{key}' deleted from hot memory")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error deleting data with key '{key}': {e}")
+            return False

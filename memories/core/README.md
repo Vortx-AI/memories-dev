@@ -2,70 +2,75 @@
 
 This directory contains the core memory management system for the Memories project.
 
-## What's New in Version 2.0.6 (Scheduled for March 3, 2025)
-
-Since our initial release (v1.0.0 on February 14, 2025), we've made significant improvements to the memory management system:
-
-### New Features
-- **Memory Optimization**: Advanced memory usage with automatic tier balancing
-- **Distributed Memory**: Support for distributed memory across multiple nodes
-- **Memory Snapshots**: Point-in-time memory snapshots for backup and recovery
-- **Memory Analytics**: Built-in analytics for memory usage and performance
-
-### Improvements
-- **Enhanced GPU Support**: Better utilization of GPU memory for hot tier
-- **Memory Compression**: Intelligent compression for cold and glacier tiers
-- **Query Performance**: Faster memory retrieval with optimized indexing
-- **Memory Migration**: Improved policies for automatic data migration
-- **Persistence Options**: More flexible options for persistent storage
 
 ## Memory Tiers
 
-The memory management system is built on a 4-tier architecture designed for efficient data storage and retrieval:
+The memory management system is built on a 5-tier architecture designed for efficient data storage and retrieval:
 
-### 1. Hot Memory (GPU Memory)
-- **Purpose**: Ultra-fast access for active processing
+### 1. Red Hot Memory (GPU Memory)
+- **Purpose**: Ultra-fast CUDA-accelerated compute for tensor operations, model inference and parallel workloads
 - **Characteristics**:
-  - Highest speed, limited capacity
-  - Optimized for tensor operations
-  - Automatic garbage collection
-- **New in 2.0.6**:
-  - Multi-GPU support
-  - Tensor optimization
-  - Priority-based allocation
+  - High memory bandwidth (>1TB/s)
+  - SIMD/SIMT architecture utilization
+  - Optimized for massively parallel throughput
+- **Features**:
+  - CUDA/ROCm kernel execution
+  - Tensor core optimization
+  - Compute shader utilization
+  - Half-precision (FP16/BF16) acceleration
+  - Unified memory addressing
 
-### 2. Warm Memory (CPU/In-Memory)
-- **Purpose**: Fast access for working data
+### 2. Hot Memory (In-Memory Database)
+- **Purpose**: Ultra-fast access for structured query operations
 - **Characteristics**:
-  - High speed, moderate capacity
-  - RAM-based storage
-  - Efficient for structured data
-- **New in 2.0.6**:
-  - Memory pooling
-  - Shared memory support
-  - Improved serialization
+  - Microsecond latency, RAM-constrained
+  - Columnar in-memory architecture
+  - Zero-copy data manipulation
+- **Features**:
+  - Vectorized query execution
+  - OLAP/OLTP hybrid operations
+  - Memory-mapped I/O
+  - JIT query compilation
+  - Predicate pushdown optimization
 
-### 3. Cold Memory (On-Device Storage)
-- **Purpose**: Persistent storage for less frequently accessed data
+### 3. Warm Memory (Persistent Database)
+- **Purpose**: Fast access for transactional workloads
 - **Characteristics**:
-  - Moderate speed, high capacity
-  - Disk-based storage
-  - Automatic indexing
-- **New in 2.0.6**:
-  - Intelligent compression
-  - Partial loading
-  - Optimized file formats
+  - Millisecond latency, moderate capacity
+  - ACID transaction compliance
+  - Write-ahead logging (WAL)
+- **Features**:
+  - B-tree/LSM indexing structures
+  - Concurrent transaction isolation
+  - Checkpoint/snapshot mechanisms
+  - Materialized view maintenance
+  - Query plan optimization
 
-### 4. Glacier Memory (Off-Device Storage)
-- **Purpose**: Long-term archival storage
+### 4. Cold Memory (On-Device Storage)
+- **Purpose**: Persistent storage for analytical workloads
 - **Characteristics**:
-  - Slow access, unlimited capacity
-  - Cloud or network storage
-  - Cost-optimized
-- **New in 2.0.6**:
-  - Multi-provider support
-  - Encrypted storage
-  - Batch operations
+  - Sub-second latency, high capacity
+  - Column-oriented storage format
+  - SIMD-accelerated processing
+- **Features**:
+  - Dictionary/run-length encoding
+  - Predicate filtering
+  - Projection pushdown
+  - Partitioned dataset management
+  - Delta-encoding compression
+
+### 5. Glacier Memory (Off-Device Storage)
+- **Purpose**: Long-term archival and compliance storage
+- **Characteristics**:
+  - Multi-second latency, petabyte-scale capacity
+  - Immutable data architecture
+  - Erasure coding redundancy
+- **Features**:
+  - Object storage integration
+  - RESTful API connectivity
+  - Asynchronous I/O operations
+  - Content-addressable storage
+  - Hierarchical namespace support
 
 ## Data Flow
 
@@ -92,18 +97,13 @@ Data flows through the system as follows:
 from memories.core import MemoryManager
 
 # Initialize memory manager
-memory_manager = MemoryManager(
-    hot_memory_size=2,    # GB
-    warm_memory_size=8,   # GB
-    cold_memory_size=50,  # GB
-    glacier_enabled=True
-)
+memory_manager = MemoryManager()
 
 # Store data in memory
 memory_manager.store(
     key="location_data",
     value=location_data,
-    tier="warm"  # Options: "hot", "warm", "cold", "glacier"
+    tier="warm"  # Options: "red_hot", "hot", "warm", "cold", "glacier"
 )
 
 # Retrieve data from memory

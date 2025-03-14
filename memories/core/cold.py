@@ -20,6 +20,7 @@ from datetime import datetime
 import subprocess
 import gzip
 import shutil
+import re
 
 # Initialize GPU support flags
 HAS_GPU_SUPPORT = False
@@ -539,6 +540,57 @@ class ColdMemory:
         except Exception as e:
             self.logger.error(f"Failed to get schema for {data_id}: {e}")
             return None
+
+    async def delete(self, key: str) -> bool:
+        """Delete data from cold memory.
+        
+        Args:
+            key: Key of the data to delete
+            
+        Returns:
+            bool: True if deletion was successful, False otherwise
+        """
+        try:
+            # Get the file path for the key
+            file_path = self._get_file_path(key)
+            
+            # Check if file exists
+            if not os.path.exists(file_path):
+                self.logger.warning(f"File for key '{key}' does not exist")
+                return False
+            
+            # Delete the file
+            os.remove(file_path)
+            self.logger.info(f"File for key '{key}' deleted")
+            
+            # Also remove from catalog if it exists
+            try:
+                from memories.core.memory_catalog import memory_catalog
+                if memory_catalog and hasattr(memory_catalog, 'remove'):
+                    memory_catalog.remove(key)
+                    self.logger.info(f"Key '{key}' removed from memory catalog")
+            except Exception as catalog_error:
+                self.logger.warning(f"Error removing key '{key}' from catalog: {catalog_error}")
+            
+            return True
+        except Exception as e:
+            self.logger.error(f"Error deleting data with key '{key}': {e}")
+            return False
+            
+    def _get_file_path(self, key: str) -> str:
+        """Get the file path for a key.
+        
+        Args:
+            key: Key to get file path for
+            
+        Returns:
+            str: File path for the key
+        """
+        # Sanitize key for use as filename
+        safe_key = re.sub(r'[^\w\-\.]', '_', key)
+        
+        # Use the storage directory
+        return os.path.join(self.storage_dir, f"{safe_key}.parquet")
 
 
 

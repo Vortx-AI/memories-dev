@@ -226,4 +226,40 @@ class RedHotMemory:
             
         except Exception as e:
             logger.error(f"Failed to get schema for vector {vector_id}: {e}")
-            return None 
+            return None
+
+    async def delete(self, key: str) -> bool:
+        """Delete vector data from red hot memory.
+        
+        Args:
+            key: Key of the data to delete
+            
+        Returns:
+            bool: True if deletion was successful, False otherwise
+        """
+        try:
+            # Check if key exists in metadata
+            if not hasattr(self, 'metadata') or not self.metadata or key not in self.metadata:
+                self.logger.warning(f"Key '{key}' does not exist in red hot memory")
+                return False
+            
+            # Get index of the vector
+            vector_idx = self.metadata[key].get('index')
+            if vector_idx is None:
+                self.logger.warning(f"No index found for key '{key}'")
+                return False
+            
+            # FAISS doesn't support direct removal, so we need to mark it as deleted in metadata
+            # and rebuild the index if needed
+            self.metadata[key]['deleted'] = True
+            
+            # Save metadata
+            if hasattr(self, 'metadata_file') and self.metadata_file:
+                with open(self.metadata_file, 'w') as f:
+                    json.dump(self.metadata, f)
+                    
+            self.logger.info(f"Vector with key '{key}' marked as deleted")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error deleting vector with key '{key}': {e}")
+            return False 
