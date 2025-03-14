@@ -402,3 +402,94 @@ class MemoryTiering:
             logger.warning(f"Moving from {source_tier} to {target_tier} requires intermediate steps")
             # Implementation for multi-step promotion would go here
             return False 
+    
+    async def glacier_to_cold_file(self, key: str, destination_filename: Optional[str] = None) -> Tuple[bool, str]:
+        """Move data from Glacier storage to Cold storage as a file.
+        
+        This method retrieves data from Glacier storage and stores it directly as a file
+        in the Cold storage location, rather than in the DuckDB database.
+        
+        Args:
+            key: The key identifying the data in Glacier storage
+            destination_filename: Optional filename to use when storing in Cold storage.
+                If not provided, will use the key's filename component.
+                
+        Returns:
+            Tuple[bool, str]: (Success flag, full file path if successful)
+        """
+        await self.initialize_tiers()
+        
+        try:
+            # Retrieve data from Glacier storage
+            logger.info(f"Retrieving data from Glacier storage with key: {key}")
+            data = await self.glacier.retrieve_stored(key)
+            
+            if data is None:
+                logger.error(f"Data with key {key} not found in Glacier storage")
+                return False, ""
+            
+            # Determine filename
+            if destination_filename is None:
+                # Use the last part of the key as the filename
+                destination_filename = key.split('/')[-1]
+            
+            # Prepare metadata for Cold storage
+            metadata = {
+                "original_source": "glacier",
+                "original_key": key,
+                "transfer_date": datetime.now().isoformat(),
+            }
+            
+            # Add file extension based analysis if possible
+            if '.' in destination_filename:
+                extension = destination_filename.split('.')[-1].lower()
+                if extension in ['json', 'csv', 'parquet', 'pkl', 'pickle']:
+                    metadata["file_type"] = extension
+            
+            # Convert data to bytes if it's not already
+            if not isinstance(data, bytes):
+                if isinstance(data, pd.DataFrame):
+                    # Convert DataFrame to pickle bytes
+                    import pickle
+                    data = pickle.dumps(data)
+                    metadata["content_type"] = "application/python-pickle"
+                    metadata["data_type"] = "dataframe"
+                    if not destination_filename.endswith('.pkl'):
+                        destination_filename += '.pkl'
+                elif isinstance(data, (dict, list)):
+                    # Convert dict/list to JSON bytes
+                    data = json.dumps(data).encode('utf-8')
+                    metadata["content_type"] = "application/json"
+                    if not destination_filename.endswith('.json'):
+                        destination_filename += '.json'
+                else:
+                    # Convert to string then bytes as last resort
+                    data = str(data).encode('utf-8')
+                    metadata["content_type"] = "text/plain"
+                    if not '.' in destination_filename:
+                        destination_filename += '.txt'
+            
+            # Add tags
+            tags = ["glacier_transfer", f"source:{key}"]
+            
+            # Store as file in Cold storage
+            logger.info(f"Storing data as file in Cold storage: {destination_filename}")
+            success, file_path = self.cold.store_file(
+                data=data,
+                filename=destination_filename,
+                metadata=metadata,
+                tags=tags
+            )
+            
+            if success:
+                logger.info(f"Successfully moved data from Glacier to Cold storage as file: {file_path}")
+                # Optionally, delete from Glacier after successful transfer
+                # await self.glacier.delete_stored(key)
+                return True, file_path
+            else:
+                logger.error(f"Failed to store data as file in Cold storage")
+                return False, ""
+                
+        except Exception as e:
+            logger.error(f"Error moving data from Glacier to Cold as file: {str(e)}")
+            return False, "" 
