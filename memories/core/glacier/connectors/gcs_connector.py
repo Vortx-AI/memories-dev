@@ -168,16 +168,33 @@ class GCSConnector(GlacierConnector):
             if not blob.exists():
                 return None
                 
+            # Get content type if available
+            content_type = blob.content_type
+            
+            # Check if this is likely binary data based on the key or content type
+            is_likely_binary = (
+                key.endswith(('.pkl', '.bin', '.dat', '.model', '.gz', '.zip')) or
+                (content_type and 'octet-stream' in content_type) or
+                (content_type and 'application/x-pickle' in content_type)
+            )
+            
             # Download the data
             data = blob.download_as_bytes()
             
-            # Try to decode as JSON, fallback to string, then bytes
+            # For binary files, just return the bytes without trying to decode
+            if is_likely_binary:
+                self.logger.info(f"Returning binary data for key: {key} (size: {len(data)} bytes)")
+                return data
+                
+            # For other files, try to decode as JSON, fallback to string, then bytes
             try:
                 return json.loads(data)
             except json.JSONDecodeError:
                 try:
                     return data.decode('utf-8')
                 except UnicodeDecodeError:
+                    # If decoding fails, return the raw bytes
+                    self.logger.info(f"Could not decode data as UTF-8, returning as bytes")
                     return data
                     
         except NotFound:
