@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional, Union, List, Tuple
 from pathlib import Path
 import logging
 import json
+import uuid
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
 from ..base import GlacierConnector
@@ -22,12 +23,14 @@ class GCSConnector(GlacierConnector):
                 - project_id: Google Cloud project ID
                 - credentials_path: Path to service account credentials JSON file (optional)
         """
-        super().__init__()
-        self.logger = logging.getLogger(__name__)
-        
-        if not config:
-            raise ValueError("Config is required for GCS connector")
+        # Ensure config is a dict
+        if config is None:
+            config = {}
             
+        # Initialize parent with config
+        super().__init__(config)
+        
+        # Get required configuration parameters
         self.bucket_name = config.get('bucket_name')
         if not self.bucket_name:
             raise ValueError("bucket_name is required in config")
@@ -71,14 +74,14 @@ class GCSConnector(GlacierConnector):
             self.logger.error(f"Failed to initialize GCS client: {str(e)}")
             raise ConnectionError(f"Failed to initialize GCS client: {str(e)}")
 
-    async def list_objects(self, prefix: Optional[str] = None) -> List[Tuple[str, Dict[str, Any]]]:
+    def list_objects(self, prefix: str = "") -> List[Dict[str, Any]]:
         """List objects in the bucket.
         
         Args:
             prefix: Optional prefix to filter objects by
             
         Returns:
-            List[Tuple[str, Dict[str, Any]]]: List of (key, metadata) tuples
+            List[Dict[str, Any]]: List of object metadata dictionaries
         """
         try:
             if not self.bucket:
@@ -91,11 +94,12 @@ class GCSConnector(GlacierConnector):
                 metadata = blob.metadata or {}
                 # Add standard metadata
                 metadata.update({
+                    "key": blob.name,
                     "size": blob.size,
                     "updated": blob.updated.isoformat() if blob.updated else None,
                     "content_type": blob.content_type
                 })
-                result.append((blob.name, metadata))
+                result.append(metadata)
                 
             return result
             
@@ -103,21 +107,23 @@ class GCSConnector(GlacierConnector):
             self.logger.error(f"Error listing objects in GCS: {str(e)}")
             return []
 
-    async def store(self, data: Any, key: str, metadata: Optional[Dict[str, Any]] = None) -> bool:
+    def store(self, data: Any, metadata: Optional[Dict[str, Any]] = None) -> str:
         """Store data in GCS bucket.
         
         Args:
             data: Data to store
-            key: Key to store the data under
             metadata: Optional metadata to store with the object
             
         Returns:
-            bool: True if successful, False otherwise
+            str: Key for the stored data
         """
         try:
             if not self.bucket:
                 self.connect()
-                
+            
+            # Generate a key if not provided in metadata
+            key = metadata.get("key") if metadata and "key" in metadata else f"data/{str(uuid.uuid4())}"
+            
             blob = self.bucket.blob(key)
             
             # Convert data to bytes if it's not already
@@ -133,16 +139,18 @@ class GCSConnector(GlacierConnector):
             
             # Set metadata if provided
             if metadata:
-                blob.metadata = metadata
+                # Filter out key from metadata if present
+                metadata_to_store = {k: v for k, v in metadata.items() if k != "key"}
+                blob.metadata = metadata_to_store
                 blob.patch()
                 
-            return True
+            return key
             
         except Exception as e:
             self.logger.error(f"Failed to store data in GCS: {str(e)}")
-            return False
+            raise
 
-    async def retrieve(self, key: str) -> Optional[Any]:
+    def retrieve(self, key: str) -> Optional[Any]:
         """Retrieve data from GCS bucket.
         
         Args:
@@ -177,6 +185,43 @@ class GCSConnector(GlacierConnector):
         except Exception as e:
             self.logger.error(f"Failed to retrieve data from GCS: {str(e)}")
             return None
+
+    async def store_async(self, data: Any, key: str, metadata: Optional[Dict[str, Any]] = None) -> bool:
+        """Async version of store method for compatibility with async interfaces.
+        
+        Args:
+            data: Data to store
+            key: Key to store the data under
+            metadata: Optional metadata to store with the object
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            if metadata is None:
+                metadata = {}
+            
+            # Add key to metadata
+            metadata["key"] = key
+            
+            # Call the synchronous version
+            self.store(data, metadata)
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to store data in GCS: {str(e)}")
+            return False
+
+    async def retrieve_async(self, key: str) -> Optional[Any]:
+        """Async version of retrieve method for compatibility with async interfaces.
+        
+        Args:
+            key: Key of the data to retrieve
+            
+        Returns:
+            Optional[Any]: Retrieved data or None if not found
+        """
+        return self.retrieve(key)
 
     async def delete(self, key: str) -> bool:
         """Delete data from GCS bucket.

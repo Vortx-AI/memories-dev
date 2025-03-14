@@ -26,9 +26,10 @@ class GlacierMemory:
             storage_type = storage_config.get('type')
             if storage_type:
                 try:
+                    connector_config = storage_config.get('config', {})
                     self.storage_connector = create_storage_connector(
                         storage_type,
-                        storage_config.get('config', {})
+                        connector_config
                     )
                 except Exception as e:
                     self.logger.error(f"Failed to initialize storage connector: {str(e)}")
@@ -50,8 +51,20 @@ class GlacierMemory:
         """
         if not self.storage_connector:
             raise RuntimeError("No storage connector configured")
-            
-        return await self.storage_connector.store(data, key, metadata)
+        
+        try:    
+            # Use the async version if available, otherwise call the sync version
+            if hasattr(self.storage_connector, 'store_async'):
+                return await self.storage_connector.store_async(data, key, metadata)
+            else:
+                if metadata is None:
+                    metadata = {}
+                metadata["key"] = key
+                stored_key = self.storage_connector.store(data, metadata)
+                return stored_key == key
+        except Exception as e:
+            self.logger.error(f"Error storing data: {str(e)}")
+            return False
     
     async def retrieve_stored(self, key: str) -> Optional[Any]:
         """Retrieve data from glacier storage.
@@ -67,8 +80,16 @@ class GlacierMemory:
         """
         if not self.storage_connector:
             raise RuntimeError("No storage connector configured")
-            
-        return await self.storage_connector.retrieve(key)
+        
+        try:
+            # Use the async version if available, otherwise call the sync version
+            if hasattr(self.storage_connector, 'retrieve_async'):
+                return await self.storage_connector.retrieve_async(key)
+            else:
+                return self.storage_connector.retrieve(key)
+        except Exception as e:
+            self.logger.error(f"Error retrieving data: {str(e)}")
+            return None
     
     async def delete_stored(self, key: str) -> bool:
         """Delete data from glacier storage.
