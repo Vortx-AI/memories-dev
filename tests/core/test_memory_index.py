@@ -39,13 +39,23 @@ def mock_memory_catalog():
     return mock_catalog
 
 
-@pytest.fixture
-def mock_sentence_transformer():
-    """Create a mock SentenceTransformer."""
+@pytest.fixture(autouse=True)
+def mock_huggingface_models(monkeypatch):
+    """Mock Hugging Face models to avoid needing tokens in tests."""
+    # Create mock for SentenceTransformer
     mock_transformer = MagicMock()
+    mock_transformer.encode.return_value = np.array([[0.1, 0.2, 0.3, 0.4] * 96])
     
-    # Configure the mock to return test vectors
-    mock_transformer.encode.return_value = np.array([[0.1, 0.2, 0.3, 0.4] * 96])  # 384-dimensional vector
+    # Mock the SentenceTransformer constructor
+    def mock_sentence_transformer_init(self, *args, **kwargs):
+        pass
+        
+    def mock_sentence_transformer_new(cls, *args, **kwargs):
+        return mock_transformer
+    
+    # Apply the mocks
+    monkeypatch.setattr('sentence_transformers.SentenceTransformer.__init__', mock_sentence_transformer_init)
+    monkeypatch.setattr('sentence_transformers.SentenceTransformer.__new__', mock_sentence_transformer_new)
     
     return mock_transformer
 
@@ -59,11 +69,11 @@ def mock_memory_manager():
 
 
 @pytest.fixture
-def memory_index(mock_memory_catalog, mock_sentence_transformer, mock_memory_manager):
+def memory_index(mock_memory_catalog, mock_huggingface_models, mock_memory_manager):
     """Create a MemoryIndex instance with mocked dependencies."""
     # Patch the dependencies
     with patch('memories.core.memory_index.memory_catalog', mock_memory_catalog), \
-         patch('memories.core.memory_index.SentenceTransformer', return_value=mock_sentence_transformer), \
+         patch('memories.core.memory_index.SentenceTransformer', return_value=mock_huggingface_models), \
          patch('memories.core.memory_index.faiss.IndexFlatL2') as mock_index_flat:
         
         # Create mock FAISS index
@@ -83,7 +93,7 @@ def memory_index(mock_memory_catalog, mock_sentence_transformer, mock_memory_man
         index._memory_manager = mock_memory_manager
         
         # Set up the mock model and index
-        index.model = mock_sentence_transformer
+        index.model = mock_huggingface_models
         index._indexes = {
             "cold": {
                 "index": mock_index,
