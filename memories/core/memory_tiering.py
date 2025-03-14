@@ -42,7 +42,8 @@ class MemoryTiering:
             
         if not self.hot:
             from memories.core.hot import HotMemory
-            self.hot = await HotMemory.create()
+            # HotMemory has a simple constructor, not a class method 'create'
+            self.hot = HotMemory()
             
         if not self.warm:
             from memories.core.warm import WarmMemory
@@ -107,10 +108,16 @@ class MemoryTiering:
                 "content_type": "application/octet-stream"  # Default, will be overridden if identifiable
             }
             
+            success = False
+            
             # If it's a DataFrame, store differently
             if isinstance(data, pd.DataFrame):
                 logger.info(f"Storing DataFrame in Cold storage at {destination_path}")
-                success = self.cold.store(data, destination_path, metadata)
+                # Check if store is async
+                if asyncio.iscoroutinefunction(self.cold.store):
+                    success = await self.cold.store(data, destination_path, metadata)
+                else:
+                    success = self.cold.store(data, destination_path, metadata)
                 
             # If it's a dictionary or list, store as JSON
             elif isinstance(data, (dict, list)):
@@ -120,10 +127,18 @@ class MemoryTiering:
                 # Convert to DataFrame if possible
                 try:
                     df = pd.DataFrame(data)
-                    success = self.cold.store(df, destination_path, metadata)
+                    # Check if store is async
+                    if asyncio.iscoroutinefunction(self.cold.store):
+                        success = await self.cold.store(df, destination_path, metadata)
+                    else:
+                        success = self.cold.store(df, destination_path, metadata)
                 except (ValueError, TypeError):
                     # If can't convert to DataFrame, store as raw data
-                    success = self.cold.store(data, destination_path, metadata)
+                    # Check if store is async
+                    if asyncio.iscoroutinefunction(self.cold.store):
+                        success = await self.cold.store(data, destination_path, metadata)
+                    else:
+                        success = self.cold.store(data, destination_path, metadata)
                     
             # If it's bytes, try to decode or store as binary
             elif isinstance(data, bytes):
@@ -136,18 +151,38 @@ class MemoryTiering:
                     # Try to convert to DataFrame
                     try:
                         df = pd.DataFrame(json_data)
-                        success = self.cold.store(df, destination_path, metadata)
+                        # Check if store is async
+                        if asyncio.iscoroutinefunction(self.cold.store):
+                            success = await self.cold.store(df, destination_path, metadata)
+                        else:
+                            success = self.cold.store(df, destination_path, metadata)
                     except (ValueError, TypeError):
-                        success = self.cold.store(json_data, destination_path, metadata)
+                        # Check if store is async
+                        if asyncio.iscoroutinefunction(self.cold.store):
+                            success = await self.cold.store(json_data, destination_path, metadata)
+                        else:
+                            success = self.cold.store(json_data, destination_path, metadata)
                 except:
                     # Store as binary data
                     logger.info(f"Storing binary data in Cold storage at {destination_path}")
-                    success = self.cold.store_raw(data, destination_path, metadata)
+                    # Check if store_raw is async
+                    if hasattr(self.cold, 'store_raw'):
+                        if asyncio.iscoroutinefunction(self.cold.store_raw):
+                            success = await self.cold.store_raw(data, destination_path, metadata)
+                        else:
+                            success = self.cold.store_raw(data, destination_path, metadata)
+                    else:
+                        logger.error("ColdMemory does not have a store_raw method")
+                        return False
             
             # For all other data types, store as is
             else:
                 logger.info(f"Storing data (type: {type(data)}) in Cold storage at {destination_path}")
-                success = self.cold.store(data, destination_path, metadata)
+                # Check if store is async
+                if asyncio.iscoroutinefunction(self.cold.store):
+                    success = await self.cold.store(data, destination_path, metadata)
+                else:
+                    success = self.cold.store(data, destination_path, metadata)
                 
             if success:
                 logger.info(f"Successfully moved data from Glacier to Cold storage at {destination_path}")
@@ -175,9 +210,17 @@ class MemoryTiering:
         await self.initialize_tiers()
         
         try:
-            # Retrieve data from Cold storage
+            # Retrieve data from Cold storage - Cold.retrieve might be async but we need to check implementation
             logger.info(f"Retrieving data from Cold storage with path: {path}")
-            data = self.cold.retrieve(path)
+            # Check if retrieve is sync or async and call accordingly
+            if hasattr(self.cold, 'retrieve') and callable(self.cold.retrieve):
+                if asyncio.iscoroutinefunction(self.cold.retrieve):
+                    data = await self.cold.retrieve(path)
+                else:
+                    data = self.cold.retrieve(path)
+            else:
+                logger.error("ColdMemory has no retrieve method")
+                return False
             
             if data is None:
                 logger.error(f"Data with path {path} not found in Cold storage")
@@ -191,7 +234,7 @@ class MemoryTiering:
                     logger.error(f"Could not convert data to DataFrame for Warm storage")
                     return False
             
-            # Store in Warm storage
+            # Store in Warm storage - WarmMemory.store is async
             logger.info(f"Storing data in Warm storage as table: {table_name}")
             success = await self.warm.store(data, table_name)
             
@@ -232,7 +275,7 @@ class MemoryTiering:
             if hot_key is None:
                 hot_key = table_name
             
-            # Store in Hot storage
+            # Store in Hot storage - HotMemory.store is async
             logger.info(f"Storing data in Hot storage with key: {hot_key}")
             success = await self.hot.store(data, hot_key)
             
@@ -266,7 +309,7 @@ class MemoryTiering:
                 logger.warning("Red Hot memory is not available (GPU required)")
                 return False
             
-            # Retrieve data from Hot storage
+            # Retrieve data from Hot storage - HotMemory.retrieve is async
             logger.info(f"Retrieving data from Hot storage with key: {hot_key}")
             data = await self.hot.retrieve(hot_key)
             
