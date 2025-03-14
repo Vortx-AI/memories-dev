@@ -21,6 +21,7 @@ import subprocess
 import gzip
 import shutil
 import re
+import asyncio
 
 # Initialize GPU support flags
 HAS_GPU_SUPPORT = False
@@ -591,6 +592,92 @@ class ColdMemory:
         
         # Use the storage directory
         return os.path.join(self.storage_dir, f"{safe_key}.parquet")
+
+    def store_file(
+        self,
+        data: bytes,
+        filename: str,
+        metadata: Optional[Dict[str, Any]] = None,
+        tags: Optional[List[str]] = None
+    ) -> Tuple[bool, str]:
+        """Store binary data directly as a file on disk in the cold storage path.
+        
+        Args:
+            data: Binary data to store
+            filename: Name to use for the file
+            metadata: Optional metadata about the data
+            tags: Optional tags for categorizing the data
+            
+        Returns:
+            Tuple[bool, str]: (Success flag, full file path if successful)
+        """
+        try:
+            # Create the cold storage directory if it doesn't exist
+            storage_config = self.config.get('storage', {})
+            storage_path = storage_config.get('path', os.path.join(self.project_root, 'data', 'cold'))
+            files_path = os.path.join(storage_path, 'files')
+            os.makedirs(files_path, exist_ok=True)
+            
+            # Ensure the filename is safe
+            safe_filename = os.path.basename(filename)
+            # Add timestamp to ensure uniqueness
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            final_filename = f"{timestamp}_{safe_filename}"
+            file_path = os.path.join(files_path, final_filename)
+            
+            # Write the binary data to the file
+            with open(file_path, 'wb') as f:
+                f.write(data)
+                
+            # Prepare metadata
+            if metadata is None:
+                metadata = {}
+                
+            metadata.update({
+                "file_path": file_path,
+                "original_filename": safe_filename,
+                "file_size": len(data),
+                "storage_type": "file"
+            })
+            
+            # Register the file in the memory catalog
+            data_id = self.register_data_sync(
+                tier="cold",
+                location=file_path,
+                size=len(data),
+                data_type=os.path.splitext(safe_filename)[1].lstrip('.') or "bin",
+                tags=tags,
+                metadata=metadata
+            )
+            
+            self.logger.info(f"Stored file at {file_path}")
+            return True, file_path
+            
+        except Exception as e:
+            self.logger.error(f"Error storing file in cold storage: {e}")
+            return False, ""
+            
+    def register_data_sync(self, *args, **kwargs):
+        """Synchronous version of register_data for use in synchronous methods."""
+        try:
+            # Create a temporary event loop if needed
+            if not hasattr(self, '_temp_loop'):
+                self._temp_loop = asyncio.new_event_loop()
+                
+            # Run the async register_data method in the event loop
+            if hasattr(self.memory_catalog, 'register_data'):
+                result = self._temp_loop.run_until_complete(
+                    self.memory_catalog.register_data(*args, **kwargs)
+                )
+                return result
+            else:
+                # If memory_catalog doesn't have register_data, generate a UUID
+                return str(uuid.uuid4())
+                
+        except Exception as e:
+            self.logger.error(f"Error in register_data_sync: {e}")
+            # Fallback to UUID
+            return str(uuid.uuid4())
 
 
 
