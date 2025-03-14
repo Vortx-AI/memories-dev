@@ -110,14 +110,14 @@ class MemoryTiering:
             
             success = False
             
-            # If it's a DataFrame, store differently
+            # If it's a DataFrame, store directly
             if isinstance(data, pd.DataFrame):
                 logger.info(f"Storing DataFrame in Cold storage at {destination_path}")
                 # Check if store is async
                 if asyncio.iscoroutinefunction(self.cold.store):
-                    success = await self.cold.store(data, destination_path, metadata)
+                    success = await self.cold.store(data, metadata)
                 else:
-                    success = self.cold.store(data, destination_path, metadata)
+                    success = self.cold.store(data, metadata)
                 
             # If it's a dictionary or list, store as JSON
             elif isinstance(data, (dict, list)):
@@ -129,18 +129,21 @@ class MemoryTiering:
                     df = pd.DataFrame(data)
                     # Check if store is async
                     if asyncio.iscoroutinefunction(self.cold.store):
-                        success = await self.cold.store(df, destination_path, metadata)
+                        success = await self.cold.store(df, metadata)
                     else:
-                        success = self.cold.store(df, destination_path, metadata)
+                        success = self.cold.store(df, metadata)
                 except (ValueError, TypeError):
-                    # If can't convert to DataFrame, store as raw data
+                    # Create a simple DataFrame with the JSON data in a single column
+                    df = pd.DataFrame({'data': [json.dumps(data)]})
+                    logger.info("Converted JSON to single-column DataFrame for Cold storage")
+                    
                     # Check if store is async
                     if asyncio.iscoroutinefunction(self.cold.store):
-                        success = await self.cold.store(data, destination_path, metadata)
+                        success = await self.cold.store(df, metadata)
                     else:
-                        success = self.cold.store(data, destination_path, metadata)
+                        success = self.cold.store(df, metadata)
                     
-            # If it's bytes, try to decode or store as binary
+            # If it's bytes, handle differently based on type
             elif isinstance(data, bytes):
                 # Try to decode as JSON
                 try:
@@ -153,36 +156,56 @@ class MemoryTiering:
                         df = pd.DataFrame(json_data)
                         # Check if store is async
                         if asyncio.iscoroutinefunction(self.cold.store):
-                            success = await self.cold.store(df, destination_path, metadata)
+                            success = await self.cold.store(df, metadata)
                         else:
-                            success = self.cold.store(df, destination_path, metadata)
+                            success = self.cold.store(df, metadata)
                     except (ValueError, TypeError):
+                        # Create a simple DataFrame with the JSON data in a single column
+                        df = pd.DataFrame({'data': [json.dumps(json_data)]})
+                        logger.info("Converted JSON to single-column DataFrame for Cold storage")
+                        
                         # Check if store is async
                         if asyncio.iscoroutinefunction(self.cold.store):
-                            success = await self.cold.store(json_data, destination_path, metadata)
+                            success = await self.cold.store(df, metadata)
                         else:
-                            success = self.cold.store(json_data, destination_path, metadata)
+                            success = self.cold.store(df, metadata)
                 except:
-                    # Store as binary data
-                    logger.info(f"Storing binary data in Cold storage at {destination_path}")
-                    # Check if store_raw is async
-                    if hasattr(self.cold, 'store_raw'):
-                        if asyncio.iscoroutinefunction(self.cold.store_raw):
-                            success = await self.cold.store_raw(data, destination_path, metadata)
-                        else:
-                            success = self.cold.store_raw(data, destination_path, metadata)
+                    # For binary data, encode as base64 and store in a DataFrame
+                    import base64
+                    logger.info(f"Storing binary data in Cold storage at {destination_path} (as base64)")
+                    
+                    # Create a DataFrame with the base64-encoded data
+                    encoded_data = base64.b64encode(data).decode('ascii')
+                    df = pd.DataFrame({
+                        'data': [encoded_data],
+                        'encoding': ['base64'],
+                        'original_size': [len(data)],
+                        'filename': [key.split('/')[-1]]
+                    })
+                    
+                    # Update metadata
+                    metadata["content_type"] = "application/octet-stream"
+                    metadata["encoding"] = "base64"
+                    metadata["original_size"] = len(data)
+                    
+                    # Check if store is async
+                    if asyncio.iscoroutinefunction(self.cold.store):
+                        success = await self.cold.store(df, metadata)
                     else:
-                        logger.error("ColdMemory does not have a store_raw method")
-                        return False
+                        success = self.cold.store(df, metadata)
             
-            # For all other data types, store as is
+            # For all other data types, create a DataFrame with string representation
             else:
                 logger.info(f"Storing data (type: {type(data)}) in Cold storage at {destination_path}")
+                # Convert to string and store in DataFrame
+                str_data = str(data)
+                df = pd.DataFrame({'data': [str_data], 'type': [str(type(data))]})
+                
                 # Check if store is async
                 if asyncio.iscoroutinefunction(self.cold.store):
-                    success = await self.cold.store(data, destination_path, metadata)
+                    success = await self.cold.store(df, metadata)
                 else:
-                    success = self.cold.store(data, destination_path, metadata)
+                    success = self.cold.store(df, metadata)
                 
             if success:
                 logger.info(f"Successfully moved data from Glacier to Cold storage at {destination_path}")
