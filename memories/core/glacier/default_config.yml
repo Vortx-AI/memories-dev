@@ -36,4 +36,46 @@ connectors:
   landsat:
     type: landsat
     cache_dir: ./data/glacier/landsat
-default_connector: s3 
+default_connector: s3
+
+# Storage configuration
+storage:
+  type: gcs  # Google Cloud Storage
+  config:
+    bucket_name: memories-glacier  # Default bucket name
+    project_id: ${GCP_PROJECT_ID}  # Will be replaced with environment variable
+    credentials_path: ${GCP_CREDENTIALS_PATH}  # Optional, will be replaced with environment variable
+
+# Data source configurations
+sources:
+  osm:
+    enabled: true
+    cache_dir: data/osm
+    
+  overture:
+    enabled: true
+    cache_dir: data/overture
+    
+  sentinel:
+    enabled: true
+    cache_dir: data/sentinel
+    store_in_cold: true
+    keep_files: false
+    
+  planetary:
+    enabled: true
+    cache_dir: data/planetary
+    
+  landsat:
+    enabled: true
+    cache_dir: data/landsat
+
+# Common settings
+cache:
+  enabled: true
+  max_size_gb: 10
+  cleanup_interval_hours: 24
+
+logging:
+  level: INFO
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s' 
