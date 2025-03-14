@@ -2,7 +2,7 @@
 Google Cloud Storage connector for Glacier Memory.
 """
 
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union, List, Tuple
 from pathlib import Path
 import logging
 import json
@@ -36,11 +36,24 @@ class GCSConnector(GlacierConnector):
         if not self.project_id:
             raise ValueError("project_id is required in config")
             
-        # Initialize GCS client
+        self.credentials_path = config.get('credentials_path')
+        self.client = None
+        self.bucket = None
+        
+        # Connect to GCS
+        self.connect()
+
+    def connect(self) -> bool:
+        """Connect to Google Cloud Storage.
+        
+        Returns:
+            bool: True if connection is successful, False otherwise
+        """
         try:
-            if 'credentials_path' in config:
+            # Initialize GCS client
+            if self.credentials_path:
                 self.client = storage.Client.from_service_account_json(
-                    config['credentials_path'],
+                    self.credentials_path,
                     project=self.project_id
                 )
             else:
@@ -51,8 +64,44 @@ class GCSConnector(GlacierConnector):
                 self.logger.info(f"Creating bucket {self.bucket_name}")
                 self.bucket.create()
                 
+            self.logger.info(f"Successfully connected to GCS bucket: {self.bucket_name}")
+            return True
+                
         except Exception as e:
+            self.logger.error(f"Failed to initialize GCS client: {str(e)}")
             raise ConnectionError(f"Failed to initialize GCS client: {str(e)}")
+
+    async def list_objects(self, prefix: Optional[str] = None) -> List[Tuple[str, Dict[str, Any]]]:
+        """List objects in the bucket.
+        
+        Args:
+            prefix: Optional prefix to filter objects by
+            
+        Returns:
+            List[Tuple[str, Dict[str, Any]]]: List of (key, metadata) tuples
+        """
+        try:
+            if not self.bucket:
+                self.connect()
+                
+            blobs = self.bucket.list_blobs(prefix=prefix)
+            
+            result = []
+            for blob in blobs:
+                metadata = blob.metadata or {}
+                # Add standard metadata
+                metadata.update({
+                    "size": blob.size,
+                    "updated": blob.updated.isoformat() if blob.updated else None,
+                    "content_type": blob.content_type
+                })
+                result.append((blob.name, metadata))
+                
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error listing objects in GCS: {str(e)}")
+            return []
 
     async def store(self, data: Any, key: str, metadata: Optional[Dict[str, Any]] = None) -> bool:
         """Store data in GCS bucket.
@@ -66,6 +115,9 @@ class GCSConnector(GlacierConnector):
             bool: True if successful, False otherwise
         """
         try:
+            if not self.bucket:
+                self.connect()
+                
             blob = self.bucket.blob(key)
             
             # Convert data to bytes if it's not already
@@ -100,6 +152,9 @@ class GCSConnector(GlacierConnector):
             Optional[Any]: Retrieved data or None if not found
         """
         try:
+            if not self.bucket:
+                self.connect()
+                
             blob = self.bucket.blob(key)
             
             if not blob.exists():
@@ -133,6 +188,9 @@ class GCSConnector(GlacierConnector):
             bool: True if successful, False otherwise
         """
         try:
+            if not self.bucket:
+                self.connect()
+                
             blob = self.bucket.blob(key)
             
             if not blob.exists():
@@ -148,6 +206,9 @@ class GCSConnector(GlacierConnector):
     async def clear(self) -> None:
         """Clear all objects from the bucket."""
         try:
+            if not self.bucket:
+                self.connect()
+                
             blobs = self.bucket.list_blobs()
             for blob in blobs:
                 blob.delete()
@@ -157,4 +218,5 @@ class GCSConnector(GlacierConnector):
     def cleanup(self) -> None:
         """Clean up resources."""
         # GCS client doesn't need explicit cleanup
-        pass 
+        self.client = None
+        self.bucket = None 
