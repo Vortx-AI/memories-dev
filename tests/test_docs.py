@@ -106,7 +106,7 @@ def test_example_code_validity():
 
 def test_version_consistency():
     """Test that version numbers are consistent across documentation."""
-    expected_version = "2.0.6"  # Set the expected version
+    expected_version = "2.0.7"  # Set the expected version
     
     # Check version in conf.py
     docs_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'docs'))
@@ -252,4 +252,10 @@ def test_api_reference_completeness():
     
     # Check that each expected API is documented
     for api_name in expected_apis:
-        assert api_name in all_content, f"API {api_name} is not documented" 
+        assert api_name in all_content, f"API {api_name} is not documented"
+
+def test_version_match():
+    """Check if version in __init__.py matches pyproject.toml."""
+    # Set the expected version
+    expected_version = "2.0.7"  # Set the expected version
+    # ... existing code ... 

@@ -38,9 +38,9 @@ project = 'memories-dev'
 copyright = '2025, Memories-dev'
 author = 'Memories-dev'
 # The short X.Y version
-version = '2.0.6'
+version = '2.0.7'
 # The full version, including alpha/beta/rc tags
-release = '2.0.6'
+release = '2.0.7'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -298,8 +298,8 @@ html_context = {
     'READTHEDOCS': True,
     'using_theme': 'sphinx_rtd_theme',
     'html_theme': 'sphinx_rtd_theme',
-    'current_version': '2.0.6',
-    'version': '2.0.6',
+    'current_version': '2.0.7',
+    'version': '2.0.7',
     'build_id': '2025-03-11',
     'build_url': 'https://readthedocs.org/projects/memories-dev/builds/',
 }

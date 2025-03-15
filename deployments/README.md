@@ -2,7 +2,7 @@
 
 This document outlines the deployment architecture for the Memories application, detailing three distinct deployment patterns: Standalone, Consensus, and Swarmed.
 
-## What's New in Version 2.0.6 (Scheduled for March 3, 2025)
+## What's New in Version 2.0.7 (March 14, 2025)
 
 Since our initial release (v1.0.0 on February 14, 2025), we've made significant improvements to our deployment architecture:
 
@@ -169,7 +169,7 @@ deployments/
 
 ## Configuration Examples
 
-### Standalone on GCP (New in 2.0.6)
+### Standalone on GCP (New in 2.0.7)
 
 ```yaml
 deployment:
@@ -189,7 +189,7 @@ hardware:
     size: 100GB
     
 software:
-  container_image: memories/standalone:2.0.6
+  container_image: memories/standalone:2.0.7
   environment:
     MODEL_PROVIDER: deepseek-ai
     MODEL_NAME: deepseek-coder-small
@@ -204,7 +204,7 @@ networking:
     allow_https: true
 ```
 
-### Consensus on AWS (New in 2.0.6)
+### Consensus on AWS (New in 2.0.7)
 
 ```yaml
 deployment:
@@ -248,7 +248,7 @@ load_balancer:
       certificate_arn: arn:aws:acm:us-west-2:123456789012:certificate/abcdef
 ```
 
-### Swarmed on Azure (New in 2.0.6)
+### Swarmed on Azure (New in 2.0.7)
 
 ```yaml
 deployment:
@@ -284,7 +284,7 @@ scaling:
 
 ## Migration Guide from Previous Versions
 
-If you're upgrading from v1.0.0 (February 14, 2025) to v2.0.6 (March 3, 2025), please note the following changes:
+If you're upgrading from v1.0.0 (February 14, 2025) to v2.0.7 (March 14, 2025), please note the following changes:
 
 ### Configuration Updates
 - The `model_provider`

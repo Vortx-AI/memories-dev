@@ -1,4 +1,4 @@
-.. memories-dev documentation master file, version 2.0.6
+.. memories-dev documentation master file, version 2.0.7
 
 ==================================================
 memories-dev: Earth-Grounded AI Memory Systems
@@ -6,31 +6,27 @@ memories-dev: Earth-Grounded AI Memory Systems
 
 .. raw:: html
 
-   <div class="hero-banner">
-     <div class="hero-content">
-       <h1>memories-dev 2.0.6</h1>
-       <p class="tagline">The Future of Earth-Grounded AI Memory</p>
+   <div class="header-container">
+     <div class="header-logo">
+       <img src="_static/img/logo.svg" alt="memories-dev logo" width="120" height="120">
+     </div>
+     <div class="header-text">
+       <h1>memories-dev 2.0.7</h1>
+       <p>Earth-grounded AI memory systems</p>
      </div>
    </div>
 
-.. image:: _static/images/hero_image.png
-   :align: center
-   :width: 100%
-   :alt: memories-dev - Earth-Grounded AI Memory Systems
-
-.. raw:: html
-
-   <div class="version-banner">
-     <div class="version-info">
-       <span class="version-number">v2.0.6</span>
-       <span class="version-date">Released: March 11, 2025</span>
-     </div>
-     <div class="version-badges">
-       <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License: Apache 2.0">
-       <img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue" alt="Python Versions">
-       <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey" alt="Platforms">
-       <img src="https://img.shields.io/badge/docs-comprehensive-green" alt="Documentation">
-     </div>
+   <div class="badges">
+     <a href="https://pypi.org/project/memories-dev/" target="_blank">
+       <img src="https://img.shields.io/pypi/v/memories-dev.svg" alt="PyPI">
+     </a>
+     <a href="https://github.com/Vortx-AI/memories-dev" target="_blank">
+       <img src="https://img.shields.io/github/stars/Vortx-AI/memories-dev.svg" alt="GitHub stars">
+     </a>
+     <a href="https://github.com/Vortx-AI/memories-dev/blob/main/LICENSE" target="_blank">
+       <img src="https://img.shields.io/github/license/Vortx-AI/memories-dev.svg" alt="License">
+     </a>
+     <span class="version-number">v2.0.7</span>
    </div>
 
 Welcome to memories-dev, a framework that reimagines how artificial intelligence understands, stores, and retrieves information. This book guides you through the journey of creating AI systems with deep understanding of Earth's systems through scientifically rigorous memory.
@@ -56,10 +52,10 @@ Welcome to memories-dev, a framework that reimagines how artificial intelligence
    
    **Figure 1**: The memories-dev system architecture showing data flow from sources through processing to storage and analysis.
 
-.. admonition:: What's New in Version 2.0.6
+.. admonition:: What's New in Version 2.0.7
    :class: tip
 
-   Version 2.0.6 brings significant enhancements to the memories-dev framework:
+   Version 2.0.7 brings significant enhancements to the memories-dev framework:
    
    * **New Examples**: Added examples for real estate analysis, property analysis, multimodal AI integration, code intelligence, and more
    * **Enhanced Schema Management**: Improved schema handling and metadata extraction for better data organization

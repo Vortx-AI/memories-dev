@@ -60,7 +60,7 @@ extras_require = {
 
 setup(
     name='memories-dev',
-    version='2.0.6',
+    version='2.0.7',
     description='Earth-grounded AI memory systems',
     author='Memories-dev',
     author_email='info@memories-dev.org',
