@@ -48,7 +48,7 @@ Fixed
 
 For a complete list of changes, please visit our `GitHub releases page <https://github.com/Vortx-AI/memories-dev/releases>`_.
 
-Version 2.0.6 (March 13, 2025)
+Version 2.0.7 (November 30, 2023)
 ---------------------------------
 
 Added
@@ -147,100 +147,6 @@ Fixed
 Added
 ~~~~~
 - Added new features and improvements as described in the changelog
-
-Changed
-~~~~~~~
-- Updated geopy version to 2.4.1
-- Improved dependency management across Python versions
-- Enhanced GPU installation process
-- Updated documentation with clearer installation instructions
-
-Fixed
-~~~~~
-- Fixed version inconsistencies across configuration files
-- Improved error handling in GPU setup
-- Resolved package conflicts in Python 3.13
-
-For a complete list of changes, please visit our `GitHub releases page <https://github.com/Vortx-AI/memories-dev/releases>`_.
-
-Version 2.0.7 (March 14, 2025)
------------------------------
-
-Added
-~~~~~
-
-**Memory Tiering**
-
-* Added direct file storage capability for Glacier to Cold transfers
-* Implemented ``store_file`` method in ``ColdMemory`` class for binary data storage
-* Added ``glacier_to_cold_file`` method to preserve binary file formats
-* Enhanced metadata handling for file-based storage
-* Improved error handling for binary data transfers
-
-**Scripts & Utilities**
-
-* Added ``tier_file_data.py`` script for transferring files from Glacier to Cold
-* Added ``list_cold_files.py`` for listing files stored in Cold storage
-* Added ``extract_cold_file.py`` for retrieving files from Cold storage
-* Improved file path handling and validation
-* Enhanced file metadata recording and retrieval
-
-Enhanced
-~~~~~~~~
-
-**Cold Storage**
-
-* Improved binary data handling in Cold storage
-* Added support for preserving file formats without encoding
-* Enhanced file registration in memory catalog
-* Added better file path management and timestamp-based naming
-* Improved error reporting for storage operations
-
-**Glacier Integration**
-
-* Enhanced retrieval of binary data from Glacier storage
-* Improved file format detection and handling
-* Better error handling for large file transfers
-* Added support for custom filenames during transfers
-
-Fixed
-~~~~~
-
-* Fixed data transfer issue when moving binary data from Glacier to Cold storage
-* Resolved issue with non-existent ``store_raw`` method in ``ColdMemory`` class
-* Improved handling of different data types during tier transfers
-* Enhanced base64 encoding for binary data that needs database storage
-* Fixed parameter handling in ``ColdMemory.store`` method calls
-
-[1.1.8] - 2025-02-16
---------------------
-
-Changed
-~~~~~~~
-- Bumped version to 1.1.8 for maintenance release
-
-[1.1.7] - 2025-02-16
---------------------
-
-Added
-~~~~~
-- Added matplotlib as a required core dependency for visualization support
-- Ensured matplotlib is installed by default with the base package
-
-Fixed
-~~~~~
-- Fixed ModuleNotFoundError for matplotlib in core memory module
-- Improved dependency management for visualization components
-- Made matplotlib a compulsory dependency to prevent import errors
-
-[1.1.6] - 2025-02-16
---------------------
-
-Added
-~~~~~
-- Added missing dependencies: netCDF4, python-multipart, pyjwt, folium, rtree
-- Added new CUDA setup script for better GPU support
-- Added comprehensive installation verification
 
 Changed
 ~~~~~~~
