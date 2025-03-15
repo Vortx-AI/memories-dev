@@ -5,6 +5,43 @@ All notable changes to memories.dev will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.7] - 2025-03-15
+
+### Added
+
+- **Core**
+  - Added direct file storage capability for Glacier to Cold transfers
+  - Implemented `store_file` method in `ColdMemory` class for binary data storage
+  - Added `glacier_to_cold_file` method to preserve binary file formats
+  - Enhanced metadata handling for file-based storage
+  - Improved error handling for binary data transfers
+
+- **Scripts & Utilities**
+
+  - Improved file path handling and validation
+  - Enhanced file metadata recording and retrieval
+
+### Enhanced
+
+- **Core**
+  - Improved binary data handling in Cold storage
+  - Added support for preserving file formats without encoding
+  - Enhanced file registration in memory catalog
+  - Added better file path management and timestamp-based naming
+  - Improved error reporting for storage operations
+  - Enhanced retrieval of binary data from Glacier storage
+  - Improved file format detection and handling
+  - Better error handling for large file transfers
+  - Added support for custom filenames during transfers
+
+### Fixed
+
+- Fixed data transfer issue when moving binary data from Glacier to Cold storage
+- Resolved issue with non-existent `store_raw` method in `ColdMemory` class
+- Improved handling of different data types during tier transfers
+- Enhanced base64 encoding for binary data that needs database storage
+- Fixed parameter handling in `ColdMemory.store` method calls
+
 ## [2.0.6] - 2025-03-13
 
 ### Added
@@ -426,164 +463,4 @@ Distributed Memory: Support for distributed memory across multiple nodes
 
 ### Added
 - Added version-specific dependency management for Python 3.9-3.13
-- Added `diffusers>=0.25.0` to core dependencies
-- Enhanced version compatibility across different Python versions
-- Added LangChain and model for advanced text processing
-
-### Changed
-- Reorganized dependencies into core and version-specific groups
-- Updated dependency version constraints for better compatibility
-- Improved Python version-specific package management
-- Pinned numpy to 1.26.x for Python 3.12 to ensure binary compatibility
-- Removed spacy/thinc dependencies for better compatibility
-- Updated text processing to use LangChain and model
-
-### Fixed
-- Fixed dependency conflicts between different Python versions
-- Optimized package requirements for each Python version
-- Improved installation process across different Python environments
-- Fixed numpy binary incompatibility issues in Python 3.12
-- Maintained consistent text processing across all versions
-
-## [1.1.2] - 2025-02-16
-
-### Added
-- Updated Python version support to include Python 3.13
-
-### Changed
-- Improved error handling in text processing
-- Enhanced memory management for large datasets
-- Updated documentation for new features
-
-## [1.1.1] - 2025-02-16
-
-### Changed
-- Upgraded numpy to >=2.2.3 for better Python 3.13 compatibility
-- Replaced spacy, thinc, and blis dependencies with nltk>=3.8.1 for better Python 3.13 compatibility
-
-### Fixed
-- Resolved installation issues on Python 3.13
-- Fixed package version conflicts and compilation issues
-
-## [1.1.0] - 2025-02-16
-
-### Added
-- New memory indexing system
-- Enhanced text processing capabilities
-- Improved geographic data handling
-
-### Changed
-- Updated Python version requirement to exclude 3.13 temporarily
-- Fixed blis version to 0.7.11
-- Updated thinc dependency to 8.1.10 for better compatibility
-- Pinned numpy to 1.24.3 for binary compatibility
-- Updated spacy to >=3.7.0,<3.8.0
-
-### Fixed
-- Memory leaks in long-running processes
-- Build system configuration for better cross-version support
-- Various performance issues
-- Fixed incorrect blis version reference causing installation failures
-
-## [1.0.9] - 2025-02-16
-
-### Added
-- Support for custom memory backends
-- Enhanced error reporting
-
-### Fixed
-- Various compatibility issues with newer Python versions
-- Performance improvements for large datasets
-
-## [1.0.8] - 2025-02-16
-
-### Changed
-- Updated dependency versions for better Python 3.13 compatibility
-- Pinned blis version to 0.7.12 to resolve build issues with Python 3.13
-
-### Fixed
-- Added explicit Python version requirement (<3.13) due to C API changes
-- Added Cython>=3.0.8 as build requirement for better compatibility
-- Various bug fixes and performance improvements
-
-### Security
-- Updated dependencies to address security vulnerabilities
-
-## [1.0.6] - 2025-02-16
-
-### Added
-- New memory optimization features
-
-### Fixed
-- Pinned thinc and spacy versions for better stability
-
-## [1.0.5] - 2025-02-16
-
-### Added
-- Enhanced memory management system
-- Improved error handling
-- Better documentation
-
-### Fixed
-- Various bug fixes
-- Performance improvements
-- Documentation updates
-
-## [1.0.4] - 2025-02-15
-
-### Added
-- Memory persistence improvements
-- Better error messages
-- Enhanced documentation
-
-### Fixed
-- Various bug fixes
-- Performance optimizations
-
-## [1.0.3] - 2025-02-14 🎯 Initial Release
-
-### Core Features 🌟
-- **Memory System**: 
-  - Basic memory formation
-  - Simple querying
-  - Data storage
-  - Basic validation
-
-- **Processing**: 
-  - Text analysis
-  - Geographic data
-  - Basic indexing
-  - Simple caching
-
-### Foundation 🏗️
-- **Architecture**: 
-  - Core system design
-  - Basic scalability
-  - Simple deployment
-  - Initial API
-
-- **Documentation**: 
-  - Basic usage guide
-  - API reference
-  - Installation guide
-  - Examples
-
-[2.0.3]: https://github.com/Vortx-AI/memories-dev/compare/v2.0.2...v2.0.3
-[2.0.2]: https://github.com/Vortx-AI/memories-dev/compare/v2.0.0...v2.0.2
-[2.0.0]: https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.0
-[1.1.9]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.9
-[1.1.8]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.8
-[1.1.7]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.7
-[1.1.6]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.6
-[1.1.5]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.5
-[1.1.4]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.4
-[1.1.3]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.3
-[1.1.2]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.2
-[1.1.1]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.1
-[1.1.0]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.1.0
-[1.0.9]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.0.9
-[1.0.8]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.0.8
-[1.0.6]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.0.6
-[1.0.5]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.0.5
-[1.0.4]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.0.4
-[1.0.3]: https://github.com/Vortx-AI/memories-dev/releases/tag/v1.0.3 
+- Added `
