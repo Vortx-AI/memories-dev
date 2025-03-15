@@ -2,8 +2,8 @@
 Data Sources
 =============
 
-.. image:: https://img.shields.io/badge/version-2.0.6-blue.svg
-   :target: https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.6
+.. image:: https://img.shields.io/badge/version-2.0.7-blue.svg
+   :target: https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.7
    :alt: Version
    :align: right
 

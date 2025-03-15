@@ -1,8 +1,8 @@
 Examples
 ========
 
-.. image:: https://img.shields.io/badge/version-2.0.6-blue.svg
-   :target: https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.6
+.. image:: https://img.shields.io/badge/version-2.0.7-blue.svg
+   :target: https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.7
    :alt: Version
 
 This section provides practical examples of how to use the memories-dev framework in various applications. Each example demonstrates different aspects of the framework's capabilities.
@@ -49,7 +49,7 @@ Advanced analysis examples demonstrate sophisticated analytical capabilities.
 🏠 Real Estate & Property Analysis
 =================================
 
-New in version 2.0.6, our real estate and property analysis tools provide comprehensive insights into properties using Earth memory data.
+New in version 2.0.7, our real estate and property analysis tools provide comprehensive insights into properties using Earth memory data.
 
 .. toctree::
    :maxdepth: 1
@@ -61,7 +61,7 @@ New in version 2.0.6, our real estate and property analysis tools provide compre
 🤖 AI Integration
 ================
 
-New in version 2.0.6, these examples demonstrate advanced AI integration capabilities.
+New in version 2.0.7, these examples demonstrate advanced AI integration capabilities.
 
 .. toctree::
    :maxdepth: 1

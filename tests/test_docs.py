@@ -174,7 +174,7 @@ def test_changelog_entries():
     # Create CHANGELOG.md if it doesn't exist
     if not os.path.exists(changelog_file):
         with open(changelog_file, 'w') as f:
-            f.write("""## [2.0.6] - 2023-11-30
+            f.write("""## [2.0.7] - 2025-03-14
 Initial release
 """)
     
