@@ -1,585 +1,764 @@
-.. memories-dev documentation master file, version 2.0.7
+=============
+Earth Memory
+=============
 
-==================================================
-memories-dev: Earth-Grounded AI Memory Systems
-==================================================
+.. image:: https://img.shields.io/badge/version-2.0.7-blue.svg
+   :target: https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.6
+   :alt: Version
+   :align: right
 
-.. raw:: html
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
 
-   <div class="header-container">
-     <div class="header-logo">
-       <img src="_static/img/logo.svg" alt="memories-dev logo" width="120" height="120">
-     </div>
-     <div class="header-text">
-       <h1>memories-dev 2.0.7</h1>
-       <p>Earth-grounded AI memory systems</p>
-     </div>
-   </div>
-
-   <div class="badges">
-     <a href="https://pypi.org/project/memories-dev/" target="_blank">
-       <img src="https://img.shields.io/pypi/v/memories-dev.svg" alt="PyPI">
-     </a>
-     <a href="https://github.com/Vortx-AI/memories-dev" target="_blank">
-       <img src="https://img.shields.io/github/stars/Vortx-AI/memories-dev.svg" alt="GitHub stars">
-     </a>
-     <a href="https://github.com/Vortx-AI/memories-dev/blob/main/LICENSE" target="_blank">
-       <img src="https://img.shields.io/github/license/Vortx-AI/memories-dev.svg" alt="License">
-     </a>
-     <span class="version-number">v2.0.7</span>
-   </div>
-
-Welcome to memories-dev, a framework that reimagines how artificial intelligence understands, stores, and retrieves information. This book guides you through the journey of creating AI systems with deep understanding of Earth's systems through scientifically rigorous memory.
-
-.. admonition:: What is memories-dev?
-   :class: note
-
-   memories-dev is a framework for building AI systems with enhanced memory capabilities. It provides:
-   
-   * **Structured Memory Architecture**: Organized memory system for efficient data management
-   * **Environmental Context**: Integration with environmental and geospatial data
-   * **Temporal Analysis**: Tools for understanding changes over time
-   * **Practical Implementation**: Ready-to-use components for real-world applications
-   * **Extensible Design**: Flexible architecture for custom memory systems
-   * **Integration Capabilities**: Connection with external data sources and AI systems
-   * **Performance Optimization**: Efficient processing for various workloads
-   * **Developer Tools**: Utilities for monitoring and managing memory systems
-
-.. figure:: _static/images/architecture/system_architecture.png
-   :align: center
-   :width: 90%
-   :alt: Memories-Dev System Architecture
-   
-   **Figure 1**: The memories-dev system architecture showing data flow from sources through processing to storage and analysis.
-
-.. admonition:: What's New in Version 2.0.7
-   :class: tip
-
-   Version 2.0.7 brings significant enhancements to the memories-dev framework:
-   
-   * **New Examples**: Added examples for real estate analysis, property analysis, multimodal AI integration, code intelligence, and more
-   * **Enhanced Schema Management**: Improved schema handling and metadata extraction for better data organization
-   * **System Improvements**: Better dependency handling, error management, and resource optimization
-   * **Memory Optimization**: Optimized data handling and batch processing for improved performance
-   * **API Connectors**: Enhanced integration with various LLM providers
-   * **Bug Fixes**: Resolved issues in test suite, memory retrieval, and data handling
-   
-   See the :doc:`changelog` for a complete list of changes.
-
-.. raw:: html
-
-   <div class="feature-grid">
-     <div class="feature-card">
-       <div class="feature-icon">🧠</div>
-       <h3>Memory Architecture</h3>
-       <p>Multi-tiered memory system with efficient storage and retrieval capabilities.</p>
-     </div>
-     <div class="feature-card">
-       <div class="feature-icon">🌍</div>
-       <h3>Earth Grounding</h3>
-       <p>Connect AI systems to Earth's observable reality through environmental data integration.</p>
-     </div>
-     <div class="feature-card">
-       <div class="feature-icon">⏱️</div>
-       <h3>Temporal Understanding</h3>
-       <p>Track and analyze changes over time with temporal memory management.</p>
-     </div>
-     <div class="feature-card">
-       <div class="feature-icon">🔍</div>
-       <h3>Semantic Search</h3>
-       <p>Find relevant memories using natural language queries and embedding techniques.</p>
-     </div>
-     <div class="feature-card">
-       <div class="feature-icon">🤖</div>
-       <h3>AI Integration</h3>
-       <p>Connect with language models and AI systems for enhanced capabilities.</p>
-     </div>
-     <div class="feature-card">
-       <div class="feature-icon">📊</div>
-       <h3>Data Analysis</h3>
-       <p>Extract insights and patterns from environmental and geospatial datasets.</p>
-     </div>
-     <div class="feature-card">
-       <div class="feature-icon">🏙️</div>
-       <h3>Real Estate Analysis</h3>
-       <p>Property analysis with environmental context and risk assessment.</p>
-     </div>
-     <div class="feature-card">
-       <div class="feature-icon">🖼️</div>
-       <h3>Multimodal Processing</h3>
-       <p>Process and understand different types of data in a unified framework.</p>
-     </div>
-   </div>
-
-.. figure:: _static/images/architecture/memory_tiers.png
-   :align: center
-   :width: 80%
-   :alt: Memory Tier Architecture
-   
-   **Figure 2**: The tiered memory architecture showing hot, warm, cold, and glacier memory layers with migration and retrieval paths.
-
-.. raw:: html
-
-   <div class="contact-info">
-     <h3>Contact Information</h3>
-     <p><strong>Website:</strong> <a href="https://www.memories.dev">www.memories.dev</a></p>
-     <p><strong>Email:</strong> <a href="mailto:hello@memories.dev">hello@memories.dev</a></p>
-   </div>
-
-Contents
-========
-
-.. toctree::
-   :maxdepth: 2
-   :numbered:
-
-   preface
-   getting_started/index
-   core_concepts/index
-   memory_architecture/index
-   memory_types/index
-   earth_memory/index
-   integration/index
-   applications/index
-   api_reference/index
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Appendices
-
-   appendix/system_dependencies
-   appendix/configuration_reference
-   appendix/glossary
-   license
-   privacy
-
-About This Book
-===============
-
-This book serves as both a practical guide and a conceptual exploration of Earth-grounded AI. Each chapter builds upon the previous ones, taking you from fundamental concepts to advanced applications.
-
-The documentation is organized into three main sections:
-
-1. **Foundations** (Chapters 1-3): Core concepts, installation, and basic setup
-2. **Implementation** (Chapters 4-7): Memory architecture, types, and integration
-3. **Applications** (Chapters 8-9): Real-world use cases and examples
-
-.. figure:: _static/images/diagrams/memory_codex.png
-   :align: center
-   :width: 80%
-   :alt: Memory Codex Structure
-   
-   **Figure 3**: The Memory Codex structure showing the relationships between different memory types, storage tiers, and query/analysis interfaces.
-
-Key Features
+Introduction
 ============
 
-.. list-table::
-   :header-rows: 1
-   :widths: 30 70
-   
-   * - Feature
-     - Description
-   * - **Structured Earth Memory**
-     - Organization of observations into scientifically rigorous memory structures that mirror Earth's systems
-   * - **Temporal Awareness**
-     - Memory management across multiple timescales, from real-time to geological
-   * - **Cross-Domain Integration**
-     - Unified knowledge representation across atmospheric, oceanic, and terrestrial systems
-   * - **Scientific Consistency**
-     - AI reasoning grounded in physical laws and ecological principles
-   * - **Observation Grounding**
-     - Empirical observations with proper uncertainty quantification
-
-How to Use This Book
-====================
-
-We recommend reading the chapters in sequence, as each builds upon concepts introduced in previous sections. However, experienced practitioners may choose to focus on specific sections relevant to their needs:
-
-* **New Users**: Start with :doc:`preface` and follow the :doc:`getting_started/index` guide
-* **AI Developers**: Focus on :doc:`integration/models` and :doc:`api_reference/index`
-* **Data Scientists**: Explore :doc:`memory_types/index` and :doc:`memory_architecture/index`
-* **System Architects**: Deep dive into :doc:`memory_architecture/index` and :doc:`applications/index`
-
-Learning Path
-------------
-
-The following diagram illustrates the recommended learning path through the documentation:
-
-.. mermaid::
-
-   flowchart LR
-      A[Getting Started] --> B[Core Concepts]
-      B --> C[Memory Architecture]
-      C --> D[Memory Types]
-      D --> E[Data Integration]
-      E --> F[AI Integration]
-      F --> G[Applications]
-      
-      style A fill:#e6f7ff,stroke:#1890ff,stroke-width:2px
-      style B fill:#e6f7ff,stroke:#1890ff,stroke-width:2px
-      style C fill:#e6f7ff,stroke:#1890ff,stroke-width:2px
-      style D fill:#e6f7ff,stroke:#1890ff,stroke-width:2px
-      style E fill:#e6f7ff,stroke:#1890ff,stroke-width:2px
-      style F fill:#e6f7ff,stroke:#1890ff,stroke-width:2px
-      style G fill:#e6f7ff,stroke:#1890ff,stroke-width:2px
-
-For the latest updates and community discussions, visit our `GitHub repository <https://github.com/Vortx-AI/memories-dev>`_.
-
-Quick Start
-===========
-
-.. code-block:: python
-
-   from memories import MemoryStore
-   
-   # Initialize a memory store
-   store = MemoryStore()
-   
-   # Create a memory with location data
-   memory = store.create_memory(
-       location=(40.7128, -74.0060),  # New York City
-       timestamp="2025-03-11T12:00:00",
-       data={
-           "temperature": 22.5,
-           "humidity": 65,
-           "air_quality_index": 42
-       }
-   )
-   
-   # Query memories in an area
-   memories = store.query(
-       center=(40.7128, -74.0060),
-       radius=5000,  # meters
-       time_range=("2025-01-01", "2025-03-11")
-   )
-   
-   # Analyze patterns
-   analysis = store.analyze(
-       memories=memories,
-       metrics=["temperature_trend", "air_quality"]
-   )
-   
-   # Print results
-   print(f"Found {len(memories)} memories")
-   print(f"Analysis results: {analysis}")
-
-.. figure:: _static/images/workflows/data_fusion_workflow.png
-   :align: center
-   :width: 80%
-   :alt: Data Fusion Workflow
-   
-   **Figure 4**: The data fusion workflow showing how different data sources are processed, features extracted, and combined using Bayesian fusion techniques.
-
-.. note::
-
-   The memories-dev framework provides tools for building AI systems with improved understanding of real-world data. This documentation serves as a guide to implementation and explores how AI can develop better understanding through structured memory systems.
-
-The Journey to Better AI Systems
-================================
-
-This documentation guides you through creating AI systems with improved understanding of real-world data. As you progress through these chapters, you'll discover how to bridge the gap between artificial intelligence and real-world information.
-
-You'll learn about:
-
-- How to improve AI accuracy through structured memory systems
-- Techniques for integrating environmental data and contextual information
-- Methods for building temporal understanding in AI
-- Practical implementations across various domains
-
-Core Components
-==============
-
-The memories-dev framework consists of several core components:
-
-* **Memory Store**: Central system for storing and retrieving memories
-* **Memory Types**: Different types of memory for various data formats
-* **Query Engine**: System for searching and retrieving relevant memories
-* **Analysis Tools**: Components for analyzing and extracting insights
-* **Integration APIs**: Interfaces for connecting with external systems
-* **Data Connectors**: Tools for importing and exporting data
-* **Visualization Tools**: Components for visualizing memory contents
-* **Developer Utilities**: Helpers for monitoring and debugging
-
-These components work together to create a flexible and powerful memory system for AI applications.
-
-Use Cases
-=========
-
-memories-dev enables a wide range of applications:
-
-1. **Environmental Analysis**
-   - Air quality monitoring
-   - Weather pattern analysis
-   - Environmental change tracking
-
-2. **Data Management**
-   - Structured data organization
-   - Temporal data analysis
-   - Efficient information retrieval
-
-3. **Resource Planning**
-   - Resource allocation optimization
-   - Usage pattern analysis
-   - Forecasting and prediction
-
-4. **Urban Development**
-   - Urban pattern analysis
-   - Traffic flow optimization
-   - Development impact assessment
-
-5. **Property Analysis**
-   - Property evaluation
-   - Environmental context assessment
-   - Neighborhood analysis
-
-6. **AI Enhancement**
-   - Multimodal data processing
-   - Code analysis and optimization
-   - Training process improvement
-
-Indices and tables
-================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
-.. toctree::
-   :maxdepth: 2
-   :hidden:
-   :caption: User Guide
-
-   user_guide/index
-   user_guide/best_practices
-   user_guide/configuration
-   user_guide/deployment
-   user_guide/examples
-   user_guide/models
-   user_guide/data_sources
-
-.. toctree::
-   :maxdepth: 2
-   :hidden:
-   :caption: API Reference
-
-   api_reference/index
-   api_reference/sentinel_api
-   api_reference/deployment
-
-.. toctree::
-   :maxdepth: 2
-   :hidden:
-   :caption: Examples & Applications
-
-   examples/index
-   examples/environmental_monitoring
-   examples/advanced_memory_retrieval
-   examples/real_estate_agent
-   examples/property_analyzer
-   examples/multimodal_ai_assistant
-   examples/code_intelligence_agent
-   examples/llm_training_optimizer
-   examples/ambience_analyzer
-   applications/index
-
-.. toctree::
-   :maxdepth: 2
-   :hidden:
-   :caption: Development
-
-   contributing
-   changelog
-   architecture
-   matrix_theme_guide
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Additional Resources
-   :hidden:
-
-   algorithms/index
-   code_catalog/index
-   comparisons/index
-   function_index/index
-   metrics/environmental_metrics
-   metrics/performance
-
-.. toctree::
-   :maxdepth: 2
-   :hidden:
-   :caption: Memory Architecture
-
-   memory_architecture/spatial_memory
-   memory_architecture/temporal_memory
-   memory_architecture/tiered_memory 
+Earth Memory is the core concept behind the memories-dev framework, providing AI systems with a comprehensive understanding of the physical world through temporal and spatial data integration. Unlike traditional AI approaches that rely on text corpora or unstructured documents, Earth Memory connects AI directly to objective Earth observation data - the pure source of truth about our physical world.
 
 .. raw:: html
 
-   <div class="cta-container">
-     <a href="getting_started/index.html" class="cta-button primary">Get Started</a>
-     <a href="https://github.com/Vortx-AI/memories-dev" class="cta-button secondary">View on GitHub</a>
-     <a href="https://pypi.org/project/memories-dev/" class="cta-button secondary">Download Package</a>
-   </div>
+   <div class="earth-memory-banner">
+     <div class="banner-content">
+       <h2>The Source of Truth for AI Systems</h2>
+       <p>Earth Memory provides AI with direct access to objective Earth observation data, eliminating hallucinations and biases inherent in text-based training.</p>
+     </div>
+     <div class="banner-image">
+       .. mermaid::
 
-.. raw:: html
-
-   <div class="installation-guide">
-     <h3>Quick Installation</h3>
-     <div class="installation-options">
-       <div class="installation-option">
-         <h4>Using pip</h4>
-         <pre><code>pip install memories-dev</code></pre>
-       </div>
-       <div class="installation-option">
-         <h4>From source</h4>
-         <pre><code>git clone https://github.com/Vortx-AI/memories-dev.git
-cd memories-dev
-pip install -e .</code></pre>
-       </div>
-       <div class="installation-option">
-         <h4>With extras</h4>
-         <pre><code>pip install memories-dev[all]</code></pre>
-       </div>
+          graph TB
+              subgraph "Earth Memory System"
+                  A[Satellite Data] --> D[Memory Core]
+                  B[Sensor Networks] --> D
+                  C[Environmental Data] --> D
+                  D --> E[AI System]
+                  D --> F[Analysis Engine]
+                  F --> G[Temporal Analysis]
+                  F --> H[Spatial Analysis]
+                  F --> I[Pattern Recognition]
+                  G --> J[Insights]
+                  H --> J
+                  I --> J
+                  J --> E
+              end
+              style D fill:#0f172a,stroke:#3b82f6,color:#fff
+              style E fill:#1e293b,stroke:#3b82f6,color:#fff
+              style F fill:#1e293b,stroke:#3b82f6,color:#fff
      </div>
    </div>
 
+   <style>
+     .earth-memory-banner {
+       background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+       color: white;
+       padding: 2rem;
+       border-radius: 8px;
+       margin: 2rem 0;
+       display: flex;
+       flex-wrap: wrap;
+       align-items: center;
+       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+     }
+     
+     .banner-content {
+       flex: 1;
+       min-width: 300px;
+       padding: 1rem;
+     }
+     
+     .banner-content h2 {
+       color: white;
+       margin-top: 0;
+       border-bottom: none;
+     }
+     
+     .banner-content p {
+       font-size: 1.1rem;
+       opacity: 0.9;
+     }
+     
+     .banner-image {
+       flex: 1;
+       min-width: 300px;
+       padding: 1rem;
+       text-align: center;
+     }
+     
+     .banner-image img {
+       max-width: 100%;
+       height: auto;
+       border-radius: 8px;
+       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+     }
+     
+     @media (max-width: 768px) {
+       .banner-content, .banner-image {
+         flex: 100%;
+       }
+     }
+   </style>
 
-.. raw:: html
+What is Earth Memory?
+---------------------
 
-   <div class="feature-comparison">
-     <h3>Why Choose memories-dev?</h3>
-     <table class="comparison-table">
-       <thead>
-         <tr>
-           <th>Feature</th>
-           <th>memories-dev</th>
-           <th>Traditional Systems</th>
-         </tr>
-       </thead>
-       <tbody>
-         <tr>
-           <td>Memory Architecture</td>
-           <td>✅ Multi-tiered memory system</td>
-           <td>❌ Often limited or single-tier</td>
-         </tr>
-         <tr>
-           <td>Environmental Context</td>
-           <td>✅ Integrated environmental data</td>
-           <td>❌ Limited environmental awareness</td>
-         </tr>
-         <tr>
-           <td>Temporal Analysis</td>
-           <td>✅ Time-based data processing</td>
-           <td>❌ Often static or limited</td>
-         </tr>
-         <tr>
-           <td>Data Organization</td>
-           <td>✅ Structured memory management</td>
-           <td>❌ Often unstructured</td>
-         </tr>
-       </tbody>
-     </table>
-   </div>
+Earth Memory is a sophisticated system that:
 
-Community & Support
-==================
+1. **Integrates diverse data sources** about the physical world, including satellite imagery, geospatial data, environmental metrics, and socioeconomic information
+2. **Organizes data across time and space**, creating a four-dimensional understanding of locations
+3. **Processes and analyzes data** to extract meaningful insights and patterns
+4. **Provides contextual information to AI systems**, enabling them to reason about the physical world with factual accuracy
 
-memories-dev is more than just a framework—it's a growing community of researchers, developers, and Earth scientists working together to create more grounded AI systems.
+Why Earth Memory Matters
+------------------------
 
-.. raw:: html
+Traditional AI systems face significant limitations when reasoning about the physical world:
 
-   <div class="community-section">
-      <div class="community-card">
-         <div class="card-icon"><i class="fas fa-users"></i></div>
-         <h3>Join the Community</h3>
-         <p>Connect with other memories-dev users and contributors in our community forums and chat channels.</p>
-         <a href="https://community.memories.dev" class="btn btn-primary">Join Now</a>
-      </div>
-      
-      <div class="community-card">
-         <div class="card-icon"><i class="fas fa-code-branch"></i></div>
-         <h3>Contribute</h3>
-         <p>Help improve memories-dev by contributing code, documentation, or examples to our open-source repository.</p>
-         <a href="https://github.com/Vortx-AI/memories-dev" class="btn btn-primary">Contribute</a>
-      </div>
-      
-      <div class="community-card">
-         <div class="card-icon"><i class="fas fa-question-circle"></i></div>
-         <h3>Get Support</h3>
-         <p>Need help with memories-dev? Our support team and community are here to assist you.</p>
-         <a href="https://support.memories.dev" class="btn btn-primary">Get Help</a>
-      </div>
-   </div>
+- They rely on text corpora that may contain biases, inaccuracies, and outdated information
+- They lack direct observation capabilities to verify physical world conditions
+- They cannot track how places change over time with precision
+- They often hallucinate plausible but incorrect information about locations and environments
 
-Roadmap & Future Development
-===========================
+Earth Memory solves these problems by:
 
-memories-dev is continuously evolving. Here's what you can expect in upcoming releases:
+- Providing direct access to objective Earth observation data from satellites and sensors
+- Enabling temporal analysis to track changes over time with scientific accuracy
+- Integrating specialized analyzers for domain-specific insights about the physical world
+- Eliminating hallucinations through grounding in factual, observable data
+
+Earth Memory Components
+=======================
+
+The Earth Memory system consists of several key components:
 
 .. list-table::
    :header-rows: 1
    :widths: 20 80
-   
-   * - Version
-     - Key Features
-   * - **2.1.0**
-     - Enhanced temporal reasoning, improved uncertainty quantification, expanded Earth system models
-   * - **2.2.0**
-     - Advanced cross-domain integration, new visualization tools, expanded API capabilities
-   * - **3.0.0**
-     - Next-generation memory architecture, real-time Earth system monitoring, comprehensive model integration
 
-We welcome community input on our roadmap. If you have suggestions for future features or improvements, please share them in our `GitHub discussions <https://github.com/Vortx-AI/memories-dev/discussions>`_.
+   * - Component
+     - Description
+   * - **Data Sources**
+     - The raw inputs to the Earth Memory system, including satellite imagery, vector data, environmental metrics, and more
+   * - **Memory Tiers**
+     - A hierarchical storage system that organizes data by access frequency and importance
+   * - **Temporal Engine**
+     - Processes and analyzes how locations change over time
+   * - **Spatial Engine**
+     - Manages geographic relationships and spatial analysis
+   * - **Analysis Pipeline**
+     - Extracts insights and patterns from raw data
+   * - **Context Formatter**
+     - Prepares Earth Memory data for consumption by AI models
 
-Case Studies
-===========
+Data Sources
+------------
 
-memories-dev can be applied to a variety of real-world applications:
+Earth Memory integrates data from a wide variety of sources to create a comprehensive understanding of the physical world. For detailed information on supported data sources, see the 'data_sources' documentation.
+
+Key data source categories include:
+
+- **Satellite Imagery**: Visual data of the Earth's surface from various providers
+- **Geospatial Vector Data**: Discrete geographic features like buildings, roads, and boundaries
+- **Environmental Data**: Climate, weather, air quality, and other environmental metrics
+- **Historical Maps and Imagery**: Historical views of locations over time
+- **Socioeconomic Data**: Human activities, demographics, and economic factors
+- **Real-time Sensors and IoT**: Current conditions from sensors and connected devices
+
+Memory Tiers
+------------
+
+Earth Memory organizes data into four tiers based on access frequency and importance:
+
+1. **Hot Memory**: Frequently accessed, recent data that requires fast retrieval
+2. **Warm Memory**: Moderately accessed data with balanced performance and storage requirements
+3. **Cold Memory**: Infrequently accessed historical data optimized for storage efficiency
+4. **Glacier Memory**: Archival data that is rarely accessed but preserved for completeness
+
+For detailed information on memory tiers, see the :doc:`/core_concepts/memory_system` documentation.
+
+Temporal Engine
+---------------
+
+The Temporal Engine processes and analyzes how locations change over time, enabling:
+
+- **Historical Analysis**: Understanding how places have evolved over years or decades
+- **Change Detection**: Identifying significant changes in the physical environment
+- **Trend Analysis**: Recognizing patterns and trends over time
+- **Forecasting**: Predicting future conditions based on historical patterns
+
+Example usage:
+
+.. code-block:: python
+
+    from memories.earth import TemporalEngine
+    
+    # Initialize temporal engine
+    engine = TemporalEngine()
+    
+    # Analyze historical changes
+    changes = await engine.analyze_changes(
+        location="San Francisco, CA",
+        start_date="2000-01-01",
+        end_date="2023-01-01",
+        interval="yearly"
+    )
+    
+    # Detect significant events
+    events = engine.detect_significant_events(changes)
+    
+    # Forecast future trends
+    forecast = engine.forecast_trends(
+        changes,
+        forecast_years=10,
+        confidence_interval=0.95
+    )
+
+Spatial Engine
+--------------
+
+The Spatial Engine manages geographic relationships and spatial analysis, enabling:
+
+- **Proximity Analysis**: Understanding what's near a location
+- **Containment Analysis**: Determining what's within a boundary
+- **Network Analysis**: Analyzing connections between locations
+- **Viewshed Analysis**: Determining what's visible from a location
+
+Example usage:
+
+.. code-block:: python
+
+    from memories.earth import SpatialEngine
+    
+    # Initialize spatial engine
+    engine = SpatialEngine()
+    
+    # Find nearby features
+    nearby = await engine.find_nearby(
+        location="San Francisco, CA",
+        feature_types=["park", "school", "hospital"],
+        radius_km=2
+    )
+    
+    # Calculate travel times
+    travel_times = await engine.calculate_travel_times(
+        origin="San Francisco, CA",
+        destinations=["Oakland, CA", "San Jose, CA", "Palo Alto, CA"],
+        mode="driving"
+    )
+    
+    # Analyze visibility
+    viewshed = await engine.analyze_viewshed(
+        location="Twin Peaks, San Francisco, CA",
+        radius_km=5,
+        resolution="high"
+    )
+
+Analysis Pipeline
+-----------------
+
+The Analysis Pipeline extracts insights and patterns from raw data, enabling:
+
+- **Feature Extraction**: Identifying important features in imagery and data
+- **Pattern Recognition**: Recognizing patterns across time and space
+- **Anomaly Detection**: Identifying unusual or unexpected conditions
+- **Correlation Analysis**: Understanding relationships between different factors
+
+Example usage:
+
+.. code-block:: python
+
+    from memories.earth import AnalysisPipeline
+    
+    # Initialize analysis pipeline
+    pipeline = AnalysisPipeline()
+    
+    # Extract features from satellite imagery
+    features = await pipeline.extract_features(
+        location="San Francisco, CA",
+        feature_types=["building", "vegetation", "water"]
+    )
+    
+    # Detect anomalies
+    anomalies = pipeline.detect_anomalies(
+        data=features,
+        baseline="historical_average"
+    )
+    
+    # Analyze correlations
+    correlations = pipeline.analyze_correlations(
+        factors=["vegetation_cover", "temperature", "air_quality"]
+    )
+
+Context Formatter
+-----------------
+
+The Context Formatter prepares Earth Memory data for consumption by AI models, enabling:
+
+- **Prompt Engineering**: Creating effective prompts with Earth Memory context
+- **Multi-Modal Integration**: Combining text, imagery, and structured data
+- **Format Adaptation**: Adapting data to different model requirements
+- **Context Optimization**: Optimizing context for different use cases
+
+Example usage:
+
+.. code-block:: python
+
+    from memories.earth.context import ContextFormatter
+    
+    # Initialize context formatter
+    formatter = ContextFormatter()
+    
+    # Format context for a language model
+    llm_context = await formatter.format_for_llm(
+        location="San Francisco, CA",
+        context_type="comprehensive",
+        max_tokens=1000
+    )
+    
+    # Format context for a vision model
+    vision_context = await formatter.format_for_vision(
+        location="San Francisco, CA",
+        include_imagery=True,
+        imagery_resolution="medium"
+    )
+    
+    # Generate a prompt with Earth Memory context
+    prompt = formatter.generate_prompt(
+        query="How has this neighborhood changed over the past decade?",
+        location="Mission District, San Francisco, CA",
+        context=llm_context
+    )
+
+Earth Memory vs. Traditional AI Approaches
+==========================================
 
 .. raw:: html
 
-   <div class="case-studies">
-      <div class="case-study">
-         <h3>Environmental Analysis</h3>
-         <p>Track and analyze environmental conditions to support monitoring and assessment efforts.</p>
-         <a href="examples/environmental_monitoring.html">Learn More →</a>
-      </div>
-      
-      <div class="case-study">
-         <h3>Resource Management</h3>
-         <p>Optimize resource allocation and planning using comprehensive data analysis.</p>
-         <a href="examples/resource_management.html">Learn More →</a>
-      </div>
-      
-      <div class="case-study">
-         <h3>Urban Development</h3>
-         <p>Analyze urban patterns and development trends to support planning efforts.</p>
-         <a href="examples/urban_growth.html">Learn More →</a>
-      </div>
-      
-      <div class="case-study">
-         <h3>Property Analysis</h3>
-         <p>Evaluate properties based on various factors and contextual information.</p>
-         <a href="examples/real_estate_agent.html">Learn More →</a>
-      </div>
-      
-      <div class="case-study">
-         <h3>AI Applications</h3>
-         <p>Build more effective AI systems with enhanced memory and data integration.</p>
-         <a href="examples/multimodal_ai_assistant.html">Learn More →</a>
-      </div>
+   <div class="comparison-container">
+     <div class="comparison-header">
+       <div class="comparison-cell header-cell">Feature</div>
+       <div class="comparison-cell header-cell">Earth Memory</div>
+       <div class="comparison-cell header-cell">Traditional Foundation Models</div>
+       <div class="comparison-cell header-cell">Traditional RAG Systems</div>
+     </div>
+     
+     <div class="comparison-row">
+       <div class="comparison-cell feature-cell">Data Source</div>
+       <div class="comparison-cell positive-cell">Direct Earth observation data from satellites and sensors</div>
+       <div class="comparison-cell negative-cell">Text corpora from the internet with potential biases</div>
+       <div class="comparison-cell neutral-cell">Document collections that may contain outdated information</div>
+     </div>
+     
+     <div class="comparison-row">
+       <div class="comparison-cell feature-cell">Temporal Understanding</div>
+       <div class="comparison-cell positive-cell">Precise tracking of changes over time with historical imagery</div>
+       <div class="comparison-cell negative-cell">Limited to text descriptions of historical events</div>
+       <div class="comparison-cell neutral-cell">Dependent on document collection's temporal coverage</div>
+     </div>
+     
+     <div class="comparison-row">
+       <div class="comparison-cell feature-cell">Spatial Understanding</div>
+       <div class="comparison-cell positive-cell">Native understanding of geographic relationships and spatial context</div>
+       <div class="comparison-cell negative-cell">Limited spatial reasoning capabilities</div>
+       <div class="comparison-cell neutral-cell">Basic geospatial understanding if documents contain location data</div>
+     </div>
+     
+     <div class="comparison-row">
+       <div class="comparison-cell feature-cell">Factual Accuracy</div>
+       <div class="comparison-cell positive-cell">Grounded in observable, objective data</div>
+       <div class="comparison-cell negative-cell">Prone to hallucinations about the physical world</div>
+       <div class="comparison-cell neutral-cell">Limited by the accuracy of retrieved documents</div>
+     </div>
+     
+     <div class="comparison-row">
+       <div class="comparison-cell feature-cell">Multi-modal Integration</div>
+       <div class="comparison-cell positive-cell">Native integration of visual, vector, and environmental data</div>
+       <div class="comparison-cell negative-cell">Primarily text-based with limited multi-modal capabilities</div>
+       <div class="comparison-cell neutral-cell">Can retrieve multi-modal documents but lacks integrated analysis</div>
+     </div>
+     
+     <div class="comparison-row">
+       <div class="comparison-cell feature-cell">Specialized Analysis</div>
+       <div class="comparison-cell positive-cell">15+ domain-specific analyzers for environmental and geospatial insights</div>
+       <div class="comparison-cell negative-cell">General-purpose reasoning without specialized tools</div>
+       <div class="comparison-cell neutral-cell">Limited to the analysis capabilities in retrieved documents</div>
+     </div>
+     
+     <div class="comparison-row">
+       <div class="comparison-cell feature-cell">Real-time Updates</div>
+       <div class="comparison-cell positive-cell">Can access current Earth observation data</div>
+       <div class="comparison-cell negative-cell">Knowledge frozen at training time</div>
+       <div class="comparison-cell neutral-cell">Dependent on document collection update frequency</div>
+     </div>
    </div>
 
-Ready to Begin?
+   <style>
+     .comparison-container {
+       margin: 2rem 0;
+       border-radius: 8px;
+       overflow: hidden;
+       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+     }
+     
+     .comparison-header {
+       display: flex;
+       background-color: #0f172a;
+     }
+     
+     .comparison-row {
+       display: flex;
+       border-bottom: 1px solid #e2e8f0;
+     }
+     
+     .comparison-row:last-child {
+       border-bottom: none;
+     }
+     
+     .comparison-cell {
+       padding: 1rem;
+       flex: 1;
+       display: flex;
+       align-items: center;
+     }
+     
+     .header-cell {
+       background-color: #0f172a;
+       color: white;
+       font-weight: bold;
+       padding: 1rem;
+     }
+     
+     .feature-cell {
+       background-color: #f8fafc;
+       font-weight: bold;
+       flex: 0.8;
+     }
+     
+     .positive-cell {
+       background-color: #f0fdf4;
+       border-left: 3px solid #10b981;
+     }
+     
+     .negative-cell {
+       background-color: #fef2f2;
+       border-left: 3px solid #ef4444;
+     }
+     
+     .neutral-cell {
+       background-color: #f8fafc;
+       border-left: 3px solid #64748b;
+     }
+     
+     @media (max-width: 768px) {
+       .comparison-header, .comparison-row {
+         flex-direction: column;
+       }
+       
+       .comparison-cell {
+         flex: 1;
+         border-left: none;
+       }
+       
+       .positive-cell, .negative-cell, .neutral-cell {
+         border-left: none;
+         border-top: 3px solid;
+       }
+       
+       .positive-cell {
+         border-top-color: #10b981;
+       }
+       
+       .negative-cell {
+         border-top-color: #ef4444;
+       }
+       
+       .neutral-cell {
+         border-top-color: #64748b;
+       }
+     }
+   </style>
+
+Earth Memory Applications
+=========================
+
+Earth Memory enables a wide range of applications across different domains:
+
+Real Estate Analysis
+--------------------
+
+Earth Memory provides comprehensive property analysis, including:
+
+- **Property Evaluation**: Multi-dimensional analysis of properties and their surroundings
+- **Historical Trends**: Understanding how properties and neighborhoods have changed over time
+- **Future Projections**: Predicting future property values and neighborhood development
+- **Comparative Analysis**: Comparing properties across multiple factors
+
+Example usage:
+
+.. code-block:: python
+
+    from memories.applications.real_estate import PropertyAnalyzer
+    
+    # Initialize property analyzer
+    analyzer = PropertyAnalyzer()
+    
+    # Analyze a property
+    analysis = await analyzer.analyze_property(
+        address="123 Main St, San Francisco, CA",
+        analysis_types=["comprehensive", "historical", "future"]
+    )
+    
+    # Generate property report
+    report = analyzer.generate_report(
+        analysis=analysis,
+        format="pdf"
+    )
+
+Environmental Monitoring
+------------------------
+
+Earth Memory enables sophisticated environmental monitoring, including:
+
+- **Change Detection**: Identifying environmental changes over time
+- **Impact Assessment**: Evaluating human impact on natural environments
+- **Risk Analysis**: Assessing environmental risks like flooding or wildfire
+- **Conservation Planning**: Supporting environmental conservation efforts
+
+Example usage:
+
+.. code-block:: python
+
+    from memories.applications.environmental import EnvironmentalMonitor
+    
+    # Initialize environmental monitor
+    monitor = EnvironmentalMonitor()
+    
+    # Monitor deforestation
+    deforestation = await monitor.analyze_deforestation(
+        region="Amazon Rainforest",
+        time_range=("2000-01-01", "2023-01-01")
+    )
+    
+    # Generate impact report
+    report = monitor.generate_impact_report(
+        deforestation=deforestation,
+        factors=["carbon_storage", "biodiversity", "water_cycle"]
+    )
+
+Climate Risk Assessment
+-----------------------
+
+Earth Memory supports comprehensive climate risk assessment, including:
+
+- **Flood Risk**: Assessing flood risk based on terrain, precipitation, and historical patterns
+- **Heat Risk**: Evaluating heat island effects and extreme heat risks
+- **Drought Risk**: Analyzing drought vulnerability and water resource challenges
+- **Storm Risk**: Assessing vulnerability to storms and extreme weather events
+
+Example usage:
+
+.. code-block:: python
+
+    from memories.applications.climate import ClimateRiskAssessor
+    
+    # Initialize climate risk assessor
+    assessor = ClimateRiskAssessor()
+    
+    # Assess flood risk
+    flood_risk = await assessor.assess_flood_risk(
+        location="Miami, FL",
+        scenarios=["current", "2050_rcp4.5", "2050_rcp8.5"]
+    )
+    
+    # Generate risk report
+    report = assessor.generate_report(
+        risk_assessment=flood_risk,
+        format="interactive"
+    )
+
+Historical Reconstruction
+-------------------------
+
+Earth Memory supports historical reconstruction of places, including:
+
+- **Historical Visualization**: Visualizing how places looked in the past
+- **Change Narrative**: Creating narratives of how places have changed over time
+- **Historical Context**: Providing historical context for current conditions
+- **Cultural Heritage**: Supporting cultural heritage preservation
+
+Example usage:
+
+.. code-block:: python
+
+    from memories.applications.historical import HistoricalReconstructor
+    
+    # Initialize historical reconstructor
+    reconstructor = HistoricalReconstructor()
+    
+    # Reconstruct historical view
+    reconstruction = await reconstructor.reconstruct(
+        location="New York City, NY",
+        year=1950,
+        resolution="high"
+    )
+    
+    # Generate historical narrative
+    narrative = reconstructor.generate_narrative(
+        location="New York City, NY",
+        time_range={"start": "1900-01-01", "end": "2023-12-31"},
+        format="interactive"
+    )
+
+Advanced Features
+=================
+
+Earth Memory includes several advanced features that enhance its capabilities:
+
+Asynchronous Processing
+-----------------------
+
+Earth Memory uses asynchronous processing to efficiently handle multiple data sources and analysis tasks:
+
+.. code-block:: python
+
+    import asyncio
+    from memories.earth.processing import BatchProcessor
+    
+    # Initialize batch processor
+    processor = BatchProcessor()
+    
+    # Define processing tasks
+    async def process_locations():
+        locations = ["New York, NY", "Los Angeles, CA", "Chicago, IL", "Houston, TX"]
+        tasks = [processor.process_location(location) for location in locations]
+        results = await asyncio.gather(*tasks)
+        return results
+    
+    # Run processing
+    results = asyncio.run(process_locations())
+
+Multi-dimensional Scoring
+-------------------------
+
+Earth Memory uses sophisticated scoring algorithms to evaluate locations across multiple dimensions:
+
+.. code-block:: python
+
+    from memories.earth.scoring import MultiDimensionalScorer
+    
+    # Initialize scorer
+    scorer = MultiDimensionalScorer()
+    
+    # Define scoring dimensions
+    scorer.add_dimension("environmental_quality", weight=0.3)
+    scorer.add_dimension("accessibility", weight=0.2)
+    scorer.add_dimension("amenities", weight=0.2)
+    scorer.add_dimension("safety", weight=0.3)
+    
+    # Score a location
+    scores = await scorer.score_location(
+        location="Portland, OR",
+        dimensions=["environmental_quality", "accessibility", "amenities", "safety"]
+    )
+    
+    # Get overall score
+    overall_score = scorer.calculate_overall_score(scores)
+
+Vector-Based Storage
+--------------------
+
+Earth Memory uses vector-based storage for efficient retrieval of similar locations or features:
+
+.. code-block:: python
+
+    from memories.earth.vector_store import VectorStore
+    
+    # Initialize vector store
+    vector_store = VectorStore()
+    
+    # Store location embedding
+    await vector_store.store(
+        location="Seattle, WA",
+        embedding=location_embedding,
+        metadata={"population": 737015, "region": "Pacific Northwest"}
+    )
+    
+    # Find similar locations
+    similar_locations = await vector_store.find_similar(
+        embedding=location_embedding,
+        top_k=5
+    )
+
+Distributed Processing
+----------------------
+
+Earth Memory supports distributed processing for handling large-scale data:
+
+.. code-block:: python
+
+    from memories.earth.distributed import DistributedProcessor
+    
+    # Initialize distributed processor
+    processor = DistributedProcessor(
+        num_workers=4,
+        worker_type="process"
+    )
+    
+    # Process data in distributed mode
+    results = await processor.process_batch(
+        locations=locations,
+        analysis_type="comprehensive"
+    )
+
+Best Practices
 ==============
 
-Start your journey with memories-dev by following our :doc:`getting_started/index` guide. Whether you're an AI developer, data scientist, or system architect, memories-dev provides the tools you need to create more effective memory systems for your applications.
+Follow these best practices when working with Earth Memory:
 
-.. raw:: html
+1. **Start with Specific Locations**
+   
+   Begin with well-defined locations rather than large regions to optimize performance.
 
-   <div class="cta-container">
-      <a href="getting_started/index.html" class="btn btn-primary cta-button">
-         <i class="fas fa-rocket"></i> Get Started
-      </a>
-   </div> 
+2. **Use Appropriate Resolution**
+   
+   Match data resolution to your needs - higher resolution requires more processing resources.
+
+3. **Implement Caching**
+   
+   Enable caching to improve performance for frequently accessed locations.
+
+4. **Optimize Memory Tier Usage**
+   
+   Configure memory tiers based on your access patterns and storage capabilities.
+
+5. **Use Asynchronous Processing**
+   
+   Leverage asynchronous processing for handling multiple locations or data sources.
+
+6. **Implement Error Handling**
+   
+   Add robust error handling for API requests and data processing.
+
+7. **Monitor Resource Usage**
+   
+   Keep track of memory and CPU usage, especially when processing large datasets.
+
+8. **Validate Results**
+   
+   Implement validation checks to ensure analysis results are accurate.
+
+Next Steps
+==========
+
+Now that you understand Earth Memory, you can:
+
+1. Explore 'data_sources' to learn about the data sources available in memories-dev
+2. Check out the :doc:`/core_concepts/memory_system` to understand how data is stored and managed
+3. Learn about 'index' capabilities for extracting insights from Earth Memory
+4. See :doc:`/getting_started/examples` for practical applications of Earth Memory
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   
+   data_sources 
