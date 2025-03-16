@@ -14,6 +14,23 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from memories.core.memory_index import MemoryIndex
 
 
+def is_model_available(model_name):
+    """Check if a model is available locally."""
+    try:
+        # Try to find the model in the Hugging Face cache
+        from huggingface_hub import try_to_load_from_cache
+        try_to_load_from_cache(repo_id=model_name, filename="config.json")
+        return True
+    except Exception:
+        return False
+
+
+requires_model = pytest.mark.skipif(
+    not is_model_available('sentence-transformers/all-MiniLM-L6-v2'),
+    reason="Test requires sentence-transformers/all-MiniLM-L6-v2 model which is not available offline"
+)
+
+
 @pytest.fixture
 def mock_memory_catalog():
     """Create a mock MemoryCatalog."""
@@ -124,6 +141,7 @@ def memory_index(mock_memory_catalog, mock_huggingface_models, mock_memory_manag
             print(f"Warning: Failed to clean up MemoryIndex: {e}")
 
 
+@requires_model
 class TestMemoryIndex:
     """Tests for the MemoryIndex class."""
     
