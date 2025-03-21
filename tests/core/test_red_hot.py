@@ -14,8 +14,46 @@ import json
 import time
 import logging
 import pandas as pd
+import sys  # Add sys import for sys.exit()
 
 from memories.core.red_hot import RedHotMemory
+
+# Import necessary classes for the tests
+try:
+    from memories.core.memory_tiering import MemoryTiering
+    from memories.core.memory_retrieval import MemoryRetrieval
+except ImportError:
+    # Create mock classes if the real ones are not available
+    class MemoryTiering:
+        async def initialize_tiers(self):
+            logger.warning("Using mock MemoryTiering class")
+            self.red_hot = RedHotMemory()
+            return True
+            
+        async def cold_pickle_to_red_hot(self, pickle_path, red_hot_key):
+            logger.warning(f"Mock promotion of {pickle_path} to {red_hot_key}")
+            return False
+    
+    class MemoryRetrieval:
+        async def initialize(self):
+            logger.warning("Using mock MemoryRetrieval class")
+            return True
+            
+        async def is_gpu_available(self):
+            return False
+            
+        async def gpu_filter(self, data_key, conditions):
+            return None
+            
+        async def gpu_aggregate(self, data_key, aggregations):
+            return None
+            
+        async def get_gpu_library_info(self):
+            return {}
+
+# Define paths for pickle files
+SAMPLE_PKL_PATH = os.path.join(tempfile.gettempdir(), "sample_buildings.pkl")
+MULTI_TABLE_PKL_PATH = os.path.join(tempfile.gettempdir(), "multi_table_data.pkl")
 
 # Configure more verbose logging
 logging.basicConfig(
@@ -350,6 +388,7 @@ def create_sample_roads_data(num_roads=500):
 def create_single_table_pickle():
     """Create a single table pickle file with building data."""
     print(f"\n--- CREATING SINGLE TABLE PICKLE ---")
+    global SAMPLE_PKL_PATH  # Add this line to ensure access to the global variable
     logger.info(f"Creating single table pickle file at {SAMPLE_PKL_PATH}")
     
     # Create sample data
@@ -369,6 +408,7 @@ def create_single_table_pickle():
 def create_multi_table_pickle():
     """Create a multi-table pickle file with buildings and roads."""
     print(f"\n--- CREATING MULTI-TABLE PICKLE ---")
+    global MULTI_TABLE_PKL_PATH  # Add this line to ensure access to the global variable
     logger.info(f"Creating multi-table pickle file at {MULTI_TABLE_PKL_PATH}")
     
     # Create sample data
@@ -597,6 +637,7 @@ async def test_gpu_queries_single_table():
 
 async def main():
     """Main test function."""
+    global sys  # Add this line to ensure access to the global module
     print("\n==============================================")
     print("STARTING GPU MEMORY TESTS")
     print("==============================================")
