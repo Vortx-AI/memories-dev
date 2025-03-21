@@ -407,10 +407,16 @@ def check_gpu_availability():
     """Check if GPU is available for testing."""
     print("\n--- CHECKING GPU AVAILABILITY ---")
     red_hot = RedHotMemory()
-    is_available = red_hot.is_available()
+    
+    # Check if GPU is available by examining attributes rather than calling a non-existent method
+    # We can check if any GPU libraries are available through attributes
+    gpu_libs = getattr(red_hot, 'gpu_libraries', {})
+    is_available = bool(gpu_libs)
+    
+    # Alternative approach: check if index_type is GPU-based
+    # is_available = hasattr(red_hot, 'index_type') and 'GPU' in red_hot.index_type.upper()
     
     if is_available:
-        gpu_libs = getattr(red_hot, 'gpu_libraries', {})
         print(f"GPU AVAILABLE: Yes")
         print(f"Detected GPU libraries: {list(gpu_libs.keys())}")
         logger.info(f"GPU is available with libraries: {list(gpu_libs.keys())}")
