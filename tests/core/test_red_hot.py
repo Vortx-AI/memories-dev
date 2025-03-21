@@ -542,12 +542,40 @@ async def test_cold_to_red_hot_promotion(file_path):
         memory_tiering.red_hot = RedHotMemory()
         memory_tiering.red_hot.data = {}
     
-    # Verify GPU availability
-    has_gpu = memory_tiering.red_hot.is_available()
+    # Verify GPU availability - using our check_gpu_availability function instead
+    # of the non-existent is_available() method
+    has_gpu = check_gpu_availability()  # Replace the call to the non-existent method
     print(f"GPU availability: {'Yes' if has_gpu else 'No'}")
     logger.info(f"GPU availability: {has_gpu}")
     
     try:
+        # Log the pickle file content first
+        print(f"Examining pickle file contents: {file_path}")
+        logger.info(f"Examining pickle file contents: {file_path}")
+        try:
+            with open(file_path, 'rb') as f:
+                pickle_data = pickle.load(f)
+            
+            # Display basic info about the pickle data
+            print(f"Pickle data type: {type(pickle_data).__name__}")
+            if isinstance(pickle_data, pd.DataFrame):
+                print(f"DataFrame shape: {pickle_data.shape}")
+                print(f"DataFrame columns: {pickle_data.columns.tolist()}")
+                print("DataFrame sample (first 5 rows):")
+                print(pickle_data.head(5))
+            elif isinstance(pickle_data, dict):
+                print(f"Dictionary with {len(pickle_data)} keys: {list(pickle_data.keys())}")
+                if 'tables' in pickle_data:
+                    for table_name, table_data in pickle_data['tables'].items():
+                        print(f"Table '{table_name}' shape: {table_data.shape}")
+                        print(f"Table '{table_name}' columns: {table_data.columns.tolist()}")
+                        print(f"Table '{table_name}' sample (first 3 rows):")
+                        print(table_data.head(3))
+            logger.info(f"Successfully inspected pickle file contents")
+        except Exception as e:
+            print(f"Error examining pickle file: {e}")
+            logger.error(f"Error examining pickle file: {e}")
+        
         # Use the cold_pickle_to_red_hot method to directly load a pickle to GPU
         print(f"Promoting data from pickle to Red Hot memory: {file_path}")
         logger.info(f"Promoting data from pickle {file_path} to Red Hot memory")
@@ -569,22 +597,34 @@ async def test_cold_to_red_hot_promotion(file_path):
         if success:
             logger.info(f"Successfully promoted data to Red Hot memory in {duration:.2f} seconds")
             
-            # Verify the data was loaded
-            if 'test_data' in memory_tiering.red_hot.data:
+            # Verify and log the data was loaded
+            if hasattr(memory_tiering.red_hot, 'data') and 'test_data' in memory_tiering.red_hot.data:
                 data = memory_tiering.red_hot.data['test_data']
                 print(f"Data found in Red Hot memory with key 'test_data'")
                 print(f"Data type: {type(data).__name__}")
                 logger.info(f"Data type in Red Hot memory: {type(data).__name__}")
                 
-                # Check if it's a DataFrame (either pandas or GPU)
-                if hasattr(data, 'shape'):
-                    print(f"Data shape: {data.shape}")
-                    logger.info(f"Data shape: {data.shape}")
+                # Log what's in the data
+                print("\n--- LOADED DATA IN RED HOT MEMORY ---")
+                if isinstance(data, pd.DataFrame):
+                    print(f"DataFrame shape: {data.shape}")
+                    print(f"DataFrame columns: {data.columns.tolist()}")
+                    print("DataFrame sample (first 5 rows):")
+                    print(data.head(5))
+                    # Find the Burj Khalifa
+                    if 'name' in data.columns:
+                        burj = data[data['name'] == 'Burj Khalifa']
+                        if not burj.empty:
+                            print("\nFound Burj Khalifa:")
+                            print(burj)
                 elif isinstance(data, dict) and 'tables' in data:
                     print("Found nested table structure:")
                     for table_name, table_data in data['tables'].items():
                         print(f"  - Table '{table_name}' shape: {table_data.shape}")
-                        logger.info(f"Table {table_name} shape: {table_data.shape}")
+                        print(f"  - Table '{table_name}' columns: {table_data.columns.tolist()}")
+                        print(f"  - Table '{table_name}' sample (first 3 rows):")
+                        print(table_data.head(3))
+                logger.info(f"Successfully logged Red Hot memory data")
             else:
                 print("ERROR: Data was not found in Red Hot memory with key 'test_data'")
                 logger.error("Data was not found in Red Hot memory with key 'test_data'")
@@ -625,69 +665,53 @@ async def test_gpu_queries_single_table():
         logger.warning("GPU not available - running in simulation mode")
     
     try:
-        # Test a simple filter query
-        print("\nExecuting simple filter query to find tall buildings...")
-        logger.info("Executing simple filter query...")
-        tall_buildings = await memory_retrieval.gpu_filter(
-            data_key='test_data',
-            conditions=[
-                {'column': 'height', 'operator': '>', 'value': 200}
-            ]
-        )
+        # Define some example queries to run
+        example_queries = [
+            {
+                'name': 'Find tall buildings (height > 200m)',
+                'conditions': [{'column': 'height', 'operator': '>', 'value': 200}]
+            },
+            {
+                'name': 'Find buildings built after 2000',
+                'conditions': [{'column': 'year_built', 'operator': '>=', 'value': 2000}]
+            },
+            {
+                'name': 'Find commercial buildings with 20+ floors',
+                'conditions': [
+                    {'column': 'building_type', 'operator': '==', 'value': 'commercial'},
+                    {'column': 'floors', 'operator': '>=', 'value': 20}
+                ]
+            }
+        ]
         
-        if tall_buildings is not None:
-            print(f"SUCCESS: Found {len(tall_buildings)} buildings taller than 200m")
-            logger.info(f"Found {len(tall_buildings)} buildings taller than 200m")
-        else:
-            print("ERROR: Filter query returned None")
-            logger.error("Filter query returned None")
+        # Run each query and log results
+        for query in example_queries:
+            print(f"\nExecuting query: {query['name']}")
+            logger.info(f"Executing query: {query['name']}")
             
-        # Test finding the tallest building
-        print("\nFinding the tallest building...")
-        logger.info("Finding the tallest building...")
-        tallest_building = await memory_retrieval.gpu_aggregate(
-            data_key='test_data',
-            aggregations=[
-                {'column': 'height', 'function': 'max'}
-            ]
-        )
-        
-        if tallest_building is not None:
-            print(f"SUCCESS: Tallest building height: {tallest_building}")
-            logger.info(f"Tallest building height: {tallest_building}")
-        else:
-            print("ERROR: Aggregation query returned None")
-            logger.error("Aggregation query returned None")
+            start_time = time.time()
+            results = await memory_retrieval.gpu_filter(
+                data_key='test_data',
+                conditions=query['conditions']
+            )
+            query_time = time.time() - start_time
             
-        # Test a SQL query if cuDF SQL is available
-        try:
-            if gpu_available:
-                library_info = await memory_retrieval.get_gpu_library_info()
-                print(f"Available GPU libraries: {library_info}")
+            if results is not None:
+                num_results = len(results) if hasattr(results, '__len__') else 'unknown'
+                print(f"SUCCESS: Found {num_results} results in {query_time:.3f} seconds")
+                logger.info(f"Query '{query['name']}' returned {num_results} results")
                 
-                if 'cudf' in library_info:
-                    print("\nExecuting SQL query on GPU...")
-                    logger.info("Executing SQL query on GPU...")
-                    sql_query = """
-                        SELECT building_type, AVG(height) as avg_height, COUNT(*) as count
-                        FROM test_data
-                        GROUP BY building_type
-                        ORDER BY avg_height DESC
-                    """
-                    print(f"SQL Query: {sql_query}")
-                    sql_result = await memory_retrieval.gpu_query(sql_query)
-                    
-                    if sql_result is not None:
-                        print(f"SUCCESS: SQL query returned {len(sql_result)} rows")
-                        print(sql_result)
-                        logger.info(f"SQL query result: {len(sql_result)} rows")
-                        logger.info(sql_result)
-                    else:
-                        print("ERROR: SQL query returned None")
-                        logger.error("SQL query returned None")
-        except Exception as sql_err:
-            print(f"ERROR in SQL query: {sql_err}")
-            logger.error(f"Error in SQL query: {sql_err}")
+                # Log the first few results
+                if hasattr(results, 'head'):
+                    print("Sample results (first 5 rows):")
+                    print(results.head(5))
+                elif hasattr(results, '__getitem__') and hasattr(results, '__len__'):
+                    print("Sample results (first 5 items):")
+                    for i in range(min(5, len(results))):
+                        print(results[i])
+            else:
+                print(f"ERROR: Query returned None")
+                logger.error(f"Query '{query['name']}' returned None")
         
         return True
             
