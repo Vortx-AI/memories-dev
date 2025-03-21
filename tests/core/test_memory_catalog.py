@@ -6,6 +6,9 @@ import os
 import pytest
 import tempfile
 import json
+import pickle
+import pandas as pd
+import numpy as np
 import logging
 from datetime import datetime
 from unittest.mock import patch, MagicMock, AsyncMock
@@ -23,6 +26,34 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 # Set logger to INFO level for better visibility during tests
 logger.setLevel(logging.INFO)
+
+
+def create_sample_buildings_data(num_buildings=10):
+    """Create sample building data for testing."""
+    logger.info(f"Creating sample data for {num_buildings} buildings")
+    
+    # Generate random building data
+    data = {
+        'id': range(1, num_buildings + 1),
+        'name': [f"Building_{i}" for i in range(1, num_buildings + 1)],
+        'height': np.random.uniform(10, 400, num_buildings),
+        'floors': np.random.randint(1, 100, num_buildings),
+        'building_type': np.random.choice(['residential', 'commercial', 'mixed', 'industrial'], num_buildings),
+        'year_built': np.random.randint(1950, 2023, num_buildings),
+        'latitude': np.random.uniform(25.0, 25.3, num_buildings),
+        'longitude': np.random.uniform(55.0, 55.4, num_buildings)
+    }
+    
+    # Create DataFrame
+    df = pd.DataFrame(data)
+    logger.info(f"Created DataFrame with shape: {df.shape}")
+    
+    # Add a special building for easy identification
+    df.loc[0, 'name'] = 'Burj Khalifa'
+    df.loc[0, 'height'] = 828
+    df.loc[0, 'floors'] = 163
+    
+    return df
 
 
 @pytest.fixture
@@ -296,83 +327,137 @@ class TestMemoryCatalog:
         """Test registering and retrieving pickle files in Red Hot memory catalog."""
         logger.info("Testing Red Hot memory pickle catalog registration and retrieval")
         
-        # Configure mock to return red_hot tier data
-        logger.debug("Configuring mock to return red_hot tier data")
-        memory_catalog.con.fetchone.return_value = [
-            "red-hot-data-id", "red_hot", "memory:buildings", 
-            "2023-01-01T00:00:00", "2023-01-01T00:00:00", 1, 1000, 
-            '["test", "buildings", "dataframe"]', "pickle", "buildings", 
-            '{"description": "Sample buildings data", "rows": 1000}'
-        ]
-        
-        # Mock get_data_info to return red_hot data
-        async def mock_get_red_hot_info(data_id):
-            logger.debug(f"Mock get_data_info called for red_hot data_id={data_id}")
-            return {
-                "data_id": data_id,
-                "tier": "red_hot",
-                "location": "memory:buildings",
-                "created": "2023-01-01T00:00:00",
-                "last_accessed": "2023-01-01T00:00:00",
-                "access_count": 1,
-                "size": 1000,
-                "tags": ["test", "buildings", "dataframe"],
-                "data_type": "pickle",
-                "table_name": "buildings",
-                "metadata": {"description": "Sample buildings data", "rows": 1000}
-            }
-        
-        # Override the mocked method temporarily
-        logger.debug("Temporarily overriding get_data_info mock method")
-        original_get_info = memory_catalog.get_data_info
-        memory_catalog.get_data_info = mock_get_red_hot_info
-        
+        # Create an actual pickle file with sample data
         try:
-            # Register a test pickle file
-            pickle_location = "/tmp/sample_buildings.pkl"
-            logger.info(f"Registering test pickle file from location: {pickle_location}")
+            # Generate sample building data
+            buildings_df = create_sample_buildings_data(num_buildings=10)
             
-            data_id = await memory_catalog.register_data(
-                tier="red_hot",
-                location=pickle_location,
-                size=1000,
-                data_type="pickle",
-                tags=["test", "buildings", "dataframe"],
-                metadata={"description": "Sample buildings data", "rows": 1000},
-                table_name="buildings"
-            )
+            # Create a temporary pickle file
+            pickle_location = os.path.join(tempfile.gettempdir(), "sample_buildings.pkl")
+            logger.info(f"Creating pickle file at {pickle_location}")
             
-            # Verify data was registered
-            assert data_id is not None
-            assert isinstance(data_id, str)
-            logger.info(f"Successfully registered pickle in Red Hot tier with data_id: {data_id}")
+            # Save DataFrame to pickle file
+            with open(pickle_location, 'wb') as f:
+                pickle.dump(buildings_df, f)
             
-            # Retrieve the data info
-            logger.debug(f"Retrieving data info for data_id: {data_id}")
-            data_info = await memory_catalog.get_data_info(data_id)
-            assert data_info is not None
-            assert data_info["tier"] == "red_hot"
-            assert data_info["data_type"] == "pickle"
-            assert "buildings" in data_info["tags"]
-            logger.info(f"Successfully retrieved data info for Red Hot pickle data")
-            logger.debug(f"Data info: {data_info}")
+            file_size = os.path.getsize(pickle_location) // 1024
+            logger.info(f"Created pickle file, size: {file_size} KB")
             
-            # Verify it can be found by tag search
-            logger.debug("Searching by 'buildings' tag")
-            results = await memory_catalog.search_by_tags(["buildings"])
-            assert len(results) > 0
-            logger.info(f"Successfully found {len(results)} results by tag search")
+            # Display the contents of the pickle file
+            logger.info("Contents of the pickle file:")
+            logger.info(f"DataFrame shape: {buildings_df.shape}")
+            logger.info(f"DataFrame columns: {buildings_df.columns.tolist()}")
+            logger.info("Sample data (first 5 rows):")
+            for i, row in buildings_df.head(5).iterrows():
+                logger.info(f"Row {i}: {dict(row)}")
             
-            # Verify it appears in the red_hot tier data
-            logger.debug("Retrieving all red_hot tier data")
-            tier_data = await memory_catalog.get_tier_data("red_hot")
-            assert len(tier_data) > 0
-            logger.info(f"Successfully found {len(tier_data)} entries in red_hot tier")
+            # Find Burj Khalifa
+            burj = buildings_df[buildings_df['name'] == 'Burj Khalifa']
+            if not burj.empty:
+                logger.info("Burj Khalifa details:")
+                logger.info(dict(burj.iloc[0]))
             
+            # Configure mock to return red_hot tier data
+            logger.debug("Configuring mock to return red_hot tier data")
+            memory_catalog.con.fetchone.return_value = [
+                "red-hot-data-id", "red_hot", pickle_location, 
+                "2023-01-01T00:00:00", "2023-01-01T00:00:00", 1, file_size, 
+                '["test", "buildings", "dataframe"]', "pickle", "buildings", 
+                '{"description": "Sample buildings data", "rows": 10}'
+            ]
+            
+            # Mock get_data_info to return red_hot data
+            async def mock_get_red_hot_info(data_id):
+                logger.debug(f"Mock get_data_info called for red_hot data_id={data_id}")
+                return {
+                    "data_id": data_id,
+                    "tier": "red_hot",
+                    "location": pickle_location,
+                    "created": "2023-01-01T00:00:00",
+                    "last_accessed": "2023-01-01T00:00:00",
+                    "access_count": 1,
+                    "size": file_size,
+                    "tags": ["test", "buildings", "dataframe"],
+                    "data_type": "pickle",
+                    "table_name": "buildings",
+                    "metadata": {"description": "Sample buildings data", "rows": 10}
+                }
+            
+            # Override the mocked method temporarily
+            logger.debug("Temporarily overriding get_data_info mock method")
+            original_get_info = memory_catalog.get_data_info
+            memory_catalog.get_data_info = mock_get_red_hot_info
+            
+            try:
+                # Register the pickle file
+                logger.info(f"Registering pickle file in Red Hot tier")
+                
+                data_id = await memory_catalog.register_data(
+                    tier="red_hot",
+                    location=pickle_location,
+                    size=file_size,
+                    data_type="pickle",
+                    tags=["test", "buildings", "dataframe"],
+                    metadata={"description": "Sample buildings data", "rows": 10},
+                    table_name="buildings"
+                )
+                
+                # Verify data was registered
+                assert data_id is not None
+                assert isinstance(data_id, str)
+                logger.info(f"Successfully registered pickle in Red Hot tier with data_id: {data_id}")
+                
+                # Retrieve the data info
+                logger.debug(f"Retrieving data info for data_id: {data_id}")
+                data_info = await memory_catalog.get_data_info(data_id)
+                assert data_info is not None
+                assert data_info["tier"] == "red_hot"
+                assert data_info["data_type"] == "pickle"
+                assert "buildings" in data_info["tags"]
+                logger.info(f"Successfully retrieved data info for Red Hot pickle data")
+                logger.info(f"Pickle file metadata in catalog: {data_info}")
+                
+                # Verify it can be found by tag search
+                logger.debug("Searching by 'buildings' tag")
+                results = await memory_catalog.search_by_tags(["buildings"])
+                assert len(results) > 0
+                logger.info(f"Successfully found {len(results)} results by tag search")
+                
+                # Verify it appears in the red_hot tier data
+                logger.debug("Retrieving all red_hot tier data")
+                tier_data = await memory_catalog.get_tier_data("red_hot")
+                assert len(tier_data) > 0
+                logger.info(f"Successfully found {len(tier_data)} entries in red_hot tier")
+                
+                # Simulating loading the pickle file into Red Hot memory
+                logger.info("Simulating loading the pickle into Red Hot memory:")
+                with open(pickle_location, 'rb') as f:
+                    loaded_data = pickle.load(f)
+                logger.info(f"Successfully loaded pickle file into memory")
+                logger.info(f"Loaded data type: {type(loaded_data).__name__}")
+                logger.info(f"Loaded data shape: {loaded_data.shape}")
+                
+                # Simulate a query on the loaded data
+                if isinstance(loaded_data, pd.DataFrame):
+                    logger.info("Performing sample query: Find buildings taller than 300m")
+                    tall_buildings = loaded_data[loaded_data['height'] > 300]
+                    logger.info(f"Found {len(tall_buildings)} tall buildings")
+                    
+                    if not tall_buildings.empty:
+                        logger.info("Tall buildings details:")
+                        for i, row in tall_buildings.iterrows():
+                            logger.info(f"Building: {row['name']}, Height: {row['height']:.1f}m, Floors: {row['floors']}")
+                
+            finally:
+                # Restore original mock
+                logger.debug("Restoring original get_data_info mock method")
+                memory_catalog.get_data_info = original_get_info
+        
         finally:
-            # Restore original mock
-            logger.debug("Restoring original get_data_info mock method")
-            memory_catalog.get_data_info = original_get_info
+            # Clean up the pickle file
+            if os.path.exists(pickle_location):
+                os.unlink(pickle_location)
+                logger.info(f"Cleaned up pickle file: {pickle_location}")
     
     @pytest.mark.asyncio
     async def test_red_hot_memory_with_catalog_integration(self, memory_catalog):
