@@ -625,6 +625,34 @@ async def test_cold_to_red_hot_promotion(file_path):
                         print(f"  - Table '{table_name}' sample (first 3 rows):")
                         print(table_data.head(3))
                 logger.info(f"Successfully logged Red Hot memory data")
+                
+                # Check if the data is properly registered in the catalog
+                print("\n--- CHECKING CATALOG REGISTRATION ---")
+                try:
+                    # Import MemoryCatalog
+                    from memories.core.memory_catalog import MemoryCatalog
+                    
+                    # Get catalog instance
+                    catalog = MemoryCatalog()
+                    print("Successfully obtained memory catalog instance")
+                    
+                    # Try to find our data by searching with tags
+                    try:
+                        # Search by 'buildings' tag
+                        print("Searching catalog by tags...")
+                        catalog_entries = await catalog.search_by_tags(["buildings", "pickle", "test"])
+                        print(f"Found {len(catalog_entries)} matching catalog entries")
+                        
+                        # Get all Red Hot tier data
+                        red_hot_entries = await catalog.get_tier_data("red_hot")
+                        print(f"Found {len(red_hot_entries)} entries in red_hot tier")
+                    except Exception as search_error:
+                        print(f"Error searching catalog: {search_error}")
+                    
+                except ImportError:
+                    print("Memory catalog not available - skipping catalog verification")
+                except Exception as cat_error:
+                    print(f"Error during catalog verification: {cat_error}")
             else:
                 print("ERROR: Data was not found in Red Hot memory with key 'test_data'")
                 logger.error("Data was not found in Red Hot memory with key 'test_data'")
