@@ -681,12 +681,7 @@ for provider, response in responses.items():
 ### Earth Analyzers
 
 ```python
-<<<<<<< HEAD
-from memories.core.earth import OvertureClient, SentinelClient
-import os
-=======
 from memories.core.analyzers import TerrainAnalyzer, ClimateAnalyzer, WaterResourceAnalyzer
->>>>>>> 289d68305d3e5e9a1150d2608aa926b70119f27c
 
 # Initialize analyzers
 terrain = TerrainAnalyzer()
@@ -704,46 +699,17 @@ climate_analysis = await climate.analyze(
     time_range={"start": "2020-01-01", "end": "2023-01-01"}
 )
 
-<<<<<<< HEAD
-# Configure memory system
-from memories.core import MemoryStore
-from memories.core.config import Config
-
-# Simple configuration format
-memory_config = Config(
-    storage_path="./earth_memory",
-    hot_memory_size=50,  # GB
-    warm_memory_size=200,  # GB
-    cold_memory_size=1000,  # GB
-    vector_store="milvus",
-    embedding_model="text-embedding-3-small"
-)
-
-# Create memory store with synchronous initialization
-memory_store = MemoryStore(memory_config)
-
-# Register Earth clients with memory store (optional)
-memory_store.register_client("overture", overture_client)
-memory_store.register_client("sentinel", sentinel_client)
-=======
 water_analysis = await water.analyze(
     location={"lat": 37.7749, "lon": -122.4194},
     include_forecast=True
 )
->>>>>>> 289d68305d3e5e9a1150d2608aa926b70119f27c
 ```
 
 ### Real Estate Analysis
 
 ```python
-<<<<<<< HEAD
-from examples.real_estate_agent import RealEstateAgent
-from memories.core import MemoryStore
-from memories.core.config import Config
-=======
 from memories import MemoryStore, Config
 from examples.real_estate_agent import RealEstateAgent
->>>>>>> 289d68305d3e5e9a1150d2608aa926b70119f27c
 
 # Initialize memory store
 config = Config(
@@ -761,16 +727,9 @@ agent = RealEstateAgent(
     analyzers=["terrain", "climate", "water", "environmental"]
 )
 
-# For async operations, use the agent in a coroutine or event loop
-import asyncio
-
-# Either run within an existing event loop
-property_id = asyncio.get_event_loop().run_until_complete(agent.add_property(property_data))
-analysis = asyncio.get_event_loop().run_until_complete(agent.analyze_property_environment(property_id))
-
-# Or use this simpler approach for scripts
-# property_id = asyncio.run(agent.add_property(property_data))
-# analysis = asyncio.run(agent.analyze_property_environment(property_id))
+# Add property and analyze
+property_id = await agent.add_property(property_data)
+analysis = await agent.analyze_property_environment(property_id)
 
 print(f"Property added: {property_id}")
 print(f"Environmental analysis: {analysis}")
@@ -781,7 +740,6 @@ print(f"Environmental analysis: {analysis}")
 ```python
 from memories.analyzers import ChangeDetector
 from datetime import datetime, timedelta
-import asyncio
 
 # Initialize change detector
 detector = ChangeDetector(
@@ -794,13 +752,11 @@ detector = ChangeDetector(
     ]
 )
 
-# Detect environmental changes (handling async operation)
-changes = asyncio.get_event_loop().run_until_complete(
-    detector.analyze_changes(
-        location={"lat": 37.7749, "lon": -122.4194, "radius": 5000},
-        indicators=["vegetation", "water_bodies", "urban_development"],
-        visualization=True
-    )
+# Detect environmental changes
+changes = await detector.analyze_changes(
+    location={"lat": 37.7749, "lon": -122.4194, "radius": 5000},
+    indicators=["vegetation", "water_bodies", "urban_development"],
+    visualization=True
 )
 
 # Present findings
