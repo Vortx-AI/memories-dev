@@ -833,6 +833,234 @@ class MemoryRetrieval:
             logger.error(f"Error in _retrieve_from_red_hot: {e}")
             return None, None
 
+    # NEW METHODS FOR GPU QUERYING
+    
+    async def gpu_query(self, query: Union[str, Dict[str, Any]], 
+                       data_key: Optional[str] = None,
+                       promote_if_needed: bool = True) -> Any:
+        """
+        Execute a query directly on GPU data in Red Hot memory.
+        
+        Args:
+            query: SQL query string or query specification dictionary
+            data_key: Optional key to identify the data to query
+                     (required for dictionary queries, optional for SQL)
+            promote_if_needed: If True, will attempt to promote data to GPU
+                              if it's not already in Red Hot memory
+                              
+        Returns:
+            Query results or None if query failed
+        """
+        # Initialize tiers if not already done
+        if not self._memory_manager.red_hot:
+            await self._memory_manager.initialize_tiers()
+            
+        # Check if GPU is available
+        if not self._memory_manager.red_hot.is_available():
+            logger.warning("Red Hot memory (GPU) is not available for query execution")
+            return None
+        
+        # If it's a dict query and data_key is specified, make sure data is in RedHot
+        if isinstance(query, dict) and data_key:
+            # Check if the data is already in Red Hot memory
+            if data_key not in self._memory_manager.red_hot.data:
+                if not promote_if_needed:
+                    logger.error(f"Data key '{data_key}' not found in Red Hot memory and promotion not enabled")
+                    return None
+                    
+                # Try to find data in other tiers and promote
+                logger.info(f"Data key '{data_key}' not found in Red Hot memory. Attempting to promote...")
+                
+                # Look in Hot tier first
+                hot_data = await self._memory_manager.hot.retrieve(data_key)
+                if hot_data is not None:
+                    # Promote Hot to Red Hot
+                    success = await self._memory_manager.hot_to_red_hot(data_key)
+                    if not success:
+                        logger.error(f"Failed to promote data from Hot to Red Hot tier")
+                        return None
+                else:
+                    # Look in Warm tier
+                    warm_data = await self._memory_manager.warm.retrieve(data_key)
+                    if warm_data is not None:
+                        # Promote Warm to Hot to Red Hot
+                        success1 = await self._memory_manager.warm_to_hot(data_key)
+                        if not success1:
+                            logger.error(f"Failed to promote data from Warm to Hot tier")
+                            return None
+                            
+                        success2 = await self._memory_manager.hot_to_red_hot(data_key)
+                        if not success2:
+                            logger.error(f"Failed to promote data from Hot to Red Hot tier")
+                            return None
+                    else:
+                        logger.error(f"Data key '{data_key}' not found in any tier")
+                        return None
+        
+        # Execute the query
+        try:
+            if isinstance(query, str):
+                # SQL query
+                return self._memory_manager.red_hot.execute_query(query)
+            elif isinstance(query, dict):
+                # Set data key in query spec if not present
+                if 'data' not in query and data_key:
+                    query['data'] = data_key
+                # Custom query
+                return self._memory_manager.red_hot.execute_query(query)
+            else:
+                logger.error("Query must be a string (SQL) or a dictionary (custom query)")
+                return None
+        except Exception as e:
+            logger.error(f"Error executing GPU query: {e}")
+            return None
+    
+    async def gpu_filter(self, data_key: str, conditions: List[Dict[str, Any]],
+                        promote_if_needed: bool = True) -> Any:
+        """
+        Filter data on GPU using specified conditions.
+        
+        Args:
+            data_key: Key identifying the data to filter
+            conditions: List of condition dictionaries, each with 'column', 'operator', and 'value'
+            promote_if_needed: If True, will attempt to promote data to GPU if needed
+            
+        Returns:
+            Filtered data or None if operation failed
+        """
+        query = {
+            'type': 'filter',
+            'data': data_key,
+            'conditions': conditions
+        }
+        
+        return await self.gpu_query(query, data_key, promote_if_needed)
+    
+    async def gpu_spatial_query(self, data_key: str, operation: str, 
+                              params: Dict[str, Any],
+                              promote_if_needed: bool = True) -> Any:
+        """
+        Execute a spatial query on GPU data.
+        
+        Args:
+            data_key: Key identifying the data to query
+            operation: Spatial operation (e.g., 'point_in_polygon', 'nearest_points')
+            params: Parameters specific to the spatial operation
+            promote_if_needed: If True, will attempt to promote data to GPU if needed
+            
+        Returns:
+            Query results or None if operation failed
+        """
+        query = {
+            'type': 'spatial',
+            'data': data_key,
+            'operation': operation,
+            **params  # Include all operation-specific parameters
+        }
+        
+        return await self.gpu_query(query, data_key, promote_if_needed)
+    
+    async def gpu_aggregate(self, data_key: str, 
+                          aggregations: List[Dict[str, Any]],
+                          group_by: Optional[Union[str, List[str]]] = None,
+                          promote_if_needed: bool = True) -> Any:
+        """
+        Execute an aggregation query on GPU data.
+        
+        Args:
+            data_key: Key identifying the data to aggregate
+            aggregations: List of aggregation specifications, each with 'column' and 'function'
+            group_by: Optional column or list of columns to group by
+            promote_if_needed: If True, will attempt to promote data to GPU if needed
+            
+        Returns:
+            Aggregation results or None if operation failed
+        """
+        query = {
+            'type': 'aggregate',
+            'data': data_key,
+            'aggregations': aggregations
+        }
+        
+        if group_by:
+            query['group_by'] = group_by
+            
+        return await self.gpu_query(query, data_key, promote_if_needed)
+    
+    async def find_optimal_tier_for_query(self, data_keys: List[str]) -> str:
+        """
+        Find the optimal memory tier for executing a query based on data location.
+        
+        Args:
+            data_keys: Keys of data referenced in the query
+            
+        Returns:
+            str: The recommended tier name ('red_hot', 'hot', 'warm', 'cold')
+        """
+        # Initialize tiers if not already done
+        if not self._memory_manager.red_hot:
+            await self._memory_manager.initialize_tiers()
+            
+        # Check if GPU is available
+        if self._memory_manager.red_hot.is_available():
+            # Check if all data is already in Red Hot memory
+            all_in_red_hot = True
+            for key in data_keys:
+                if key not in self._memory_manager.red_hot.data:
+                    all_in_red_hot = False
+                    break
+                    
+            if all_in_red_hot:
+                return 'red_hot'
+        
+        # If not all in Red Hot, check Hot memory
+        all_in_hot = True
+        for key in data_keys:
+            hot_data = await self._memory_manager.hot.retrieve(key)
+            if hot_data is None:
+                all_in_hot = False
+                break
+                
+        if all_in_hot:
+            return 'hot'
+        
+        # Check Warm memory
+        all_in_warm = True
+        for key in data_keys:
+            warm_data = await self._memory_manager.warm.retrieve(key)
+            if warm_data is None:
+                all_in_warm = False
+                break
+                
+        if all_in_warm:
+            return 'warm'
+        
+        # Default to Cold if data is spread across tiers
+        return 'cold'
+    
+    async def is_gpu_available(self) -> bool:
+        """
+        Check if GPU memory is available for query execution.
+        
+        Returns:
+            bool: True if GPU is available, False otherwise
+        """
+        await self._memory_manager.initialize_tiers()
+        return self._memory_manager.red_hot.is_available()
+    
+    async def get_gpu_library_info(self) -> Dict[str, bool]:
+        """
+        Get information about available GPU libraries.
+        
+        Returns:
+            Dict[str, bool]: Dictionary mapping library names to availability
+        """
+        await self._memory_manager.initialize_tiers()
+        
+        if not hasattr(self._memory_manager.red_hot, 'gpu_libraries'):
+            return {}
+            
+        return {lib: True for lib in self._memory_manager.red_hot.gpu_libraries}
 
 # Create singleton instance
 memory_retrieval = MemoryRetrieval().retrieve
@@ -881,3 +1109,85 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Example 1: SQL query on GPU data
+async def example_gpu_sql_query():
+    memory_retrieval = MemoryRetrieval()
+    await memory_retrieval.initialize()
+    
+    # Check GPU availability
+    if not await memory_retrieval.is_gpu_available():
+        print("GPU not available for querying")
+        return None
+    
+    # Execute SQL query directly on GPU
+    result = await memory_retrieval.gpu_query("""
+        SELECT building_id, height, floors 
+        FROM buildings 
+        WHERE height > 100 
+        ORDER BY height DESC
+        LIMIT 10
+    """)
+    
+    print(f"Found {len(result)} tall buildings")
+    return result
+
+# Example 2: Filter data on GPU
+async def example_gpu_filter():
+    memory_retrieval = MemoryRetrieval()
+    await memory_retrieval.initialize()
+    
+    # Filter buildings by height and type
+    result = await memory_retrieval.gpu_filter(
+        data_key='buildings',
+        conditions=[
+            {'column': 'height', 'operator': '>', 'value': 100},
+            {'column': 'building_type', 'operator': '==', 'value': 'residential'}
+        ]
+    )
+    
+    print(f"Found {len(result)} tall residential buildings")
+    return result
+
+# Example 3: Spatial query on GPU
+async def example_gpu_spatial():
+    memory_retrieval = MemoryRetrieval()
+    await memory_retrieval.initialize()
+    
+    # Define a polygon for Dubai Downtown area
+    downtown_polygon_x = [55.2721, 55.2901, 55.2934, 55.2798, 55.2721]
+    downtown_polygon_y = [25.1835, 25.1872, 25.1765, 25.1701, 25.1835]
+    
+    # Find buildings in downtown Dubai
+    result = await memory_retrieval.gpu_spatial_query(
+        data_key='buildings',
+        operation='point_in_polygon',
+        params={
+            'points_x_column': 'longitude',
+            'points_y_column': 'latitude',
+            'poly_points_x': downtown_polygon_x,
+            'poly_points_y': downtown_polygon_y
+        }
+    )
+    
+    print(f"Found {len(result)} buildings in downtown Dubai")
+    return result
+
+# Example 4: Aggregation on GPU
+async def example_gpu_aggregate():
+    memory_retrieval = MemoryRetrieval()
+    await memory_retrieval.initialize()
+    
+    # Calculate average building height by building type
+    result = await memory_retrieval.gpu_aggregate(
+        data_key='buildings',
+        aggregations=[
+            {'column': 'height', 'function': 'mean'},
+            {'column': 'height', 'function': 'max'},
+            {'column': 'id', 'function': 'count'}
+        ],
+        group_by='building_type'
+    )
+    
+    print(f"Aggregation complete with {len(result)} building types")
+    return result
