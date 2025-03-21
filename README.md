@@ -70,18 +70,19 @@ Real-time verification of outputs against verified truth database. Applies confi
 Each stage works together to create a reliable memory system:
 
 ```mermaid
+%%{init: { 'theme': 'default', 'themeVariables': { 'primaryColor': '#4C78B5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3A5D8C', 'lineColor': '#3A5D8C', 'secondaryColor': '#41B883', 'tertiaryColor': '#F7A922' } }}%%
 graph TD
-    classDef inputStage fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:white,font-weight:bold
-    classDef truthStage fill:#ef4444,stroke:#dc2626,stroke-width:2px,color:white,font-weight:bold
-    classDef responseStage fill:#10b981,stroke:#059669,stroke-width:2px,color:white,font-weight:bold
-    classDef dataFlow fill:#8b5cf6,stroke:#7c3aed,stroke-width:2px,color:white,font-weight:bold
+    classDef inputStage fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:white,font-weight:bold,rounded:true
+    classDef truthStage fill:#ef4444,stroke:#dc2626,stroke-width:2px,color:white,font-weight:bold,rounded:true
+    classDef responseStage fill:#10b981,stroke:#059669,stroke-width:2px,color:white,font-weight:bold,rounded:true
+    classDef dataFlow fill:#8b5cf6,stroke:#7c3aed,stroke-width:2px,color:white,font-weight:bold,rounded:true
     
-    A[Input Data] --> B[Stage 1: Input Validation]
-    B --> C[Validated Input]
-    C --> D[Stage 2: Truth Verification]
-    D --> E[Verified Truth]
-    E --> F[Stage 3: Response Validation]
-    F --> G[Verified Response]
+    A[Input Data] -->|"Feed"| B[Stage 1: Input Validation]
+    B -->|"Process"| C[Validated Input]
+    C -->|"Verify"| D[Stage 2: Truth Verification]
+    D -->|"Confirm"| E[Verified Truth]
+    E -->|"Validate"| F[Stage 3: Response Validation]
+    F -->|"Deliver"| G[Verified Response]
     
     B:::inputStage
     D:::truthStage
@@ -90,6 +91,8 @@ graph TD
     C:::dataFlow
     E:::dataFlow
     G:::dataFlow
+
+    linkStyle default stroke-width:2px,fill:none,stroke:#3A5D8C,curve:basis
 ```
 
 ## 📦 Installation
@@ -222,20 +225,34 @@ The Test-Time Memory Framework integrates with your AI systems through a simple,
 4. Verified response delivered to application
 
 ```mermaid
+%%{init: { 'theme': 'default', 'themeVariables': { 'primaryColor': '#1F3A60', 'primaryTextColor': '#fff', 'primaryBorderColor': '#0F2A4C', 'lineColor': '#0F2A4C', 'secondaryColor': '#41B883', 'tertiaryColor': '#F7A922' } }}%%
 sequenceDiagram
     participant App as Application
     participant AI as AI Model
     participant MF as Memory Framework
     participant CD as Contextual Data
     
-    App->>AI: Request response
+    rect rgba(64, 78, 103, 0.1)
+    note right of App: Request Phase
+    App->>+AI: Request response
     AI->>AI: Generate initial response
-    AI->>MF: Send for verification
-    MF->>CD: Retrieve contextual data
-    CD-->>MF: Return relevant context
+    end
+    
+    rect rgba(43, 155, 128, 0.1)
+    note right of AI: Verification Phase
+    AI->>+MF: Send for verification
+    MF->>+CD: Retrieve contextual data
+    CD-->>-MF: Return relevant context
     MF->>MF: Verify response against context
-    MF-->>AI: Return verified response
-    AI-->>App: Deliver validated response
+    MF-->>-AI: Return verified response
+    end
+    
+    rect rgba(170, 110, 40, 0.1)
+    note right of AI: Delivery Phase
+    AI-->>-App: Deliver validated response
+    end
+    
+    note over App,CD: Complete Verification Cycle
 ```
 
 ### Memory System Architecture
@@ -243,36 +260,39 @@ sequenceDiagram
 Our multi-tiered memory system ensures optimal performance and reliability:
 
 ```mermaid
+%%{init: { 'theme': 'default', 'themeVariables': { 'primaryColor': '#2c3e50', 'primaryTextColor': '#ecf0f1', 'primaryBorderColor': '#34495e', 'lineColor': '#3498db', 'secondaryColor': '#2980b9', 'tertiaryColor': '#1abc9c' } }}%%
 graph TB
-    classDef primary fill:#2c3e50,stroke:#34495e,stroke-width:2px,color:white,font-weight:bold
-    classDef secondary fill:#3498db,stroke:#2980b9,stroke-width:2px,color:white
-    classDef tertiary fill:#1abc9c,stroke:#16a085,stroke-width:2px,color:white
+    classDef primary fill:#2c3e50,stroke:#34495e,stroke-width:2px,color:white,font-weight:bold,rounded:true
+    classDef secondary fill:#3498db,stroke:#2980b9,stroke-width:2px,color:white,rounded:true
+    classDef tertiary fill:#1abc9c,stroke:#16a085,stroke-width:2px,color:white,rounded:true
     
-    A[Client Application]:::primary --> B[Memory Manager]:::primary
-    B --> C[Data Acquisition]:::secondary
-    B --> D[Memory Store]:::secondary
-    B --> E[Earth Analyzers]:::secondary
-    B --> F[AI Integration]:::secondary
+    A[Client Application]:::primary -->|"Requests"| B[Memory Manager]:::primary
+    B -->|"Collects"| C[Data Acquisition]:::secondary
+    B -->|"Stores"| D[Memory Store]:::secondary
+    B -->|"Analyzes"| E[Earth Analyzers]:::secondary
+    B -->|"Integrates"| F[AI Integration]:::secondary
     
-    C --> C1[Satellite Data]:::tertiary
-    C --> C2[Vector Data]:::tertiary
-    C --> C3[Sensor Data]:::tertiary
-    C --> C4[Environmental APIs]:::tertiary
+    C -->|"Satellite"| C1[Satellite Data]:::tertiary
+    C -->|"Vector"| C2[Vector Data]:::tertiary
+    C -->|"IoT"| C3[Sensor Data]:::tertiary
+    C -->|"External"| C4[Environmental APIs]:::tertiary
     
-    D --> D1[Hot Memory]:::tertiary
-    D --> D2[Warm Memory]:::tertiary
-    D --> D3[Cold Memory]:::tertiary
-    D --> D4[Glacier Storage]:::tertiary
+    D -->|"Fast Access"| D1[Hot Memory]:::tertiary
+    D -->|"Regular Access"| D2[Warm Memory]:::tertiary
+    D -->|"Infrequent Access"| D3[Cold Memory]:::tertiary
+    D -->|"Archival"| D4[Glacier Storage]:::tertiary
     
-    E --> E1[Terrain Analysis]:::tertiary
-    E --> E2[Climate Analysis]:::tertiary
-    E --> E3[Environmental Impact]:::tertiary
-    E --> E4[Urban Development]:::tertiary
+    E -->|"Elevation"| E1[Terrain Analysis]:::tertiary
+    E -->|"Weather"| E2[Climate Analysis]:::tertiary
+    E -->|"Impact"| E3[Environmental Impact]:::tertiary
+    E -->|"Development"| E4[Urban Development]:::tertiary
     
-    F --> F1[Model Connectors]:::tertiary
-    F --> F2[Context Formation]:::tertiary
-    F --> F3[Prompt Engineering]:::tertiary
-    F --> F4[Response Validation]:::tertiary
+    F -->|"LLM"| F1[Model Connectors]:::tertiary
+    F -->|"Context"| F2[Context Formation]:::tertiary
+    F -->|"Prompts"| F3[Prompt Engineering]:::tertiary
+    F -->|"Validation"| F4[Response Validation]:::tertiary
+    
+    linkStyle default stroke-width:2px,fill:none,stroke:#3498db,curve:basis
 ```
 
 ### Data Processing Workflow
@@ -282,46 +302,46 @@ Our comprehensive data flow architecture transforms raw observation data into ac
 ```mermaid
 %%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#0f172a', 'primaryTextColor': '#f8fafc', 'primaryBorderColor': '#334155', 'lineColor': '#3b82f6', 'secondaryColor': '#10b981', 'tertiaryColor': '#8b5cf6'}}}%%
 graph LR
-    classDef ingestion fill:#1d4ed8,stroke:#1e40af,stroke-width:2px,color:white,font-weight:bold
-    classDef processing fill:#b91c1c,stroke:#991b1b,stroke-width:2px,color:white,font-weight:bold
-    classDef storage fill:#047857,stroke:#065f46,stroke-width:2px,color:white,font-weight:bold
-    classDef analytics fill:#7c3aed,stroke:#6d28d9,stroke-width:2px,color:white,font-weight:bold
-    classDef delivery fill:#9a3412,stroke:#9a3412,stroke-width:2px,color:white,font-weight:bold
+    classDef ingestion fill:#1d4ed8,stroke:#1e40af,stroke-width:2px,color:white,font-weight:bold,rounded:true
+    classDef processing fill:#b91c1c,stroke:#991b1b,stroke-width:2px,color:white,font-weight:bold,rounded:true
+    classDef storage fill:#047857,stroke:#065f46,stroke-width:2px,color:white,font-weight:bold,rounded:true
+    classDef analytics fill:#7c3aed,stroke:#6d28d9,stroke-width:2px,color:white,font-weight:bold,rounded:true
+    classDef delivery fill:#9a3412,stroke:#9a3412,stroke-width:2px,color:white,font-weight:bold,rounded:true
     
     %% Data Ingestion Nodes
-    A1[Satellite Imagery] --> A
-    A2[Vector Databases] --> A
-    A3[Sensor Networks] --> A
-    A4[Environmental APIs] --> A
-    A[Data Ingestion Engine] --> B
+    A1[Satellite Imagery] -.->|"Raw Data"| A
+    A2[Vector Databases] -.->|"Spatial"| A
+    A3[Sensor Networks] -.->|"IoT"| A
+    A4[Environmental APIs] -.->|"External"| A
+    A[Data Ingestion Engine] ==>|"Input"| B
     
     %% Data Processing Nodes
-    B --> B1[Data Cleaning]
-    B --> B2[Feature Extraction]
-    B --> B3[Temporal Alignment]
-    B --> B4[Spatial Registration]
-    B[Multi-Modal Processing] --> C
+    B ==>|"Process"| B1[Data Cleaning]
+    B ==>|"Extract"| B2[Feature Extraction]
+    B ==>|"Time Align"| B3[Temporal Alignment]
+    B ==>|"Geo Register"| B4[Spatial Registration]
+    B[Multi-Modal Processing] ==>|"Transform"| C
     
     %% Storage Nodes
-    C --> C1[Hot Memory Cache]
-    C --> C2[Warm Vector Store]
-    C --> C3[Cold Object Storage]
-    C --> C4[Glacier Archive]
-    C[Adaptive Memory System] --> D
+    C ==>|"Immediate"| C1[Hot Memory Cache]
+    C ==>|"Regular"| C2[Warm Vector Store]
+    C ==>|"Archive"| C3[Cold Object Storage]
+    C ==>|"Deep Archive"| C4[Glacier Archive]
+    C[Adaptive Memory System] ==>|"Store"| D
     
     %% Analytics Nodes
-    D --> D1[Geospatial Analytics]
-    D --> D2[Time Series Analytics]
-    D --> D3[Change Detection]
-    D --> D4[Correlation Engine]
-    D[Earth Intelligence Suite] --> E
+    D ==>|"Spatial"| D1[Geospatial Analytics]
+    D ==>|"Temporal"| D2[Time Series Analytics]
+    D ==>|"Evolution"| D3[Change Detection]
+    D ==>|"Patterns"| D4[Correlation Engine]
+    D[Earth Intelligence Suite] ==>|"Analyze"| E
     
     %% Delivery Nodes
-    E --> E1[AI Model Integration]
-    E --> E2[Application APIs]
-    E --> E3[Visualization Tools]
-    E --> E4[Export Services]
-    E[Insight Delivery] --> F
+    E ==>|"Models"| E1[AI Model Integration]
+    E ==>|"Services"| E2[Application APIs]
+    E ==>|"Visual"| E3[Visualization Tools]
+    E ==>|"Export"| E4[Export Services]
+    E[Insight Delivery] ==>|"Decide"| F
     
     F[Decision Intelligence]
     
@@ -357,6 +377,9 @@ graph LR
     E:::delivery
     
     F:::delivery
+    
+    linkStyle 0,1,2,3 stroke:#1d4ed8,stroke-width:1.5px,stroke-dasharray:3,curve:basis;
+    linkStyle 4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24 stroke-width:3px,fill:none,curve:basis;
 ```
 
 ## 🚀 Advanced Applications
@@ -402,16 +425,35 @@ memories.dev supports three powerful deployment patterns to meet diverse operati
 Optimized for single-tenant applications requiring maximum performance:
 
 ```mermaid
+%%{init: { 'theme': 'default', 'themeVariables': { 'primaryColor': '#0F4C81', 'primaryTextColor': '#fff', 'primaryBorderColor': '#0D3E69', 'lineColor': '#0D3E69', 'secondaryColor': '#41B883', 'tertiaryColor': '#F7A922' } }}%%
 graph TD
-    Client[Client Applications] --> API[API Gateway]
-    API --> Server[Memories Server]
-    Server --> Models[Model System]
-    Server --> DataAcq[Data Acquisition]
-    Models --> LocalModels[Local Models]
-    Models --> APIModels[API-based Models]
-    DataAcq --> VectorData[Vector Data Sources]
-    DataAcq --> SatelliteData[Satellite Data]
-    Server --> Storage[Persistent Storage]
+    subgraph Architecture["Standalone Architecture"]
+        direction TB
+        
+        Client[Client Applications] -->|"Requests"| API[API Gateway]
+        API -->|"Process"| Server[Memories Server]
+        Server -->|"Inference"| Models[Model System]
+        Server -->|"Data"| DataAcq[Data Acquisition]
+        Models -->|"Local"| LocalModels[Local Models]
+        Models -->|"External"| APIModels[API-based Models]
+        DataAcq -->|"Vector"| VectorData[Vector Data Sources]
+        DataAcq -->|"Earth"| SatelliteData[Satellite Data]
+        Server -->|"Persist"| Storage[Persistent Storage]
+    end
+    
+    classDef client fill:#4C78B5,stroke:#3A5D8C,color:white,font-weight:bold,rounded:true
+    classDef server fill:#41B883,stroke:#2D8A64,color:white,font-weight:bold,rounded:true
+    classDef model fill:#F7A922,stroke:#BF821A,color:white,rounded:true
+    classDef data fill:#F06292,stroke:#C2185B,color:white,rounded:true
+    classDef storage fill:#7E57C2,stroke:#5E35B1,color:white,rounded:true
+    
+    class Client client
+    class API,Server server
+    class Models,LocalModels,APIModels model
+    class DataAcq,VectorData,SatelliteData data
+    class Storage storage
+    
+    linkStyle default stroke-width:2px,fill:none,curve:basis
 ```
 
 Best suited for:
@@ -425,33 +467,56 @@ Best suited for:
 Perfect for distributed systems requiring strong consistency:
 
 ```mermaid
+%%{init: { 'theme': 'default', 'themeVariables': { 'primaryColor': '#0F4C81', 'primaryTextColor': '#fff', 'primaryBorderColor': '#0D3E69', 'lineColor': '#0D3E69', 'secondaryColor': '#41B883', 'tertiaryColor': '#F7A922' } }}%%
 graph TD
-    Client[Client Applications] --> LB[Load Balancer]
-    LB --> Node1[Node 1]
-    LB --> Node2[Node 2]
-    LB --> Node3[Node 3]
-    
-    subgraph "Consensus Group"
-        Node1 <--> Node2
-        Node2 <--> Node3
-        Node3 <--> Node1
+    subgraph ConsensusArch["Consensus Architecture"]
+        direction TB
+        
+        Client[Client Applications] -->|"Load Balanced"| LB[Load Balancer]
+        LB -->|"Route"| Node1[Node 1]
+        LB -->|"Route"| Node2[Node 2]
+        LB -->|"Route"| Node3[Node 3]
+        
+        subgraph "Consensus Group"
+            direction LR
+            Node1 <-->|"Sync"| Node2
+            Node2 <-->|"Sync"| Node3
+            Node3 <-->|"Sync"| Node1
+        end
+        
+        Node1 -->|"Inference"| Models1[Model System]
+        Node2 -->|"Inference"| Models2[Model System]
+        Node3 -->|"Inference"| Models3[Model System]
+        
+        Node1 -->|"Data"| DataAcq1[Data Acquisition]
+        Node2 -->|"Data"| DataAcq2[Data Acquisition]
+        Node3 -->|"Data"| DataAcq3[Data Acquisition]
+        
+        subgraph "Shared Storage"
+            Storage[Distributed Storage]
+        end
+        
+        Node1 -->|"Write"| Storage
+        Node2 -->|"Write"| Storage
+        Node3 -->|"Write"| Storage
     end
     
-    Node1 --> Models1[Model System]
-    Node2 --> Models2[Model System]
-    Node3 --> Models3[Model System]
+    classDef client fill:#4C78B5,stroke:#3A5D8C,color:white,font-weight:bold,rounded:true
+    classDef loadbal fill:#F7A922,stroke:#BF821A,color:white,font-weight:bold,rounded:true
+    classDef node fill:#41B883,stroke:#2D8A64,color:white,font-weight:bold,rounded:true
+    classDef model fill:#7E57C2,stroke:#5E35B1,color:white,rounded:true
+    classDef data fill:#F06292,stroke:#C2185B,color:white,rounded:true
+    classDef storage fill:#FF8A65,stroke:#E64A19,color:white,font-weight:bold,rounded:true
     
-    Node1 --> DataAcq1[Data Acquisition]
-    Node2 --> DataAcq2[Data Acquisition]
-    Node3 --> DataAcq3[Data Acquisition]
+    class Client client
+    class LB loadbal
+    class Node1,Node2,Node3 node
+    class Models1,Models2,Models3 model
+    class DataAcq1,DataAcq2,DataAcq3 data
+    class Storage storage
     
-    subgraph "Shared Storage"
-        Storage[Distributed Storage]
-    end
-    
-    Node1 --> Storage
-    Node2 --> Storage
-    Node3 --> Storage
+    linkStyle default stroke-width:2px,fill:none,curve:basis
+    linkStyle 3,4,5 stroke:#41B883,stroke-width:3px,stroke-dasharray:5 5
 ```
 
 Best suited for:
@@ -465,51 +530,76 @@ Best suited for:
 Ideal for globally distributed applications:
 
 ```mermaid
+%%{init: { 'theme': 'default', 'themeVariables': { 'primaryColor': '#0F4C81', 'primaryTextColor': '#fff', 'primaryBorderColor': '#0D3E69', 'lineColor': '#0D3E69', 'secondaryColor': '#41B883', 'tertiaryColor': '#F7A922' } }}%%
 graph TD
-    Client[Client Applications] --> LB[Load Balancer]
-    LB --> API1[API Gateway 1]
-    LB --> API2[API Gateway 2]
-    LB --> API3[API Gateway 3]
-    
-    subgraph "Manager Nodes"
-        Manager1[Manager 1]
-        Manager2[Manager 2]
-        Manager3[Manager 3]
+    subgraph SwarmArch["Swarmed Architecture"]
+        direction TB
         
-        Manager1 <--> Manager2
-        Manager2 <--> Manager3
-        Manager3 <--> Manager1
+        Client[Client Applications] -->|"Load Balanced"| LB[Load Balancer]
+        LB -->|"Route"| API1[API Gateway 1]
+        LB -->|"Route"| API2[API Gateway 2]
+        LB -->|"Route"| API3[API Gateway 3]
+        
+        subgraph "Manager Nodes"
+            direction LR
+            Manager1[Manager 1]
+            Manager2[Manager 2]
+            Manager3[Manager 3]
+            
+            Manager1 <-->|"Orchestrate"| Manager2
+            Manager2 <-->|"Orchestrate"| Manager3
+            Manager3 <-->|"Orchestrate"| Manager1
+        end
+        
+        API1 -->|"Direct"| Manager1
+        API2 -->|"Direct"| Manager2
+        API3 -->|"Direct"| Manager3
+        
+        subgraph "Worker Nodes"
+            direction TB
+            Worker1[Worker 1]
+            Worker2[Worker 2]
+            Worker3[Worker 3]
+            Worker4[Worker 4]
+            Worker5[Worker 5]
+        end
+        
+        Manager1 -->|"Dispatch"| Worker1
+        Manager1 -->|"Dispatch"| Worker2
+        Manager2 -->|"Dispatch"| Worker3
+        Manager2 -->|"Dispatch"| Worker4
+        Manager3 -->|"Dispatch"| Worker5
+        
+        subgraph "Shared Services"
+            direction LR
+            Registry[Container Registry]
+            Config[Configuration Store]
+            Secrets[Secrets Management]
+            Monitoring[Monitoring & Logging]
+        end
+        
+        Manager1 -->|"Utilize"| Registry
+        Manager1 -->|"Configure"| Config
+        Manager1 -->|"Secure"| Secrets
+        Manager1 -->|"Monitor"| Monitoring
     end
     
-    API1 --> Manager1
-    API2 --> Manager2
-    API3 --> Manager3
+    classDef client fill:#4C78B5,stroke:#3A5D8C,color:white,font-weight:bold,rounded:true
+    classDef loadbal fill:#F7A922,stroke:#BF821A,color:white,font-weight:bold,rounded:true
+    classDef gateway fill:#9CCC65,stroke:#7CB342,color:white,font-weight:bold,rounded:true
+    classDef manager fill:#42A5F5,stroke:#1E88E5,color:white,font-weight:bold,rounded:true
+    classDef worker fill:#7E57C2,stroke:#5E35B1,color:white,rounded:true
+    classDef service fill:#F06292,stroke:#EC407A,color:white,font-weight:bold,rounded:true
     
-    subgraph "Worker Nodes"
-        Worker1[Worker 1]
-        Worker2[Worker 2]
-        Worker3[Worker 3]
-        Worker4[Worker 4]
-        Worker5[Worker 5]
-    end
+    class Client client
+    class LB loadbal
+    class API1,API2,API3 gateway
+    class Manager1,Manager2,Manager3 manager
+    class Worker1,Worker2,Worker3,Worker4,Worker5 worker
+    class Registry,Config,Secrets,Monitoring service
     
-    Manager1 --> Worker1
-    Manager1 --> Worker2
-    Manager2 --> Worker3
-    Manager2 --> Worker4
-    Manager3 --> Worker5
-    
-    subgraph "Shared Services"
-        Registry[Container Registry]
-        Config[Configuration Store]
-        Secrets[Secrets Management]
-        Monitoring[Monitoring & Logging]
-    end
-    
-    Manager1 --> Registry
-    Manager1 --> Config
-    Manager1 --> Secrets
-    Manager1 --> Monitoring
+    linkStyle default stroke-width:2px,fill:none,curve:basis
+    linkStyle 7,8,9 stroke:#42A5F5,stroke-width:3px,stroke-dasharray:5 5
 ```
 
 Best suited for:
