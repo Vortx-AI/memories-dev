@@ -43,8 +43,11 @@ These capabilities are achieved through our memory verification framework that i
 
 - [Memory Verification Framework](#-memory-verification-framework)
 - [Installation](#-installation)
+- [Common Issues and Solutions](#-common-issues-and-solutions)
+- [Development Setup](#-development-setup)
 - [Core Architecture](#-core-architecture)
 - [Advanced Applications](#-advanced-applications)
+- [Deployment Patterns](#-deployment-patterns)
 - [Developer-Centric Reliability](#-developer-centric-reliability)
 - [Technical Principles](#-technical-principles)
 - [Usage Examples](#-usage-examples)
@@ -91,12 +94,122 @@ graph TD
 
 ## 📦 Installation
 
-```bash
-# Install via pip
-pip install memories-dev
+Choose the installation option that best fits your needs:
 
-# Alternative: install via conda
+### 1. CPU-only Installation (Default)
+```bash
+pip install memories-dev
+```
+
+### 2. GPU Support Installation
+For CUDA 11.8:
+```bash
+pip install memories-dev[gpu]
+```
+
+For different CUDA versions, install PyTorch manually first:
+```bash
+# For CUDA 12.1
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# Then install the package
+pip install memories-dev[gpu]
+```
+
+### 3. Development Installation
+For contributing to the project:
+```bash
+pip install memories-dev[dev]
+```
+
+### 4. Documentation Tools
+For building documentation:
+```bash
+pip install memories-dev[docs]
+```
+
+### 5. Alternative Installation via Conda
+```bash
 conda install -c memories-dev
+```
+
+## 🔧 Common Issues and Solutions
+
+### Shapely Version Conflicts
+- For Python <3.13: Uses Shapely 1.7.0-1.8.5
+- For Python ≥3.13: Uses Shapely 2.0+
+
+### GPU Dependencies
+- CUDA toolkit must be installed separately
+- PyTorch Geometric packages are installed from wheels matching your CUDA version
+
+### Package Conflicts
+If you encounter dependency conflicts:
+```bash
+pip install --upgrade pip
+pip install memories-dev --no-deps
+pip install -r requirements.txt
+```
+
+### Missing Dependencies
+For some specialized features, you may need to install:
+```bash
+# For spatial data processing
+pip install geopandas rtree pyproj
+
+# For advanced visualization
+pip install matplotlib seaborn plotly
+```
+
+### Memory Configuration Issues
+If encountering memory-related errors:
+```python
+from memories import Config
+
+# Adjust memory tiers based on your hardware
+config = Config(
+    hot_memory_size=4,  # GB
+    warm_memory_size=16,  # GB
+    cold_memory_size=64,  # GB
+    vector_store="faiss"  # Alternatives: milvus, qdrant, pgvector
+)
+```
+
+## 🛠️ Development Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/Vortx-AI/memories-dev.git
+cd memories-dev
+```
+
+2. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# or
+.\venv\Scripts\activate  # Windows
+```
+
+3. Install development dependencies:
+```bash
+pip install -e .[dev]
+```
+
+4. Install pre-commit hooks:
+```bash
+pre-commit install
+```
+
+5. Run tests:
+```bash
+pytest tests/
+```
+
+6. Build documentation:
+```bash
+cd docs
+make html
 ```
 
 ## 🏗️ Core Architecture
@@ -279,6 +392,142 @@ For autonomous vehicles, air traffic control, and logistics management, our fram
 
 #### Financial Services
 For algorithmic trading, fraud detection, and risk assessment, our technology helps prevent costly errors by verifying AI decisions against current market conditions and regulatory requirements.
+
+## 🚢 Deployment Patterns
+
+memories.dev supports three powerful deployment patterns to meet diverse operational needs:
+
+### 1. Standalone Deployment
+
+Optimized for single-tenant applications requiring maximum performance:
+
+```mermaid
+graph TD
+    Client[Client Applications] --> API[API Gateway]
+    API --> Server[Memories Server]
+    Server --> Models[Model System]
+    Server --> DataAcq[Data Acquisition]
+    Models --> LocalModels[Local Models]
+    Models --> APIModels[API-based Models]
+    DataAcq --> VectorData[Vector Data Sources]
+    DataAcq --> SatelliteData[Satellite Data]
+    Server --> Storage[Persistent Storage]
+```
+
+Best suited for:
+- High-performance computing workloads
+- Machine learning model inference
+- Real-time data processing
+- Direct hardware access
+
+### 2. Consensus Deployment
+
+Perfect for distributed systems requiring strong consistency:
+
+```mermaid
+graph TD
+    Client[Client Applications] --> LB[Load Balancer]
+    LB --> Node1[Node 1]
+    LB --> Node2[Node 2]
+    LB --> Node3[Node 3]
+    
+    subgraph "Consensus Group"
+        Node1 <--> Node2
+        Node2 <--> Node3
+        Node3 <--> Node1
+    end
+    
+    Node1 --> Models1[Model System]
+    Node2 --> Models2[Model System]
+    Node3 --> Models3[Model System]
+    
+    Node1 --> DataAcq1[Data Acquisition]
+    Node2 --> DataAcq2[Data Acquisition]
+    Node3 --> DataAcq3[Data Acquisition]
+    
+    subgraph "Shared Storage"
+        Storage[Distributed Storage]
+    end
+    
+    Node1 --> Storage
+    Node2 --> Storage
+    Node3 --> Storage
+```
+
+Best suited for:
+- Distributed databases
+- Blockchain networks
+- Distributed caching systems
+- Mission-critical applications
+
+### 3. Swarmed Deployment
+
+Ideal for globally distributed applications:
+
+```mermaid
+graph TD
+    Client[Client Applications] --> LB[Load Balancer]
+    LB --> API1[API Gateway 1]
+    LB --> API2[API Gateway 2]
+    LB --> API3[API Gateway 3]
+    
+    subgraph "Manager Nodes"
+        Manager1[Manager 1]
+        Manager2[Manager 2]
+        Manager3[Manager 3]
+        
+        Manager1 <--> Manager2
+        Manager2 <--> Manager3
+        Manager3 <--> Manager1
+    end
+    
+    API1 --> Manager1
+    API2 --> Manager2
+    API3 --> Manager3
+    
+    subgraph "Worker Nodes"
+        Worker1[Worker 1]
+        Worker2[Worker 2]
+        Worker3[Worker 3]
+        Worker4[Worker 4]
+        Worker5[Worker 5]
+    end
+    
+    Manager1 --> Worker1
+    Manager1 --> Worker2
+    Manager2 --> Worker3
+    Manager2 --> Worker4
+    Manager3 --> Worker5
+    
+    subgraph "Shared Services"
+        Registry[Container Registry]
+        Config[Configuration Store]
+        Secrets[Secrets Management]
+        Monitoring[Monitoring & Logging]
+    end
+    
+    Manager1 --> Registry
+    Manager1 --> Config
+    Manager1 --> Secrets
+    Manager1 --> Monitoring
+```
+
+Best suited for:
+- Edge computing applications
+- Content delivery networks
+- IoT device networks
+- Global data distribution
+
+### Cloud Provider Support
+
+Each deployment pattern is supported across major cloud providers with:
+
+| Cloud Provider | Features | Deployment Models | Hardware Support |
+|----------------|----------|-------------------|-----------------|
+| AWS | Auto-scaling, S3 integration, Lambda functions | All | NVIDIA GPUs, Graviton (ARM) |
+| GCP | Kubernetes, TPU support, Cloud Storage | All | NVIDIA GPUs, TPUs |
+| Azure | AKS, Container Apps, Blob Storage | All | NVIDIA GPUs, AMD MI |
+| On-premises | Custom hardware support, airgapped operation | All | NVIDIA GPUs, AMD MI, Intel GPUs |
 
 ## 👩‍💻 Developer-Centric Reliability
 
