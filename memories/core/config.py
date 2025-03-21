@@ -12,11 +12,21 @@ from dotenv import load_dotenv
 class Config:
     """Configuration manager for the Memories framework."""
     
-    def __init__(self, config_path: str = None):
+    def __init__(self, config_path: str = None, storage_path: str = None, 
+                 hot_memory_size: int = None, warm_memory_size: int = None, 
+                 cold_memory_size: int = None, vector_store: str = None,
+                 embedding_model: str = None, vector_dim: int = None):
         """Initialize configuration.
         
         Args:
             config_path: Optional path to config file
+            storage_path: Optional path for data storage
+            hot_memory_size: Optional size for hot memory (in GB)
+            warm_memory_size: Optional size for warm memory (in GB)
+            cold_memory_size: Optional size for cold memory (in GB)
+            vector_store: Optional vector store type (e.g., "faiss", "milvus")
+            embedding_model: Optional embedding model name
+            vector_dim: Optional dimension for vector embeddings
         """
         # Load environment variables
         load_dotenv()
@@ -30,7 +40,56 @@ class Config:
         # Load configuration
         self.config_path = config_path
         self.config = self._load_config()
+        
+        # Apply any direct parameter overrides
+        self._apply_parameter_overrides(
+            storage_path=storage_path,
+            hot_memory_size=hot_memory_size,
+            warm_memory_size=warm_memory_size,
+            cold_memory_size=cold_memory_size,
+            vector_store=vector_store,
+            embedding_model=embedding_model,
+            vector_dim=vector_dim
+        )
+        
+        # Setup directories
         self._setup_directories()
+        
+    def _apply_parameter_overrides(self, **kwargs):
+        """Apply direct parameter overrides to the configuration.
+        
+        Args:
+            **kwargs: Dictionary of parameters to override
+        """
+        # Handle storage path override
+        if kwargs.get('storage_path'):
+            self.config['data']['storage'] = kwargs['storage_path']
+            
+        # Handle memory size overrides
+        if kwargs.get('hot_memory_size'):
+            self.config['memory']['hot_size'] = kwargs['hot_memory_size']
+            
+        if kwargs.get('warm_memory_size'):
+            self.config['memory']['warm_size'] = kwargs['warm_memory_size']
+            
+        if kwargs.get('cold_memory_size'):
+            self.config['memory']['cold_size'] = kwargs['cold_memory_size']
+            
+        # Handle vector store overrides
+        if kwargs.get('vector_store'):
+            if 'vector' not in self.config:
+                self.config['vector'] = {}
+            self.config['vector']['store_type'] = kwargs['vector_store']
+            
+        # Handle embedding model override
+        if kwargs.get('embedding_model'):
+            if 'embedding' not in self.config:
+                self.config['embedding'] = {}
+            self.config['embedding']['model'] = kwargs['embedding_model']
+            
+        # Handle vector dimension override
+        if kwargs.get('vector_dim'):
+            self.config['memory']['vector_dim'] = kwargs['vector_dim']
         
     def _load_config(self) -> dict:
         """Load configuration from file or use defaults."""

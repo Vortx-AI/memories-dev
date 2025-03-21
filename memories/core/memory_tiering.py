@@ -492,4 +492,172 @@ class MemoryTiering:
                 
         except Exception as e:
             logger.error(f"Error moving data from Glacier to Cold as file: {str(e)}")
-            return False, "" 
+            return False, ""
+    
+    async def cold_pickle_to_red_hot(self, pickle_path: str, red_hot_key: Optional[str] = None) -> bool:
+        """Move data from a pickle file in Cold storage to Red Hot storage (GPU memory).
+        
+        This method loads data from a pickle file in Cold storage and places it directly
+        into Red Hot (GPU) memory, bypassing the intermediate tiers. It's useful for
+        loading preprocessed data that's optimized for GPU operations.
+        
+        Args:
+            pickle_path: Path to the pickle file in Cold storage
+            red_hot_key: Optional key to use in Red Hot storage. If not provided,
+                will use the basename of the pickle file as the key.
+                
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        await self.initialize_tiers()
+        
+        try:
+            # Check if Red Hot memory is available (requires GPU)
+            if not self.red_hot.is_available():
+                logger.warning("Red Hot memory is not available (GPU required)")
+                return False
+            
+            # Check if pickle file exists
+            import os
+            if not os.path.exists(pickle_path):
+                logger.error(f"Pickle file not found at {pickle_path}")
+                # Try to find the file with the memory_manager
+                expanded_path = await self.memory_manager.resolve_path(pickle_path)
+                if not os.path.exists(expanded_path):
+                    logger.error(f"Could not find pickle file in any location")
+                    return False
+                pickle_path = expanded_path
+            
+            # Use filename as red_hot_key if not provided
+            if red_hot_key is None:
+                import os
+                red_hot_key = os.path.basename(pickle_path).split('.')[0]
+            
+            # Load data from pickle file
+            logger.info(f"Loading data from pickle file: {pickle_path}")
+            import pickle
+            try:
+                with open(pickle_path, 'rb') as f:
+                    data = pickle.load(f)
+                
+                # Check data structure
+                if isinstance(data, dict):
+                    logger.info(f"Loaded dictionary data with {len(data)} keys")
+                    
+                    # Handle nested tables structure
+                    if 'tables' in data:
+                        # Process each table separately
+                        tables_dict = data['tables']
+                        success_count = 0
+                        total_tables = len(tables_dict)
+                        
+                        for table_name, table_data in tables_dict.items():
+                            # Convert pandas DataFrame to GPU DataFrame
+                            gpu_data = self._to_gpu_df(table_data)
+                            
+                            # Store in Red Hot memory with combined key
+                            table_key = f"{red_hot_key}_{table_name}"
+                            table_success = self.red_hot.store(gpu_data, table_key)
+                            
+                            if table_success:
+                                logger.info(f"Successfully stored table {table_name} in Red Hot memory with key {table_key}")
+                                success_count += 1
+                            else:
+                                logger.error(f"Failed to store table {table_name} in Red Hot memory")
+                        
+                        # Return overall success
+                        return success_count > 0
+                    else:
+                        # Process as a single dictionary
+                        gpu_data = self._to_gpu_df(data)
+                        success = self.red_hot.store(gpu_data, red_hot_key)
+                        
+                        if success:
+                            logger.info(f"Successfully stored data in Red Hot memory with key {red_hot_key}")
+                            return True
+                        else:
+                            logger.error(f"Failed to store data in Red Hot memory")
+                            return False
+                else:
+                    # Process as single object
+                    gpu_data = self._to_gpu_df(data)
+                    success = self.red_hot.store(gpu_data, red_hot_key)
+                    
+                    if success:
+                        logger.info(f"Successfully stored data in Red Hot memory with key {red_hot_key}")
+                        return True
+                    else:
+                        logger.error(f"Failed to store data in Red Hot memory")
+                        return False
+                
+            except Exception as e:
+                logger.error(f"Error loading pickle file: {e}")
+                return False
+        
+        except Exception as e:
+            logger.error(f"Error moving data from Cold pickle to Red Hot: {e}")
+            return False
+
+    def _to_gpu_df(self, data):
+        """Convert pandas DataFrame to GPU DataFrame if possible.
+        
+        Args:
+            data: The data to convert, typically a pandas DataFrame
+                
+        Returns:
+            The data converted to GPU format if possible, otherwise original data
+        """
+        # Early return if None
+        if data is None:
+            return None
+        
+        # Skip conversion if not a DataFrame
+        import pandas as pd
+        if not isinstance(data, pd.DataFrame):
+            return data
+        
+        logger.info(f"Converting pandas DataFrame with {len(data)} rows to GPU DataFrame")
+        
+        # Check for GPU libraries
+        try:
+            import importlib
+            
+            # Try multiple GPU DataFrame libraries
+            gpu_libs = ["cudf", "torch"]
+            
+            for lib_name in gpu_libs:
+                try:
+                    # Check if library is available
+                    lib = importlib.import_module(lib_name)
+                    
+                    if lib_name == "cudf":
+                        # Convert with cuDF
+                        return lib.DataFrame.from_pandas(data)
+                    elif lib_name == "torch":
+                        # Check if torch.cuda is available
+                        if hasattr(lib, 'cuda') and lib.cuda.is_available():
+                            # Convert columns to tensors on GPU
+                            tensor_dict = {}
+                            for col in data.columns:
+                                try:
+                                    # Convert numeric columns to tensors
+                                    if pd.api.types.is_numeric_dtype(data[col]):
+                                        tensor_dict[col] = lib.tensor(data[col].values, device='cuda')
+                                except Exception as col_err:
+                                    logger.warning(f"Could not convert column {col} to GPU tensor: {col_err}")
+                            
+                            # If we converted any columns, return the tensor dict
+                            if tensor_dict:
+                                logger.info(f"Converted {len(tensor_dict)} columns to PyTorch GPU tensors")
+                                return tensor_dict
+                
+                except ImportError:
+                    continue
+            
+            # If we get here, no GPU libraries were available
+            logger.warning("No GPU libraries available for DataFrame conversion")
+            return data
+            
+        except Exception as e:
+            logger.error(f"Error in GPU DataFrame conversion: {e}")
+            return data 

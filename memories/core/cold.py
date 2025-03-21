@@ -176,18 +176,26 @@ logger = logging.getLogger(__name__)
 class ColdMemory:
     """Cold memory layer using DuckDB for persistent storage."""
     
-    def __init__(self, config_path: str = None):
+    def __init__(self, config_path: str = None, config = None):
         """Initialize cold memory storage.
         
         Args:
             config_path: Optional path to configuration file. If not provided,
                         will look for default_config.yml in standard locations.
+            config: Optional Config object. If provided, will use this instead of
+                   loading from config_path.
         """
         self.logger = logging.getLogger(__name__)
         
         # Set project root
         self.project_root = os.getenv("PROJECT_ROOT") or os.path.abspath(os.getcwd())
         
+        # Use provided Config object if available
+        if config:
+            self.config = config.config
+            self._init_storage()
+            return
+            
         # Try to find configuration in standard locations if not provided
         if not config_path:
             standard_paths = [

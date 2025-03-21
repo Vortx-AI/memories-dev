@@ -21,44 +21,76 @@ logger = logging.getLogger(__name__)
 class MemoryStore:
     """Memory store for handling data storage across different memory tiers."""
     
-    def __init__(self):
-        """Initialize memory store."""
+    def __init__(self, config=None):
+        """Initialize memory store.
+        
+        Args:
+            config: Optional configuration object
+        """
         self.memory_manager = MemoryManager()
         self.logger = logging.getLogger(__name__)
+        self.config = config
         
         # Initialize memory tiers as None - will be created on demand
         self._hot_memory = None
         self._warm_memory = None
         self._cold_memory = None
         self._red_hot_memory = None
+        
+        # Dictionary to store registered clients
+        self._clients = {}
 
     def _init_hot(self) -> None:
         """Initialize hot memory on demand."""
         if not self._hot_memory:
             # Lazy import to avoid circular dependency
             from memories.core.hot import HotMemory
-            self._hot_memory = HotMemory()
+            self._hot_memory = HotMemory(config=self.config)
 
     def _init_warm(self) -> None:
         """Initialize warm memory on demand."""
         if not self._warm_memory:
             # Lazy import to avoid circular dependency
             from memories.core.warm import WarmMemory
-            self._warm_memory = WarmMemory()
+            self._warm_memory = WarmMemory(config=self.config)
 
     def _init_cold(self) -> None:
         """Initialize cold memory on demand."""
         if not self._cold_memory:
             # Lazy import to avoid circular dependency
             from memories.core.cold import ColdMemory
-            self._cold_memory = ColdMemory()
-
+            self._cold_memory = ColdMemory(config=self.config)
+            
     def _init_red_hot(self) -> None:
         """Initialize red hot memory on demand."""
         if not self._red_hot_memory:
             # Lazy import to avoid circular dependency
             from memories.core.red_hot import RedHotMemory
-            self._red_hot_memory = RedHotMemory()
+            self._red_hot_memory = RedHotMemory(config=self.config)
+            
+    @property
+    def hot(self):
+        """Access hot memory tier."""
+        self._init_hot()
+        return self._hot_memory
+        
+    @property
+    def warm(self):
+        """Access warm memory tier."""
+        self._init_warm()
+        return self._warm_memory
+        
+    @property
+    def cold(self):
+        """Access cold memory tier."""
+        self._init_cold()
+        return self._cold_memory
+        
+    @property
+    def red_hot(self):
+        """Access red hot memory tier."""
+        self._init_red_hot()
+        return self._red_hot_memory
 
     def _get_data_size(self, data: Any) -> int:
         """Get size of data in bytes."""
@@ -520,4 +552,33 @@ class MemoryStore:
         except Exception as e:
             self.logger.error(f"Error importing vectors from {pkl_file}: {e}")
             return False
+
+    def register_client(self, name: str, client: Any) -> None:
+        """Register a client with the memory store.
+        
+        This allows external data providers like OvertureClient or SentinelClient
+        to be registered with the memory store for later use.
+        
+        Args:
+            name: Name to register the client under
+            client: The client object to register
+        """
+        self._clients[name] = client
+        self.logger.info(f"Registered client {name}")
+        
+    def get_client(self, name: str) -> Any:
+        """Get a registered client by name.
+        
+        Args:
+            name: Name of the client to retrieve
+            
+        Returns:
+            The registered client or None if not found
+            
+        Raises:
+            KeyError: If the client is not registered
+        """
+        if name not in self._clients:
+            raise KeyError(f"Client {name} not registered")
+        return self._clients[name]
 
