@@ -40,8 +40,8 @@ def memory_catalog(mock_memory_manager):
     """Create a MemoryCatalog instance with mocked dependencies."""
     logger.info("Creating memory_catalog fixture with mocked dependencies")
     
-    # Create a mock DuckDB connection
-    mock_con = MagicMock()
+    # Create a mock DuckDB connection - use AsyncMock instead of MagicMock for awaitable methods
+    mock_con = AsyncMock()
     mock_con.execute.return_value = mock_con
     
     # Configure the mock to return test data
@@ -65,7 +65,7 @@ def memory_catalog(mock_memory_manager):
     
     async def mock_update_access(data_id):
         logger.debug(f"Mock update_access called for data_id={data_id}")
-        catalog.con.execute("UPDATE mock_query")
+        await catalog.con.execute("UPDATE mock_query")
         return None
     
     async def mock_get_data_info(data_id):
@@ -118,7 +118,7 @@ def memory_catalog(mock_memory_manager):
     
     async def mock_delete_data(data_id):
         logger.debug(f"Mock delete_data called for data_id={data_id}")
-        catalog.con.execute("DELETE mock_query")
+        await catalog.con.execute("DELETE mock_query")
         return True
     
     # Assign the mock methods
