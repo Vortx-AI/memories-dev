@@ -44,11 +44,15 @@ class LandsatConnector:
         self.cold = self.cold_memory  # For backward compatibility
         
         if self.cold_memory:
-            logger.info(f"Cold storage location: {self.cold_memory.raw_data_path}")
+            logger.info(f"Cold storage location: {self.cold_memory.config['storage']['raw_data_path']}")
         
         # Set up data directory
         if data_dir is None and self.cold_memory:
-            data_dir = Path(self.cold_memory.raw_data_path) / "landsat"
+            raw_data_path = self.cold_memory.config['storage'].get('raw_data_path')
+            if raw_data_path:
+                data_dir = Path(raw_data_path) / "landsat"
+            else:
+                data_dir = Path("data/landsat")
             logger.info(f"Using cold storage path for data: {data_dir}")
         else:
             data_dir = Path(data_dir) if data_dir else Path("data/landsat")

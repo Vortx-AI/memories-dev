@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 """
-Example script for downloading Landsat data using the MemoryManager.
+Landsat Data Download Example
+----------------------------
+This script demonstrates how to download Landsat satellite imagery
+using the Memories framework.
 """
 
 import asyncio
 from datetime import datetime, timedelta
-from memories.core.memory_manager import MemoryManager
 import logging
+from pathlib import Path
 import os
 from dotenv import load_dotenv
+
+from memories.core.memory_manager import MemoryManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -77,8 +82,9 @@ async def download_landsat_data(
         # Cleanup resources
         await memory_manager.reset()
 
-# Example usage
 async def main():
+    """Main execution function."""
+    
     # Example bounding box for San Francisco
     sf_bbox = {
         "xmin": -122.5155,
@@ -91,7 +97,12 @@ async def main():
     end_date = datetime.now() - timedelta(days=30)  # Use data from 30 days ago
     start_date = end_date - timedelta(days=365)  # Look back 1 year
     
-    # Download data for San Francisco
+    print(f"Downloading Landsat data for San Francisco")
+    print(f"Time range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+    print(f"Bounding box: {sf_bbox}")
+    print(f"Cloud cover threshold: 90.0%")
+    
+    # Download data for natural color bands
     result = await download_landsat_data(
         bbox=sf_bbox,
         start_date=start_date,
@@ -117,6 +128,13 @@ async def main():
         print(f"Time range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
         print(f"Bounding box: {sf_bbox}")
         print(f"Cloud cover threshold: 90.0%")
+    
+    print("\n--- Common band combinations ---")
+    print("Natural Color: [\"red\", \"green\", \"blue\"]")
+    print("False Color (vegetation): [\"nir08\", \"red\", \"green\"]")
+    print("Agriculture: [\"swir16\", \"nir08\", \"red\"]")
+    print("Atmospheric Penetration: [\"swir22\", \"swir16\", \"nir08\"]")
+    print("Healthy Vegetation: [\"nir08\", \"swir16\", \"red\"]")
 
 if __name__ == "__main__":
     asyncio.run(main()) 

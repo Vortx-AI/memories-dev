@@ -440,11 +440,7 @@ class MemoryManager:
                 )
             elif source_type == 'landsat':
                 from memories.core.glacier.artifacts.landsat import LandsatConnector
-                return LandsatConnector(
-                    data_dir=data_dir,
-                    keep_files=kwargs.get('keep_files', False),
-                    store_in_cold=kwargs.get('store_in_cold', True)
-                )
+                return LandsatConnector(data_dir=data_dir, keep_files=kwargs.get('keep_files', False), store_in_cold=kwargs.get('store_in_cold', True))
             elif source_type == 'planetary':
                 from memories.core.glacier.artifacts.planetary import PlanetaryConnector
                 return PlanetaryConnector(cache_dir=str(cache_dir))
