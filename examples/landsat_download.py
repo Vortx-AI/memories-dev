@@ -28,7 +28,8 @@ async def download_landsat_data(
     end_date: datetime,
     bands: list = ["red", "nir08"],
     cloud_cover: float = 30.0,
-    collection: str = "landsat-c2-l2"
+    collection: str = "landsat-c2-l2",
+    data_dir: str = None
 ) -> dict:
     """
     Download Landsat satellite data for a specified area and time range.
@@ -40,47 +41,66 @@ async def download_landsat_data(
         bands: List of band names to download (default: ["red", "nir08"])
         cloud_cover: Maximum cloud cover percentage (default: 30.0)
         collection: Landsat collection ID (default: "landsat-c2-l2")
+        data_dir: Directory to store downloaded data (default: None)
         
     Returns:
         Dictionary containing download results and metadata
     """
-    # Initialize memory manager
-    memory_manager = MemoryManager()
-    
-    # Get Landsat connector
-    landsat = memory_manager.get_connector('landsat', keep_files=True, store_in_cold=False)
-    
     try:
-        # Initialize the connector
-        success = await landsat.initialize()
-        if not success:
-            return {"status": "error", "message": "Failed to initialize Landsat connector"}
+        # Initialize memory manager
+        memory_manager = MemoryManager()
         
-        # Download the data
-        result = await landsat.download_data(
-            bbox=bbox,
-            start_date=start_date,
-            end_date=end_date,
-            bands=bands,
-            cloud_cover=cloud_cover,
-            collection=collection
+        # Create an explicit data directory if not provided
+        if data_dir is None:
+            data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "landsat")
+            os.makedirs(data_dir, exist_ok=True)
+            logger.info(f"Using data directory: {data_dir}")
+        
+        # Get Landsat connector with explicit data directory and disable cold storage to avoid path issues
+        landsat = memory_manager.get_connector(
+            'landsat', 
+            data_dir=data_dir,
+            keep_files=True, 
+            store_in_cold=False
         )
         
-        if result["status"] == "success":
-            logger.info(f"Successfully downloaded Landsat data:")
-            logger.info(f"Scene ID: {result['scene_id']}")
-            logger.info(f"Cloud Cover: {result['cloud_cover']}%")
-            logger.info(f"Downloaded Bands: {result['bands']}")
-            logger.info(f"Datetime: {result['metadata']['datetime']}")
-            logger.info(f"Platform: {result['metadata']['platform']}")
-        else:
-            logger.error(f"Failed to download data: {result['message']}")
-        
-        return result
-        
-    finally:
-        # Cleanup resources
-        await memory_manager.reset()
+        try:
+            # Initialize the connector
+            success = await landsat.initialize()
+            if not success:
+                return {"status": "error", "message": "Failed to initialize Landsat connector"}
+            
+            # Download the data
+            result = await landsat.download_data(
+                bbox=bbox,
+                start_date=start_date,
+                end_date=end_date,
+                bands=bands,
+                cloud_cover=cloud_cover,
+                collection=collection
+            )
+            
+            if result["status"] == "success":
+                logger.info(f"Successfully downloaded Landsat data:")
+                logger.info(f"Scene ID: {result['scene_id']}")
+                logger.info(f"Cloud Cover: {result['cloud_cover']}%")
+                logger.info(f"Downloaded Bands: {result['bands']}")
+                logger.info(f"Datetime: {result['metadata']['datetime']}")
+                logger.info(f"Platform: {result['metadata']['platform']}")
+            else:
+                logger.error(f"Failed to download data: {result['message']}")
+            
+            return result
+            
+        finally:
+            # Cleanup resources
+            try:
+                await memory_manager.reset()
+            except Exception as e:
+                logger.error(f"Error during cleanup: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error in download_landsat_data: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 async def main():
     """Main execution function."""
@@ -102,32 +122,41 @@ async def main():
     print(f"Bounding box: {sf_bbox}")
     print(f"Cloud cover threshold: 90.0%")
     
-    # Download data for natural color bands
-    result = await download_landsat_data(
-        bbox=sf_bbox,
-        start_date=start_date,
-        end_date=end_date,
-        bands=["red", "green", "blue"],  # Natural color
-        cloud_cover=90.0,
-        collection="landsat-c2-l2"
-    )
+    # Create a data directory that will definitely work
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "landsat")
+    os.makedirs(data_dir, exist_ok=True)
+    print(f"Using data directory: {data_dir}")
     
-    # Print results
-    if result["status"] == "success":
-        print("\nData download completed successfully!")
-        print(f"Data stored in: {os.path.abspath(os.path.join('data', 'landsat'))}")
-        print(f"\nScene ID: {result['scene_id']}")
-        print(f"Cloud Cover: {result['cloud_cover']}%")
-        print(f"Downloaded Bands: {result['bands']}")
-        print(f"Datetime: {result['metadata']['datetime']}")
-        print(f"Platform: {result['metadata']['platform']}")
-    else:
-        print("\nData download failed.")
-        print(f"Error: {result.get('message', 'Unknown error')}")
-        print("\nSearch parameters used:")
-        print(f"Time range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
-        print(f"Bounding box: {sf_bbox}")
-        print(f"Cloud cover threshold: 90.0%")
+    # Download data for natural color bands
+    try:
+        result = await download_landsat_data(
+            bbox=sf_bbox,
+            start_date=start_date,
+            end_date=end_date,
+            bands=["red", "green", "blue"],  # Natural color
+            cloud_cover=90.0,
+            collection="landsat-c2-l2",
+            data_dir=data_dir
+        )
+        
+        # Print results
+        if result["status"] == "success":
+            print("\nData download completed successfully!")
+            print(f"Data stored in: {os.path.abspath(data_dir)}")
+            print(f"\nScene ID: {result['scene_id']}")
+            print(f"Cloud Cover: {result['cloud_cover']}%")
+            print(f"Downloaded Bands: {result['bands']}")
+            print(f"Datetime: {result['metadata']['datetime']}")
+            print(f"Platform: {result['metadata']['platform']}")
+        else:
+            print("\nData download failed.")
+            print(f"Error: {result.get('message', 'Unknown error')}")
+            print("\nSearch parameters used:")
+            print(f"Time range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+            print(f"Bounding box: {sf_bbox}")
+            print(f"Cloud cover threshold: 90.0%")
+    except Exception as e:
+        print(f"\nFailed to download Landsat data: {str(e)}")
     
     print("\n--- Common band combinations ---")
     print("Natural Color: [\"red\", \"green\", \"blue\"]")
