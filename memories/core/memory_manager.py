@@ -440,7 +440,11 @@ class MemoryManager:
                 )
             elif source_type == 'landsat':
                 from memories.core.glacier.artifacts.landsat import LandsatConnector
-                return LandsatConnector()
+                return LandsatConnector(
+                    data_dir=data_dir,
+                    keep_files=kwargs.get('keep_files', False),
+                    store_in_cold=kwargs.get('store_in_cold', True)
+                )
             elif source_type == 'planetary':
                 from memories.core.glacier.artifacts.planetary import PlanetaryConnector
                 return PlanetaryConnector(cache_dir=str(cache_dir))
@@ -1105,3 +1109,30 @@ class MemoryManager:
         except Exception as e:
             self.logger.error(f"Error deleting table {table_name}: {e}")
             return False 
+
+    async def reset(self) -> None:
+        """Reset and cleanup resources asynchronously.
+        
+        This method is used to clean up resources and connections
+        when the memory manager is no longer needed.
+        """
+        # Close DuckDB connection if open
+        if self.con is not None:
+            try:
+                self.con.close()
+                self.con = None
+            except Exception as e:
+                self.logger.error(f"Error closing DuckDB connection: {e}")
+        
+        # Reset all attributes that might hold resources
+        self.indexes = {}
+        self.storage_backends = {}
+        
+        # If cold memory is initialized, clean it up
+        if hasattr(self, 'cold') and self.cold is not None:
+            try:
+                self.cleanup_cold_memory(remove_storage=False)
+            except Exception as e:
+                self.logger.error(f"Error cleaning up cold memory: {e}")
+        
+        self.logger.info("Memory manager resources reset") 
