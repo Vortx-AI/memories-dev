@@ -441,7 +441,8 @@ async def test_landsat_retrieval(memory_manager):
                 "start_date": start_date,
                 "end_date": end_date,
                 "max_cloud_cover": 20.0,
-                "limit": 5
+                "limit": 5,
+                "storage": {}  
             }
         )
         
