@@ -20,7 +20,6 @@ from concurrent.futures import ThreadPoolExecutor
 import logging
 from tqdm import tqdm
 import os
-import torch
 from diffusers import StableDiffusionPipeline
 from PIL import Image, ImageDraw, ImageFont
 import random
@@ -401,7 +400,7 @@ class SyntheticDataGenerator:
         Returns:
             Generated PIL Image
         """
-        global pipe
+        #global pipe
         if pipe is None:
             initialize_stable_diffusion()
         

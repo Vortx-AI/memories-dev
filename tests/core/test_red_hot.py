@@ -444,7 +444,7 @@ def create_sample_roads_data(num_roads=500):
 def create_single_table_pickle():
     """Create a single table pickle file with building data."""
     print(f"\n--- CREATING SINGLE TABLE PICKLE ---")
-    global SAMPLE_PKL_PATH  # Add this line to ensure access to the global variable
+    #global SAMPLE_PKL_PATH  # Add this line to ensure access to the global variable
     logger.info(f"Creating single table pickle file at {SAMPLE_PKL_PATH}")
     
     # Create sample data
@@ -464,7 +464,7 @@ def create_single_table_pickle():
 def create_multi_table_pickle():
     """Create a multi-table pickle file with buildings and roads."""
     print(f"\n--- CREATING MULTI-TABLE PICKLE ---")
-    global MULTI_TABLE_PKL_PATH  # Add this line to ensure access to the global variable
+    #global MULTI_TABLE_PKL_PATH  # Add this line to ensure access to the global variable
     logger.info(f"Creating multi-table pickle file at {MULTI_TABLE_PKL_PATH}")
     
     # Create sample data
@@ -852,7 +852,7 @@ async def test_gpu_queries_single_table():
 
 async def main():
     """Main test function."""
-    global sys  # Add this line to ensure access to the global module
+    #global sys  # Add this line to ensure access to the global module
     print("\n==============================================")
     print("STARTING GPU MEMORY TESTS")
     print("==============================================")
