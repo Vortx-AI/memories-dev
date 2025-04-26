@@ -523,12 +523,14 @@ def check_gpu_availability():
     
     return is_available
 
-async def test_cold_to_red_hot_promotion(file_path):
+@pytest.mark.asyncio
+async def test_cold_to_red_hot_promotion():
     """Test promoting data from a pickle file in Cold storage to Red Hot memory."""
     print("\n--- TESTING COLD TO RED HOT PROMOTION ---")
     logger.info("Testing Cold to Red Hot Promotion")
     
     # Initialize memory tiering with our mock class instead
+    file_path = create_single_table_pickle()
     print("Initializing memory tiering...")
     try:
         memory_tiering = MockMemoryTiering()
