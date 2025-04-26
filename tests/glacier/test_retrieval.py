@@ -422,7 +422,7 @@ async def test_planetary_memory_retrieval(memory_manager):
 @pytest.mark.asyncio
 async def test_landsat_retrieval(memory_manager):
     """Test retrieving Landsat data."""
-    landsat = memory_manager.get_connector('landsat')
+    landsat = memory_manager.get_connector('landsat', store_in_cold=False)
     
     try:
         bbox = {
