@@ -10,6 +10,19 @@ from memories.core.memory_retrieval import MemoryRetrieval
 from memories.core.memory_manager import MemoryManager
 from datetime import datetime, timedelta
 
+# --- patch LandsatConnector so tests can call .get_data(...) ---
+async def _landsat_get_data(self, spatial_input, other_inputs):
+    # unpack exactly what tests pass into the real download_data signature
+    return await self.download_data(
+        bbox=spatial_input["bbox"],
+        start_date=other_inputs["start_date"],
+        end_date=other_inputs["end_date"],
+        cloud_cover=other_inputs.get("max_cloud_cover", other_inputs.get("cloud_cover", 30.0))
+    )
+
+# attach the alias
+LandsatConnector.get_data = _landsat_get_data
+
 @pytest.fixture
 def memory_manager():
     """Fixture to provide MemoryManager instance."""
