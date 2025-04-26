@@ -165,11 +165,11 @@ class LandsatConnector:
                     if self.store_in_cold and metadata and hasattr(self, 'store_in_cold_memory'):
                         await self.store_in_cold_memory(band_name, output_file, metadata)
                     
-                    return True
-                else:
+                return True
+            else:
                     logger.error(f"Failed to save band {band_name}")
-                    return False
-        
+                return False
+                
         except Exception as e:
             logger.error(f"Error downloading band {band_name}: {str(e)}")
             return False
@@ -184,7 +184,7 @@ class LandsatConnector:
         cloud_cover: float = 30.0
     ) -> Dict[str, Any]:
         """Download Landsat data for a given bounding box and time range.
-
+        
         Args:
             bbox: Bounding box as a dictionary with xmin, ymin, xmax, ymax
             start_date: Start date for the search
@@ -192,7 +192,7 @@ class LandsatConnector:
             collection: Collection ID (e.g., "landsat-c2-l2", "landsat-9-c2-l2")
             bands: List of bands to download (default: ["red", "nir08"])
             cloud_cover: Maximum cloud cover percentage (default: 30.0)
-
+            
         Returns:
             Dict containing status, message (if error), and data (if success)
         """
@@ -232,7 +232,7 @@ class LandsatConnector:
             logger.info(f"- Time Range: {start_date.isoformat()} to {end_date.isoformat()}")
             logger.info(f"- Cloud Cover Threshold: {cloud_cover}%")
             logger.info(f"- Requested Bands: {bands}")
-
+            
             # Search for scenes
             search = self.client.search(
                 collections=[collection],
@@ -250,7 +250,7 @@ class LandsatConnector:
                     "status": "error",
                     "message": "No scenes found matching criteria"
                 }
-
+            
             # Get the first item
             item = items[0]
             logger.info(f"Processing scene: {item.id}")
@@ -264,8 +264,8 @@ class LandsatConnector:
             downloaded_bands = []
             for band in bands:
                 if band not in item.assets:
-                    return {
-                        "status": "error",
+                return {
+                    "status": "error",
                         "message": f"Band {band} not available in scene {item.id}"
                     }
 
@@ -303,7 +303,7 @@ class LandsatConnector:
                     "collection": item.collection_id
                 }
             }
-
+            
         except Exception as e:
             logger.error(f"Error downloading Landsat data: {str(e)}")
             return {
@@ -334,8 +334,8 @@ class LandsatConnector:
             
             logger.info(f"Stored {band_name} in cold memory")
             return True
-        
-        except Exception as e:
+            
+    except Exception as e:
             logger.error(f"Error storing {band_name} in cold memory: {str(e)}")
             return False
 

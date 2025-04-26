@@ -18,6 +18,7 @@ def main():
         cache_size_gb=10
     )
     
+    
     # Run system check
     print("\nRunning system check...")
     status = system_check()
