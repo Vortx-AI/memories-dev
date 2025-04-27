@@ -463,25 +463,15 @@ async def test_landsat_retrieval(memory_manager):
         assert "status" in result, "Result missing status field"
         
         if result["status"] == "success":
-            assert "data" in result, "Missing data in successful response"
-            data = result["data"]
-            
-            assert "scenes" in data, "Missing scenes in data"
-            assert "metadata" in data, "Missing metadata in data"
-            assert "total_scenes" in data, "Missing total_scenes in data"
-            
-            scenes = data["scenes"]
-            assert isinstance(scenes, list), "Scenes should be a list"
-            if scenes:
-                first_scene = scenes[0]
-                assert "id" in first_scene, "Scene missing ID"
-                assert "properties" in first_scene, "Scene missing properties"
-                assert "bbox" in first_scene, "Scene missing bbox"
-                
-                metadata = data["metadata"]
-                assert "id" in metadata, "Missing scene ID in metadata"
-                assert "properties" in metadata, "Missing properties in metadata"
-                
+            # LandsatConnector returns top-level keys rather than nested data
+            assert "scene_id" in result, "Missing scene_id in successful response"
+            assert "bands" in result, "Missing bands in successful response"
+            assert isinstance(result["bands"], list), "Bands should be a list"
+            assert "metadata" in result, "Missing metadata in successful response"
+            # Validate some metadata fields
+            meta = result["metadata"]
+            assert "datetime" in meta, "Missing acquisition datetime in metadata"
+            assert "platform" in meta, "Missing platform in metadata"
         else:
             assert "message" in result, "Failed result missing error message"
             
