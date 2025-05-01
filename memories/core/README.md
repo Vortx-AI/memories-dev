@@ -82,7 +82,7 @@ Data flows through the system as follows:
 4. Frequently accessed data in cold tiers is promoted to warmer tiers
 5. Data can be explicitly placed in specific tiers when needed
 
-### Advanced Flow Control (New in 2.0.7)
+### Advanced Flow Control 
 
 - **Predictive Caching**: Pre-loads data based on predicted access patterns
 - **Access-Based Migration**: Automatically moves data based on access frequency
@@ -116,7 +116,7 @@ exists = memory_manager.exists("location_data")
 memory_manager.delete("location_data")
 ```
 
-### Advanced Usage (New in 2.0.7)
+### Advanced Usage (New in 2.0.8)
 
 ```python
 from memories.core import MemoryManager
@@ -196,10 +196,10 @@ hot_memory.store("model_weights", model_weights_tensor)
 # Retrieve tensor data
 weights = hot_memory.retrieve("model_weights")
 
-# New in 2.0.7: Tensor optimization
+# New in 2.0.8: Tensor optimization
 hot_memory.optimize_layout("model_weights")
 
-# New in 2.0.7: Create snapshot
+# New in 2.0.8: Create snapshot
 hot_memory.create_snapshot("weights_snapshot")
 ```
 
@@ -217,10 +217,10 @@ warm_memory.store("vector_data", vector_data)
 # Retrieve data
 data = warm_memory.retrieve("vector_data")
 
-# New in 2.0.7: Memory pooling
+# New in 2.0.8: Memory pooling
 warm_memory.allocate_pool("frequent_access", size_mb=500)
 
-# New in 2.0.7: Get metrics
+# New in 2.0.8: Get metrics
 metrics = warm_memory.get_metrics()
 ```
 
@@ -241,7 +241,7 @@ cold_memory.store("historical_data", historical_data)
 # Retrieve data
 data = cold_memory.retrieve("historical_data")
 
-# New in 2.0.7: Partial retrieval
+# New in 2.0.8: Partial retrieval
 header = cold_memory.retrieve(
     "historical_data", 
     partial=True,
@@ -249,7 +249,7 @@ header = cold_memory.retrieve(
     end=1000
 )
 
-# New in 2.0.7: Compress data
+# New in 2.0.8: Compress data
 cold_memory.compress("historical_data")
 ```
 
@@ -272,7 +272,7 @@ glacier_memory.store("archive_2024", archive_data)
 # Retrieve data (may be slow)
 data = glacier_memory.retrieve("archive_2024")
 
-# New in 2.0.7: Batch operations
+# New in 2.0.8: Batch operations
 glacier_memory.batch_store([
     {"key": "archive_1", "value": archive_1},
     {"key": "archive_2", "value": archive_2},
@@ -659,5 +659,5 @@ We welcome contributions to the memory management system! Please see our [Contri
 # Memories Core
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![Version](https://img.shields.io/badge/version-2.0.7-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.7)
+[![Version](https://img.shields.io/badge/version-2.0.8-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.8)
 

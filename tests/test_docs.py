@@ -106,7 +106,7 @@ def test_example_code_validity():
 
 def test_version_consistency():
     """Test that version numbers are consistent across documentation."""
-    expected_version = "2.0.7"  # Set the expected version
+    expected_version = "2.0.8"  # Set the expected version
     
     # Check version in conf.py
     docs_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'docs'))
@@ -174,7 +174,7 @@ def test_changelog_entries():
     # Create CHANGELOG.md if it doesn't exist
     if not os.path.exists(changelog_file):
         with open(changelog_file, 'w') as f:
-            f.write("""## [2.0.7] - 2023-11-30
+            f.write("""## [2.0.8] - 2023-11-30
 Initial release
 """)
     
@@ -257,5 +257,5 @@ def test_api_reference_completeness():
 def test_version_match():
     """Check if version in __init__.py matches pyproject.toml."""
     # Set the expected version
-    expected_version = "2.0.7"  # Set the expected version
+    expected_version = "2.0.8"  # Set the expected version
     # ... existing code ... 

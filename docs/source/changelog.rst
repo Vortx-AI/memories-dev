@@ -48,7 +48,7 @@ Fixed
 
 For a complete list of changes, please visit our `GitHub releases page <https://github.com/Vortx-AI/memories-dev/releases>`_.
 
-Version 2.0.7 (November 30, 2023)
+Version 2.0.7 (November 30, 2024)
 ---------------------------------
 
 Added
@@ -162,3 +162,7 @@ Fixed
 - Resolved package conflicts in Python 3.13
 
 For a complete list of changes, please visit our `GitHub releases page <https://github.com/Vortx-AI/memories-dev/releases>`_. 
+
+Version 2.0.8 (May 01, 2025)
+
+- Synthetic media generation capability via SDXL pipeline

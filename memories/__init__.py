@@ -13,7 +13,7 @@ from memories.core.config import Config
 
 logger = logging.getLogger(__name__)
 
-__version__ = "2.0.7"  # Match version in pyproject.toml
+__version__ = "2.0.8"  # Match version in pyproject.toml
 
 # Define lazy loading functions to avoid circular imports
 def get_memory_retrieval():

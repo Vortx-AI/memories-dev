@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "memories-dev"
 description = "Collective Memory Infrastructure for AGI"
-version = "2.0.7"
+version = "2.0.8"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {file = "LICENSE"}

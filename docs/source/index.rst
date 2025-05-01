@@ -1,4 +1,4 @@
-.. memories-dev documentation master file, version 2.0.7
+.. memories-dev documentation master file, version 2.0.8
 
 ==================================================
 memories-dev: Earth-Grounded AI Memory Systems
@@ -8,7 +8,7 @@ memories-dev: Earth-Grounded AI Memory Systems
 
    <div class="hero-banner">
      <div class="hero-content">
-       <h1>memories-dev 2.0.7</h1>
+       <h1>memories-dev 2.0.8</h1>
        <p class="tagline">The Future of Earth-Grounded AI Memory</p>
      </div>
    </div>
@@ -22,7 +22,7 @@ memories-dev: Earth-Grounded AI Memory Systems
 
    <div class="version-banner">
      <div class="version-info">
-       <span class="version-number">v2.0.7</span>
+       <span class="version-number">v2.0.8</span>
        <span class="version-date">Released: March 11, 2025</span>
      </div>
      <div class="version-badges">
@@ -56,10 +56,10 @@ Welcome to memories-dev, a framework that reimagines how artificial intelligence
    
    **Figure 1**: The memories-dev system architecture showing data flow from sources through processing to storage and analysis.
 
-.. admonition:: What's New in Version 2.0.7
+.. admonition:: What's New in Version 2.0.8
    :class: tip
 
-   Version 2.0.7 brings significant enhancements to the memories-dev framework:
+   Version 2.0.8 brings significant enhancements to the memories-dev framework:
    
    * **New Examples**: Added examples for real estate analysis, property analysis, multimodal AI integration, code intelligence, and more
    * **Enhanced Schema Management**: Improved schema handling and metadata extraction for better data organization

@@ -6,18 +6,19 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Tests](https://github.com/Vortx-AI/memories-dev/actions/workflows/tests.yml/badge.svg)](https://github.com/Vortx-AI/memories-dev/actions/workflows/tests.yml)
-[![Version](https://img.shields.io/badge/version-2.0.7-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.7)
+[![Version](https://img.shields.io/badge/version-2.0.8-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v8)
 [![Documentation](https://img.shields.io/badge/docs-comprehensive-green)](https://memories-dev.readthedocs.io/)
 
 **Building the World's Memory for Artificial General Intelligence**
 
 </div>
 
-> Collective AGI memory - v2.0.7 (March 14, 2025)
+> Collective AGI memory - v2.0.8 (March 14, 2025)
 
 ## 📋 Release Timeline
 - **v1.0.0** - Released on February 14, 2025: Initial stable release with core functionality
-- **v2.0.7** - March 14, 2025: Current development version with enhanced features
+- **v2.0.8** - May 01, 2025: Current development version with enhanced features
+
 
 ## 🌟 What's New in Version 2.0.7
 
@@ -122,10 +123,10 @@ model.cleanup()
 ### Standard Installation
 ```bash
 # Install the latest version
-pip install memories-dev==2.0.7
+pip install memories-dev==2.0.8
 
 # Or install with specific components
-pip install "memories-dev[core,earth]==2.0.7"
+pip install "memories-dev[core,earth]==2.0.8"
 ```
 
 ### Development Installation
@@ -159,7 +160,7 @@ pip install -e ".[docs]"
 
 ## 📊 Monitoring & Observability
 
-### Available in v2.0.7
+### Available in v2.0.8
 - Comprehensive logging system with structured output
 - Memory operation metrics with Prometheus integration
 - Performance tracking for core operations

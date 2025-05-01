@@ -2,7 +2,11 @@
 
 This directory contains example applications built using the Memories-Dev framework, demonstrating real-world applications of earth memory integration with large language models.
 
-## What's New in Version 2.0.7 (March 14, 2025)
+## What's New in Version 2.0.8 (May 1, 2025)
+
+-Synthetic media generation capability via SDXL pipeline
+
+## Version 2.0.7 (March 14, 2025)
 
 Since our initial release (v1.0.0 on February 14, 2025), we've added several new examples and improved existing ones:
 
@@ -234,7 +238,7 @@ await agent.setup_monitoring(
 ## Requirements
 
 - Python 3.9+
-- memories-dev framework (version 2.0.7)
+- memories-dev framework (version 2.0.8)
 - Environment variables for API access
 - Additional dependencies specified in each example
 
@@ -406,4 +410,4 @@ except ProcessingError as e:
 <p align="center">Built with 💜 by the memories-dev team</p> 
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![Version](https://img.shields.io/badge/version-2.0.7-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.7) 
+[![Version](https://img.shields.io/badge/version-2.0.8-blue.svg)](https://github.com/Vortx-AI/memories-dev/releases/tag/v2.0.8) 
