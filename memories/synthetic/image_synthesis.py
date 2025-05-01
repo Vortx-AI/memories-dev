@@ -580,14 +580,21 @@ class StableDiffusionXLOmostPipeline(StableDiffusionXLImg2ImgPipeline):
             prompt_embeds_list = []
 
             for text_input_ids, text_encoder in zip(inds, text_encoders):
-                prompt_embeds = text_encoder(text_input_ids, output_hidden_states=True)
+                model_out = text_encoder(
+            text_input_ids.to(device),
+            output_hidden_states=True,
+            return_dict=True
+            )
+            # pooled representation: try pooler_output, else take CLS token
+            if hasattr(model_out, "pooler_output"):
+                pooled_prompt_embeds = model_out.pooler_output
+            else:
+                # fallback: first token of last_hidden_state
+                pooled_prompt_embeds = model_out.last_hidden_state[:, 0]
 
-                # Only last pooler_output is needed
-                pooled_prompt_embeds = prompt_embeds.pooler_output
-
-                # "2" because SDXL always indexes from the penultimate layer.
-                prompt_embeds = prompt_embeds.hidden_states[-2]
-                prompt_embeds_list.append(prompt_embeds)
+            # "2" because SDXL uses the penultimate hidden layer as context
+            prompt_embeds = model_out.hidden_states[-2]
+            prompt_embeds_list.append(prompt_embeds)
 
             prompt_embeds = torch.concat(prompt_embeds_list, dim=-1)
             return prompt_embeds, pooled_prompt_embeds
@@ -686,7 +693,10 @@ class StableDiffusionXLOmostPipeline(StableDiffusionXLImg2ImgPipeline):
             prompt_embeds = text_encoder(text_input_ids.to(device), output_hidden_states=True)
 
             # Only last pooler_output is needed
-            pooled_prompt_embeds = prompt_embeds.pooler_output
+            if hasattr(prompt_embeds, "pooler_output"):
+                pooled_prompt_embeds = prompt_embeds.pooler_output
+            else:
+                pooled_prompt_embeds = prompt_embeds.last_hidden_state[:, 0]
 
             # "2" because SDXL always indexes from the penultimate layer.
             prompt_embeds = prompt_embeds.hidden_states[-2]
