@@ -799,16 +799,16 @@ class StableDiffusionXLOmostPipeline(StableDiffusionXLImg2ImgPipeline):
         return StableDiffusionXLPipelineOutput(images=results)
     
 def main():
-    # 0) choose device
+    # 0) pick device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # 1) load & move the official SDXL img2img pipeline
+    # 1) load & move the official SDXL Img2Img pipeline
     base = StableDiffusionXLImg2ImgPipeline.from_pretrained(
         "stabilityai/stable-diffusion-xl-base-1.0",
-        torch_dtype=torch.float32
+        torch_dtype=torch.float32,
     ).to(device)
 
-    # 2) wrap in your custom pipeline (all modules already on `device`)
+    # 2) wrap it in your custom pipeline (modules are already on the device)
     pipeline = StableDiffusionXLOmostPipeline(
         vae=base.vae,
         image_encoder=base.image_encoder,
@@ -821,7 +821,7 @@ def main():
         feature_extractor=base.feature_extractor,
     )
 
-    # 3) build & process your Canvas
+    # 3) build & process Canvas
     canvas = Canvas()
     canvas.set_global_description(
         "A serene mountain landscape at sunrise",
@@ -844,32 +844,32 @@ def main():
     )
     canvas_outputs = canvas.process()
 
-    # 4) encode your text conditions
+    # 4) encode text conditions, move poolers to device
     positive, pos_pooler, negative, neg_pooler = pipeline.all_conds_from_canvas(
         canvas_outputs,
-        negative_prompt="low resolution, blurry"
+        negative_prompt="low resolution, blurry",
     )
     pos_pooler = pos_pooler.to(device)
     neg_pooler = neg_pooler.to(device)
 
-    # 5) turn 3-ch “initial_latent” into a real 4-ch VAE latent
-    img_np     = canvas_outputs["initial_latent"]                     # H×W×3 uint8
-    img_pil    = Image.fromarray(img_np, "RGB")                     # PIL image
-    img_np_f32 = np.array(img_pil, dtype=np.float32) / 255.0        # H×W×3 float32
+    # 5) convert the 3-channel “initial_latent” → 4-channel VAE latent
+    img_np     = canvas_outputs["initial_latent"]                        # H×W×3 uint8
+    img_pil    = Image.fromarray(img_np, "RGB")                         # PIL image
+    img_np_f32 = np.array(img_pil, dtype=np.float32) / 255.0            # H×W×3 float32
     img_tensor = (
         torch.from_numpy(img_np_f32)
              .permute(2, 0, 1)
              .unsqueeze(0)
              .to(device)
     )  # → 1×3×H×W
-    img_tensor = img_tensor * 2.0 - 1.0                             # scale to [-1,1]
+    img_tensor = img_tensor * 2.0 - 1.0                                 # scale to [-1, 1]
 
     with torch.no_grad():
         latent_dist  = pipeline.vae.encode(img_tensor).latent_dist
         init_latents = latent_dist.sample() * pipeline.vae.config.scaling_factor  # 1×4×H'×W'
 
     # 6) run the sampler
-    raw_out = pipeline(
+    raw = pipeline(
         initial_latent=init_latents,
         strength=1.0,
         num_inference_steps=50,
@@ -880,13 +880,23 @@ def main():
         pooled_prompt_embeds=pos_pooler,
         negative_pooled_prompt_embeds=neg_pooler,
     )
+    # `raw.images` is actually a tensor of latents: shape [1,4,H',W']
 
-    # 7) **decode** the latents into a PIL image
-    latents = raw_out.images  # this is still a 4-ch tensor
-    decoded = pipeline.decode_latents(latents)  # returns a list of PIL images
-    image = decoded[0]
-    image.save("generated_image.png")
+    # 7) manually decode latents → RGB and save
+    with torch.no_grad():
+        # decode: feed scaled-down latents into the VAE decoder
+        decoded = pipeline.vae.decode(
+            raw.images / pipeline.vae.config.scaling_factor
+        ).sample  # shape [1,3,H_img,W_img], floats in roughly [-1,1]
+
+    # to PIL:
+    decoded = (decoded / 2 + 0.5).clamp(0, 1)  # to [0,1]
+    array  = (decoded[0].permute(1, 2, 0).cpu().numpy() * 255).round().astype(np.uint8)
+    final  = Image.fromarray(array)
+
+    final.save("generated_image.png")
     print("✅ Image saved to generated_image.png")
+
 
 if __name__ == "__main__":
     main()
