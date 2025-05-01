@@ -463,52 +463,65 @@ class OmostSelfAttnProcessor:
 
 class OmostCrossAttnProcessor:
     def __call__(self, attn, hidden_states, encoder_hidden_states, hidden_states_original_shape, *args, **kwargs):
+        """
+        Cross-attention that uses spatial masks to condition each token group.
+        We must ensure the concatenated condition embeddings `conds` match
+        the UNet's expected in_features for attn.to_k (usually 640).
+        """
         B, C, H, W = hidden_states_original_shape
 
+        # 1) collect all (mask, cond) pairs
         conds = []
         masks = []
-
         for m, c in encoder_hidden_states:
-            m = torch.nn.functional.interpolate(m[None, None, :, :], (H, W), mode='nearest-exact').flatten().unsqueeze(1).repeat(1, c.size(1))
-            conds.append(c)
+            # upsample mask to match UNet spatial dims and flatten
+            m = torch.nn.functional.interpolate(m[None, None, :, :], (H, W), mode='nearest').flatten().unsqueeze(1).repeat(1, c.size(1))
             masks.append(m)
+            conds.append(c)
 
-        # concatenate all condition embeddings
-        conds = torch.cat(conds, dim=1)
-        # the UNet cross-attn expects in_features = attn.to_k.weight.size(1)
-        in_feat = attn.to_k.weight.size(1)
-        if conds.shape[-1] != in_feat:
-            # trim or pad so that conds last‐dim == in_feat
-            conds = conds[:, :, :in_feat]
-        masks = torch.cat(masks, dim=1)
+        # 2) concatenate along the channel/token dimension
+        conds = torch.cat(conds, dim=1)   # shape: [batch, total_tokens, cond_dim]
 
+        # 3) trim/pad cond_dim to what attn.to_k expects
+        expected_dim = attn.to_k.weight.size(1)  # e.g. 640
+        current_dim = conds.shape[-1]
+        if current_dim != expected_dim:
+            # if too large, slice off extras; if too small, pad zeros
+            if current_dim > expected_dim:
+                conds = conds[:, :, :expected_dim]
+            else:
+                pad = torch.zeros((conds.size(0), conds.size(1), expected_dim - current_dim), device=conds.device, dtype=conds.dtype)
+                conds = torch.cat([conds, pad], dim=-1)
+
+        # 4) same for masks
+        masks = torch.cat(masks, dim=1)   # [batch, total_tokens]
         mask_bool = masks > 0.5
         mask_scale = (H * W) / torch.sum(masks, dim=0, keepdim=True)
 
-        batch_size, sequence_length, _ = conds.shape
-
+        # 5) standard cross-attn after trimming
+        batch_size, seq_len, _ = conds.shape
         query = attn.to_q(hidden_states)
-        key = attn.to_k(conds)
+        key   = attn.to_k(conds)
         value = attn.to_v(conds)
 
+        # reshape for multi-head
         inner_dim = key.shape[-1]
         head_dim = inner_dim // attn.heads
-
         query = query.view(batch_size, -1, attn.heads, head_dim).transpose(1, 2)
-        key = key.view(batch_size, -1, attn.heads, head_dim).transpose(1, 2)
+        key   = key.view(batch_size, -1, attn.heads, head_dim).transpose(1, 2)
         value = value.view(batch_size, -1, attn.heads, head_dim).transpose(1, 2)
 
-        mask_bool = mask_bool[None, None, :, :].repeat(query.size(0), query.size(1), 1, 1)
-        mask_scale = mask_scale[None, None, :, :].repeat(query.size(0), query.size(1), 1, 1)
+        # apply mask scaling in attention scores
+        mask_bool = mask_bool[None, None, :, :].repeat(batch_size, attn.heads, 1, 1)
+        mask_scale = mask_scale[None, None, :, :].repeat(batch_size, attn.heads, 1, 1)
 
-        sim = query @ key.transpose(-2, -1) * attn.scale
+        sim = torch.matmul(query, key.transpose(-2, -1)) * attn.scale
         sim = sim * mask_scale.to(sim)
-        sim.masked_fill_(mask_bool.logical_not(), float("-inf"))
+        sim = sim.masked_fill(~mask_bool, float("-inf"))
         sim = sim.softmax(dim=-1)
 
-        h = sim @ value
+        h = torch.matmul(sim, value)
         h = h.transpose(1, 2).reshape(batch_size, -1, attn.heads * head_dim)
-
         h = attn.to_out[0](h)
         h = attn.to_out[1](h)
         return h
