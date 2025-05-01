@@ -770,13 +770,13 @@ class StableDiffusionXLOmostPipeline(StableDiffusionXLImg2ImgPipeline):
         return StableDiffusionXLPipelineOutput(images=results)
     
 def main():
-    # 1) load the official SDXL Img2Img pipeline
+    # 1) Load & move the official SDXL Img2Img pipeline
     base = StableDiffusionXLImg2ImgPipeline.from_pretrained(
         "stabilityai/stable-diffusion-xl-base-1.0",
         torch_dtype=torch.float32
-    )
+    ).to("cuda")                        # <-- move all base modules to GPU
 
-    # 2) wrap it in your subclass—**no** safety_checker, but include image_encoder & feature_extractor
+    # 2) Instantiate your subclass using those GPU-resident modules
     pipeline = StableDiffusionXLOmostPipeline(
         vae=base.vae,
         image_encoder=base.image_encoder,
@@ -787,9 +787,10 @@ def main():
         unet=base.unet,
         scheduler=base.scheduler,
         feature_extractor=base.feature_extractor,
-    ).to("cuda")
+    )
+    # <— NO .to("cuda") here!
 
-    # 3) build & process your Canvas
+    # 3) Build & process your Canvas
     canvas = Canvas()
     canvas.set_global_description(
         "A serene mountain landscape at sunrise",
@@ -812,6 +813,7 @@ def main():
     )
     canvas_outputs = canvas.process()
 
+    # 4) Prep the latent
     init = (
         torch.from_numpy(canvas_outputs["initial_latent"])
              .permute(2, 0, 1)
@@ -820,11 +822,11 @@ def main():
              .to("cuda")
     )
 
-    # 4) encode conditions & run sampler
+    # 5) Encode conditions & sample
     positive, pos_pooler, negative, neg_pooler = pipeline.all_conds_from_canvas(
-        canvas_outputs, negative_prompt="low resolution, blurry"
+        canvas_outputs,
+        negative_prompt="low resolution, blurry"
     )
-
     out = pipeline(
         initial_latent=init,
         strength=1.0,
@@ -837,7 +839,7 @@ def main():
         negative_pooled_prompt_embeds=neg_pooler.to("cuda"),
     )
 
-    # 5) save the image
+    # 6) Save result
     image: Image.Image = out.images[0]
     image.save("generated_image.png")
     print("✅ Image saved to generated_image.png")
