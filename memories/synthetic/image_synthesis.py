@@ -473,7 +473,13 @@ class OmostCrossAttnProcessor:
             conds.append(c)
             masks.append(m)
 
+        # concatenate all condition embeddings
         conds = torch.cat(conds, dim=1)
+        # the UNet cross-attn expects in_features = attn.to_k.weight.size(1)
+        in_feat = attn.to_k.weight.size(1)
+        if conds.shape[-1] != in_feat:
+            # trim or pad so that conds last‐dim == in_feat
+            conds = conds[:, :, :in_feat]
         masks = torch.cat(masks, dim=1)
 
         mask_bool = masks > 0.5
