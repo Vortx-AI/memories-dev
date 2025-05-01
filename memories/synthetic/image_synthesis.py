@@ -769,7 +769,7 @@ class StableDiffusionXLOmostPipeline(StableDiffusionXLImg2ImgPipeline):
     
 def main():
     pipeline = StableDiffusionXLOmostPipeline.from_pretrained(
-        "your-model-identifier",
+        "stabilityai/stable-diffusion-xl-base-1.0",
         torch_dtype=torch.float32
     ).to("cuda")
 
