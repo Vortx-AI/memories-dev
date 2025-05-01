@@ -770,13 +770,13 @@ class StableDiffusionXLOmostPipeline(StableDiffusionXLImg2ImgPipeline):
         return StableDiffusionXLPipelineOutput(images=results)
     
 def main():
-    # 1) Load the *official* SDXL img2img pipeline
+    # 1) load the official SDXL Img2Img pipeline
     base = StableDiffusionXLImg2ImgPipeline.from_pretrained(
         "stabilityai/stable-diffusion-xl-base-1.0",
         torch_dtype=torch.float32
     )
 
-    # 2) Wrap it into your subclass, passing **every** expected component
+    # 2) wrap it in your subclass—**no** safety_checker, but include image_encoder & feature_extractor
     pipeline = StableDiffusionXLOmostPipeline(
         vae=base.vae,
         image_encoder=base.image_encoder,
@@ -786,12 +786,10 @@ def main():
         tokenizer_2=base.tokenizer_2,
         unet=base.unet,
         scheduler=base.scheduler,
-        safety_checker=base.safety_checker,
         feature_extractor=base.feature_extractor,
-        requires_safety_checker=False,    # or True if you want safety checks
     ).to("cuda")
 
-    # 3) Build & process your canvas (unchanged)…
+    # 3) build & process your Canvas
     canvas = Canvas()
     canvas.set_global_description(
         "A serene mountain landscape at sunrise",
@@ -822,12 +820,11 @@ def main():
              .to("cuda")
     )
 
+    # 4) encode conditions & run sampler
     positive, pos_pooler, negative, neg_pooler = pipeline.all_conds_from_canvas(
-        canvas_outputs,
-        negative_prompt="low resolution, blurry",
+        canvas_outputs, negative_prompt="low resolution, blurry"
     )
 
-    # 4) Run your sampler exactly as before
     out = pipeline(
         initial_latent=init,
         strength=1.0,
@@ -840,7 +837,7 @@ def main():
         negative_pooled_prompt_embeds=neg_pooler.to("cuda"),
     )
 
-    # 5) Save the result
+    # 5) save the image
     image: Image.Image = out.images[0]
     image.save("generated_image.png")
     print("✅ Image saved to generated_image.png")
