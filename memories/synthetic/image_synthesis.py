@@ -7,6 +7,7 @@ import numpy as np
 import copy
 from typing import Optional, Union, List, Dict, Any
 from PIL import Image
+from diffusers import StableDiffusionXLImg2ImgPipeline
 import torch
 from contextlib import contextmanager
 from tqdm.auto import trange
@@ -769,14 +770,13 @@ class StableDiffusionXLOmostPipeline(StableDiffusionXLImg2ImgPipeline):
         return StableDiffusionXLPipelineOutput(images=results)
     
 def main():
-    # 1) Load the *official* SDXL img2img pipeline
+    # 1) load the official SDXL img2img pipeline (it knows how to pull from the Hub)
     base = StableDiffusionXLImg2ImgPipeline.from_pretrained(
-        "stabilityai/stable-diffusion-xl-base-1.0",   # or your real repo_id
-        torch_dtype=torch.float32,
-        use_auth_token=True,                          # if needed
+        "stabilityai/stable-diffusion-xl-base-1.0",   # or your own repo_id
+        torch_dtype=torch.float32
     ).to("cuda")
 
-    # 2) Wrap it into your custom subclass
+    # 2) wrap it into your subclass using ONLY the attributes that exist
     pipeline = StableDiffusionXLOmostPipeline(
         vae=base.vae,
         text_encoder=base.text_encoder,
@@ -785,15 +785,31 @@ def main():
         tokenizer_2=base.tokenizer_2,
         unet=base.unet,
         scheduler=base.scheduler,
-        safety_checker=base.safety_checker,
-        feature_extractor=base.feature_extractor,
-        requires_safety_checker=False,
     ).to("cuda")
 
-    # … now the rest of your existing code unchanged …
+    # 3) build and process your canvas as before
     canvas = Canvas()
-    # set_global_description, add_local_description, etc.
+    canvas.set_global_description(
+        "A serene mountain landscape at sunrise",
+        ["snow-capped peaks", "warm orange sky", "soft mist in the valley"],
+        "landscape, nature, sunrise",
+        "skyblue",
+    )
+    canvas.add_local_description(
+        location="on the bottom-right",
+        offset="no offset",
+        area="a medium-sized square area",
+        distance_to_viewer=5.0,
+        description="A small wooden cabin by the lakeshore",
+        detailed_descriptions=["warm light inside", "smoke rising from chimney"],
+        tags="cabin, cozy",
+        atmosphere="peaceful",
+        style="photorealistic",
+        quality_meta="8k, high detail",
+        HTML_web_color_name="brown",
+    )
     canvas_outputs = canvas.process()
+
     init = (
         torch.from_numpy(canvas_outputs["initial_latent"])
              .permute(2, 0, 1)
@@ -801,9 +817,13 @@ def main():
              .to(torch.float32)
              .to("cuda")
     )
+
     positive, pos_pooler, negative, neg_pooler = pipeline.all_conds_from_canvas(
-        canvas_outputs, negative_prompt="low resolution, blurry"
+        canvas_outputs,
+        negative_prompt="low resolution, blurry",
     )
+
+    # 4) run the sampler
     out = pipeline(
         initial_latent=init,
         strength=1.0,
@@ -815,10 +835,11 @@ def main():
         pooled_prompt_embeds=pos_pooler.to("cuda"),
         negative_pooled_prompt_embeds=neg_pooler.to("cuda"),
     )
-    from PIL import Image
+
+    # 5) save result
     image: Image.Image = out.images[0]
     image.save("generated_image.png")
-    print("Image saved to generated_image.png")
+    print("✅ Image saved to generated_image.png")
 
 if __name__ == "__main__":
     main()
