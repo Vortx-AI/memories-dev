@@ -780,13 +780,15 @@ class StableDiffusionXLOmostPipeline(StableDiffusionXLImg2ImgPipeline):
         return StableDiffusionXLPipelineOutput(images=results)
     
 def main():
+    device = torch.device("cuda")
+
     # 1) Load & move the official SDXL Img2Img pipeline
     base = StableDiffusionXLImg2ImgPipeline.from_pretrained(
         "stabilityai/stable-diffusion-xl-base-1.0",
         torch_dtype=torch.float32
-    ).to("cuda")                        # <-- move all base modules to GPU
+    ).to(device)
 
-    # 2) Instantiate your subclass using those GPU-resident modules
+    # 2) Instantiate your subclass (modules are already on GPU)
     pipeline = StableDiffusionXLOmostPipeline(
         vae=base.vae,
         image_encoder=base.image_encoder,
@@ -798,7 +800,6 @@ def main():
         scheduler=base.scheduler,
         feature_extractor=base.feature_extractor,
     )
-    # <— NO .to("cuda") here!
 
     # 3) Build & process your Canvas
     canvas = Canvas()
@@ -823,33 +824,38 @@ def main():
     )
     canvas_outputs = canvas.process()
 
-    # 4) Prep the latent
-    init = (
-        torch.from_numpy(canvas_outputs["initial_latent"])
-             .permute(2, 0, 1)
-             .unsqueeze(0)
-             .to(torch.float32)
-             .to("cuda")
-    )
-
-    # 5) Encode conditions & sample
+    # 4) Encode text conditions
     positive, pos_pooler, negative, neg_pooler = pipeline.all_conds_from_canvas(
         canvas_outputs,
         negative_prompt="low resolution, blurry"
     )
+
+    # 5) Convert your 3-channel “initial_latent” → real 4-channel VAE latent
+    img_np    = canvas_outputs["initial_latent"]           # H,W,3 uint8
+    img_pil   = Image.fromarray(img_np, "RGB")            # PIL image
+    img_tensor = torch.from_numpy(np.array(img_pil) / 255.0)       # H,W,3 float
+    img_tensor = img_tensor.permute(2,0,1).unsqueeze(0).to(device)  # 1,3,H,W
+    img_tensor = img_tensor * 2.0 - 1.0       # scale to [-1,1]
+
+    with torch.no_grad():
+        latent_dist  = pipeline.vae.encode(img_tensor).latent_dist
+        init_latents = latent_dist.sample() * pipeline.vae.config.scaling_factor
+        # now [1,4,H',W']
+
+    # 6) Run your sampler
     out = pipeline(
-        initial_latent=init,
+        initial_latent=init_latents,
         strength=1.0,
         num_inference_steps=50,
         guidance_scale=7.5,
         batch_size=1,
         prompt_embeds=positive,
         negative_prompt_embeds=negative,
-        pooled_prompt_embeds=pos_pooler.to("cuda"),
-        negative_pooled_prompt_embeds=neg_pooler.to("cuda"),
+        pooled_prompt_embeds=pos_pooler.to(device),
+        negative_pooled_prompt_embeds=neg_pooler.to(device),
     )
 
-    # 6) Save result
+    # 7) Save result
     image: Image.Image = out.images[0]
     image.save("generated_image.png")
     print("✅ Image saved to generated_image.png")
