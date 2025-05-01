@@ -780,15 +780,16 @@ class StableDiffusionXLOmostPipeline(StableDiffusionXLImg2ImgPipeline):
         return StableDiffusionXLPipelineOutput(images=results)
     
 def main():
-    device = torch.device("cuda")
+    # 0) pick your device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # 1) Load & move the official SDXL Img2Img pipeline
+    # 1) load & move the official SDXL img2img pipeline onto GPU
     base = StableDiffusionXLImg2ImgPipeline.from_pretrained(
         "stabilityai/stable-diffusion-xl-base-1.0",
         torch_dtype=torch.float32
     ).to(device)
 
-    # 2) Instantiate your subclass (modules are already on GPU)
+    # 2) wrap it in your subclass (all modules already on device)
     pipeline = StableDiffusionXLOmostPipeline(
         vae=base.vae,
         image_encoder=base.image_encoder,
@@ -801,7 +802,7 @@ def main():
         feature_extractor=base.feature_extractor,
     )
 
-    # 3) Build & process your Canvas
+    # 3) build & process your Canvas
     canvas = Canvas()
     canvas.set_global_description(
         "A serene mountain landscape at sunrise",
@@ -824,26 +825,27 @@ def main():
     )
     canvas_outputs = canvas.process()
 
-    # 4) Encode text conditions
+    # 4) encode your text conditions
     positive, pos_pooler, negative, neg_pooler = pipeline.all_conds_from_canvas(
         canvas_outputs,
         negative_prompt="low resolution, blurry"
     )
 
-    # 5) Convert your 3-channel “initial_latent” → real 4-channel VAE latent
-    img_np    = canvas_outputs["initial_latent"]           # H,W,3 uint8
-    img_pil   = Image.fromarray(img_np, "RGB")            # PIL image
-    img_tensor = torch.from_numpy(np.array(img_pil) / 255.0)       # H,W,3 float
-    img_tensor = img_tensor.permute(2,0,1).unsqueeze(0).to(device)  # 1,3,H,W
-    img_tensor = img_tensor * 2.0 - 1.0       # scale to [-1,1]
+    # 5) convert the 3-channel "initial_latent" to a real 4-channel VAE latent
+    img_np = canvas_outputs["initial_latent"]               # (H,W,3) uint8
+    img_pil = Image.fromarray(img_np, "RGB")               # PIL image
+    img_np_f32 = np.array(img_pil, dtype=np.float32) / 255.0
+    img_tensor = torch.from_numpy(img_np_f32)              # (H,W,3) float32
+    img_tensor = img_tensor.permute(2,0,1).unsqueeze(0).to(device)  # (1,3,H,W)
+    img_tensor = img_tensor * 2.0 - 1.0                    # scale to [-1,1]
 
     with torch.no_grad():
-        latent_dist  = pipeline.vae.encode(img_tensor).latent_dist
-        init_latents = latent_dist.sample() * pipeline.vae.config.scaling_factor
-        # now [1,4,H',W']
+        latent_dist = pipeline.vae.encode(img_tensor).latent_dist
+        init_latents = latent_dist.sample() \
+                     * pipeline.vae.config.scaling_factor    # (1,4,H',W')
 
-    # 6) Run your sampler
-    out = pipeline(
+    # 6) run the sampler
+    output = pipeline(
         initial_latent=init_latents,
         strength=1.0,
         num_inference_steps=50,
@@ -855,10 +857,11 @@ def main():
         negative_pooled_prompt_embeds=neg_pooler.to(device),
     )
 
-    # 7) Save result
-    image: Image.Image = out.images[0]
+    # 7) save the first image
+    image = output.images[0]   # PIL Image
     image.save("generated_image.png")
     print("✅ Image saved to generated_image.png")
+
 
 if __name__ == "__main__":
     main()
