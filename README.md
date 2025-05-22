@@ -29,7 +29,7 @@
 
 ## 📊 Overview
 
-**memories-dev** provides a robust framework for eliminating hallucinations in foundation models through real-time contextual memory integration. Built for developers requiring absolute reliability, our system ensures AI outputs are verified against factual context before delivery to your applications.
+**memories-dev** provides a robust space based framework for eliminating hallucinations in foundation models through real-time contextual memory integration. Built for developers requiring absolute reliability, our system ensures AI outputs are verified against factual context before delivery to your applications.
 
 Key benefits include:
 - **Factual Grounding**: Verify AI responses against contextual truth data in real-time
