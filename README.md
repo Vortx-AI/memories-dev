@@ -17,7 +17,7 @@
 
 <div align="center">
   <h3>Real-time Contextual Memory Integration for Mission-Critical AI Applications</h3>
-  <p><i>Deployment-ready • Space-hardened • 99.9% Reliability</i></p>
+  <p><i>Satellites for AI • Space-hardened • 99.9% Reliability</i></p>
 </div>
 
 <hr>
