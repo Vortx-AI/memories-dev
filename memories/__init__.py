@@ -6,10 +6,26 @@ import logging
 
 # Import only the main manager class to avoid circular imports
 from memories.core import memory_manager, MemoryManager
-from memories.models.load_model import LoadModel
-from memories.utils.core.duckdb_utils import query_multiple_parquet
-from memories.utils.core.system import system_check, SystemStatus
+# Lazy loading for system utilities to avoid heavy imports
+def system_check(*args, **kwargs):
+    from memories.utils.core.system import system_check as _system_check
+    return _system_check(*args, **kwargs)
+
+def get_system_status():
+    from memories.utils.core.system import SystemStatus
+    return SystemStatus
+
+# Lazily load the duckdb utility to avoid importing heavy optional dependencies
+def get_query_multiple_parquet():
+    from memories.utils.core.duckdb_utils import query_multiple_parquet
+    return query_multiple_parquet
 from memories.core.config import Config
+
+# Lazy loader for the model utilities to avoid heavy imports at package load
+def get_load_model():
+    """Lazy load and return the LoadModel class."""
+    from memories.models.load_model import LoadModel
+    return LoadModel
 
 logger = logging.getLogger(__name__)
 
@@ -48,16 +64,16 @@ __all__ = [
     "get_warm_memory",
     "get_cold_memory",
     "get_glacier_memory",
-    
+
     # Models
-    "LoadModel",
-    
+    "get_load_model",
+
     # Utilities
-    "query_multiple_parquet",
+    "get_query_multiple_parquet",
     
     # System check
     "system_check",
-    "SystemStatus",
+    "get_system_status",
     
     # Version
     "__version__",

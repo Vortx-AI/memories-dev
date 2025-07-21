@@ -30,9 +30,10 @@ class MemoryManager:
             self.initialized = True
             self.indexes = {}  # Store FAISS indexes
             self.con = None   # Store DuckDB connection
+            self.cold = None  # ColdMemory instance (lazy init)
             self._init_paths()
             self._init_duckdb()
-            self._init_cold_memory()
+            # Cold memory initialization moved to lazy getter
             self._init_faiss()
             self._init_storage_backends()
 
@@ -467,12 +468,14 @@ class MemoryManager:
         pass 
 
     def get_cold_memory(self):
-        """Get cold memory instance.
-        
-        Returns:
-            ColdMemory: Cold memory instance or None if not initialized
-        """
-        return self.cold 
+        """Get cold memory instance, initializing lazily if needed."""
+        if self.cold is None:
+            try:
+                self._init_cold_memory()
+            except Exception as e:
+                self.logger.error(f"Failed to initialize cold memory: {e}")
+                return None
+        return self.cold
 
     def store(self, key: str, value: Any, tier: str = "warm", metadata: Optional[Dict[str, Any]] = None) -> str:
         """Store data in the specified memory tier.
