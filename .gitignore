@@ -3,6 +3,7 @@ venv*/
 env*/
 .env/
 .venv/
+memories_env*/
 
 # Python cache files
 __pycache__/

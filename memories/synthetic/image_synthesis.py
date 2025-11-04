@@ -1,15 +1,16 @@
 import re
 import difflib
 import numpy as np
-import re
-import difflib
-import numpy as np
 import copy
+import logging
 from typing import Optional, Union, List, Dict, Any
 from PIL import Image
 from diffusers import StableDiffusionXLImg2ImgPipeline
 import torch
 from contextlib import contextmanager
+
+# Configure logging
+logger = logging.getLogger(__name__)
 from tqdm.auto import trange
 from diffusers.pipelines.stable_diffusion_xl.pipeline_stable_diffusion_xl_img2img import (
     StableDiffusionXLImg2ImgPipeline,

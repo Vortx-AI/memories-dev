@@ -6,8 +6,18 @@ Configuration management for the Memories framework.
 import os
 import sys
 from pathlib import Path
-import yaml
-from dotenv import load_dotenv
+
+# Optional imports with fallbacks
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    def load_dotenv():
+        pass
 
 class Config:
     """Configuration manager for the Memories framework."""

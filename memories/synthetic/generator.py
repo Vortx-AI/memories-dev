@@ -426,9 +426,9 @@ class SyntheticDataGenerator:
         Returns:
             Generated PIL Image
         """
-        #global pipe
-        if pipe is None:
-            initialize_stable_diffusion()
+        # Use the proper StableDiffusion manager
+        sd_manager = get_stable_diffusion_manager()
+        pipe = sd_manager.get_pipeline()
         
         if seed is not None:
             torch.manual_seed(seed)

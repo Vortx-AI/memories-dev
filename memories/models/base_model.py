@@ -1,14 +1,33 @@
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from dotenv import load_dotenv
 import os
 import logging
 import json
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 import gc
-from diffusers import StableDiffusionPipeline
 from memories.utils.patterns import Singleton
+
+# Optional imports with fallbacks
+try:
+    import torch
+except ImportError:
+    torch = None
+
+try:
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+except ImportError:
+    AutoModelForCausalLM = None
+    AutoTokenizer = None
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    def load_dotenv():
+        pass
+
+try:
+    from diffusers import StableDiffusionPipeline
+except ImportError:
+    StableDiffusionPipeline = None
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -58,6 +77,10 @@ class BaseModel(Singleton):
         Returns:
             bool: True if initialization successful, False otherwise
         """
+        if torch is None or AutoModelForCausalLM is None or AutoTokenizer is None:
+            logger.warning("PyTorch or Transformers not available, model initialization skipped")
+            return False
+            
         try:
             # Clean up any existing model
             self.cleanup()
@@ -225,6 +248,10 @@ def load_stable_diffusion_model(device: str = None):
         device: Specific GPU device to use (e.g., "cuda:0", "cuda:1")
     """
     global pipe
+
+    if StableDiffusionPipeline is None:
+        logger.warning("Diffusers library not available, cannot load Stable Diffusion model")
+        return
 
     if pipe is not None:
         logger.info("Stable Diffusion model already loaded; skipping.")

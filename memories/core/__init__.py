@@ -15,7 +15,20 @@ from memories.core.memory_manager import MemoryManager
 # Create a singleton instance of the memory manager
 memory_manager = MemoryManager()
 
+from .analyzers import (
+    TerrainAnalyzer,
+    ClimateAnalyzer,
+    WaterResourceAnalyzer,
+    EnvironmentalAnalyzer
+)
+from .analyzers.change_detector import ChangeDetector
+
 __all__ = [
     "MemoryManager",
-    "memory_manager"
+    "memory_manager",
+    "TerrainAnalyzer",
+    "ClimateAnalyzer",
+    "WaterResourceAnalyzer",
+    "EnvironmentalAnalyzer",
+    "ChangeDetector"
 ]

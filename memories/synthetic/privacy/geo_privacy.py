@@ -14,6 +14,9 @@ from dataclasses import dataclass
 import logging
 from concurrent.futures import ThreadPoolExecutor
 import time
+
+# Configure logging
+logger = logging.getLogger(__name__)
 from prometheus_client import Counter, Histogram, Gauge
 import cupy as cp
 from numba import cuda

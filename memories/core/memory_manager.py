@@ -1,13 +1,30 @@
 from pathlib import Path
 from typing import Any, Dict, Optional
-import duckdb
-import numpy as np
-import yaml
-import os
-import faiss
 import logging
 from threading import Lock
 import re
+import os
+
+# Optional imports with fallbacks
+try:
+    import duckdb
+except ImportError:
+    duckdb = None
+
+try:
+    import numpy as np
+except ImportError:
+    np = None
+
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
+try:
+    import faiss
+except ImportError:
+    faiss = None
 
 class MemoryManager:
     """Memory manager for handling different memory tiers."""
@@ -112,6 +129,11 @@ class MemoryManager:
 
     def _init_duckdb(self):
         """Initialize DuckDB connection."""
+        if duckdb is None:
+            self.logger.warning("DuckDB not available, skipping initialization")
+            self.con = None
+            return
+            
         try:
             # Get base path for storage
             base_path = Path(self.config.get_path('base_path', 'memory'))
@@ -141,8 +163,11 @@ class MemoryManager:
         except Exception as e:
             self.logger.error(f"Failed to initialize DuckDB: {e}")
             # Create in-memory connection as fallback
-            self.con = duckdb.connect(database=':memory:', read_only=False)
-            self.logger.info("Created in-memory DuckDB connection as fallback")
+            if duckdb is not None:
+                self.con = duckdb.connect(database=':memory:', read_only=False)
+                self.logger.info("Created in-memory DuckDB connection as fallback")
+            else:
+                self.con = None
 
     def _init_cold_memory(self) -> None:
         """Initialize cold memory storage."""
@@ -153,12 +178,16 @@ class MemoryManager:
             self.logger.info("Cold memory initialized")
             
         except Exception as e:
-            self.logger.error(f"Error initializing cold memory: {e}")
+            self.logger.warning(f"Cold memory not available: {e}")
             self.cold = None
-            raise
 
     def _init_faiss(self):
         """Initialize FAISS index for vector storage."""
+        if faiss is None:
+            self.logger.warning("FAISS not available, skipping vector index initialization")
+            self.indexes = {}
+            return
+            
         try:
             # Get vector dimension from config
             vector_dim = 384  # Default
@@ -364,15 +393,15 @@ class MemoryManager:
             self.logger.error(f"Error getting warm path: {e}")
             return os.path.join(self.project_root, 'data', 'memory', 'warm')
 
-    def get_duckdb_connection(self) -> duckdb.DuckDBPyConnection:
+    def get_duckdb_connection(self):
         """Get shared DuckDB connection.
         
         Returns:
-            duckdb.DuckDBPyConnection: Shared DuckDB connection
+            DuckDB connection or None if DuckDB is not available
         """
         return self.con
 
-    def get_faiss_index(self, tier: str = 'red_hot') -> faiss.Index:
+    def get_faiss_index(self, tier: str = 'red_hot'):
         """Get FAISS index for specified tier.
         
         Args:
