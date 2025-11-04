@@ -177,14 +177,15 @@ class PlanetaryConnector(DataSource):
         self.logger.info(f"Saved image to {output_path}")
         return output_path
     
-    async def store_in_cold_memory(self, item: Dict[str, Any], data: np.ndarray, bands: List[str]) -> bool:
+    async def store_in_cold_memory(self, item: Dict[str, Any], data: np.ndarray, bands: List[str], collection_id: Optional[str] = None) -> bool:
         """Store downloaded data in cold memory.
-        
+
         Args:
             item: STAC item metadata
             data: Downloaded data array
             bands: List of band names
-            
+            collection_id: Optional collection ID to use for directory naming
+
         Returns:
             bool: True if successful
         """
@@ -198,14 +199,16 @@ class PlanetaryConnector(DataSource):
             planetary_dir.mkdir(parents=True, exist_ok=True)
             
             # Create collection-specific directory
-            collection_dir = planetary_dir / item.get('collection', 'unknown')
+            # Use provided collection_id, or try to get from item, or fall back to 'unknown'
+            collection = collection_id or item.get('collection', 'unknown')
+            collection_dir = planetary_dir / collection
             collection_dir.mkdir(parents=True, exist_ok=True)
             
             # Prepare metadata
             metadata = {
                 "id": f"planetary_{item_id}_{timestamp}",
                 "type": "planetary_computer",
-                "collection": item.get('collection'),
+                "collection": collection,
                 "datetime": timestamp,
                 "bbox": item.get('bbox'),
                 "bands": bands,
@@ -343,7 +346,8 @@ class PlanetaryConnector(DataSource):
                         await self.store_in_cold_memory(
                             item=item.to_dict(),
                             data=stacked_data,
-                            bands=bands
+                            bands=bands,
+                            collection_id=collection_id
                         )
                         
                         results[collection_id] = {
