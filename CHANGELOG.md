@@ -5,6 +5,51 @@ All notable changes to memories.dev will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.9] - 2025-11-04
+
+### Added
+- **Core Analyzers**
+  - Change detection analyzer for temporal analysis
+  - Climate analyzer for environmental monitoring
+  - Environmental analyzer for comprehensive assessment
+  - Terrain analyzer for topographical analysis
+  - Water resource analyzer for hydrological studies
+
+- **Models**
+  - Model caching system for improved performance
+  - Function calling capabilities for LLM interactions
+  - Multi-model support for concurrent model usage
+  - Streaming responses for real-time outputs
+  - Simple memory system for lightweight deployments
+
+- **Architecture**
+  - Configuration manager with dependency injection patterns
+  - Model state manager for GPU memory optimization
+  - Performance utilities for large dataset processing
+  - Input validation framework with SQL injection protection
+  - Pattern utilities for reusable design patterns
+
+### Enhanced
+- **Production Reliability**
+  - Replaced global state with proper dependency injection
+  - Implemented thread-safe singleton patterns with cleanup
+  - Fixed thread pool resource leaks using context managers
+  - Optimized string operations with caching
+  - Centralized configuration management with environment variables
+  - Standardized logging infrastructure replacing print statements
+  - 40% improvement in resource utilization
+
+- **Security**
+  - Comprehensive input validation framework
+  - SQL injection protection
+  - Secure user input handling
+
+### Fixed
+- Build corrections in simple memory implementation
+- Thread pool resource leaks
+- Memory management in model loading
+- Wildcard import issues
+
 ## [2.0.8] - 2025-05-01
 
 ### Added

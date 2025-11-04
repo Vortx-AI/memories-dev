@@ -44,7 +44,7 @@ from memories.simple_memory import SimpleMemoryStore, SimpleConfig, create_memor
 
 logger = logging.getLogger(__name__)
 
-__version__ = "2.0.8"  # Match version in pyproject.toml
+__version__ = "2.0.9"  # Match version in pyproject.toml
 
 # Define lazy loading functions to avoid circular imports
 def get_memory_retrieval():
