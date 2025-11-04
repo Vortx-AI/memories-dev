@@ -27,6 +27,8 @@ if os.getenv("BUILD_DOCUMENTATION", "false").lower() == "true":
     sys.modules['memories.utils.earth'] = MagicMock()
     sys.modules['memories.utils.earth.advanced_analysis'] = MagicMock()
 
-from .text import *
-
-from .types import *
+# Import specific commonly used functions
+from .text.text import parse_text, extract_entities
+from .text.embeddings import get_embeddings
+from .text.context_utils import build_context
+from .types import Bounds, Location, DataPoint

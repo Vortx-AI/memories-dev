@@ -78,8 +78,12 @@ class GeoPrivacyEncoder:
         if self.device.type == 'cuda':
             self._initialize_gpu()
 
-        # Initialize thread pool for CPU operations
+        # Initialize thread pool for CPU operations with proper cleanup
         self.thread_pool = ThreadPoolExecutor(max_workers=4)
+        
+        # Register cleanup function
+        import atexit
+        atexit.register(self.cleanup)
 
         # Initialize privacy transforms (spatial, temporal, attribute)
         self._initialize_transforms()
@@ -100,6 +104,34 @@ class GeoPrivacyEncoder:
         # Update GPU metrics (if desired)
         GPU_MEMORY.set(torch.cuda.max_memory_allocated())
 
+    def cleanup(self):
+        """Clean up resources when the encoder is destroyed."""
+        try:
+            if hasattr(self, 'thread_pool') and self.thread_pool:
+                self.thread_pool.shutdown(wait=True)
+                logger.debug("Thread pool shutdown completed")
+        except Exception as e:
+            logger.error(f"Error during thread pool cleanup: {e}")
+        
+        try:
+            if hasattr(self, 'gpu_memory_pool') and self.gpu_memory_pool:
+                self.gpu_memory_pool.free_all_blocks()
+                logger.debug("GPU memory pool cleaned up")
+        except Exception as e:
+            logger.error(f"Error during GPU cleanup: {e}")
+    
+    def __del__(self):
+        """Destructor to ensure cleanup."""
+        self.cleanup()
+    
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit with cleanup."""
+        self.cleanup()
+    
     # -------------------- CUDA KERNELS --------------------
 
     @staticmethod

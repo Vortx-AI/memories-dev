@@ -331,7 +331,7 @@ class WebRTCClient:
                                 break
                             
                             # Small delay to prevent busy loop
-                            await asyncio.sleep(0.1)
+                            await asyncio.sleep(0.1)  # Non-blocking yield to event loop
                             
                     except Exception as e:
                         logger.error(f"Error in signaling loop: {e}")

@@ -130,7 +130,7 @@ def closest_name(input_str, options):
     result = closest_match[0]
 
     if result != input_str:
-        print(f'Automatically corrected [{input_str}] -> [{result}].')
+        logger.info(f'Automatically corrected [{input_str}] -> [{result}].')
 
     return result
 
@@ -276,7 +276,11 @@ cpu = torch.device('cpu')
 torch.zeros((1, 1)).to(gpu, torch.float32)
 torch.cuda.empty_cache()
 
-models_in_gpu = []
+# Model state management now handled by ModelStateManager
+from memories.core.model_state_manager import get_model_state_manager
+
+# Remove global state variable  
+# models_in_gpu = []  # Replaced by ModelStateManager
 
 
 @contextmanager
@@ -307,13 +311,13 @@ def load_models_to_gpu(models):
         for m in models_to_unload:
             with movable_bnb_model(m):
                 m.to(cpu)
-            print('Unload to CPU:', m.__class__.__name__)
+            logger.debug('Unload to CPU: %s', m.__class__.__name__)
         models_in_gpu = models_to_remain
 
     for m in models_to_load:
         with movable_bnb_model(m):
             m.to(gpu)
-        print('Load to GPU:', m.__class__.__name__)
+        logger.debug('Load to GPU: %s', m.__class__.__name__)
 
     models_in_gpu = list(set(models_in_gpu + models))
     torch.cuda.empty_cache()
@@ -337,7 +341,12 @@ import numpy as np
 import copy
 
 from tqdm.auto import trange
-from diffusers.pipelines.stable_diffusion_xl.pipeline_stable_diffusion_xl_img2img import *
+from diffusers.pipelines.stable_diffusion_xl.pipeline_stable_diffusion_xl_img2img import (
+    StableDiffusionXLImg2ImgPipeline,
+    randn_tensor,
+    StableDiffusionXLPipelineOutput,
+    retrieve_timesteps
+)
 from diffusers.models.transformers import Transformer2DModel
 
 
@@ -895,7 +904,7 @@ def main():
     final  = Image.fromarray(array)
 
     final.save("generated_image.png")
-    print("✅ Image saved to generated_image.png")
+    logger.info("Image saved to generated_image.png")
 
 
 if __name__ == "__main__":

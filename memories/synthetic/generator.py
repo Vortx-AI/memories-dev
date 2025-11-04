@@ -30,21 +30,47 @@ import numpy.typing as npt
 
 logger = logging.getLogger(__name__)
 
-# Initialize StableDiffusion pipeline
-pipe = None
-
 # Type definitions
+from memories.core.model_state_manager import get_model_state_manager
+
+# Pipeline management through dependency injection
 RasterType = npt.NDArray[np.float32]
 BBox = Tuple[float, float, float, float]  # (min_x, min_y, max_x, max_y)
 
-def initialize_stable_diffusion():
-    """Initialize the Stable Diffusion pipeline"""
-    global pipe
-    if pipe is None:
-        pipe = StableDiffusionPipeline.from_pretrained(
-            "stabilityai/stable-diffusion-2-1",
-            torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
-        ).to("cuda" if torch.cuda.is_available() else "cpu")
+class StableDiffusionManager:
+    """Manages Stable Diffusion pipeline with proper resource management."""
+    
+    def __init__(self):
+        self._pipeline = None
+        self.model_state_manager = get_model_state_manager()
+    
+    def get_pipeline(self):
+        """Get or initialize the Stable Diffusion pipeline."""
+        if self._pipeline is None:
+            self._pipeline = StableDiffusionPipeline.from_pretrained(
+                "stabilityai/stable-diffusion-2-1",
+                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
+            )
+            # Load to GPU through model state manager
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            self.model_state_manager.load_models([self._pipeline], device)
+        return self._pipeline
+    
+    def cleanup(self):
+        """Clean up resources."""
+        if self._pipeline is not None:
+            self.model_state_manager.unload_models([self._pipeline])
+            self._pipeline = None
+
+# Global instance
+_sd_manager = None
+
+def get_stable_diffusion_manager():
+    """Get the global Stable Diffusion manager."""
+    global _sd_manager
+    if _sd_manager is None:
+        _sd_manager = StableDiffusionManager()
+    return _sd_manager
 
 @dataclass
 class TerrainParams:

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List
 import gc
 from diffusers import StableDiffusionPipeline
+from memories.utils.patterns import Singleton
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -16,26 +17,21 @@ logging.basicConfig(level=logging.INFO)
 # Global pipe variable for Stable Diffusion
 pipe = None
 
-class BaseModel:
+class BaseModel(Singleton):
     """Base model class that can be shared across modules"""
-    _instance = None
-    _initialized = False
     
-    def __init__(self):
+    def initialize(self):
         """Initialize the base model."""
-        if not BaseModel._initialized:
-            self.model = None
-            self.tokenizer = None
-            self.config = self._load_config()
-            self.hf_token = os.getenv("HF_TOKEN")
-            BaseModel._initialized = True
+        self.model = None
+        self.tokenizer = None
+        self.config = self._load_config()
+        self.hf_token = os.getenv("HF_TOKEN")
+        logger.info("BaseModel singleton initialized")
     
     @classmethod
     def get_instance(cls):
-        """Get singleton instance of BaseModel."""
-        if cls._instance is None:
-            cls._instance = cls()
-        return cls._instance
+        """Get singleton instance of BaseModel (for backward compatibility)."""
+        return cls()
     
     def _load_config(self) -> Dict[str, Any]:
         """Load model configuration from JSON file."""

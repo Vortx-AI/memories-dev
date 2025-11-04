@@ -56,23 +56,23 @@ class DataManager:
     
     def _get_bbox_polygon(self, bbox: Union[Tuple[float, float, float, float], List[float], Polygon]) -> Union[List[float], Polygon]:
         """Convert bbox to appropriate format."""
-        logger.info(f"Input bbox: {bbox}, type: {type(bbox)}")
+        logger.info("Input bbox: %s, type: %s", bbox, type(bbox).__name__)
         
         if isinstance(bbox, Polygon):
             logger.info("Input is a Polygon")
             return bbox
         elif isinstance(bbox, (tuple, list)):
-            logger.info(f"Input is a {type(bbox).__name__} with length {len(bbox)}")
+            logger.info("Input is a %s with length %d", type(bbox).__name__, len(bbox))
             if len(bbox) == 4:
                 # Convert to list and ensure all values are float
                 result = [float(x) for x in bbox]
-                logger.info(f"Converted to float list: {result}")
+                logger.info("Converted to float list: %s", result)
                 return result
             else:
-                logger.error(f"Invalid bbox length: {len(bbox)}")
+                logger.error("Invalid bbox length: %d", len(bbox))
                 raise ValueError("Invalid bbox format. Must be [west, south, east, north] or Polygon")
         else:
-            logger.error(f"Invalid bbox type: {type(bbox)}")
+            logger.error("Invalid bbox type: %s", type(bbox).__name__)
             raise ValueError("Invalid bbox format. Must be [west, south, east, north] or Polygon")
     
     def cache_exists(self, cache_key: str) -> bool:

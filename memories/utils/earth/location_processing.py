@@ -9,6 +9,7 @@ from geopy.geocoders import Nominatim
 import os
 import logging
 from time import sleep
+from memories.utils.validation import Validator, validate_input, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,10 @@ def sort_by_distance(
             loc['distance'] = geodesic(center, loc['coordinates']).kilometers
     return sorted(locations, key=lambda x: x.get('distance', float('inf')))
 
+@validate_input(
+    address=lambda x: Validator.validate_string(x, min_length=1, max_length=500),
+    timeout=lambda x: Validator.validate_number(x, min_value=1, max_value=300, integer_only=True)
+)
 def geocode(
     address: str,
     user_agent: Optional[str] = None,
