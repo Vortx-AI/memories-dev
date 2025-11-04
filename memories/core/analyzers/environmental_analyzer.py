@@ -1,7 +1,7 @@
 """Environmental impact analysis for Earth memory."""
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import numpy as np
 
 logger = logging.getLogger(__name__)
