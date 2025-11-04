@@ -5,7 +5,7 @@ Provides thread-safe and robust implementations of common patterns.
 
 import threading
 from typing import Any, Type, TypeVar, Generic, Optional, Dict
-from abc import ABC, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 import weakref
 import logging
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar('T')
 
-class ThreadSafeSingleton(type, Generic[T]):
+class ThreadSafeSingleton(ABCMeta):
     """Thread-safe singleton metaclass.
     
     This metaclass ensures that only one instance of a class exists
