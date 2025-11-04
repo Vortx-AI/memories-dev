@@ -234,7 +234,7 @@ class PlanetaryConnector(DataSource):
             }
             
             # Store in cold memory
-            success = self.cold_memory.store(data_dict, metadata)
+            success = await self.cold_memory.store(data_dict, metadata)
             
             if success:
                 self.logger.info(f"Successfully stored {item_id} in cold memory at {data_file}")

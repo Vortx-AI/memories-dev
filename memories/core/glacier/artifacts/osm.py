@@ -325,11 +325,12 @@ class OSMConnector(APIConnector, DataSource):
             
             # Make request to Overpass API
             async with aiohttp.ClientSession() as session:
+                timeout = aiohttp.ClientTimeout(total=self.config['timeout'])
                 async with session.post(
                     self.config['overpass_url'],
                     data=query.strip(),
                     headers={'Content-Type': 'text/plain'},
-                    timeout=self.config['timeout']
+                    timeout=timeout
                 ) as response:
                     if response.status == 200:
                         return await response.json()
