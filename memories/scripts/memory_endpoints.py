@@ -7,15 +7,25 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel
 import mercantile
 from datetime import datetime
+import os
+from dotenv import load_dotenv
 from memories.utils.types import Bounds
 from memories.utils.privacy.secure_encoding import SecureImageEncoder, SecureAPILayer
 from memories.synthetic.generator import SyntheticDataGenerator
+from memories.core.memory_manager import MemoryManager
+
+# Load environment variables
+load_dotenv()
 
 app = FastAPI(title="Earth Memories API")
 
-# Initialize components
-secure_layer = SecureAPILayer(master_key="your-secure-key-here")  # Replace with secure key
+# Initialize components with secure key from environment
+master_key = os.getenv('MEMORIES_MASTER_KEY')
+if not master_key:
+    raise ValueError("MEMORIES_MASTER_KEY environment variable is required")
+secure_layer = SecureAPILayer(master_key=master_key)
 synthetic_generator = SyntheticDataGenerator()
+memory_manager = MemoryManager()
 
 class MemoryRequest(BaseModel):
     """Memory request model"""
@@ -57,6 +67,14 @@ async def store_memory(
             request.protection_level
         )
         
+        # Store encrypted data in memory manager
+        memory_manager.store(
+            data_id=secure_metadata['id'],
+            data=encrypted_data,
+            metadata=secure_metadata,
+            tier='hot'  # Store in hot tier for fast access
+        )
+        
         # Generate response
         response = MemoryResponse(
             memory_id=secure_metadata['id'],
@@ -78,9 +96,13 @@ async def get_memory(
 ):
     """Retrieve an Earth memory"""
     try:
-        # Retrieve and decode
-        encrypted_data = None  # TODO: Implement retrieval from storage
-        secure_metadata = None  # TODO: Implement metadata retrieval
+        # Retrieve from memory manager
+        memory_data = memory_manager.retrieve(memory_id)
+        if not memory_data:
+            raise HTTPException(status_code=404, detail="Memory not found")
+        
+        encrypted_data = memory_data.get('data')
+        secure_metadata = memory_data.get('metadata')
         
         decoded_data = secure_layer.decode_tile(
             encrypted_data,
@@ -143,7 +165,10 @@ async def delete_memory(
         if not secure_layer.validate_api_key(access_token, 'delete'):
             raise HTTPException(status_code=403, detail="Access denied")
             
-        # TODO: Implement secure deletion
+        # Delete from memory manager
+        success = memory_manager.delete(memory_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Memory not found")
         
         return {"status": "success", "message": "Memory deleted"}
         

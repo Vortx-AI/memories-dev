@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mermaid Diagram Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #3498db;
+            margin-top: 30px;
+        }
+        .diagram-container {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .mermaid {
+            background-color: white;
+            padding: 10px;
+            border-radius: 3px;
+        }
+        .controls {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e8f4f8;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .status {
+            margin-top: 10px;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mermaid Diagram Test Page</h1>
+    
+    <p>This page contains various Mermaid diagrams to test rendering functionality. If diagrams don't render automatically, use the controls below.</p>
+    
+    <div class="controls">
+        <button id="render-btn">Force Render All Diagrams</button>
+        <button id="reload-btn">Reload Mermaid</button>
+        <div class="status" id="status">Status: Ready</div>
+    </div>
+    
+    <h2>Flowchart Example</h2>
+    <div class="diagram-container">
+        <pre class="mermaid">
+flowchart TD
+    A[Start] --> B{Is it working?}
+    B -->|Yes| C[Great!]
+    B -->|No| D[Debug]
+    D --> B
+    C --> E[Continue]
+        </pre>
+    </div>
+    
+    <h2>Sequence Diagram Example</h2>
+    <div class="diagram-container">
+        <pre class="mermaid">
+sequenceDiagram
+    participant User
+    participant System
+    participant Database
+    
+    User->>System: Request data
+    System->>Database: Query data
+    Database-->>System: Return results
+    System-->>User: Display results
+        </pre>
+    </div>
+    
+    <h2>Class Diagram Example</h2>
+    <div class="diagram-container">
+        <pre class="mermaid">
+classDiagram
+    class Memory {
+        +String id
+        +DateTime timestamp
+        +Vector embedding
+        +store()
+        +retrieve()
+    }
+    
+    class ShortTermMemory {
+        +int retention_period
+        +cleanup()
+    }
+    
+    class LongTermMemory {
+        +float importance
+        +consolidate()
+    }
+    
+    Memory <|-- ShortTermMemory
+    Memory <|-- LongTermMemory
+        </pre>
+    </div>
+    
+    <h2>Gantt Chart Example</h2>
+    <div class="diagram-container">
+        <pre class="mermaid">
+gantt
+    title Memory System Development
+    dateFormat  YYYY-MM-DD
+    
+    section Design
+    Requirements      :done, des1, 2023-01-01, 2023-01-10
+    Architecture      :done, des2, 2023-01-11, 2023-01-25
+    
+    section Implementation
+    Core Components   :active, imp1, 2023-01-26, 30d
+    Integration       :imp2, after imp1, 20d
+    
+    section Testing
+    Unit Tests        :test1, after imp1, 10d
+    Integration Tests :test2, after imp2, 15d
+        </pre>
+    </div>
+    
+    <h2>State Diagram Example</h2>
+    <div class="diagram-container">
+        <pre class="mermaid">
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Processing: New Data
+    Processing --> Storing: Processed
+    Processing --> Error: Failed
+    Storing --> Idle: Complete
+    Error --> Idle: Reset
+    Idle --> [*]: Shutdown
+        </pre>
+    </div>
+    
+    <h2>Entity Relationship Diagram</h2>
+    <div class="diagram-container">
+        <pre class="mermaid">
+erDiagram
+    MEMORY ||--o{ ATTRIBUTE : contains
+    MEMORY {
+        string id
+        timestamp created
+        vector embedding
+    }
+    ATTRIBUTE {
+        string key
+        string value
+    }
+    MEMORY ||--o{ TAG : has
+    TAG {
+        string name
+    }
+        </pre>
+    </div>
+    
+    <h2>Pie Chart Example</h2>
+    <div class="diagram-container">
+        <pre class="mermaid">
+pie
+    title Memory Usage Distribution
+    "Short-term" : 30
+    "Working" : 25
+    "Long-term" : 45
+        </pre>
+    </div>
+    
+    <!-- Load Mermaid from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js"></script>
+    
+    <!-- Direct fix script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Test page loaded');
+            
+            // Initialize Mermaid
+            if (typeof mermaid !== 'undefined') {
+                console.log('Mermaid found, initializing...');
+                
+                mermaid.initialize({
+                    startOnLoad: true,
+                    theme: 'default',
+                    securityLevel: 'loose',
+                    flowchart: { useMaxWidth: false, htmlLabels: true }
+                });
+                
+                // Try to render all diagrams
+                try {
+                    mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+                    updateStatus('Diagrams initialized');
+                } catch (error) {
+                    console.error('Error initializing diagrams:', error);
+                    updateStatus('Error initializing diagrams: ' + error.message);
+                }
+            } else {
+                console.warn('Mermaid library not found');
+                updateStatus('Mermaid library not found');
+            }
+            
+            // Set up button event listeners
+            document.getElementById('render-btn').addEventListener('click', function() {
+                if (typeof mermaid !== 'undefined') {
+                    try {
+                        mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+                        updateStatus('Force render triggered');
+                    } catch (error) {
+                        console.error('Error rendering diagrams:', error);
+                        updateStatus('Error rendering: ' + error.message);
+                    }
+                } else {
+                    updateStatus('Mermaid library not found');
+                }
+            });
+            
+            document.getElementById('reload-btn').addEventListener('click', function() {
+                updateStatus('Reloading Mermaid...');
+                
+                // Create a new script element
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js';
+                script.onload = function() {
+                    if (typeof mermaid !== 'undefined') {
+                        mermaid.initialize({
+                            startOnLoad: false,
+                            theme: 'default',
+                            securityLevel: 'loose'
+                        });
+                        
+                        try {
+                            mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+                            updateStatus('Mermaid reloaded and diagrams rendered');
+                        } catch (error) {
+                            updateStatus('Error after reload: ' + error.message);
+                        }
+                    } else {
+                        updateStatus('Failed to reload Mermaid');
+                    }
+                };
+                
+                document.head.appendChild(script);
+            });
+        });
+        
+        function updateStatus(message) {
+            const status = document.getElementById('status');
+            status.textContent = 'Status: ' + message;
+        }
+    </script>
+</body>
+</html> 

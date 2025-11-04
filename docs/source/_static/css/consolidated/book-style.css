@@ -1,0 +1,231 @@
+/**
+ * Consolidated Book-Style CSS for Memories-Dev Documentation
+ * 
+ * This file contains styles for book-like appearance and decorative elements.
+ */
+
+/* ===== Chapter Styling ===== */
+.chapter-title {
+  margin-bottom: var(--spacing-xl);
+  text-align: center;
+  position: relative;
+}
+
+.chapter-title h1 {
+  font-size: 2.5rem;
+  margin-bottom: var(--spacing-sm);
+}
+
+.chapter-title .chapter-number {
+  font-size: 1.2rem;
+  color: var(--accent-color);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: var(--spacing-sm);
+  font-weight: 700;
+}
+
+.chapter-title .chapter-summary {
+  font-style: italic;
+  color: var(--text-light);
+  max-width: 700px;
+  margin: 0 auto var(--spacing-lg);
+  line-height: 1.6;
+}
+
+.chapter-label {
+  display: inline-block;
+  font-size: 0.9rem;
+  color: var(--accent-color);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: var(--spacing-xs);
+  font-weight: 700;
+  border-bottom: 2px solid var(--accent-light);
+  padding-bottom: 2px;
+}
+
+.decorative-line {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--accent-light), transparent);
+  margin: var(--spacing-lg) auto;
+  width: 80%;
+}
+
+/* ===== First Letter Styling ===== */
+.section > p:first-of-type::first-letter {
+  font-size: 3.5em;
+  float: left;
+  line-height: 0.8;
+  margin-right: 0.1em;
+  color: var(--accent-color);
+  font-weight: 700;
+  font-family: Georgia, serif;
+}
+
+/* ===== Blockquotes ===== */
+blockquote {
+  margin: var(--spacing-lg) 0;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-left: 4px solid var(--accent-color);
+  background-color: rgba(202, 103, 2, 0.05);
+  font-style: italic;
+  position: relative;
+}
+
+blockquote::before {
+  content: "\201C";
+  font-size: 4em;
+  font-family: Georgia, serif;
+  color: rgba(202, 103, 2, 0.2);
+  position: absolute;
+  top: -0.2em;
+  left: 0.1em;
+  line-height: 1;
+}
+
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* ===== Book Sections ===== */
+.book-section {
+  padding: var(--spacing-lg);
+  margin: var(--spacing-xl) 0;
+  background-color: var(--bg-light);
+  border-radius: 4px;
+  position: relative;
+  box-shadow: var(--shadow-md);
+}
+
+.book-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+  border-radius: 4px 4px 0 0;
+}
+
+.book-section h2 {
+  color: var(--primary-dark);
+  margin-top: 0;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: var(--spacing-sm);
+}
+
+.book-section p:last-child {
+  margin-bottom: 0;
+}
+
+/* ===== Chapter Headers ===== */
+.chapter-header {
+  text-align: center;
+  margin: var(--spacing-xl) 0;
+  padding: var(--spacing-lg) 0;
+  position: relative;
+}
+
+.chapter-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 3px;
+  background: var(--accent-color);
+}
+
+.chapter-header h1 {
+  font-size: 2.5rem;
+  margin: var(--spacing-md) 0;
+  border-bottom: none;
+}
+
+/* ===== Page Turn Effect ===== */
+@keyframes pageTurnForward {
+  0% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(-30px); }
+}
+
+@keyframes pageTurnBackward {
+  0% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(30px); }
+}
+
+body.page-turning-forward .wy-nav-content {
+  animation: pageTurnForward 0.3s ease-in-out;
+}
+
+body.page-turning-backward .wy-nav-content {
+  animation: pageTurnBackward 0.3s ease-in-out;
+}
+
+.page-turn {
+  cursor: pointer;
+  color: var(--primary-color);
+}
+
+.page-turn:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+/* ===== Mobile Responsiveness ===== */
+@media screen and (max-width: 768px) {
+  .section > p:first-of-type::first-letter {
+    font-size: 2.5em;
+    margin-right: 0.05em;
+  }
+  
+  .chapter-title h1 {
+    font-size: 2rem;
+  }
+  
+  .chapter-header h1 {
+    font-size: 2rem;
+  }
+  
+  blockquote {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  blockquote::before {
+    font-size: 3em;
+  }
+  
+  .book-section {
+    padding: var(--spacing-md);
+  }
+}
+
+/* ===== Print Styles ===== */
+@media print {
+  .section > p:first-of-type::first-letter {
+    color: #000;
+  }
+  
+  blockquote {
+    border-left: 2px solid #666;
+    background-color: transparent;
+    page-break-inside: avoid;
+  }
+  
+  .book-section {
+    background-color: transparent;
+    box-shadow: none;
+    border: 1px solid #ccc;
+    page-break-inside: avoid;
+  }
+  
+  .book-section::before {
+    display: none;
+  }
+  
+  .chapter-header::before {
+    background: #666;
+  }
+} 

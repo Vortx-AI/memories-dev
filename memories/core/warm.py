@@ -98,7 +98,8 @@ class WarmMemory:
                     return duckdb.connect(database=db_file, read_only=False)
                 else:
                     return duckdb.connect(database=':memory:', read_only=False)
-            except:
+            except duckdb.Error as e:
+                self.logger.error(f"Failed to create fallback DuckDB connection: {e}")
                 raise
             
     def _init_tables(self, con: duckdb.DuckDBPyConnection) -> None:
@@ -709,7 +710,8 @@ class WarmMemory:
             # Always try to detach source database
             try:
                 con.execute("DETACH source")
-            except:
+            except duckdb.CatalogException:
+                # Database might already be detached
                 pass
 
     async def import_from_csv(

@@ -1,0 +1,289 @@
+/**
+ * Theme CSS for Memories-Dev Documentation
+ * 
+ * This file contains the base theme variables and styles.
+ */
+
+/* ===== Variables ===== */
+:root {
+  /* Colors */
+  --color-primary: #2980B9;
+  --color-primary-dark: #1F618D;
+  --color-primary-light: #3498DB;
+  --color-secondary: #27AE60;
+  --color-accent: #E67E22;
+  --color-accent-dark: #D35400;
+  --color-accent-light: #F39C12;
+  
+  /* Text colors */
+  --color-text: #333333;
+  --color-text-light: #f0f0f0;
+  --color-text-dark: #111111;
+  --color-light: #f0f0f0;
+  --color-white: #ffffff;
+  
+  /* Background colors */
+  --bg-light: #fcfcfc;
+  --bg-dark: #1e293b;
+  --bg-sidebar: #343131;
+  --color-hover: rgba(255, 255, 255, 0.1);
+  --color-active-bg: rgba(0, 0, 0, 0.2);
+  --color-border-dark: rgba(255, 255, 255, 0.1);
+  
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  /* Layout */
+  --sidebar-width: 300px;
+  --border-radius: 4px;
+  
+  /* Typography */
+  --font-family-base: 'Lora', 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-family-headings: 'Lora', 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-family-code: 'Source Code Pro', monospace;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== Base Styles ===== */
+body {
+  font-family: var(--font-family-base);
+  color: var(--color-text);
+  line-height: 1.6;
+  background-color: var(--bg-color);
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family-headings);
+  font-weight: 700;
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  color: var(--color-text-dark);
+  line-height: 1.3;
+}
+
+h1 {
+  font-size: 2.25rem;
+  margin-top: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border-dark);
+}
+
+h2 {
+  font-size: 1.75rem;
+  margin-top: 2rem;
+  padding-bottom: 0.3rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+h4 {
+  font-size: 1.25rem;
+}
+
+p {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color 0.2s ease-in-out;
+}
+
+a:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+}
+
+code {
+  font-family: var(--font-family-code);
+  font-size: 0.9em;
+  padding: 0.2em 0.4em;
+  background-color: var(--bg-dark);
+  border-radius: 3px;
+}
+
+pre {
+  font-family: var(--font-family-code);
+  padding: var(--spacing-md);
+  margin: var(--spacing-md) 0;
+  background-color: var(--bg-dark);
+  border-radius: 4px;
+  overflow-x: auto;
+  line-height: 1.45;
+}
+
+pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+/* ===== Layout ===== */
+.wy-nav-content-wrap {
+  background: var(--bg-light);
+  margin-left: var(--sidebar-width);
+}
+
+.wy-nav-content {
+  max-width: 100%;
+  margin: 0;
+  padding: var(--spacing-lg) var(--spacing-xl);
+}
+
+@media screen and (min-width: 1400px) {
+  .wy-nav-content {
+    max-width: 100%;
+  }
+}
+
+/* ===== Sidebar ===== */
+.wy-nav-side {
+  width: var(--sidebar-width);
+  background: var(--bg-sidebar);
+  padding-bottom: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.wy-side-nav-search {
+  background-color: var(--color-primary);
+  padding: var(--spacing-md);
+}
+
+.wy-side-nav-search input[type="text"] {
+  border-color: var(--color-primary-dark);
+  border-radius: var(--border-radius);
+  box-shadow: none;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-light);
+}
+
+.wy-side-nav-search > a {
+  color: var(--color-white);
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.wy-side-nav-search > a img.logo {
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto var(--spacing-sm) auto;
+  display: block;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+/* ===== Navigation Menu ===== */
+.wy-menu-vertical {
+  width: 100%;
+}
+
+.wy-menu-vertical header, 
+.wy-menu-vertical p.caption {
+  color: var(--color-light);
+  font-weight: bold;
+  font-size: 0.9rem;
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin: var(--spacing-md) 0 var(--spacing-xs) 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--color-border-dark);
+}
+
+.wy-menu-vertical a {
+  color: var(--color-text-light);
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: 0.95rem;
+  display: block;
+}
+
+.wy-menu-vertical a:hover {
+  background-color: var(--color-hover);
+}
+
+.wy-menu-vertical li.current {
+  background-color: var(--color-active-bg);
+}
+
+.wy-menu-vertical li.current > a {
+  color: var(--color-primary);
+  border: none;
+  background-color: transparent;
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-weight: bold;
+  border-right: 3px solid var(--color-primary);
+}
+
+/* ===== Mobile Responsiveness ===== */
+@media screen and (max-width: 768px) {
+  .wy-nav-side {
+    width: 85% !important;
+    left: -85%;
+    transition: left 0.3s ease;
+  }
+  
+  .wy-nav-side.shift {
+    left: 0 !important;
+  }
+  
+  .wy-nav-content-wrap {
+    margin-left: 0;
+  }
+  
+  .wy-nav-content {
+    padding: var(--spacing-md);
+  }
+  
+  .wy-nav-top {
+    display: block;
+    background: var(--color-primary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    color: white;
+    line-height: 32px;
+    text-align: center;
+  }
+  
+  .wy-nav-top a {
+    color: white;
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+}
+
+/* ===== Print Styles ===== */
+@media print {
+  .wy-nav-side {
+    display: none;
+  }
+  
+  .wy-nav-content-wrap {
+    margin-left: 0;
+  }
+  
+  .wy-nav-content {
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  
+  a {
+    color: var(--color-text);
+    text-decoration: underline;
+  }
+} 

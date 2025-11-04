@@ -1,0 +1,149 @@
+/**
+ * Mermaid diagram fixes for Memories-Dev Documentation
+ * 
+ * This file provides specific styling and fixes for Mermaid diagrams.
+ */
+
+/* Basic diagram styling */
+.mermaid {
+    display: block !important;
+    margin: 2rem auto !important;
+    text-align: center !important;
+    background-color: white !important;
+    padding: 1rem !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    min-height: 100px !important;
+    position: relative !important;
+}
+
+/* Ensure SVG renders properly */
+.mermaid svg {
+    max-width: 100% !important;
+    height: auto !important;
+    display: inline-block !important;
+}
+
+/* Fix text in diagrams */
+.mermaid svg text {
+    font-family: 'Source Code Pro', monospace !important;
+    font-size: 14px !important;
+}
+
+/* Fix node styling */
+.mermaid svg .node rect,
+.mermaid svg .node circle,
+.mermaid svg .node ellipse,
+.mermaid svg .node polygon,
+.mermaid svg .node path {
+    fill: #f9f9f9 !important;
+    stroke: #2980B9 !important;
+    stroke-width: 1px !important;
+}
+
+/* Fix edge styling */
+.mermaid svg .edge path {
+    stroke: #2980B9 !important;
+    stroke-width: 1.5px !important;
+}
+
+/* Fix edge labels */
+.mermaid svg .edgeLabel {
+    background-color: white !important;
+    padding: 2px !important;
+}
+
+/* Fix clusters */
+.mermaid svg .cluster rect {
+    fill: #f0f0f0 !important;
+    stroke: #999 !important;
+    stroke-width: 1px !important;
+    rx: 4px !important;
+    ry: 4px !important;
+}
+
+/* Fix diagram titles */
+.mermaid svg .titleText {
+    font-size: 18px !important;
+    font-weight: bold !important;
+    font-family: 'Lora', serif !important;
+}
+
+/* Loading state */
+.mermaid:not([data-processed="true"]) {
+    position: relative !important;
+    min-height: 100px !important;
+    background-color: #f8f8f8 !important;
+    border: 1px dashed #ccc !important;
+}
+
+.mermaid:not([data-processed="true"])::before {
+    content: "Loading diagram..." !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    font-family: 'Lora', serif !important;
+    color: #666 !important;
+    font-style: italic !important;
+}
+
+/* Fallback for failed diagrams */
+.diagram-fallback {
+    border: 1px solid #e74c3c !important;
+    border-radius: 4px !important;
+    padding: 1rem !important;
+    margin: 1.5rem 0 !important;
+    background-color: #fdf3f2 !important;
+}
+
+.diagram-fallback-header {
+    color: #c0392b !important;
+    font-weight: bold !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.diagram-fallback-error {
+    font-family: 'Source Code Pro', monospace !important;
+    margin-bottom: 1rem !important;
+    color: #e74c3c !important;
+}
+
+.diagram-fallback pre {
+    background-color: #f8f8f8 !important;
+    border: 1px solid #ddd !important;
+    border-radius: 3px !important;
+    padding: 0.5rem !important;
+    font-size: 0.8rem !important;
+    overflow-x: auto !important;
+    margin: 0 !important;
+}
+
+/* Mobile responsiveness */
+@media screen and (max-width: 768px) {
+    .mermaid {
+        padding: 0.5rem !important;
+        margin: 1rem 0 !important;
+    }
+    
+    .mermaid svg text {
+        font-size: 12px !important;
+    }
+}
+
+/* Print styles */
+@media print {
+    .mermaid {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        page-break-inside: avoid !important;
+    }
+    
+    .diagram-fallback {
+        border: 1px solid #ddd !important;
+        background-color: #f8f8f8 !important;
+        color: #333 !important;
+    }
+} 

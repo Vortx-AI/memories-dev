@@ -1,0 +1,303 @@
+/**
+ * Consolidated Dark Mode CSS for Memories-Dev Documentation
+ * 
+ * This file contains styles for dark mode theme.
+ */
+
+/* ===== Dark Mode Toggle Button ===== */
+#dark-mode-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s ease;
+}
+
+#dark-mode-toggle:hover {
+  background-color: var(--primary-dark);
+  transform: scale(1.1);
+}
+
+#dark-mode-toggle:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(41, 128, 185, 0.5);
+}
+
+#dark-mode-toggle .light-icon,
+#dark-mode-toggle .dark-icon {
+  width: 20px;
+  height: 20px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#dark-mode-toggle .dark-icon {
+  position: absolute;
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+/* ===== Dark Theme Styles ===== */
+.dark-theme {
+  /* Override variables for dark mode */
+  --text-color: #e0e0e0;
+  --text-light: #b0b0b0;
+  --text-dark: #ffffff;
+  --text-muted: #909090;
+  
+  --bg-color: #1a1a1a;
+  --bg-light: #2a2a2a;
+  --bg-dark: #333333;
+  --bg-sidebar: #121212;
+  --bg-sidebar-hover: #1e1e1e;
+  
+  --border-color: #444444;
+  --border-light: #333333;
+  --border-dark: #555555;
+}
+
+/* Dark mode toggle button in dark mode */
+.dark-theme #dark-mode-toggle {
+  background-color: #ffa000;
+}
+
+.dark-theme #dark-mode-toggle:hover {
+  background-color: #ff8f00;
+}
+
+.dark-theme #dark-mode-toggle .light-icon {
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+.dark-theme #dark-mode-toggle .dark-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Base elements in dark mode */
+.dark-theme body,
+.dark-theme .wy-body-for-nav {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+.dark-theme .wy-nav-side {
+  background-color: var(--bg-sidebar);
+}
+
+.dark-theme .wy-side-nav-search {
+  background-color: #1a5c88;
+}
+
+.dark-theme .wy-side-nav-search input[type="text"] {
+  background-color: #0d3b5c;
+  border-color: #0a2e48;
+  color: white;
+}
+
+.dark-theme .wy-menu-vertical a {
+  color: #b0b0b0;
+}
+
+.dark-theme .wy-menu-vertical a:hover {
+  background-color: var(--bg-sidebar-hover);
+}
+
+.dark-theme .wy-menu-vertical li.current {
+  background-color: #1e1e1e;
+}
+
+.dark-theme .wy-menu-vertical li.current > a {
+  color: white;
+  border-right: 2px solid var(--accent-color);
+}
+
+.dark-theme .wy-menu-vertical li.toctree-l1.current > a {
+  border-bottom: 1px solid #333333;
+}
+
+.dark-theme .wy-nav-content-wrap {
+  background-color: var(--bg-color);
+}
+
+.dark-theme .wy-nav-content {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+.dark-theme h1, 
+.dark-theme h2, 
+.dark-theme h3, 
+.dark-theme h4, 
+.dark-theme h5, 
+.dark-theme h6 {
+  color: var(--text-dark);
+}
+
+.dark-theme a {
+  color: #3498db;
+}
+
+.dark-theme a:hover {
+  color: #5dade2;
+}
+
+/* Code elements in dark mode */
+.dark-theme pre {
+  background-color: #2d2d2d;
+  color: #f8f8f2;
+  border: 1px solid #444;
+}
+
+.dark-theme code {
+  background-color: #2d2d2d;
+  color: #f8f8f2;
+  border: none;
+}
+
+/* Tables in dark mode */
+.dark-theme table.docutils {
+  border-color: var(--border-color);
+}
+
+.dark-theme table.docutils thead th {
+  background-color: #2d2d2d;
+  color: var(--text-dark);
+  border-bottom: 2px solid var(--border-dark);
+}
+
+.dark-theme table.docutils td {
+  border-bottom: 1px solid var(--border-light);
+}
+
+.dark-theme table.docutils tr:nth-child(odd) td {
+  background-color: #252525;
+}
+
+.dark-theme table.docutils tr:nth-child(even) td {
+  background-color: #2a2a2a;
+}
+
+/* Admonitions in dark mode */
+.dark-theme .admonition {
+  background-color: #252525;
+  border-left: 4px solid var(--primary-color);
+}
+
+.dark-theme .admonition-title {
+  color: var(--primary-light);
+}
+
+.dark-theme .note {
+  border-left-color: var(--primary-color);
+}
+
+.dark-theme .note .admonition-title {
+  color: var(--primary-light);
+}
+
+.dark-theme .warning {
+  border-left-color: #e74c3c;
+}
+
+.dark-theme .warning .admonition-title {
+  color: #e74c3c;
+}
+
+.dark-theme .tip {
+  border-left-color: #2ecc71;
+}
+
+.dark-theme .tip .admonition-title {
+  color: #2ecc71;
+}
+
+/* Footer in dark mode */
+.dark-theme footer {
+  border-top: 1px solid var(--border-color);
+  color: var(--text-light);
+}
+
+/* Breadcrumbs in dark mode */
+.dark-theme .wy-breadcrumbs {
+  color: var(--text-light);
+}
+
+.dark-theme .wy-breadcrumbs a {
+  color: var(--primary-light);
+}
+
+/* Search results in dark mode */
+.dark-theme .search-results {
+  background-color: var(--bg-color);
+}
+
+.dark-theme .search-result {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dark-theme .search-result-title {
+  color: var(--primary-light);
+}
+
+.dark-theme .search-result-path {
+  color: var(--text-light);
+}
+
+.dark-theme .search-result-summary {
+  color: var(--text-color);
+}
+
+.dark-theme .highlighted {
+  background-color: rgba(255, 255, 0, 0.1);
+  color: #ffeb3b;
+}
+
+/* Versions panel in dark mode */
+.dark-theme .rst-versions {
+  background-color: #121212;
+  border-top: 1px solid #333;
+}
+
+.dark-theme .rst-versions .rst-current-version {
+  background-color: #1a1a1a;
+  color: var(--text-light);
+}
+
+/* Mobile nav in dark mode */
+.dark-theme .wy-nav-top {
+  background-color: var(--primary-dark);
+}
+
+.dark-theme .wy-nav-top a {
+  color: white;
+}
+
+/* Print styles - revert to light theme for printing */
+@media print {
+  .dark-theme {
+    --text-color: #333333;
+    --text-light: #666666;
+    --text-dark: #111111;
+    --text-muted: #888888;
+    
+    --bg-color: #ffffff;
+    --bg-light: #f8f8f8;
+    --bg-dark: #eeeeee;
+    
+    --border-color: #e1e4e5;
+    --border-light: #f2f2f2;
+    --border-dark: #cccccc;
+  }
+} 

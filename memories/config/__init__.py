@@ -35,7 +35,7 @@ class Config:
     hot_memory_size: int
     warm_memory_size: int
     cold_memory_size: int
-    redis_url: Optional[str] = "redis://localhost:6379"
+    redis_url: Optional[str] = None
     redis_db: Optional[int] = 0
     device: Optional[str] = None
     backend: Literal["pytorch", "tensorflow"] = "pytorch"

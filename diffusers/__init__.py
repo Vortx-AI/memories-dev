@@ -12,22 +12,21 @@ import sys
 from unittest.mock import MagicMock
 
 # Create mock classes and modules
-class MockPipeline:
-    """Mock pipeline class"""
-    
-    def __init__(self, *args, **kwargs):
-        """Initialize mock pipeline"""
-        pass
-    
-    def __call__(self, *args, **kwargs):
-        """Mock pipeline call"""
-        return MagicMock()
+class StableDiffusionPipeline:
+    """Mock StableDiffusionPipeline class."""
     
     @classmethod
     def from_pretrained(cls, *args, **kwargs):
-        """Mock from_pretrained method"""
+        """Mock from_pretrained method."""
         return cls()
+    
+    def __call__(self, *args, **kwargs):
+        """Mock pipeline call."""
+        return {"images": [], "nsfw_content_detected": [False]}
+    
+    def to(self, *args, **kwargs):
+        """Mock to method."""
+        return self
 
 # Export mock components
-pipeline = MockPipeline
-StableDiffusionPipeline = MockPipeline 
+pipeline = StableDiffusionPipeline 

@@ -169,7 +169,8 @@ class MemoryTiering:
                             success = await self.cold.store(df, metadata)
                         else:
                             success = self.cold.store(df, metadata)
-                except:
+                except (ValueError, TypeError, AttributeError) as e:
+                    logger.debug(f"Cannot parse data as JSON, treating as binary: {e}")
                     # For binary data, encode as base64 and store in a DataFrame
                     import base64
                     logger.info(f"Storing binary data in Cold storage at {destination_path} (as base64)")

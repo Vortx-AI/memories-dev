@@ -24,7 +24,8 @@ def get_cuda_version() -> Optional[str]:
             output = subprocess.check_output(["nvcc", "--version"]).decode()
             version = output.split("release ")[-1].split(",")[0]
             return version
-        except:
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            logger.debug(f"nvcc not found or failed: {e}")
             # Try nvidia-smi if nvcc fails
             output = subprocess.check_output(["nvidia-smi"]).decode()
             version = output.split("CUDA Version: ")[1].split(" ")[0]

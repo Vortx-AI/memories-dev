@@ -13,4 +13,6 @@ from unittest.mock import MagicMock
 sys.modules['diffusers.loaders.single_file'] = MagicMock()
 
 # Export mock components
-from .single_file import SingleFileLoader 
+from .single_file import SingleFileLoader
+
+__all__ = ['SingleFileLoader'] 

@@ -5,6 +5,7 @@ Configuration for the memories system.
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
+import os
 
 @dataclass
 class Config:
@@ -14,11 +15,15 @@ class Config:
     hot_memory_size: int
     warm_memory_size: int
     cold_memory_size: int
-    redis_url: Optional[str] = "redis://localhost:6379"
+    redis_url: Optional[str] = None
     redis_db: Optional[int] = 0
     
     def __post_init__(self):
         """Validate and process configuration after initialization."""
+        # Load Redis URL from environment if not provided
+        if self.redis_url is None:
+            self.redis_url = os.getenv('MEMORIES_REDIS_URL', 'redis://localhost:6379')
+        
         # Convert storage path to Path object
         self.storage_path = Path(self.storage_path)
         

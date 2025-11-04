@@ -1,0 +1,233 @@
+/**
+ * Consolidated Diagrams CSS for Memories-Dev Documentation
+ * 
+ * This file contains styles for Mermaid diagrams and MathJax math elements.
+ */
+
+/* ===== Mermaid Diagrams ===== */
+.mermaid {
+  margin: var(--spacing-lg) 0;
+  padding: var(--spacing-md);
+  background-color: var(--bg-light);
+  border-radius: 4px;
+  text-align: center;
+  overflow: auto;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+}
+
+.mermaid:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto !important;
+  margin: 0 auto;
+  display: block;
+}
+
+.mermaid svg text {
+  font-family: var(--font-family-base);
+  font-size: 14px;
+}
+
+.mermaid svg .node rect,
+.mermaid svg .node circle,
+.mermaid svg .node ellipse,
+.mermaid svg .node polygon,
+.mermaid svg .node path {
+  fill: #f9f9f9;
+  stroke: var(--primary-color);
+  stroke-width: 1px;
+}
+
+.mermaid svg .edge path {
+  stroke: var(--text-color);
+  stroke-width: 1.5px;
+}
+
+.mermaid svg .edgeLabel {
+  background-color: white;
+  padding: 2px;
+}
+
+.mermaid svg .cluster rect {
+  fill: #f9f9f9;
+  stroke: var(--primary-light);
+  stroke-width: 1px;
+  stroke-dasharray: 5;
+}
+
+.mermaid svg .titleText {
+  font-size: 18px;
+  font-weight: 700;
+  fill: var(--text-dark);
+}
+
+/* Fallback for failed diagrams */
+.diagram-fallback {
+  margin: var(--spacing-lg) 0;
+  padding: var(--spacing-md);
+  background-color: #fff8f8;
+  border: 1px solid #ffdddd;
+  border-radius: 4px;
+  box-shadow: var(--shadow-sm);
+}
+
+.diagram-fallback-header {
+  color: #e74c3c;
+  font-weight: 700;
+  margin-bottom: var(--spacing-sm);
+}
+
+.diagram-fallback-error {
+  color: #e74c3c;
+  font-style: italic;
+  margin-bottom: var(--spacing-sm);
+}
+
+.diagram-fallback pre {
+  background-color: #f8f8f8;
+  padding: var(--spacing-sm);
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.9em;
+  margin: var(--spacing-sm) 0;
+}
+
+/* Expanded diagram view */
+.mermaid.expanded {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  height: 90%;
+  max-width: 1200px;
+  max-height: 800px;
+  z-index: 1000;
+  background-color: white;
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: auto;
+}
+
+.mermaid.expanded svg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.mermaid.expanded::after {
+  content: "Click outside to close";
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+body.has-expanded-diagram {
+  overflow: hidden;
+}
+
+body.has-expanded-diagram::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+/* ===== Math Elements ===== */
+.math {
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  overflow-x: auto;
+  text-align: center;
+  font-size: 1.1em;
+}
+
+span.math {
+  display: inline-block;
+  padding: 0 var(--spacing-xs);
+  vertical-align: middle;
+}
+
+.math img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.MathJax {
+  outline: none;
+}
+
+.MathJax_Display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: var(--spacing-sm) 0;
+  margin: var(--spacing-md) 0 !important;
+}
+
+/* ===== Mobile Responsiveness ===== */
+@media screen and (max-width: 768px) {
+  .mermaid {
+    padding: var(--spacing-sm);
+  }
+  
+  .mermaid svg text {
+    font-size: 12px;
+  }
+  
+  .mermaid.expanded {
+    width: 95%;
+    height: 95%;
+    padding: var(--spacing-md);
+  }
+  
+  .mermaid.expanded::after {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
+  
+  .math {
+    font-size: 1em;
+    padding: var(--spacing-xs);
+  }
+}
+
+/* ===== Print Styles ===== */
+@media print {
+  .mermaid svg {
+    max-width: 100% !important;
+  }
+  
+  .diagram-fallback {
+    border: 1px solid #ccc;
+    page-break-inside: avoid;
+  }
+  
+  .mermaid.expanded {
+    position: static;
+    transform: none;
+    width: 100%;
+    height: auto;
+    padding: 0;
+    box-shadow: none;
+  }
+  
+  .mermaid.expanded::after,
+  body.has-expanded-diagram::before {
+    display: none;
+  }
+} 

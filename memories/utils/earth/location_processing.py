@@ -2,9 +2,15 @@
 Location processing utilities for handling geographic data.
 """
 
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 import numpy as np
 from geopy.distance import geodesic
+from geopy.geocoders import Nominatim
+import os
+import logging
+from time import sleep
+
+logger = logging.getLogger(__name__)
 
 def filter_by_distance(
     locations: List[Dict[str, Any]], 
@@ -66,29 +72,143 @@ def sort_by_distance(
     return sorted(locations, key=lambda x: x.get('distance', float('inf')))
 
 def geocode(
-    address: str
+    address: str,
+    user_agent: Optional[str] = None,
+    timeout: int = 10
 ) -> Dict[str, Any]:
     """Convert address to coordinates.
     
     Args:
         address: Address string to geocode
+        user_agent: User agent string for the geocoding service
+        timeout: Timeout in seconds for the geocoding request
         
     Returns:
         Dictionary with location information
     """
-    # Note: Implementation would require a geocoding service
-    raise NotImplementedError("Geocoding service not implemented")
+    try:
+        # Get user agent from environment or use default
+        if not user_agent:
+            user_agent = os.getenv('NOMINATIM_USER_AGENT', 'memories-dev-app')
+        
+        # Initialize geocoder
+        geolocator = Nominatim(user_agent=user_agent)
+        
+        # Geocode the address
+        location = geolocator.geocode(address, timeout=timeout)
+        
+        if location:
+            return {
+                'address': location.address,
+                'coordinates': [location.latitude, location.longitude],
+                'latitude': location.latitude,
+                'longitude': location.longitude,
+                'raw': location.raw
+            }
+        else:
+            logger.warning(f"Could not geocode address: {address}")
+            return {
+                'address': address,
+                'coordinates': None,
+                'error': 'Location not found'
+            }
+    
+    except Exception as e:
+        logger.error(f"Geocoding error for address '{address}': {e}")
+        return {
+            'address': address,
+            'coordinates': None,
+            'error': str(e)
+        }
+
+def batch_geocode(
+    addresses: List[str],
+    user_agent: Optional[str] = None,
+    timeout: int = 10,
+    delay: float = 1.0
+) -> List[Dict[str, Any]]:
+    """Geocode multiple addresses with rate limiting.
+    
+    Args:
+        addresses: List of address strings to geocode
+        user_agent: User agent string for the geocoding service
+        timeout: Timeout in seconds for each geocoding request
+        delay: Delay in seconds between requests (for rate limiting)
+        
+    Returns:
+        List of dictionaries with location information
+    """
+    results = []
+    for i, address in enumerate(addresses):
+        # Add delay between requests (except for the first one)
+        if i > 0:
+            sleep(delay)
+        
+        result = geocode(address, user_agent, timeout)
+        results.append(result)
+        
+        # Log progress for large batches
+        if len(addresses) > 10 and (i + 1) % 10 == 0:
+            logger.info(f"Geocoded {i + 1}/{len(addresses)} addresses")
+    
+    return results
 
 def reverse_geocode(
-    coordinates: List[float]
+    coordinates: List[float],
+    user_agent: Optional[str] = None,
+    timeout: int = 10
 ) -> Dict[str, Any]:
     """Convert coordinates to address.
     
     Args:
         coordinates: [lat, lon] coordinates
+        user_agent: User agent string for the geocoding service
+        timeout: Timeout in seconds for the geocoding request
         
     Returns:
         Dictionary with location information
     """
-    # Note: Implementation would require a geocoding service
-    raise NotImplementedError("Reverse geocoding service not implemented") 
+    try:
+        # Validate coordinates
+        if len(coordinates) != 2:
+            raise ValueError("Coordinates must be a list of [lat, lon]")
+        
+        lat, lon = coordinates
+        if not (-90 <= lat <= 90):
+            raise ValueError(f"Invalid latitude: {lat}")
+        if not (-180 <= lon <= 180):
+            raise ValueError(f"Invalid longitude: {lon}")
+        
+        # Get user agent from environment or use default
+        if not user_agent:
+            user_agent = os.getenv('NOMINATIM_USER_AGENT', 'memories-dev-app')
+        
+        # Initialize geocoder
+        geolocator = Nominatim(user_agent=user_agent)
+        
+        # Reverse geocode the coordinates
+        location = geolocator.reverse(f"{lat}, {lon}", timeout=timeout)
+        
+        if location:
+            return {
+                'address': location.address,
+                'coordinates': coordinates,
+                'latitude': lat,
+                'longitude': lon,
+                'raw': location.raw
+            }
+        else:
+            logger.warning(f"Could not reverse geocode coordinates: {coordinates}")
+            return {
+                'coordinates': coordinates,
+                'address': None,
+                'error': 'Address not found'
+            }
+    
+    except Exception as e:
+        logger.error(f"Reverse geocoding error for coordinates {coordinates}: {e}")
+        return {
+            'coordinates': coordinates,
+            'address': None,
+            'error': str(e)
+        } 

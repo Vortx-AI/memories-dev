@@ -3,8 +3,8 @@ database:
   name: memories.db
 
 redis:
-  url: redis://localhost:6379
-  db: 0
+  url: ${MEMORIES_REDIS_URL:redis://localhost:6379}  # Use environment variable with fallback
+  db: ${MEMORIES_REDIS_DB:0}
 
 memory:
   base_path: ./data/memory
@@ -32,7 +32,7 @@ memory:
   hot:
     path: hot
     max_size: 104857600  # 100MB
-    redis_url: redis://localhost:6379
+    redis_url: ${MEMORIES_REDIS_URL:redis://localhost:6379}  # Use environment variable with fallback
     redis_db: 0
     age_days: 1
     access_threshold: 50

@@ -42,7 +42,8 @@ def get_system_info() -> Dict[str, str]:
             if "NVIDIA" in line and "%" in line:  # GPU line with usage info
                 gpu_info.append(line.strip())
         info["gpu_info"] = gpu_info
-    except:
+    except (subprocess.CalledProcessError, FileNotFoundError, IndexError) as e:
+        logger.debug(f"CUDA detection failed: {e}")
         info["cuda_version"] = "Not found"
         info["gpu_info"] = []
     
