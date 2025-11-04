@@ -19,25 +19,34 @@ class HotMemory:
     
     def __init__(self, config_path: str = None):
         """Initialize hot memory with in-memory DuckDB.
-        
+
         Args:
             config_path: Optional path to configuration file (not used but kept for API compatibility)
         """
         self.logger = logging.getLogger(__name__)
-        
+
         # Lazy import to avoid circular dependency
         from memories.core.memory_manager import MemoryManager
         self.memory_manager = MemoryManager()
-        
+
         # Get connection pool
         self.connection_pool = get_connection_pool()
         self.db_name = ":memory:_hot"
-        
+
         # Initialize tables
         self._init_duckdb()
         self._init_tables()
-        
+
         self.logger.info("Initialized hot memory with in-memory DuckDB")
+
+    @property
+    def con(self):
+        """Get a connection from the pool for backward compatibility.
+
+        Returns:
+            A connection context manager
+        """
+        return self._get_connection().__enter__()
     
     def _init_duckdb(self) -> None:
         """Initialize in-memory DuckDB connection in the pool."""
@@ -178,22 +187,19 @@ class HotMemory:
         self,
         query: Dict[str, Any] = None,
         tags: Optional[List[str]] = None
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[Union[List[Dict[str, Any]], Dict[str, Any]]]:
         """Retrieve data from hot memory.
-        
+
         Args:
             query: Query parameters (can contain 'id' to retrieve specific data)
             tags: Optional tags to filter by
-            
+
         Returns:
-            Retrieved data or None if not found
+            Retrieved data as a list of dicts, a single dict (for ID queries), or None if not found
         """
         try:
             query = query or {}  # Default to empty dict if None
-            
-            # Check if we're in a test environment
-            is_test = 'PYTEST_CURRENT_TEST' in os.environ
-            
+
             if tags:
                 # Get data by tags
                 tag_placeholders = ', '.join(['?'] * len(tags))
@@ -208,35 +214,23 @@ class HotMemory:
                         """,
                         tags
                     ).fetchall()
-                
+
                 if not result:
                     return None
-                
+
                 # Convert to list of dictionaries
                 results = []
                 for row in result:
-                    # Special handling for test cases
-                    if is_test:
-                        # For test_retrieve_with_tags function, match on exact tag if possible
-                        all_tags = json.loads(row[3])
-                        result_tags = tags if len(tags) == 1 and tags[0] in all_tags else all_tags
-                    else:
-                        result_tags = json.loads(row[3])
-                        
                     results.append({
                         'id': row[0],
                         'data': json.loads(row[1]),
                         'metadata': json.loads(row[2]),
-                        'tags': result_tags,
+                        'tags': json.loads(row[3]),
                         'stored_at': row[4]
                     })
-                    
-                # For testing, return single result if only one tag
-                if is_test and len(tags) == 1 and len(results) > 0:
-                    return {'tags': tags}
-                    
-                return {'data': results}
-            
+
+                return results
+
             elif 'id' in query:
                 # Get specific data by ID
                 with self._get_connection() as con:
@@ -248,16 +242,16 @@ class HotMemory:
                         """,
                         [query['id']]
                     ).fetchone()
-                
+
                 if result:
-                    return {
+                    return [{
                         'id': result[0],
                         'data': json.loads(result[1]),
                         'metadata': json.loads(result[2]),
                         'tags': json.loads(result[3]),
                         'stored_at': result[4]
-                    }
-            
+                    }]
+
             else:
                 # Get all data
                 with self._get_connection() as con:
@@ -269,7 +263,7 @@ class HotMemory:
                         LIMIT 100
                         """
                     ).fetchall()
-                
+
                 if result:
                     results = []
                     for row in result:
@@ -280,10 +274,10 @@ class HotMemory:
                             'tags': json.loads(row[3]),
                             'stored_at': row[4]
                         })
-                    return {'data': results}
-            
+                    return results
+
             return None
-            
+
         except Exception as e:
             self.logger.error(f"Failed to retrieve from hot memory: {e}")
             return None
@@ -366,12 +360,69 @@ class HotMemory:
             self.logger.error(f"Error checking key existence: {e}")
             return False
     
-    def delete(self, key: str) -> bool:
+    async def get_schema(self, data_id: str) -> Optional[Dict[str, Any]]:
+        """Get schema information for stored data.
+
+        Args:
+            data_id: The ID of the data to get schema for
+
+        Returns:
+            Dictionary with schema information or None if not found
+        """
+        try:
+            with self._get_connection() as con:
+                result = con.execute(
+                    """
+                    SELECT data, metadata, tags
+                    FROM hot_data
+                    WHERE id = ?
+                    """,
+                    [data_id]
+                ).fetchone()
+
+            if not result:
+                return None
+
+            data = json.loads(result[0])
+            metadata = json.loads(result[1])
+            tags = json.loads(result[2])
+
+            # Determine data type and schema
+            if isinstance(data, dict):
+                return {
+                    'columns': list(data.keys()),
+                    'dtypes': {k: type(v).__name__ for k, v in data.items()},
+                    'type': 'json',
+                    'source': 'hot',
+                    'metadata': metadata,
+                    'tags': tags
+                }
+            elif isinstance(data, list):
+                return {
+                    'type': 'list',
+                    'length': len(data),
+                    'source': 'hot',
+                    'metadata': metadata,
+                    'tags': tags
+                }
+            else:
+                return {
+                    'type': type(data).__name__,
+                    'source': 'hot',
+                    'metadata': metadata,
+                    'tags': tags
+                }
+
+        except Exception as e:
+            self.logger.error(f"Failed to get schema for {data_id}: {e}")
+            return None
+
+    async def delete(self, key: str) -> bool:
         """Delete a specific key from hot memory.
-        
+
         Args:
             key: The key to delete
-            
+
         Returns:
             bool: True if deletion was successful, False otherwise
         """
@@ -380,13 +431,13 @@ class HotMemory:
                 con.execute(f"""
                     DELETE FROM hot_tags WHERE data_id = ?
                 """, [key])
-                
+
                 con.execute(f"""
                     DELETE FROM hot_data WHERE id = ?
                 """, [key])
-                
+
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Failed to delete key {key}: {e}")
             return False

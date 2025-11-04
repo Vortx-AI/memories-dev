@@ -674,6 +674,7 @@ async def test_cold_to_red_hot_promotion():
     
     return True
 
+@pytest.mark.asyncio
 async def test_gpu_queries_single_table():
     """Test executing queries on a single table in Red Hot memory."""
     print("\n--- TESTING GPU QUERIES ON SINGLE TABLE ---")

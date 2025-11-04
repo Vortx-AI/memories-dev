@@ -52,7 +52,11 @@ def hot_memory(test_config_path):
     """Create a HotMemory instance for testing."""
     with patch.dict(os.environ, {'PROJECT_ROOT': os.path.dirname(os.path.dirname(test_config_path))}):
         memory = HotMemory(config_path=test_config_path)
-    return memory
+    # Clear any existing data before test
+    asyncio.run(memory.clear())
+    yield memory
+    # Cleanup after test
+    asyncio.run(memory.clear())
 
 
 class TestHotMemory:
@@ -89,7 +93,7 @@ class TestHotMemory:
         assert retrieved[0]["data"]["key"] == "value"
         assert retrieved[0]["data"]["number"] == 42
         assert retrieved[0]["metadata"] == test_metadata
-        assert retrieved[0]["tags"] == ["test"]
+        assert set(retrieved[0]["tags"]) == set(test_tags)
         
         # Retrieve by ID - use a dictionary for the query parameter
         data_id = retrieved[0]["id"]
@@ -134,7 +138,7 @@ class TestHotMemory:
         
         # Retrieve by common tag
         retrieved_common = await hot_memory.retrieve(tags=["common"])
-        assert len(retrieved_common) == 1  # In our mock, we're only returning one item
+        assert len(retrieved_common) == 2  # Both items have the 'common' tag
     
     @pytest.mark.asyncio
     async def test_clear(self, hot_memory):
@@ -151,7 +155,7 @@ class TestHotMemory:
         assert len(retrieved) == 1
         
         # Clear memory
-        hot_memory.clear()
+        await hot_memory.clear()
         
         # Mock the retrieve method to return None after clearing
         async def mock_retrieve_after_clear(query=None, tags=None):
