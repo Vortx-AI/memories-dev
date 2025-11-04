@@ -88,35 +88,56 @@ class SimpleMemoryStore:
     
     def verify_fact(self, claim: str, fact_key: str) -> tuple[bool, Any]:
         """Verify a claim against stored facts.
-        
+
         Args:
             claim: Text claim to verify
             fact_key: Key of stored fact to check against
-            
+
         Returns:
             Tuple of (is_verified, stored_fact)
         """
         stored_fact = self.retrieve(fact_key)
-        
+
         if stored_fact is None:
             return False, None
-        
+
         claim_lower = claim.lower()
-        
+
         # Simple string matching verification
         if isinstance(stored_fact, dict):
             # Check if any value in dict matches claim
             for key, value in stored_fact.items():
                 if isinstance(value, str):
-                    # Look for the subject (key without suffix) in the claim
-                    subject = key.replace("_color", "").replace("_", " ")
-                    if subject in claim_lower and value.lower() in claim_lower:
+                    # Extract subject words from the key (e.g., "france_capital" -> ["france", "capital"])
+                    # Remove common suffixes and split by underscore
+                    key_parts = key.split("_")
+
+                    # Check if the value is in the claim
+                    value_found = value.lower() in claim_lower
+
+                    # Check if any meaningful word from the key is in the claim
+                    # (skip very short words or common suffixes like "color")
+                    subject_found = False
+                    for part in key_parts:
+                        # Check for meaningful keywords (length > 2 to avoid noise)
+                        if len(part) > 2 and part not in ["color", "type", "name"]:
+                            if part in claim_lower:
+                                subject_found = True
+                                break
+
+                    # Also check if the entire key with spaces matches
+                    subject_with_spaces = key.replace("_", " ")
+                    if subject_with_spaces in claim_lower:
+                        subject_found = True
+
+                    # If we found both the value and some reference to the subject, it's verified
+                    if value_found and subject_found:
                         return True, stored_fact
         elif isinstance(stored_fact, str):
             # Direct string comparison
             if stored_fact.lower() in claim_lower:
                 return True, stored_fact
-        
+
         return False, stored_fact
     
     def detect_hallucination(self, claim: str, fact_keys: list[str]) -> Dict[str, Any]:
