@@ -299,34 +299,25 @@ def movable_bnb_model(m):
 
 
 def load_models_to_gpu(models):
-    global models_in_gpu
+    """Load models to GPU using ModelStateManager"""
+    manager = get_model_state_manager()
 
     if not isinstance(models, (tuple, list)):
         models = [models]
 
-    models_to_remain = [m for m in set(models) if m in models_in_gpu]
-    models_to_load = [m for m in set(models) if m not in models_in_gpu]
-    models_to_unload = [m for m in set(models_in_gpu) if m not in models_to_remain]
+    # Use the model state manager to handle GPU/CPU transfers
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    if not high_vram:
-        for m in models_to_unload:
-            with movable_bnb_model(m):
-                m.to(cpu)
-            logger.debug('Unload to CPU: %s', m.__class__.__name__)
-        models_in_gpu = models_to_remain
+    if models:
+        manager.load_models(models, device)
 
-    for m in models_to_load:
-        with movable_bnb_model(m):
-            m.to(gpu)
-        logger.debug('Load to GPU: %s', m.__class__.__name__)
-
-    models_in_gpu = list(set(models_in_gpu + models))
     torch.cuda.empty_cache()
     return
 
 
 def unload_all_models(extra_models=None):
-    global models_in_gpu
+    """Unload all models using ModelStateManager"""
+    manager = get_model_state_manager()
 
     if extra_models is None:
         extra_models = []
@@ -334,9 +325,11 @@ def unload_all_models(extra_models=None):
     if not isinstance(extra_models, (tuple, list)):
         extra_models = [extra_models]
 
-    models_in_gpu = list(set(models_in_gpu + extra_models))
+    # Unload extra models if provided
+    if extra_models:
+        manager.unload_models(extra_models)
 
-    return load_models_to_gpu([])
+    return
 
 import numpy as np
 import copy
